@@ -22,7 +22,7 @@ EPSFILES = \
 
 MODELFILES = \
 	bcspecs.dat \
-	flow.dat \
+	zero.dat \
 	mass2_v027.cfg \
 	stage.dat
 

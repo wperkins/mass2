@@ -921,6 +921,7 @@ CONTAINS
   SUBROUTINE mass_print(date_string, time_string)
 
     USE globals
+    USE misc_vars, ONLY: iteration
 
     IMPLICIT NONE
 
@@ -930,7 +931,7 @@ CONTAINS
     j = 1
     DO iblock = 1, max_blocks
        IF (j == 1) &
-            &WRITE(mass_source_iounit,3013, advance='no')date_string,time_string
+            &WRITE(mass_source_iounit,3013, advance='no')date_string,time_string,iteration
        WRITE(mass_source_iounit,3012, advance='no')SUM(ABS(block(iblock)%mass_source))
        IF (j >= 20) THEN
           j = 1
@@ -941,7 +942,7 @@ CONTAINS
     END DO
     WRITE(mass_source_iounit,*)
 
-3013 FORMAT(a10,2x,a8,2x)
+3013 FORMAT(a10,2x,a8,1x,I3,1X)
 3012 FORMAT((f12.2,1x))
     
 

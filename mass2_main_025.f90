@@ -780,8 +780,9 @@ SUBROUTINE buildghost(iblock)
            &(block(iblock)%x_grid(i+2,j) - block(iblock)%x_grid(i+1,j))
       block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i+1,j) - &
            &(block(iblock)%y_grid(i+2,j) - block(iblock)%y_grid(i+1,j))
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j) - &
-           &(block(iblock)%zbot_grid(i+2,j) - block(iblock)%zbot_grid(i+1,j))
+      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j)
+      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j) - &
+      !      &(block(iblock)%zbot_grid(i+2,j) - block(iblock)%zbot_grid(i+1,j))
    END DO
    i = block(iblock)%xmax + 1
    DO j = 1, block(iblock)%ymax
@@ -789,8 +790,9 @@ SUBROUTINE buildghost(iblock)
            &(block(iblock)%x_grid(i-2,j) - block(iblock)%x_grid(i-1,j))
       block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i-1,j) - &
            &(block(iblock)%y_grid(i-2,j) - block(iblock)%y_grid(i-1,j))
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) - &
-           &(block(iblock)%zbot_grid(i-2,j) - block(iblock)%zbot_grid(i-1,j))
+      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) - &
+      !      &(block(iblock)%zbot_grid(i-2,j) - block(iblock)%zbot_grid(i-1,j))
+      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) 
    END DO
 
                                 ! copy ghost cell coordinates for those
@@ -2544,7 +2546,7 @@ SUBROUTINE transport(status_flag)
 
   IMPLICIT NONE
 
-  INTEGER :: status_flag, var
+  INTEGER :: status_flag, var, iter
 
   IF(.NOT. do_flow)THEN
      dum_val = current_time%time + delta_t/86400.0d0 ! velocity and depth are at the NEW time
@@ -2567,7 +2569,7 @@ SUBROUTINE transport(status_flag)
   CALL transport_precalc()
 
   ! INTERNAL ITERATION AT THIS TIME LEVEL LOOP
-  DO iteration = 1,number_scalar_iterations
+  DO iter = 1,number_scalar_iterations
      
      ! BLOCK LOOP
      DO iblock = 1,max_blocks
@@ -2771,9 +2773,10 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
   TYPE (scalar_bc_spec_struct) :: spec
   INTEGER, INTENT(OUT) :: xstart
 
-  INTEGER :: i, j, jj, con_i, con_j, j_beg, j_end
+  INTEGER :: i, j, jj, con_i, con_j, j_beg, j_end, con_block, x_end
   DOUBLE PRECISION :: tmp
-  
+
+  x_end = blk%xmax
 
   SELECT CASE(spec%bc_loc)
                     
