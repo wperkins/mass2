@@ -103,6 +103,7 @@ LOGICAL, SAVE :: do_transport_restart = .FALSE.
 LOGICAL, SAVE :: do_spatial_eddy, do_spatial_kx, do_spatial_ky, do_spatial_chezy
 LOGICAL, SAVE :: do_surface_heatx = .FALSE. , do_surface_gasx = .FALSE.
 LOGICAL, SAVE :: do_accumulate = .FALSE.
+LOGICAL, SAVE :: do_rptdead = .FALSE.
 
 DOUBLE PRECISION, SAVE :: inlet_flow
 DOUBLE PRECISION, SAVE :: total_flow

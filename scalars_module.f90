@@ -38,7 +38,8 @@ INTEGER, PUBLIC, PARAMETER :: &
                                 ! types
 INTEGER, PUBLIC, PARAMETER :: &
      &SCALBC_ZG = 1, &
-     &SCALBC_CONC = 2
+     &SCALBC_CONC = 2, &
+     &SCALBC_BLOCK = 3
 
 TYPE scalar_cell_type_struct
    INTEGER :: type

@@ -1,6 +1,6 @@
 #!MC 900
 $!VarSet |LFDSRN1| = 'MASS2 Loader'
-$!VarSet |LFDSFN1| = '"F/home/perk/Projects/GrantPUD/src/mass2-wetdry/test/flow/dead-quickon/plot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vshear" "Vcourant" "Vfroude" "S0" "E30"'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vshear" "Vcourant" "Vfroude" "S0" "E30"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE

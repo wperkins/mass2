@@ -1,6 +1,6 @@
 #!MC 900
 $!VarSet |LFDSRN1| = 'MASS2 Loader'
-$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vshear" "Vcourant" "Vfroude" "S1" "E1"'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vshear" "Vcourant" "Vfroude" "Visdead" "S1" "E1"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE
@@ -20,6 +20,11 @@ $!PAPER
       RIGHTHARDCLIPOFFSET = 0.125
       TOPHARDCLIPOFFSET = 0.125
       BOTTOMHARDCLIPOFFSET = 0.125
+      }
+    CUSTOM1
+      {
+      WIDTH = 11
+      HEIGHT = 17
       }
     CUSTOM2
       {
@@ -126,6 +131,21 @@ $!GLOBALSCATTER
       }
     INCLUDEBOX = NO
     NODELABELVAR = 1
+    }
+$!BLANKING 
+  VALUE
+    {
+    INCLUDE = YES
+    BLANKENTIRECELL = NO
+    CONSTRAINT 1
+      {
+      INCLUDE = YES
+      RELOP = GREATERTHANOREQUAL
+      VALUECUTOFF = 0.5
+      VARA = 17
+      SHOW = YES
+      LINETHICKNESS = 0.02
+      }
     }
 $!FIELD  [1]
   MESH
@@ -247,6 +267,7 @@ $!GLOBALCONTOUR
     {
     CONTINUOUSCOLOR
       {
+      CMIN = 0
       CMAX = 2.33219838142
       }
     }
@@ -281,6 +302,21 @@ $!GLOBALSCATTER
       }
     INCLUDEBOX = NO
     NODELABELVAR = 1
+    }
+$!BLANKING 
+  VALUE
+    {
+    INCLUDE = YES
+    BLANKENTIRECELL = NO
+    CONSTRAINT 1
+      {
+      INCLUDE = YES
+      RELOP = GREATERTHANOREQUAL
+      VALUECUTOFF = 0.5
+      VARA = 17
+      SHOW = YES
+      LINETHICKNESS = 0.02
+      }
     }
 $!FIELD  [1]
   MESH

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Thu Aug 15 12:20:37 2002 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Jan 10 13:17:25 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -42,7 +42,7 @@ MODULE plot_output
   INTEGER, PRIVATE :: depth_varid, wsel_varid
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, dp_varid, sat_varid
-  INTEGER, PRIVATE :: courant_varid, froude_varid, isdry_varid
+  INTEGER, PRIVATE :: courant_varid, froude_varid, isdry_varid, isdead_varid
   INTEGER, PRIVATE, POINTER :: part_depos_varid(:), depos_varid(:), erode_varid(:)
   INTEGER, PRIVATE, POINTER :: bedsed_varid(:), bedmass_varid(:)
   INTEGER, PRIVATE, POINTER :: beddis_varid(:), bedpore_varid(:), bedporemass_varid(:)
@@ -274,7 +274,7 @@ CONTAINS
   SUBROUTINE plot_file_setup_netcdf()
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry, do_rptdead
     USE scalars, ONLY: max_species
     USE scalars_source
 
@@ -372,6 +372,10 @@ CONTAINS
 
        IF (do_wetdry) THEN
           isdry_varid = plot_add_time_var("isdry", "Dry Cell Flag", "none")
+       END IF
+
+       IF (do_rptdead) THEN
+          isdead_varid = plot_add_time_var("isdead", "Dead Cell Flag", "none")
        END IF
     END IF
 
@@ -657,7 +661,7 @@ CONTAINS
   SUBROUTINE plot_print_netcdf(date_string, time_string, salinity, baro_press)
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry, do_rptdead
     USE scalars
     USE scalars_source
     USE date_time
@@ -797,6 +801,18 @@ CONTAINS
                 END DO
              END DO
              CALL plot_print_time_var(isdry_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &blktmp_double)
+          END IF
+
+          IF (do_rptdead) THEN
+             blktmp_double = 0.0
+             DO i = 1, block(iblock)%xmax + 1
+                DO j = 1, block(iblock)%ymax + 1
+                   IF (block(iblock)%isdead(i,j)%p) blktmp_double(i,j) = 1.0
+                END DO
+             END DO
+             CALL plot_print_time_var(isdead_varid, start, length, &
                   &block(iblock)%xmax, block(iblock)%ymax,&
                   &blktmp_double)
           END IF

@@ -118,6 +118,7 @@ END SUBROUTINE allocate_scalar_block_bc
 
 SUBROUTINE read_bcspecs(iounit, error_iounit, status_iounit, xmax, ymax)
 
+  USE misc_vars, ONLY: do_rptdead
 
 ! reads the bc spec file
 ! format: block#	bc_loc	bc_type	bc_kind	bc_extent	'connect_block OR filename' 'cell pairs'			
@@ -270,6 +271,8 @@ IMPLICIT NONE
                 &cells(1:num_cells:2)
            block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = &
                 &cells(2:num_cells:2)
+
+           do_rptdead = .TRUE.
            
         END SELECT
      END DO

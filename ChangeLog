@@ -1,3 +1,33 @@
+2003-01-10  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_output.f90: use do_rptdead to output 'isdead' in plot
+	output 
+
+	* block_bc_module.f90: set do_rptdead when DEAD BC's are read
+
+	* misc_vars_module.f90: add do_rptdead flag
+
+	* test/flow/dead-quickon/dead.lay: plot.nc path was wrong
+
+	* scalars_module.f90: add SCALBC_BLOCK for block boundary
+	conditions (for use later)
+
+	* global_module_023.f90: add FLOWBC_BLOCK for block boundary
+	conditions (for use later)
+
+2003-01-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/mcn-test/mass2_v027.base: dump gage output every
+	time step
+
+	* gage_output_module.f90: Modified mass source output to include
+	the number of hydro iterations performed (used for comparisons
+	with other solvers)
+
+	* mass2_main_025.f90: Fixed bug in apply_scalar_bc that caused
+	output of scalars to be messed up.  Changed scalar iteration
+	counter name so it did not use the hydro iteration counter.
+
 2002-08-16  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* scripts/mass2gage.pl: Added -X option to skip initial time

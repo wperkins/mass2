@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 12, 1999 by William A. Perkins
-# Last Change: Thu May  2 08:29:51 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan 10 13:11:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -133,7 +133,7 @@ bed_source.o: bed_source.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
 BED_SOURCE.$(MOD): bed_source.o
 
 block_bc_module.o: block_bc_module.f90 \
-		TABLE_BOUNDARY_CONDITIONS.$(MOD)
+		TABLE_BOUNDARY_CONDITIONS.$(MOD) MISC_VARS.$(MOD) 
 BLOCK_BOUNDARY_CONDITIONS.$(MOD): block_bc_module.o
 
 date_time_module.o: date_time_module.f90 JULIAN.$(MOD)
