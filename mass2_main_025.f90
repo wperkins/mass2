@@ -1062,7 +1062,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! accurate
 
         DO j = jbeg, jend
-           conj = conjbeg + (j - jbeg)/fcells
+           conj = conjbeg + (j - jbeg - 1)/fcells
 
                                 ! all the fine ghost cells are dry if
                                 ! the neighboring coarse cell is dry
@@ -1217,7 +1217,7 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         fcells = cells/concells
 
         DO j = jbeg, jend
-           conj = conjbeg + (j - jbeg)/fcells
+           conj = conjbeg + (j - jbeg - 1)/fcells
 
            sclr%conc(i,j) = scalar_interp(cblk, csclr, &
                 &blk%x(i,j), blk%y(i,j), coni, conj)

@@ -1,3 +1,9 @@
+2003-09-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_hydro): incorrect indexing of
+	1-to-many connection fixed.
+	(fillghost_scalar): ditto
+
 2003-07-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* block_bc_module.f90: more diagnostics on block connection errors
