@@ -7,15 +7,16 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 12:34:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Mar 24 10:59:48 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
 	mixing.eps \
+	mixing-metric.eps \
 	plot-lat-1.mix.eps \
 	plot-lat-2.mix.eps \
 	plot-long.mix.eps \
@@ -53,6 +54,10 @@ clean::
 mixing.eps: plot.mix.nc mixing.base.lay
 	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay
 	$(TECPLOT) -b -y $@ mixing.lay -p ../../../tecplot/macros/export_eps.mcr
+
+mixing-metric.eps: plot.mix.nc mixing.base.lay metric.mcr
+	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay
+	$(TECPLOT) -b -y $@ mixing.lay -p metric.mcr 
 
 clean::
 	rm -f mixing.lay

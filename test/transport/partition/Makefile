@@ -7,10 +7,10 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 13:39:55 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Mar 24 11:48:28 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \

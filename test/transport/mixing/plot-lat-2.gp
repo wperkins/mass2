@@ -7,18 +7,19 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  6, 2000 by William A. Perkins
-# Last Change: Wed Jul 26 14:59:34 2000 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Wed Mar 24 10:50:43 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-set term postscript eps color dashed "Helvetica" 14
+set term postscript eps enhanced mono dashed "Helvetica" 24
 
 set pointsize 1.0
-set xlabel 'Lateral Distance, feet'
+set xlabel 'Lateral Distance, m'
 set ylabel 'Concentration'
 set yrange [140:160]
-set key below
-plot '<perl solution.pl -x 2020' using 2:3 title 'Analytic (x = 2020)' with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -j -t 2 plot.nc stuff 1 52' using 3:4 title "Numerical (y = 2020)" with points 1, \
-     '<perl solution.pl -x 3020' using 2:3 title 'Analytic (y = 3020)' with lines 3, \
-     '<perl ../../../scripts/mass2slice.pl -j -t 2 plot.nc stuff 1 77' using 3:4 title "Numerical (y = 3020)" with points 3
+set xrange [0:31]
+set key
+plot '<perl solution.pl -x 2020' using ($2*0.3048):3 title 'Analytic (x = 616)' with lines 1, \
+     '<perl ../../../scripts/mass2slice.pl -j -t 2 plot.nc stuff 1 52' using ($3*0.3048):4 title "Numerical (x = 616)" with points 1, \
+     '<perl solution.pl -x 3020' using ($2*0.3048):3 title 'Analytic (x = 920)' with lines 2, \
+     '<perl ../../../scripts/mass2slice.pl -j -t 2 plot.nc stuff 1 77' using ($3*0.3048):4 title "Numerical (x = 920)" with points 2

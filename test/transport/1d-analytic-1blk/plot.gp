@@ -7,12 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 22, 1999 by William A. Perkins
-# Last Change: Fri Jul  7 13:00:57 2000 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Wed Mar 24 14:56:11 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
 
-set term postscript eps color dashed "Helvetica" 14
+set term postscript eps mono dashed "Helvetica" 24
 
 set title "TheTitle"
 

@@ -7,14 +7,15 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Feb  5 09:03:23 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Mar 24 12:10:54 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
+	bcplot.eps \
 	plot-Cn.1.0.eps \
 	plot-Cn.6.0.eps \
 	plot-Cn.0.1.eps
@@ -55,6 +56,9 @@ plot-Cn.6.0.eps: plot.gp plot-Cn.6.0.nc
 
 plot-Cn.0.1.eps: plot.gp plot-Cn.0.1.nc
 	sed -e 's/plot\.nc/plot-Cn.0.1.nc/g' plot.gp | gnuplot > $@
+
+bcplot.eps: bcplot.gp conc-bc.dat
+	gnuplot bcplot.gp > $@
 
 clean:: 
 	rm -f *~
