@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Apr  8 11:04:55 1999 by William A. Perkins <perk@tophet>
+# Last Change: Tue May 11 11:26:31 1999 by William A. Perkins <perk@mack.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -23,7 +23,7 @@ MOD=mod
 
 # Options that will work on erebus:
 DEBUG =  -Ofast
-FLAGS = $(DEBUG) -r10000 -TARG:platform=IP30  -OPT:Olimit=0 
+FLAGS = $(DEBUG) # -TARG:platform=IP30  -OPT:Olimit=0 
 
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)

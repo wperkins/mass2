@@ -2444,11 +2444,19 @@ IF(do_gage_print)THEN
 			END DO
 			WRITE(mass_source_iounit,*)
 		END IF
-			WRITE(mass_source_iounit,3013, advance='no')current_time%date_string,current_time%time_string
- 			DO iblock = 1, max_blocks
-				WRITE(mass_source_iounit,3012, advance='no')SUM(ABS(block(iblock)%mass_source))
-			END DO
-			WRITE(mass_source_iounit,*)
+        j = 1
+        DO iblock = 1, max_blocks
+           IF (j == 1) &
+                &WRITE(mass_source_iounit,3013, advance='no')current_time%date_string,current_time%time_string
+           WRITE(mass_source_iounit,3012, advance='no')SUM(ABS(block(iblock)%mass_source))
+           IF (j >= 20) THEN
+              j = 1
+              IF (iblock .ne. max_blocks) WRITE(mass_source_iounit,*)
+           ELSE
+              j = j + 1
+           END IF
+        END DO
+        WRITE(mass_source_iounit,*)
 
 3013 FORMAT(a10,2x,a8,2x)
 3012 FORMAT((f12.2,1x))
