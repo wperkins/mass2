@@ -1,3 +1,16 @@
+2004-01-30  William A. Perkins  <william.perkins@pnl.gov>
+
+	* scripts/mass2slice.pl: add -D option to eliminate output from
+	dry cells
+
+	* mass2_main_025.f90 (start_up): profile_init needs to be called
+	*after* metrics
+
+2004-01-28  William A. Perkins  <william.perkins@pnl.gov>
+
+	* profile_init.f90 (profile_init): rearranged the code and added
+	the ability to initialize the velocity as well as stage.  
+
 2004-01-27  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/flow/another-jump: Added hydraulic jump case using ELEVELO

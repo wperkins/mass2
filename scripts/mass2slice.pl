@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 26, 2000 by William A. Perkins
-# Last Change: Tue Jan 29 07:31:59 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jan 29 08:49:05 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -37,8 +37,11 @@ I<file> I<variable> I<block> I<i> I<j>
 
 =head1 DESCRIPTION
 
-B<mass2slice.pl> is used to extract slices of data from the MASS2 plot
-output file.  
+B<mass2slice.pl> is used to extract slices of data from the NetCDF
+format MASS2 plot output file.  Slices can be made either
+longitudinally (B<-i>) or laterally (B<-j>) across multiple blocks.
+By default, all times are output separated by a blank line (useful for
+plotting in gnuplot).
 
 =head1 OPTIONS
 
@@ -52,6 +55,11 @@ one value.
 =item B<-d>
 
 Place the date/time in the first two columns of the output.
+
+=item B<-D>
+
+For B<-i> and B<-j> slices, do not output any points where the cell is
+dry.  This option is ignored if there is no wet/drying information in I<file>. 
 
 =item B<-i>
 
@@ -84,6 +92,26 @@ ignored if this option is specified.
 Send data to I<output> instead of standard output.
 
 =back
+
+=head1 EXAMPLES
+
+This script is typically used to provide data for profile plotting.  The following gnuplot script will plot a water surface elevation profile from a three block domain:
+
+    plot '<perl mass2slice.pl -t 1 -i plot.nc wsel 1 5 2 10 3 5' \
+            using 3:4 with l 1, \
+         '<perl mass2slice.pl -l -i plot.nc wsel 1 5 2 10 3 5' \
+            using 3:4 with l 3, \
+         '<perl mass2slice.pl -i plot.nc zbot 1 5 2 10 3 5' \
+            using 3:4 with l 7
+
+Block 2 is either aliged differently or of a different resolution.
+The resulting plot will show three curves: the initial conditions
+(C<-t 1, wsel>), the final conditions (C<-l, wsel>), and the bottom
+elevation (C<zbot>).
+
+=head1 SEE ALSO
+
+gnuplot(1)
 
 =head1 AUTHOR
 
@@ -125,7 +153,7 @@ my $usage = "usage: $program [-i|-j] [-d] [-a] [-t index] file variable block in
 # handle command line
 # -------------------------------------------------------------
 my %opts = ();
-die "$usage\n" unless (getopts("ijo:t:ldpa", \%opts));
+die "$usage\n" unless (getopts("ijo:t:ldpaD", \%opts));
 
 my $dotime = undef;
 my @timelist = ();
@@ -134,6 +162,7 @@ my $dolast = undef;
 my $dodate = undef;
 my $dopoint = undef;
 my $doavg = undef;
+my $nodry = undef;
 
 $dolong = 0 if ($opts{'j'});
 $dolong = 1 if ($opts{'i'});
@@ -142,6 +171,7 @@ $dolast = $opts{'l'} if ($opts{'l'});
 $dodate = $opts{'d'} if ($opts{'d'});
 $dopoint = $opts{'p'} if ($opts{'p'});
 $doavg = 1 if ($opts{'a'});
+$nodry = 1 if ($opts{'D'});
 
 if ($opts{o}) {
   my $name = $opts{o};
@@ -225,6 +255,7 @@ for ($i = $starttime; $i < $times; $i++) {
 
     my $v;
     my $j;
+    my $isdry = undef;
 
     if ($dopoint) {
       $j = shift @lst;
@@ -252,6 +283,11 @@ for ($i = $starttime; $i < $times; $i++) {
         $v = $ncfile->get($variable, 
                           [$i, $index, 0, $block], 
                           [1, 1, $etamax->at($block), 1]);
+        if ($nodry) {
+          $isdry = $ncfile->get("isdry", 
+                                [$i, $index, 0, $block], 
+                                [1, 1, $etamax->at($block), 1]);
+        }
       }
       for ($j = 0; $j < $etamax->at($block); $j++) {
         $xc = $x->at($block, $j, $index);
@@ -259,8 +295,17 @@ for ($i = $starttime; $i < $times; $i++) {
         if ($j > 0) {
           $dist += sqrt( ($xc - $lastx)**2 + ($yc - $lasty)**2 );
         }
-        printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
-        printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", $xc, $yc, $dist, $v->at($j));
+        if ($nodry) {
+          if (!$isdry->at($j)) {
+            printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
+            printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", 
+                   $xc, $yc, $dist, $v->at($j));
+          }
+        } else {
+          printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
+          printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", 
+                 $xc, $yc, $dist, $v->at($j));
+        }
         $lastx = $xc;
         $lasty = $yc;
       }
@@ -273,6 +318,11 @@ for ($i = $starttime; $i < $times; $i++) {
         $v = $ncfile->get($variable, 
                           [$i, 0, $index, $block], 
                           [1, $ximax->at($block), 1, 1]);
+        if ($nodry) {
+          $isdry = $ncfile->get("isdry", 
+                                [$i, $index, 0, $block], 
+                                [1, 1, $etamax->at($block), 1]);
+        }
       }
       for ($j = 0; $j < $ximax->at($block); $j++) {
         $xc = $x->at($block, $index, $j);
@@ -280,8 +330,20 @@ for ($i = $starttime; $i < $times; $i++) {
         if ($j > 0) {
           $dist += sqrt( ($xc - $lastx)**2 + ($yc - $lasty)**2 );
         }
-        printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
-        printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", $xc, $yc, $dist, $v->at($j));
+        if ($nodry) {
+          if (!$isdry->at($j)) {
+            printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
+            printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", 
+                   $xc, $yc, $dist, $v->at($j));
+          }
+        } else {
+          printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
+          printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", 
+                 $xc, $yc, $dist, $v->at($j));
+        }
+        # printf(OUTPUT "%s ", $timestamps->atstr($i)) if ($dodate);
+        # printf(OUTPUT "%12.3f %12.3f %12.3f %12.5g\n", 
+        #        $xc, $yc, $dist, $v->at($j));
         $lastx = $xc;
         $lasty = $yc;
       }

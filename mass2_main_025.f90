@@ -533,25 +533,26 @@ IF(do_spatial_chezy)THEN
 100	CLOSE(50)
 ENDIF
 
-IF (read_initial_profile) THEN
-   CALL profile_init(given_initial_wsel, manning, SQRT(mann_con), status_iounit)
-END IF
-
 
 !----------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------
 
 DO iblock=1,max_blocks
-
-
    CALL metrics(block(iblock))
+END DO
 
-   IF (do_wetdry) &
-        &CALL check_wetdry(iblock, block(iblock)%xmax, block(iblock)%ymax)
+! profile_init requires metric coefficients
 
- END DO
-	
+IF (read_initial_profile) THEN
+   CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
+END IF
+
+IF (do_wetdry) THEN
+   DO iblock=1,max_blocks
+      CALL check_wetdry(iblock, block(iblock)%xmax, block(iblock)%ymax)
+   END DO
+END IF
 
 
 !-----------------------------------------------------------------------------------------------------------
