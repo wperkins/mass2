@@ -1287,28 +1287,44 @@ SUBROUTINE hydro(status_flag)
 
                  coeff%source(i,j) = coeff%source(i,j) + bigfactor*0.0
                  coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg .AND. &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE) THEN
+              ELSE IF (i .EQ. x_beg) THEN
+                 SELECT CASE (block(iblock)%cell(i,j)%type)
+                 CASE (CELL_BOUNDARY_TYPE)
 
-                 ! adjust for upstream boundary conditions
+                    ! adjust for upstream boundary conditions
 
-                 SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                 CASE (FLOWBC_ELEV)
-                    coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
+                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
+                    CASE (FLOWBC_ELEV)
+                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
+                       coeff%aw(i,j) = 0.0
+                    CASE DEFAULT
+                       coeff%source(i,j) = coeff%source(i,j) + &
+                            &coeff%aw(i,j)*block(iblock)%uvel(i-1,j)
+                       coeff%aw(i,j) = 0.0
+                    END SELECT
+                 CASE DEFAULT
+                    coeff%source(i,j) = coeff%source(i,j) + &
+                         &coeff%aw(i,j)*block(iblock)%uvel(i-1,j)
                     coeff%aw(i,j) = 0.0
                  END SELECT
-              ELSE IF (i .EQ. x_end .AND. &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE) THEN
+              ELSE IF (i .EQ. x_end) THEN
+                 SELECT CASE (block(iblock)%cell(i,j)%type)
+                 CASE (CELL_BOUNDARY_TYPE)
 
-                 ! adjust for downstream boundary conditions
-
-                 SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                 CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                    ! adjust for downstream boundary conditions
+                    
+                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                       coeff%source(i,j) = coeff%source(i,j) + &
+                            &bigfactor*block(iblock)%uvel(i+1,j)
+                       coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
+                    CASE (FLOWBC_ELEV)
+                       coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
+                       coeff%ae(i,j) = 0.0
+                    END SELECT
+                 CASE DEFAULT
                     coeff%source(i,j) = coeff%source(i,j) + &
-                         &bigfactor*block(iblock)%uvel(i+1,j)
-                    coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-                 CASE (FLOWBC_ELEV)
-                    coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
+                         &coeff%ae(i,j)*block(iblock)%uvel(i+1,j)
                     coeff%ae(i,j) = 0.0
                  END SELECT
               END IF
@@ -1337,7 +1353,7 @@ SUBROUTINE hydro(status_flag)
              &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
              &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
              &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
-             &block(iblock)%ustar(x_beg-1:x_end+1,y_beg:y_end))
+             &block(iblock)%ustar(x_beg:x_end,y_beg:y_end))
 
         ! end U momentum  solution
         !----------------------------------------------------------------------------
@@ -1489,28 +1505,35 @@ SUBROUTINE hydro(status_flag)
               IF (block(iblock)%isdead(i,j)%v) THEN
                  coeff%source(i,j) = coeff%source(i,j) + bigfactor*0.0
                  coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg .AND. ( &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                   &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE)) THEN
+              ELSE IF (i .EQ. x_beg) THEN
+                 IF (block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
+                      &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
 
-                 ! adjust for upstream boundary conditions (always zero)
+                    ! adjust for upstream boundary conditions (always zero)
 
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
-                 coeff%aw(i,j) = 0.0
-              ELSE IF (i .EQ. x_end .AND. ( &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                   &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE)) THEN
+                    coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
+                    coeff%aw(i,j) = 0.0
+                 ELSE 
+                    coeff%source(i,j) = coeff%source(i,j) + &
+                         &coeff%aw(i,j)*block(iblock)%vvel(i-1,j)
+                    coeff%aw(i,j) = 0.0
+                 END IF
+              ELSE IF (i .EQ. x_end) THEN
+                 IF (block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
+                      &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
 
-                 ! adjust for downstream boundary conditions
+                    ! adjust for downstream boundary conditions
 
-                 SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                 CASE (FLOWBC_FLOW, FLOWBC_VEL)
-                    coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
+                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ELEV)
+                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
+                       coeff%ae(i,j) = 0.0
+                    END SELECT
+                 ELSE
+                    coeff%source(i,j) = coeff%source(i,j) + &
+                         &coeff%ae(i,j)*block(iblock)%vvel(i+1,j)
                     coeff%ae(i,j) = 0.0
-                 CASE (FLOWBC_ELEV)
-                    coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
-                    coeff%ae(i,j) = 0.0
-                 END SELECT
+                 END IF
               END IF
 
               coeff%bp(i,j) = coeff%source(i,j) + apo*block(iblock)%vold(i,j) &
@@ -1537,7 +1560,7 @@ SUBROUTINE hydro(status_flag)
              &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
              &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
              &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
-             &block(iblock)%vstar(x_beg-1:x_end+1,y_beg:y_end-1))
+             &block(iblock)%vstar(x_beg:x_end,y_beg:y_end-1))
         
         ! end V momentum  solution
         !----------------------------------------------------------------------------
@@ -1600,33 +1623,49 @@ SUBROUTINE hydro(status_flag)
               coeff%cp(i,j) = coeff%ce(i,j) + coeff%cw(i,j) + coeff%cn(i,j) + coeff%cs(i,j) &
                    + cpo
 
-              block(iblock)%mass_source(i,j) = block(iblock)%mass_source(i,j) + &
+              coeff%bp(i,j) = block(iblock)%mass_source(i,j) + &
                    &block(iblock)%xsource(i,j)*hp1*hp2
+              ! block(iblock)%mass_source(i,j) = block(iblock)%mass_source(i,j) + &
+              !      &block(iblock)%xsource(i,j)*hp1*hp2
 
               IF (block(iblock)%isdead(i,j)%p) THEN
-                 block(iblock)%mass_source(i,j) = block(iblock)%mass_source(i,j) + bigfactor*0.0
+                 coeff%bp(i,j) = coeff%bp(i,j) + bigfactor*0.0
                  coeff%cp(i,j) = coeff%cp(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg .AND. &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE) THEN
+              ELSE IF (i .EQ. x_beg) THEN
+                 SELECT CASE (block(iblock)%cell(i,j)%type)
+                 CASE (CELL_BOUNDARY_TYPE)
 
-                 ! adjust for upstream boundary conditions (always zero)
+                    ! adjust for upstream boundary conditions (always zero)
 
-                 SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                 CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                       coeff%cp(i,j) = coeff%cp(i,j) - coeff%cw(i,j)
+                       coeff%cw(i,j) = 0.0
+                    CASE (FLOWBC_ELEV)
+                       coeff%cp(i,j) = coeff%cp(i,j) + coeff%cw(i,j)
+                       coeff%cw(i,j) = 0.0
+                    END SELECT
+                 CASE DEFAULT
+                    coeff%bp(i,j) = coeff%bp(i,j) +&
+                         &coeff%cw(i,j)*block(iblock)%dp(i-1,j)
                     coeff%cw(i,j) = 0.0
                  END SELECT
-              ELSE IF (i .EQ. x_end .AND. &
-                   &block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE) THEN
+              ELSE IF (i .EQ. x_end) THEN
+                 SELECT CASE (block(iblock)%cell(i,j)%type)
+                 CASE (CELL_BOUNDARY_TYPE)
 
-                 ! adjust for downstream boundary conditions
+                    ! adjust for downstream boundary conditions
 
-                 SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                 CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                       coeff%ce(i,j) = 0.0
+                    END SELECT
+                 CASE DEFAULT
+                    coeff%bp(i,j) = coeff%bp(i,j) +&
+                         &coeff%ce(i,j)*block(iblock)%dp(i+1,j)
                     coeff%ce(i,j) = 0.0
                  END SELECT
-              ELSE
               END IF
-
            END DO
         END DO
 
@@ -1641,8 +1680,8 @@ SUBROUTINE hydro(status_flag)
              &coeff%cp(x_beg:x_end,y_beg:y_end), coeff%cw(x_beg:x_end,y_beg:y_end), &
              &coeff%ce(x_beg:x_end,y_beg:y_end), coeff%cs(x_beg:x_end,y_beg:y_end), &
              &coeff%cn(x_beg:x_end,y_beg:y_end), &
-             &block(iblock)%mass_source(x_beg:x_end,y_beg:y_end), &
-             &block(iblock)%dp(x_beg-1:x_end+1,y_beg:y_end))
+             &coeff%bp(x_beg:x_end,y_beg:y_end), &
+             &block(iblock)%dp(x_beg:x_end,y_beg:y_end))
 
         ! compute updated depth with some underrelaxation
         ! depth = rel*depth_new + (1 - rel)*depth_old
@@ -1884,7 +1923,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%depthold(i,jj) = block(con_block)%depthold(con_i, con_j)
                  blk%dstar(i,jj) = block(con_block)%dstar(con_i, con_j)
                  blk%isdry(i,jj) = block(con_block)%isdry(con_i, con_j)
-                 ! blk%dp(i,jj) = relax_dp*block(con_block)%dp(con_i, con_j)
+                 blk%dp(i,jj) = 0.0 ! depth in other block needs no correction
                  con_j = con_j + 1
               END DO
               ! blk%cell(i+1,j_beg:j_end)%type = CELL_NORMAL_TYPE
@@ -1980,7 +2019,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%dstar(i, jj) = block(con_block)%dstar(con_i, con_j)
                  blk%depthold(i, jj) = block(con_block)%depthold(con_i, con_j)
                  blk%isdry(i, jj) =  block(con_block)%isdry(con_i, con_j)
-                 ! blk%dp(i,jj) = relax_dp*block(con_block)%dp(con_i, con_j)
+                 blk%dp(i,jj) = 0.0 ! depth in other block needs no correction
                  con_j = con_j + 1
               END DO
               ! Xblk%cell(i-1,j_beg:j_end)%type = CELL_NORMAL_TYPE
@@ -2601,17 +2640,17 @@ SUBROUTINE transport(status_flag)
                        coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
                        coeff%ae(i,j) = 0.0
                     END IF
-                 CASE DEFAULT
-                    IF (i .EQ. x_start) THEN
-                       coeff%bp(i,j) = coeff%bp(i,j) + coeff%aw(i,j)*&
-                            &species(ispecies)%scalar(iblock)%conc(i-1,j)
-                       coeff%aw(i,j) = 0.0
-                    ELSE IF (i .EQ. x_end) THEN
-                       coeff%bp(i,j) = coeff%bp(i,j) + coeff%ae(i,j)*&
-                            &species(ispecies)%scalar(iblock)%conc(i+1,j)
-                       coeff%ae(i,j) = 0.0
-                    END IF
                  END SELECT
+              CASE DEFAULT
+                 IF (i .EQ. x_start) THEN
+                    coeff%bp(i,j) = coeff%bp(i,j) + coeff%aw(i,j)*&
+                         &species(ispecies)%scalar(iblock)%conc(i-1,j)
+                    coeff%aw(i,j) = 0.0
+                 ELSE IF (i .EQ. x_end) THEN
+                    coeff%bp(i,j) = coeff%bp(i,j) + coeff%ae(i,j)*&
+                         &species(ispecies)%scalar(iblock)%conc(i+1,j)
+                    coeff%ae(i,j) = 0.0
+                 END IF
               END SELECT
               END DO
            END DO
@@ -2628,7 +2667,7 @@ SUBROUTINE transport(status_flag)
                 &coeff%ap(x_start:x_end,2:y_end), coeff%aw(x_start:x_end,2:y_end), &
                 &coeff%ae(x_start:x_end,2:y_end), coeff%as(x_start:x_end,2:y_end), &
                 &coeff%an(x_start:x_end,2:y_end), coeff%bp(x_start:x_end,2:y_end), &
-                &species(ispecies)%scalar(iblock)%conc(x_start-1:x_end+1,2:y_end))
+                &species(ispecies)%scalar(iblock)%conc(x_start:x_end,2:y_end))
 
            ! set zero gradient at shoreline
            species(ispecies)%scalar(iblock)%conc(:,1) = &

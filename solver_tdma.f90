@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 16, 2003 by William A. Perkins
-! Last Change: Thu Jan 16 12:43:24 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Jan 28 12:33:40 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -24,7 +24,7 @@ SUBROUTINE solve_tdma(sweeps, x_beg, x_end, y_beg, y_end, &
   INTEGER, INTENT(IN) :: sweeps, x_beg, x_end, y_beg, y_end
   DOUBLE PRECISION, DIMENSION(x_beg:x_end, y_beg:y_end), INTENT(IN) :: &
        &ap, aw, ae, as, an, bp
-  DOUBLE PRECISION, INTENT(INOUT) :: x(x_beg-1:x_end+1, y_beg:y_end)
+  DOUBLE PRECISION, INTENT(INOUT) :: x(x_beg:x_end, y_beg:y_end)
 
   INTEGER :: sweep, i
   DOUBLE PRECISION, DIMENSION(y_beg:y_end) :: aa, bb, cc, dd, tt
@@ -35,9 +35,9 @@ SUBROUTINE solve_tdma(sweeps, x_beg, x_end, y_beg, y_end, &
         aa(y_beg:y_end) = ap(i,y_beg:y_end)
         bb(y_beg:y_end) = an(i,y_beg:y_end)
         dd(y_beg:y_end) = bp(i,y_beg:y_end)
-        dd(y_beg:y_end) = dd(y_beg:y_end) + &
+        IF (i+1 .LE. x_end) dd(y_beg:y_end) = dd(y_beg:y_end) + &
              &ae(i,y_beg:y_end)*x(i+1,y_beg:y_end)
-        dd(y_beg:y_end) = dd(y_beg:y_end) + &
+        IF (i-1 .GE. x_beg) dd(y_beg:y_end) = dd(y_beg:y_end) + &
              &aw(i,y_beg:y_end)*x(i-1,y_beg:y_end)
         CALL tridag(y_beg,y_end,aa,bb,cc,dd,tt)
         x(i,y_beg:y_end) = tt(y_beg:y_end)

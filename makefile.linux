@@ -8,11 +8,22 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 12, 1999 by William A. Perkins
-# Last Change: Wed Jan 22 15:37:28 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan 31 14:23:18 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-F90 = f95
+# To compile for the Condor standard universe.  You must compile on a
+# machine on which a "Full Install" has been made.  This really only
+# means that /usr/bin/ld is replaced with one that is condor
+# specific. During linking, the very first library directory needs to
+# be the condor library.  In Condor 6.3, this is not included in a
+# full install for some reason.
+
+CONDOR=# condor_compile
+CONDORLDFLAGS=# -L/usr/condor/lib
+
+# Compiler specific flags
+F90 = $(CONDOR) f95
 COMPILE.f90 = $(F90) $(F90FLAGS) -c $(DEBUG)
 LINK.f90 = $(F90) $(LDFLAGS)
 MOD=mod
@@ -36,7 +47,7 @@ FLAGS = $(NETCDFFLAGS) $(DEBUG) \
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
 LIBLOC = 
-LDFLAGS = $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) 
+LDFLAGS = $(CONDORLDFLAGS) $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) 
 LIBS = $(NETCDFLIBS) -lU77
 
 TARGET = mass2_v027

@@ -1,3 +1,17 @@
+2003-01-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* makefile.lahey: created
+
+	* makefile.intel: created
+
+	* makefile.linux: include a way to compile for condor standard
+	universe 
+
+2003-01-28  William A. Perkins  <william.perkins@pnl.gov>
+
+	* date_time_module.f90: do not assume the length of date_string
+	and time_string when passed in
+
 2003-01-10  William A. Perkins  <william.perkins@pnl.gov>
 
 	* plot_output.f90: use do_rptdead to output 'isdead' in plot

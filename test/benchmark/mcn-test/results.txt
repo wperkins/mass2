@@ -13,7 +13,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created July 10, 2000 by William A. Perkins
-Last Change: Wed Mar 20 11:40:40 2002 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Jan 31 08:20:36 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 $Id$
 
@@ -34,3 +34,17 @@ perk    Redhat 6.2  PIII 500MHz 15:23.80    851.74  14.59   866.33  93%
 leechong Redhat 7.1 PIV 1.7GHz  06:36.44    304.21   5.91   310.12  78%
 deschutes Redhat 7.1 PIV 2GHz   05:40.00    244.7    4.30   249.00  73%
 ---------------------------------------------------------------------------
+
+tests with Intel compiler
+---------------------------------------------------------------------------
+host    OS          Processor   Real        User    Sys     Sum     Percent
+---------------------------------------------------------------------------
+leechong RH 7.1     PIV 1.7GHz  05:17.94    311.18  7.50    318.68  100% (-tpp7 -O2)
+leechong RH 7.1     PIV 1.7GHz  05:15.24    307.79  8.19    315.98  100% (-tpp7 -O3 -scalar_rep)
+leechong RH 7.1     PIV 1.7GHz  05:15.32    308.27  7.88    316.15  100% (-tpp7 -O3 -scalar_rep)
+leechong RH 7.1     PIV 1.7GHz  05:14.38    306.29  8.47    314.76  100% (-tpp7 -O3 -axW -xW)
+leechong RH 7.1     PIV 1.7GHz  05:15.53    307.42  8.37    315.79  100% (-tpp7 -O3 -unroll)
+leechong RH 7.1     PIV 1.7GHz  05:14.87    306.50  8.69    315.19  100% (-tpp7 -O3 -unroll -axW -xW)
+
+flux     RH 7.2     PIV 2.0GHz  06:16.64    270.10 11.15    281.25   75% (-tpp7 -O3 -axW -xW)
+flux     RH 7.2     PIV 2.0GHz  06:18.70    278.86 11.50    290.36   77% (-tpp7 -O3 -unroll)

@@ -71,8 +71,8 @@ DOUBLE PRECISION FUNCTION date_to_decimal(date_string, time_string)
 
 USE JULIAN
 
-CHARACTER (LEN=10) :: date_string
-CHARACTER (LEN=12)	 :: time_string
+CHARACTER (LEN=*) :: date_string
+CHARACTER (LEN=*)	 :: time_string
 
 INTEGER :: mon,dd,yr,hh,mm
 DOUBLE PRECISION :: ss
@@ -80,6 +80,7 @@ DOUBLE PRECISION :: ss
 READ(date_string(1:2),'(i2)')mon
 READ(date_string(4:5),'(i2)')dd
 READ(date_string(7:10),'(i4)')yr
+! WRITE(*,*) time_string
 READ(time_string(1:2),'(i2)')hh
 READ(time_string(4:5),'(i2)')mm
 READ(time_string(7:),*)ss
@@ -122,8 +123,8 @@ SUBROUTINE decimal_to_date(decimal_date, date_string, time_string)
   IMPLICIT NONE
 
   DOUBLE PRECISION :: decimal_date
-  CHARACTER (LEN=10) :: date_string
-  CHARACTER (LEN=12) :: time_string
+  CHARACTER (LEN=*) :: date_string
+  CHARACTER (LEN=*) :: time_string
 
   DOUBLE PRECISION :: sec
   INTEGER :: mon, day, yr, hr, min
@@ -137,6 +138,7 @@ SUBROUTINE decimal_to_date(decimal_date, date_string, time_string)
   WRITE(time_string(1:2),'(i2.2)')hr
   WRITE(time_string(4:5),'(i2.2)')min
   WRITE(time_string(7:8),'(i2.2)') INT(sec)
+  ! WRITE(*,*) time_string
 
 END SUBROUTINE decimal_to_date
 
