@@ -19,7 +19,7 @@ SUBDIRS =										\
 	hotstart									\
 	test1
 
-MODEL = ../../mass2_v027
+MODEL = ../../mass2
 TECPLOT = tecplot
 
 all: 

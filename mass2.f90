@@ -19,6 +19,9 @@ WRITE(*,*)'calling mass2_main'
 CALL time_series_module_init()
 CALL date_time_flags()
 
+CALL open_new('status.out', utility_status_iounit)
+CALL open_new('error-warning.out', utility_error_iounit)
+CALL open_new('output.out', output_iounit)
 CALL start_up(status_flag)
 
 
@@ -80,8 +83,8 @@ WRITE(*,*)'completion with status=',status_flag
 CLOSE(cfg_iounit)
 CLOSE(output_iounit)
 CALL plot_file_close()
-CLOSE(error_iounit)
-CLOSE(status_iounit)
+CLOSE(utility_error_iounit)
+CLOSE(utility_status_iounit)
 CALL gage_file_close()
 CALL diag_plot_file_close()
 CALL mass_file_close()

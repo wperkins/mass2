@@ -53,9 +53,9 @@ CONTAINS
 
 !##############################################################################
 
-SUBROUTINE allocate_hydro_interp_blocks(error_iounit, status_iounit)
+SUBROUTINE allocate_hydro_interp_blocks()
   IMPLICIT NONE
-  INTEGER :: alloc_stat,error_iounit,status_iounit
+  INTEGER :: alloc_stat
 
   ALLOCATE(hydro_interp(max_blocks), STAT = alloc_stat)
   IF(alloc_stat /= 0)THEN
@@ -104,9 +104,9 @@ END SUBROUTINE allocate_hydro_interp_comp
 ! read the list of date, time, restart file names from the control file
 !   transport_only.dat
 
-SUBROUTINE read_transport_only_dat(status_iounit, error_iounit)
+SUBROUTINE read_transport_only_dat()
   IMPLICIT NONE
-  INTEGER :: iounit = 50, count, i, status_iounit, error_iounit, alloc_stat
+  INTEGER :: iounit = 50, count, i, alloc_stat
   CHARACTER :: junk_char1(10), junk_char2(8), junk_char3(80)
   CHARACTER (LEN=1024) :: buffer
 
@@ -165,10 +165,10 @@ END SUBROUTINE
 ! date/time range covers the model simulation start and end date times
 !--------------------------------------------------------------------------------------
 
-SUBROUTINE check_transport_only_dat(start_time,end_time, status_iounit, error_iounit)
+SUBROUTINE check_transport_only_dat(start_time,end_time)
 IMPLICIT NONE
 
-INTEGER :: i,status_iounit, error_iounit
+INTEGER :: i
 DOUBLE PRECISION :: start_time, end_time
 LOGICAL :: file_exist
 CHARACTER (LEN=1024) :: buffer
@@ -190,26 +190,20 @@ END DO
 ! check overall range
 
 IF(MINVAL(hydro_datetime(1:max_files)%time) > start_time)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : check_transport_only_dat'
-     WRITE(error_iounit,*)'-- `earliest date/time in transport_only.dat is after model start date/time'
-     CALL EXIT(1)
-ENDIF
+   CALL error_message('check_transport_only_dat: earliest date/time in transport_only.dat is after model start date/time', &
+        &fatal=.TRUE.)
+END IF
 IF(MAXVAL(hydro_datetime(1:max_files)%time) < end_time)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : check_transport_only_dat'
-     WRITE(error_iounit,*)'-- latest date/time in transport_only.dat is prior to model end date/time'
-     CALL EXIT(1)
-ENDIF
+   CALL error_message('check_transport_only_dat: latest date/time in transport_only.dat is prior to model end date/time', &
+        &fatal=.TRUE.)
+END IF
 
 ! check to make sure that date/time in transport.dat is always increasing
 
 DO i=2,max_files
    IF(hydro_datetime(i)%time <= hydro_datetime(i-1)%time)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : check_transport_only_dat'
-     WRITE(error_iounit,*)'-- date/time value i=',i,' is not increasing in transport.dat'
-     CALL EXIT(1)
+      WRITE(buffer, *) 'check_transport_only_dat: date/time value i=',i,' is not increasing in transport.dat'
+      CALL error_message(buffer, fatal=.TRUE.)
    ENDIF
 END DO
 
@@ -257,13 +251,12 @@ SUBROUTINE hydro_restart_read(time)
 
 ! figure out which two planes we are between; read in restart files if needed
   
-  USE misc_vars, ONLY : error_iounit, status_iounit
-
   IMPLICIT NONE
   DOUBLE PRECISION :: time
   INTEGER :: i, bk_plane_new, fw_plane_new, plane_type, iblock
   LOGICAL, SAVE :: first_read = .TRUE.
   LOGICAL :: read_file
+  CHARACTER (LEN=1024) :: msg
 ! initially bk_plane=1, bk_plane is static so we remember last value
 
   DO i=bk_plane, max_files-1
@@ -273,10 +266,9 @@ SUBROUTINE hydro_restart_read(time)
   fw_plane_new = i+1
 
   IF(fw_plane_new > max_files)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : hydro_restart_read'
-     WRITE(error_iounit,*)'-- forward plane value i=',i+1,' is larger than max_files and out of range'
-     CALL EXIT(1)
+     WRITE(msg,*)'hydro_restart_read: forward plane value i=', &
+          &i+1, ' is larger than max_files and out of range'
+     CALL error_message(msg, fatal=.TRUE.)
   ENDIF
 
 ! time step for transport_only could be greater than spacing of restart files
@@ -331,9 +323,7 @@ END SUBROUTINE hydro_restart_read
 
 SUBROUTINE read_restart(plane_type, plane)
   
-  USE misc_vars, ONLY : error_iounit, status_iounit
   USE scalars,   ONLY : max_species
-  USE utility
 
   IMPLICIT NONE
   INTEGER :: plane_type, plane, iblock, hotstart_iounit=50
@@ -385,7 +375,7 @@ SUBROUTINE read_restart(plane_type, plane)
 	END IF
 
 	CLOSE(hotstart_iounit)
-	WRITE(status_iounit,*)'done reading hotstart file for transport only case'
+    CALL status_message('done reading hotstart file for transport only case')
 
      CASE(2)
         CALL open_existing(hydro_filename(plane), hotstart_iounit)
@@ -427,7 +417,7 @@ SUBROUTINE read_restart(plane_type, plane)
 	END IF
 
 	CLOSE(hotstart_iounit)
-	WRITE(status_iounit,*)'done reading hotstart file for transport only case'
+    CALL status_message('done reading hotstart file for transport only case')
 
   END SELECT
 

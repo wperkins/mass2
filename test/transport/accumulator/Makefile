@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Thu Feb 21 08:45:49 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  8 12:33:56 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2_v027
@@ -51,7 +51,7 @@ plot-conc.eps: plot-conc.gp plot.inst.nc plot.avg.nc
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat mass2_v027.cfg
+	rm -f gridplot1.dat mass2_v027.cfg
 	rm -f plot.nc gage.nc  plot.inst.nc plot.avg.nc
 	rm -f hotstart*.bin
 	rm -f $(EPSFILES)

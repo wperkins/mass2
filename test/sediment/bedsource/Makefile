@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 19, 2002 by William A. Perkins
-# Last Change: Tue Mar 19 13:47:18 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  8 13:38:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2_v027
@@ -72,5 +72,4 @@ plot-mass-bed.eps: plot-mass.gp plot.bed.nc
 clean::
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gage_control.dat
 	rm -f gridplot1.dat

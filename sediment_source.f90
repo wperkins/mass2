@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 23, 2000 by William A. Perkins
-! Last Change: Thu Jul 26 14:20:32 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Tue Apr  8 08:36:31 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE sediment_source
@@ -66,12 +66,13 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE (SEDIMENT_SOURCE_REC) FUNCTION sediment_parse_options(options)
 
-    USE misc_vars, ONLY: error_iounit
+    USE utility
     USE globals
 
     IMPLICIT NONE
     POINTER sediment_parse_options
     CHARACTER (LEN=*) :: options(:)
+    CHARACTER (LEN=1024) :: msg
     INTEGER :: nopt
     INTEGER :: i, iblk
 
@@ -104,9 +105,8 @@ CONTAINS
 
        CASE ('D50')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'D50'
-             WRITE(error_iounit, 100) 'D50'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'D50'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%d50
           i = i + 1
@@ -115,9 +115,8 @@ CONTAINS
 
        CASE ('ERODIBILTY')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'ERODIBILTY'
-             WRITE(error_iounit, 100) 'ERODIBILTY'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'ERODIBILTY'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%erode
           i = i + 1
@@ -126,9 +125,8 @@ CONTAINS
 
        CASE ('ESHEAR')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'ESHEAR'
-             WRITE(error_iounit, 100) 'ESHEAR'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'ESHEAR'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%eshear
           i = i + 1
@@ -137,9 +135,8 @@ CONTAINS
 
        CASE ('DSHEAR')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'DSHEAR'
-             WRITE(error_iounit, 100) 'DSHEAR'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'DSHEAR'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%dshear
           i = i + 1
@@ -148,9 +145,8 @@ CONTAINS
 
        CASE ('SETVEL')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'SETVEL'
-             WRITE(error_iounit, 100) 'SETVEL'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'SETVEL'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%setvel
           i = i + 1
@@ -159,16 +155,16 @@ CONTAINS
 
        CASE ('DENSITY')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'SETVEL'
-             WRITE(error_iounit, 100) 'SETVEL'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'SETVEL'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) sediment_parse_options%pdens
           i = i + 1
 
        CASE DEFAULT
-          WRITE(error_iounit, *) 'WARNING: GEN scalar option "', &
+          WRITE(msg, *) 'GEN scalar option "', &
                &TRIM(options(i)), '" not understood and ignored'
+          CALL error_message(msg, fatal=.TRUE.)
        END SELECT
        i = i + 1
     END DO
@@ -178,36 +174,30 @@ CONTAINS
                                 ! should be non zero
 
     IF (sediment_parse_options%setvel .LE. 0.0) THEN
-       WRITE (*, *) 'FATAL ERROR: Invalid or unspecified value for SETVEL'
-       WRITE (error_iounit, *) 'FATAL ERROR: Invalid or unspecified value for SETVEL'
-       CALL EXIT(10)
+       WRITE (msg, *) 'Invalid or unspecified value for SETVEL'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (sediment_parse_options%eshear .LE. 0.0) THEN
-       WRITE (*, *) 'FATAL ERROR: Invalid or unspecified value for ESHEAR'
-       WRITE (error_iounit, *) 'FATAL ERROR: Invalid or unspecified value for ESHEAR'
-       CALL EXIT(10)
+       WRITE (msg, *) 'Invalid or unspecified value for ESHEAR'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (sediment_parse_options%dshear .LE. 0.0) THEN
-       WRITE (*, *) 'FATAL ERROR: Invalid or unspecified value for DSHEAR'
-       WRITE (error_iounit, *) 'FATAL ERROR: Invalid or unspecified value for DSHEAR'
-       CALL EXIT(10)
+       WRITE (msg, *) 'Invalid or unspecified value for DSHEAR'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (sediment_parse_options%erode .LT. 0.0) THEN
-       WRITE (*, *) 'FATAL ERROR: Invalid or unspecified value for ERODIBILTY'
-       WRITE (error_iounit, *) 'FATAL ERROR: Invalid or unspecified value for ERODIBILTY'
-       CALL EXIT(10)
+       WRITE (msg, *) 'Invalid or unspecified value for ERODIBILTY'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (sediment_parse_options%pdens .LE. 0.0) THEN
-       WRITE (*, *) 'FATAL ERROR: Invalid or unspecified value for DENSITY'
-       WRITE (error_iounit, *) 'FATAL ERROR: Invalid or unspecified value for DENSITY'
-       CALL EXIT(10)
+       WRITE (msg, *) 'Invalid or unspecified value for DENSITY'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (sediment_parse_options%d50 .LE. 0.0) THEN 
-       WRITE (*,*) 'FATAL ERROR: Bad D50 value for SED species: ', sediment_parse_options%d50
-       WRITE (error_iounit,*) 'FATAL ERROR: Bad D50 value for SED species: ', sediment_parse_options%d50
-       CALL EXIT(10)
+       WRITE (msg,*) 'Bad D50 value for SED species: ', sediment_parse_options%d50
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
-100 FORMAT('FATAL ERROR: additional argument missing for ', A10, ' keyword')
+100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION sediment_parse_options
 
   ! ----------------------------------------------------------------

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu Feb 21 10:38:57 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  8 12:34:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -121,7 +121,7 @@ plot-long.wall.eps: plot-long.gp solution.pl plot.wall.nc
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat
+	rm -f gridplot1.dat
 	rm -f plot.nc 
 	rm -f batch.log
 	rm -f $(EPSFILES)

@@ -92,16 +92,15 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE gage_read_control
   ! ----------------------------------------------------------------
-  SUBROUTINE gage_read_control(error_iounit, status_iounit)
+  SUBROUTINE gage_read_control()
 
     IMPLICIT NONE
 
-    INTEGER :: error_iounit, status_iounit
     INTEGER :: dum, alloc_stat, i
 
     ! count up the number of gages and allocate the structure        
     num_gages = 0    
-	OPEN(50,file=gage_control)
+    CALL open_existing(gage_control, 50)
 	DO WHILE(.TRUE.)
        READ(50,*,END=100)dum
        num_gages = num_gages + 1	
@@ -110,11 +109,10 @@ CONTAINS
 
 	ALLOCATE(gage_specs(num_gages), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
-       WRITE(error_iounit,*)'allocation failed for the array of gage specs '
-       CALL EXIT(1)
+       CALL error_message('allocation failed for the array of gage specs ')
 	ENDIF
 
-	OPEN(50,file=gage_control)
+    CALL open_existing(gage_control, 50)
 	DO i=1,num_gages
        gage_specs(i)%ident = ' '
        READ(50,*)gage_specs(i)%block,gage_specs(i)%i_cell,gage_specs(i)%j_cell,gage_specs(i)%ident
@@ -122,7 +120,7 @@ CONTAINS
 	END DO
 	CLOSE(50)
 
-    WRITE(status_iounit,*)'allocation successful for array of gage specs'
+    CALL status_message('allocation successful for array of gage specs')
 
   END SUBROUTINE gage_read_control
 
@@ -832,7 +830,7 @@ CONTAINS
     NULLIFY(erode_varid)
     NULLIFY(bedsed_varid)
 
-    CALL gage_read_control(error_iounit, status_iounit)
+    CALL gage_read_control()
 
     IF (num_gages .gt. 0) THEN
        IF (gage_do_text) THEN

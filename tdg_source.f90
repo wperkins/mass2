@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 24, 2000 by William A. Perkins
-! Last Change: Fri Apr  4 21:56:41 2003 by William A. Perkins <perk@localhost.localdomain>
+! Last Change: Tue Apr  8 08:42:01 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -28,13 +28,14 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE(tdg_source_rec) FUNCTION tdg_parse_options(options)
     
-    USE misc_vars, ONLY: error_iounit
+    USE utility
     
     IMPLICIT NONE
 
     POINTER tdg_parse_options
 
     CHARACTER (LEN=*) :: options(:)
+    CHARACTER (LEN=1024) :: msg
     INTEGER :: nopt
     INTEGER :: i = 1
     LOGICAL :: param_read = .FALSE.
@@ -55,16 +56,16 @@ CONTAINS
           tdg_parse_options%doexchange = .TRUE.
        CASE ('PARAMETERS')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'tdg'
-             WRITE(error_iounit, 100) 'tdg'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'tdg'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           CALL tdg_read_param(tdg_parse_options, options(i+1))
           param_read = .TRUE.
           i = i + 1
        CASE DEFAULT
-          WRITE(error_iounit, *) 'WARNING: TDG option "', &
+          WRITE(msg, *) 'WARNING: TDG option "', &
                &TRIM(options(i)), '" not understood and ignored'
+          CALL error_message(msg)
        END SELECT
        i = i + 1
     END DO
@@ -75,13 +76,11 @@ CONTAINS
                                 ! care about parameters
 
     IF (tdg_parse_options%doexchange .AND. .NOT. param_read) THEN
-       WRITE(error_iounit, *) 'FATAL ERROR: air/water exchange parameters ',&
+       WRITE(msg, *) 'air/water exchange parameters ',&
             &'not specified for the TDG species'
-       WRITE(*, *) 'FATAL ERROR: air/water exchange parameters ',&
-            &'not specified for the TDG species'
-       CALL EXIT(8)
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
-100 FORMAT('FATAL ERROR: file name missing for ', A10, ' PARAMETER keyword')
+100 FORMAT('file name missing for ', A10, ' PARAMETER keyword')
   END FUNCTION tdg_parse_options
 
   ! ----------------------------------------------------------------

@@ -23,6 +23,7 @@
 !
 MODULE scalars
 
+  USE utility
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
 
 IMPLICIT NONE
@@ -62,16 +63,17 @@ END TYPE species_struct
 
 TYPE(species_struct), ALLOCATABLE :: species(:)
 
+CHARACTER (LEN=1024), PRIVATE :: msg
 
 
 CONTAINS
 !#####################################################################################################
 
-SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax, status_iounit, error_iounit)
+SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax)
   ! this routine allocates each component in the array of blocks
   ! allows minimal memory use for each block
   IMPLICIT NONE
-  INTEGER :: block, i, status_iounit, error_iounit, alloc_stat	
+  INTEGER :: block, i, alloc_stat	
   INTEGER :: xmax, ymax, imin, imax, jmin, jmax
 
   imin = i_index_min
@@ -79,37 +81,38 @@ SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax, status_iounit, 
   jmin = j_index_min
   jmax = ymax + j_index_extra
 
-  WRITE(status_iounit,*)'starting component allocation for scalars block number - ', block
-  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  WRITE(msg,*)'starting component allocation for scalars block number - ', block
+  CALL status_message(msg)
+  WRITE(msg,*)'         maximum number of i elements = ', imax
+  CALL status_message(msg)
+  WRITE(msg,*)'         maximum number of j elements = ', jmax
+  CALL status_message(msg)
 
   ALLOCATE(species(i)%scalar(block)%conc(imin:imax,jmin:jmax), STAT = alloc_stat)		! c depth-ave concentration
   IF(alloc_stat /= 0)THEN
-     WRITE(error_iounit,*)'allocation failed for the concentration'
-     CALL EXIT(1)
+     CALL error_message('allocation failed for the concentration', fatal=.TRUE.)
   ELSE
-     WRITE(status_iounit,*)'allocation successful for concentration'
+     CALL status_message('allocation successful for concentration')
   ENDIF
   species(i)%scalar(block)%conc = 0.0
   
   ALLOCATE(species(i)%scalar(block)%concold(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
   IF(alloc_stat /= 0)THEN
-     WRITE(error_iounit,*)'allocation failed for the old concentration'
-     CALL EXIT(1)
+     CALL error_message('allocation failed for the old concentration', fatal=.TRUE.)
   ELSE
-     WRITE(status_iounit,*)'allocation successful for old concentration'
+     CALL status_message('allocation successful for old concentration')
   ENDIF
   species(i)%scalar(block)%concold = 0.0
 
   ALLOCATE(species(i)%scalar(block)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
   IF(alloc_stat /= 0)THEN
-     WRITE(error_iounit,*)'allocation failed for cell type'
-     CALL EXIT(1)
+     CALL error_message('allocation failed for cell type', fatal=.TRUE.)
   ELSE
-     WRITE(status_iounit,*)'allocation successful for cell type'
+     CALL status_message('allocation successful for cell type')
   ENDIF
 
-  WRITE(status_iounit,*)'completed component allocation for scalars block number - ', block
+  WRITE(msg,*)'completed component allocation for scalars block number - ', block
+  CALL status_message(msg)
 
 END SUBROUTINE allocate_scalarblock_components
 

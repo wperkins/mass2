@@ -25,6 +25,7 @@
 MODULE table_boundary_conditions
 
 USE date_time
+USE utility
 
 IMPLICIT NONE
 
@@ -55,36 +56,40 @@ END TYPE table_bc_struct
 TYPE(table_bc_struct), ALLOCATABLE :: table_bc(:)
 TYPE(table_bc_struct), ALLOCATABLE :: scalar_table_bc(:)
 
+CHARACTER (LEN=1024), PRIVATE :: buffer
+
 
 !#########################################################################
 CONTAINS
 
-SUBROUTINE allocate_table_bc(max_tables, error_iounit, status_iounit)
+SUBROUTINE allocate_table_bc(max_tables)
 	IMPLICIT NONE
-	INTEGER :: max_tables, error_iounit, status_iounit, alloc_stat
+	INTEGER :: max_tables, alloc_stat
 
 	ALLOCATE(table_bc(max_tables), STAT = alloc_stat)
+    
 	IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the array of table bc '
-		CALL EXIT(1)
+       CALL error_message('allocation failed for the array of table bc ', fatal=.TRUE.)
 	ELSE
-		WRITE(status_iounit,*)'allocation successful for array of table bc - maxtables =', max_tables
-		table_bc%max_entries = 0
+       WRITE(buffer,*) 'allocation successful for array of table bc - maxtables =', max_tables
+       CALL status_message(buffer)
+       table_bc%max_entries = 0
 	ENDIF
 
 END SUBROUTINE allocate_table_bc
 !#########################################################################
-SUBROUTINE allocate_scalar_table_bc(max_tables, error_iounit, status_iounit)
+SUBROUTINE allocate_scalar_table_bc(max_tables)
 	IMPLICIT NONE
-	INTEGER :: max_tables, error_iounit, status_iounit, alloc_stat
+	INTEGER :: max_tables, alloc_stat
 
 	ALLOCATE(scalar_table_bc(max_tables), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the array of scalar table bc '
-		CALL EXIT(1)
+       CALL error_message('allocation failed for the array of scalar table bc ', &
+            &fatal=.TRUE.)
 	ELSE
-		WRITE(status_iounit,*)'allocation successful for array of scalar table bc - maxtables =', max_tables
-		scalar_table_bc%max_entries = 0
+       WRITE(buffer,*)'allocation successful for array of scalar table bc - maxtables =', max_tables
+       CALL status_message(buffer)
+       scalar_table_bc%max_entries = 0
 	ENDIF
 
 END SUBROUTINE allocate_scalar_table_bc

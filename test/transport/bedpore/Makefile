@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Tue Feb 19 07:48:06 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  8 12:34:04 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2_v027
@@ -39,6 +39,6 @@ plot-mass.eps: plot-mass.gp plot.nc
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat
+	rm -f gridplot1.dat
 	rm -f plot.nc gage.nc 
 	rm -f $(EPSFILES)

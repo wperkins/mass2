@@ -23,7 +23,7 @@ SUBDIRS =										\
 	multi-bedsource								\
 	bedpore
 
-MODEL = ../../mass2_v027
+MODEL = ../../mass2
 TECPLOT = tecplot
 
 all: 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 28, 2000 by William A. Perkins
-! Last Change: Tue Jul 24 13:43:08 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Tue Apr  8 08:14:26 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -50,13 +50,14 @@ CONTAINS
   TYPE(PART_SOURCE_REC) FUNCTION part_parse_options(options)
     
     USE scalars, ONLY: max_species
-    USE misc_vars, ONLY: error_iounit
+    USE utility
     USE globals
 
     IMPLICIT NONE
 
     POINTER part_parse_options
     CHARACTER (LEN=*) :: options(:)
+    CHARACTER (LEN=1024) :: msg
     INTEGER :: nopt
     INTEGER :: i, iblk
 
@@ -74,41 +75,36 @@ CONTAINS
        SELECT CASE (options(i))
        CASE ('KD')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'KD'
-             WRITE(error_iounit, 100) 'KD'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'KD'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) part_parse_options%kd
           i = i + 1
        CASE ('BEDKD')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'BEDKD'
-             WRITE(error_iounit, 100) 'BEDKD'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'BEDKD'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) part_parse_options%bedkd
           i = i + 1
        CASE ('RATE')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'RATE'
-             WRITE(error_iounit, 100) 'RATE'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'RATE'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) part_parse_options%rate
           i = i + 1
        CASE ('DISSOLVED')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'DISSOLVED'
-             WRITE(error_iounit, 100) 'DISSOLVED'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'DISSOLVED'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) part_parse_options%disidx
           i = i + 1
        CASE ('SEDIMENT')   
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'SEDIMENT'
-             WRITE(error_iounit, 100) 'SEDIMENT'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'SEDIMENT'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) part_parse_options%sedidx
           i = i + 1
@@ -122,37 +118,31 @@ CONTAINS
 
     IF ((part_parse_options%disidx .EQ. 0) .OR. &
          &(part_parse_options%sedidx .EQ. 0)) THEN
-       WRITE (*,*) 'FATAL ERROR: DISSOLVED or SEDIMENT not specified for PART species'
-       WRITE (error_iounit,*) 'FATAL ERROR: DISSOLVED or SEDIMENT not specified for PART species'
-       CALL EXIT(10)
+       WRITE (msg,*) 'DISSOLVED or SEDIMENT not specified for PART species'
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF ((part_parse_options%disidx .LE. 0) .OR. (part_parse_options%disidx .GT. max_species)) THEN
-       WRITE (*,*) 'FATAL ERROR: Invalid DISSOLVED index for PART species: ', part_parse_options%disidx
-       WRITE (error_iounit,*) 'FATAL ERROR: Invalid DISSOLVED index for PART species: ', part_parse_options%disidx
-       CALL EXIT(10)
+       WRITE (msg,*) 'Invalid DISSOLVED index for PART species: ', part_parse_options%disidx
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF ((part_parse_options%sedidx .LE. 0) .OR. (part_parse_options%sedidx .GT. max_species)) THEN
-       WRITE (*,*) 'FATAL ERROR: Invalid SEDIMENT index for PART species: ', part_parse_options%disidx
-       WRITE (error_iounit,*) 'FATAL ERROR: Invalid SEDIMENT index for PART species: ', part_parse_options%disidx
-       CALL EXIT(10)
+       WRITE (msg,*) 'Invalid SEDIMENT index for PART species: ', part_parse_options%disidx
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
 
                                 ! range check the Kd and rate values
 
     IF (part_parse_options%kd .LE. 0.0) THEN 
-       WRITE (*,*) 'FATAL ERROR: Bad KD value for PART species: ', part_parse_options%kd
-       WRITE (error_iounit,*) 'FATAL ERROR: Bad KD value for PART species: ', part_parse_options%kd
-       CALL EXIT(10)
+       WRITE (msg,*) 'Bad KD value for PART species: ', part_parse_options%kd
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (part_parse_options%rate .LT. 0.0) THEN 
-       WRITE (*,*) 'FATAL ERROR: Bad RATE value for PART species: ', part_parse_options%rate
-       WRITE (error_iounit,*) 'FATAL ERROR: Bad RATE value for PART species: ', part_parse_options%rate
-       CALL EXIT(10)
+       WRITE (msg,*) 'Bad RATE value for PART species: ', part_parse_options%rate
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
     IF (part_parse_options%bedkd .LE. 0.0) THEN 
-       WRITE (*,*) 'FATAL ERROR: Bad BEDKD value for PART species: ', part_parse_options%bedkd
-       WRITE (error_iounit,*) 'FATAL ERROR: Bad BEDKD value for PART species: ', part_parse_options%bedkd
-       CALL EXIT(10)
+       WRITE (msg,*) 'Bad BEDKD value for PART species: ', part_parse_options%bedkd
+       CALL error_message(msg, fatal=.TRUE.)
     END IF
 
                                 ! allocate space for the exchange values
@@ -162,7 +152,7 @@ CONTAINS
        ALLOCATE(part_parse_options%block(iblk)%bedexch(block(iblk)%xmax + 1, block(iblk)%ymax + 1))
        part_parse_options%block(iblk)%bedexch = 0.0
     END DO
-100 FORMAT('FATAL ERROR: additional argument missing for ', A10, ' keyword')
+100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION part_parse_options
   
   ! ----------------------------------------------------------------

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Feb  6 07:11:37 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  8 13:27:36 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -15,7 +15,7 @@ SUBDIRS =										\
 	seepdry										\
 	normal
 
-MODEL = ../../mass2_v027
+MODEL = ../../mass2
 TECPLOT = tecplot
 
 all: 

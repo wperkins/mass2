@@ -17,7 +17,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 24, 2000 by William A. Perkins
-! Last Change: Wed Jul 26 08:02:29 2000 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Tue Apr  8 08:50:09 2003 by William A. Perkins <perk@leechong.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -39,13 +39,14 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE(temperature_source_rec) FUNCTION temperature_parse_options(options)
     
-    USE misc_vars, ONLY: error_iounit
+    USE utility
     
     IMPLICIT NONE
 
     POINTER temperature_parse_options
 
     CHARACTER (LEN=*) :: options(:)
+    CHARACTER (LEN=1024) :: msg
     INTEGER :: nopt
     INTEGER :: i = 1
 
@@ -60,8 +61,9 @@ CONTAINS
        CASE ('AIREXCH')
           temperature_parse_options%doexchange = .TRUE.
        CASE DEFAULT
-          WRITE(error_iounit, *) 'WARNING: temperature option "', &
+          WRITE(msg, *) 'temperature option "', &
                &TRIM(options(i)), '" not understood and ignored'
+          CALL error_message(msg)
        END SELECT
        i = i + 1
     END DO

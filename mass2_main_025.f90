@@ -69,6 +69,7 @@ SUBROUTINE start_up(status_flag)
 IMPLICIT NONE
 
 INTEGER :: status_flag, var
+CHARACTER (LEN=1024) :: msg
 
 !-------------------------------------------------------------------------------------------------------
 ! format definitions all placed here
@@ -81,9 +82,6 @@ INTEGER :: status_flag, var
 ! open io units
 
 CALL open_existing('mass2_v027.cfg', cfg_iounit)
-CALL open_new('output.out', output_iounit)
-CALL open_new('error-warning.out', error_iounit)
-CALL open_new('status.out', status_iounit)
 !-----------------------------------------------------------------------------------
 ! write info to the console
 WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -102,7 +100,7 @@ READ(cfg_iounit,*)max_species
 
 ! allocate hydrodynamics stuff
 
-CALL allocate_blocks(error_iounit,status_iounit)
+CALL allocate_blocks()
 ALLOCATE(grid_file_name(max_blocks))
 
 DO iblock=1,max_blocks
@@ -130,7 +128,7 @@ END DO
 
 DO i=1, max_species
 	DO j =1, max_blocks
-		CALL allocate_scalarblock_components(i, j , block(j)%xmax, block(j)%ymax, status_iounit, error_iounit)
+		CALL allocate_scalarblock_components(i, j , block(j)%xmax, block(j)%ymax)
 	END DO
 END DO
 
@@ -216,6 +214,8 @@ READ(cfg_iounit,*) print_freq, do_accumulate ! printout frequency every print_fr
 READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
 READ(cfg_iounit,*) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
 READ(cfg_iounit,*) gage_print_freq
+
+CLOSE (cfg_iounit)
 !--------------------------------------------------------------------------------------------------------
 ! do some pre-processing of the config data
 
@@ -237,12 +237,12 @@ IF(do_transport)THEN
 
 ! transport only mode
   IF(.NOT. do_flow)THEN
-     CALL allocate_hydro_interp_blocks(error_iounit, status_iounit)
+     CALL allocate_hydro_interp_blocks()
      DO i=1,max_blocks
 	CALL allocate_hydro_interp_comp(i, status_iounit)
      END DO
-     CALL read_transport_only_dat(status_iounit, error_iounit)
-     CALL check_transport_only_dat(start_time%time,end_time%time, status_iounit, error_iounit)
+     CALL read_transport_only_dat()
+     CALL check_transport_only_dat(start_time%time,end_time%time)
   END IF
 
 END IF
@@ -252,15 +252,6 @@ IF (source_need_met) THEN
 	CALL read_met_data(weather_filename)
 	CALL update_met_data(current_time%time)
 END IF
-
-! read in surface gas exchange coefficients, now handled in source module
-!
-! IF(do_surface_gasx)THEN
-! 	OPEN(grid_iounit,file='gas_exchange_coeff.dat')
-! 	READ(grid_iounit,*)gasx_a, gasx_b, gasx_c, gasx_d
-! 	CLOSE(grid_iounit)
-! 	WRITE(status_iounit,*)'completed reading surface gas exchange coefficients'
-! END IF
 
 !------------------------------------------------------------------------------------
 ! set up the gage print files
@@ -390,13 +381,10 @@ IF(read_hotstart_file)THEN
                                 ! specified for the simulation
 
        IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
-          WRITE (*,*) 'FATAL ERROR: specified number of scalar species, ', &
+          WRITE (msg,*) 'specified number of scalar species, ', &
                &max_species, ', does not match that in hotstart file (',&
                &max_species_in_restart, ')'
-          WRITE (error_iounit,*) 'FATAL ERROR: specified number of scalar species, ', &
-               &max_species, ', does not match that in hotstart file (',&
-               &max_species_in_restart, ')'
-          CALL EXIT(15)
+          CALL error_message(msg, fatal=.TRUE.)
        END IF
 
                                 ! if we don't expect a bed, don't
@@ -407,9 +395,11 @@ IF(read_hotstart_file)THEN
        DO i=1,max_species_in_restart
           DO iblock = 1, max_blocks
              READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
-             WRITE(*,*)'done with conc read for species -',i,'and block -',iblock
+             WRITE(msg,*)'done with conc read for species -',i,'and block -',iblock
+             CALL status_message(msg)
              READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
-             WRITE(*,*)'done with concold read for species -',i,'and block -',iblock
+             WRITE(msg,*)'done with concold read for species -',i,'and block -',iblock
+             CALL status_message(msg)
           END DO
        END DO
 
@@ -500,7 +490,7 @@ ELSE
 ! overwrite the default assignments
 IF(do_spatial_eddy)THEN
 	filename = "eddy_coeff.dat"
-  OPEN(50,file=filename)
+    CALL open_existing(filename, 50)
 	DO WHILE(.TRUE.)
 		READ(50,*,END=101)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
 		block(iblock)%eddy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
@@ -508,8 +498,8 @@ IF(do_spatial_eddy)THEN
 101	CLOSE(50)
 ENDIF
 IF(do_spatial_kx)THEN
-	filename = "kx_coeff.dat"
-  OPEN(50,file=filename)
+   filename = "kx_coeff.dat"
+   CALL open_existing(filename, 50)
 	DO WHILE(.TRUE.)
 		READ(50,*,END=102)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
 		block(iblock)%kx_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
@@ -518,7 +508,7 @@ IF(do_spatial_kx)THEN
 ENDIF
 IF(do_spatial_ky)THEN
 	filename = "ky_coeff.dat"
-  OPEN(50,file=filename)
+    CALL open_existing(filename, 50)
 	DO WHILE(.TRUE.)
 		READ(50,*,END=103)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
 		block(iblock)%ky_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
@@ -528,7 +518,7 @@ ENDIF
 
 IF(do_spatial_chezy)THEN
 	filename = "roughness_coeff.dat"
-	OPEN(50,file=filename)
+    CALL open_existing(filename, 50)
 	DO WHILE(.TRUE.)
 		READ(50,*,END=100)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
 		block(iblock)%chezy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
@@ -3107,7 +3097,7 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
 	
 	! OPEN(unit=restart_iounit,file=restart_filename,form='binary')
 	! OPEN(unit=restart_iounit,file=restart_filename,form='unformatted')
-	OPEN(unit=restart_iounit,file=restart_filename,form='formatted')
+    CALL open_new(restart_filename, restart_iounit)
 
 	IF(do_transport)THEN
 		do_transport_restart = .TRUE.

@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Mon Mar 31 15:33:33 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Apr  8 08:47:14 2003 by William A. Perkins <perk@leechong.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -105,7 +105,6 @@ CONTAINS
 
     USE utility
     USE globals, ONLY: max_blocks
-    USE misc_vars, ONLY: error_iounit, status_iounit
     USE scalars, ONLY: max_species
 
     IMPLICIT NONE
@@ -153,9 +152,8 @@ CONTAINS
           SELECT CASE (alloptions(iopt))
           CASE ('CONVERT')
              IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
-                WRITE(*, *) 'FATAL ERROR: additional argument missing for CONVERT keyword'
-                WRITE(error_iounit, *) 'FATAL ERROR: additional argument missing for CONVERT keyword'
-                CALL EXIT(8)
+                WRITE(buffer, *) 'additional argument missing for CONVERT keyword'
+                CALL error_message(buffer, fatal=.TRUE.)
              END IF
              READ(alloptions(iopt+1),*) scalar_source(id)%conversion
              iopt = iopt + 1
@@ -171,9 +169,8 @@ CONTAINS
        SELECT CASE (scalar_source(id)%srctype)
        CASE (TEMP)
           IF (source_doing_temp) THEN
-             WRITE(*,*) 'FATAL ERROR: only one TEMP scalar allowed'
-             WRITE(error_iounit,*) 'FATAL ERROR: only one TEMP scalar allowed'
-             CALL EXIT(10)
+             WRITE(buffer,*) 'only one TEMP scalar allowed'
+             CALL error_message(buffer, fatal=.TRUE.)
           END IF
           scalar_source(id)%temp_param => &
                &temperature_parse_options(options)
@@ -215,24 +212,23 @@ CONTAINS
           particulates = particulates + 1
           source_doing_part = .TRUE.
        CASE DEFAULT
-          WRITE(*, 300) TRIM(type_name), TRIM(short_name)
-          WRITE(error_iounit, 300) TRIM(type_name), TRIM(short_name)
-          CALL EXIT(8)
+          WRITE(buffer, 300) TRIM(type_name), TRIM(short_name)
+          CALL error_message(buffer, fatal=.TRUE.)
        END SELECT
 
-       WRITE(status_iounit, *) 'Species ', id, ' source specification read'
-       WRITE(status_iounit, *) 'Species ', id, ' is type ', TRIM(type_name), ' (', &
+       WRITE(buffer, *) 'Species ', id, ' source specification read'
+       CALL status_message(buffer)
+       WRITE(buffer, *) 'Species ', id, ' is type ', TRIM(type_name), ' (', &
             &TRIM(scalar_source(id)%description), ')'
-       
+       CALL status_message(buffer)
     END DO
 1000 CONTINUE
 
                                 ! do some error checking
 
     IF (source_doing_tdg .AND. (.NOT. source_doing_temp)) THEN
-       WRITE(*, 400) 
-       WRITE(error_iounit, 400)
-       CALL EXIT(8)
+       WRITE(buffer, 400) 
+       CALL error_message(buffer, fatal=.TRUE.)
     END IF
 
                                 ! set up to do sediment/particulate transport
@@ -252,14 +248,14 @@ CONTAINS
        END DO
     END IF
 
-    WRITE(status_iounit, *) "Done reading scalar source information"
+    CALL status_message("Done reading scalar source information")
 
     RETURN
 
 ! 100 FORMAT('FATAL ERROR: unable to open file "', A, '" (', I2.1,')')
 ! 200 FORMAT('FATAL ERROR: scalar species "', A, '" has ID greater than max (', I6.1,')')
-300 FORMAT('FATAL ERROR: scalar type "', A, '" for "', A, '" not known')
-400 FORMAT('FATAL ERROR: TEMP species must be included for TDG to be simulated')
+300 FORMAT('scalar type "', A, '" for "', A, '" not known')
+400 FORMAT('TEMP species must be included for TDG to be simulated')
   END SUBROUTINE scalar_source_read
 
   ! ----------------------------------------------------------------

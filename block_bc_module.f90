@@ -132,7 +132,7 @@ IMPLICIT NONE
 	CHARACTER (LEN=10) :: bc_loc, bc_type, bc_kind, bc_extent
 	CHARACTER (LEN=80) :: file_name
 
-	OPEN(iounit, file='bcspecs.dat')
+    CALL open_existing('bcspecs.dat', iounit)
 
 	! first we need to count how many TABLE bc types 
 
@@ -146,7 +146,7 @@ IMPLICIT NONE
 	END DO
 	
 	! now allocate the number of table bc structs that we need
-100	CALL allocate_table_bc(max_tables, error_iounit, status_iounit)
+100	CALL allocate_table_bc(max_tables)
 
 	! now start over to fill and parse
 	REWIND(iounit)
@@ -373,7 +373,7 @@ IMPLICIT NONE
 
 
 
-	OPEN(iounit, file='scalar_bcspecs.dat')
+    CALL open_existing('scalar_bcspecs.dat', iounit)
 
 	! first we need to count how many SCALAR TABLE bc types 
 
@@ -385,7 +385,7 @@ IMPLICIT NONE
 	END DO
 	
 	! now allocate the number of table bc structs that we need
-100	CALL allocate_scalar_table_bc(max_scalar_tables, error_iounit, status_iounit)
+100	CALL allocate_scalar_table_bc(max_scalar_tables)
 
     scalar_bc(:)%num_bc = 0
 

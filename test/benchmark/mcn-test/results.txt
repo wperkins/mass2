@@ -13,7 +13,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created July 10, 2000 by William A. Perkins
-Last Change: Mon Feb 10 07:50:02 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Tue Apr  8 09:55:21 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 $Id$
 
@@ -49,3 +49,12 @@ leechong RH 7.1     PIV 1.7GHz  05:14.87    306.50  8.69    315.19  100% (-tpp7 
 
 flux     RH 7.2     PIV 2.0GHz  06:16.64    270.10 11.15    281.25   75% (-tpp7 -O3 -axW -xW)
 flux     RH 7.2     PIV 2.0GHz  06:18.70    278.86 11.50    290.36   77% (-tpp7 -O3 -unroll)
+
+tests with CGNS output (Absoft compiler w/ profiling on)
+---------------------------------------------------------------------------
+host    OS          Processor   Real        User    Sys     Sum     Percent
+---------------------------------------------------------------------------
+leechong RH 7.1     PIV 1.7GHz  6m34.560s   392.59  0.8     393.39  100% (no plot output)
+leechong RH 7.1     PIV 1.7GHz  6m34.571s   390.97  3.9     394.85  100% (NetCDF only)
+leechong RH 7.1     PIV 1.7GHz  6m56.896s   409.62  6.7     416.32  100% (CGNS, 1 file, + NetCDF)
+leechong RH 7.1     PIV 1.7GHz  6m55.067s   410.10  5.6     415.70  100% (CGNS, 6 files + NetCDF)

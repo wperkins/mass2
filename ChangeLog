@@ -1,3 +1,8 @@
+2003-04-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/mcn-test/results.txt (file): timed some tests
+	with CGNS on/off
+
 2003-04-04  William A. Perkins  <william.perkins@pnl.gov>
 
 	* transport_only_module.f90: CALL open_existing instead of

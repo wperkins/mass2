@@ -30,7 +30,7 @@ SUBDIRS =										\
 # wetdry1
 # wetdry1-blk
 
-MODEL = ../../mass2_v027
+MODEL = ../../mass2
 TECPLOT = tecplot
 
 all: 

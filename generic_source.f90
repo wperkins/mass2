@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 26, 2000 by William A. Perkins
-! Last Change: Tue Jul 24 13:49:08 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Tue Apr  8 08:30:53 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -64,13 +64,14 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE(generic_source_rec) FUNCTION generic_parse_options(options)
 
-    USE misc_vars, ONLY: error_iounit
+    USE utility
     
     IMPLICIT NONE
 
     POINTER generic_parse_options
 
     CHARACTER (LEN=*) :: options(:)
+    CHARACTER (LEN=1024) :: msg
     INTEGER :: nopt
     INTEGER :: i
 
@@ -91,18 +92,16 @@ CONTAINS
        SELECT CASE (options(i))
        CASE ('HALFLIFE')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'HALFLIFE'
-             WRITE(error_iounit, 100) 'HALFLIFE'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'HALFLIFE'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           READ(options(i+1), *) generic_parse_options%halflife
           i = i + 1
        CASE ('BEDSOURCE')
           IF ((i + 2 .GT. nopt) .OR. (LEN_TRIM(options(i+2)) .LE. 0) .OR. &
                &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'BEDSOURCE'
-             WRITE(error_iounit, 100) 'BEDSOURCE'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'BEDSOURCE'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
           generic_parse_options%hasbedsrc = .TRUE.
           generic_parse_options%bedsrc => &
@@ -110,21 +109,21 @@ CONTAINS
           i = i + 2
        CASE ('DIFFUS')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(*, 100) 'DIFFUS'
-             WRITE(error_iounit, 100) 'DIFFUS'
-             CALL EXIT(8)
+             WRITE(msg, 100) 'DIFFUS'
+             CALL error_message(msg, fatal=.TRUE.)
           END IF
            READ(options(i+1), *) generic_parse_options%diffusivity
        CASE DEFAULT
-          WRITE(error_iounit, *) 'WARNING: GEN scalar option "', &
+          WRITE(msg, *) 'GEN scalar option "', &
                &TRIM(options(i)), '" not understood and ignored'
+          CALL error_message(msg)
        END SELECT
        i = i + 1
     END DO
     IF (generic_parse_options%halflife .GT. 0.0) THEN
        generic_parse_options%lamda = 0.693147/(generic_parse_options%halflife*86400.0*365.25)
     END IF
-100 FORMAT('FATAL ERROR: additional argument missing for ', A10, ' keyword')
+100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION generic_parse_options
 
   ! ----------------------------------------------------------------
