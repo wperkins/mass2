@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Feb  5 09:22:56 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan 10 09:45:43 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -23,9 +23,10 @@ SUBDIRS =										\
 	dead-quickon								\
 	wall-1										\
 	wall-1-blk									\
-	wall-2
+	wall-2										\
+	jump
+
 # These could be added to the list, but take too long:
-# jump
 # wetdry1
 # wetdry1-blk
 
