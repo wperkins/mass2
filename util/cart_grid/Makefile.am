@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created April  1, 2003 by William A. Perkins
-# Last Change: Tue Apr  1 15:33:17 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Apr  2 07:16:28 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -23,7 +23,14 @@ cartgrid_SOURCES = \
 cartgrid.o: cartgrid.f90 elevtbl.o
 elevtbl.o: elevtbl.f90
 
+clean-local:
+	rm -f *.$(F90MODULEEXT)
+	rm -f *~
 
 EXTRA_DIST = \
+	makefile.linux \
+	makefile.sgi \
+	makefile.dec \
 	cart_grid.mak \
 	cart_grid.dsp 
+

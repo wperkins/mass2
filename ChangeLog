@@ -1,3 +1,8 @@
+2003-04-04  William A. Perkins  <william.perkins@pnl.gov>
+
+	* util/cart_grid/Makefile.am (clean-local): added local clean
+	target and additional EXTRA_DIST files
+
 2003-04-01  William A. Perkins  <william.perkins@pnl.gov>
 
 	* util/Makefile.am: created
