@@ -93,9 +93,11 @@ END SUBROUTINE allocate_scalar_table_bc
 SUBROUTINE read_bc_tables
 	IMPLICIT NONE
 	INTEGER :: iounit = 50, i, j = 0
+    CHARACTER (LEN=100) :: junk
 
 	DO i = 1, max_tables
 		OPEN(iounit, file = table_bc(i)%file_name)
+        READ(iounit, *) junk
 		j = 0
 		DO WHILE(.TRUE.)
                    j = j + 1
@@ -114,9 +116,11 @@ END SUBROUTINE read_bc_tables
 SUBROUTINE read_scalar_bc_tables
 	IMPLICIT NONE
 	INTEGER :: iounit = 50, i, j = 0
+    CHARACTER (LEN=100) :: junk
 
 	DO i = 1, max_scalar_tables
 		OPEN(iounit, file = scalar_table_bc(i)%file_name)
+        READ(iounit, *) junk
 		j = 0
 		DO WHILE(.TRUE.)
                    j = j + 1

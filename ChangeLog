@@ -1,3 +1,20 @@
+1999-08-03  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: most output to "output.out" is now only made
+	  if the debug flag is set -- exceptions are the initial
+	  simulation information and mass source information
+
+	* makefile.dec (mass2_main_025.o): as with makefile
+	(plot_output.$(MOD)): depends on plot_output.o not print_output.o 
+
+	* makefile (mass2_main_025.o): was still mass2_main_024.o --
+		  changed to 025.
+
+1999-08-02  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90(read_bc_tables): skip first line of BC files 
+	  (read_scalar_bc_tables): skip first line of BC files 
+
 1999-07-28  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* table_bc_module.f90: had to increase the size of table_entry

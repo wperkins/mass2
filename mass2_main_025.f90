@@ -689,89 +689,90 @@ WRITE(output_iounit,2010)system_time(2),system_time(3),system_time(1),system_tim
 WRITE(output_iounit,*)"Total Number of Blocks = ",max_blocks
 WRITE(output_iounit,*)"Grids read from these files: "
 DO iblock=1,max_blocks
-	WRITE(output_iounit,2000)grid_file_name(iblock)
+   WRITE(output_iounit,2000)grid_file_name(iblock)
 END DO
 WRITE(output_iounit,*)
 
 block_title(1:11) = ' for block '
 
-DO iblock=1,max_blocks
+IF (debug) THEN
+   DO iblock=1,max_blocks
 
-	WRITE(block_title(12:15),'(i4)')iblock
-	WRITE(output_iounit,*)'initial values for block number - ',iblock
-	
-	title = 'X grid values - state plane coord' 
-	title(61:75) = block_title
-	
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%x_grid)
+      WRITE(block_title(12:15),'(i4)')iblock
+      WRITE(output_iounit,*)'initial values for block number - ',iblock
 
-	title = 'Y grid values - state plane coord'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%y_grid)
+      title = 'X grid values - state plane coord' 
+      title(61:75) = block_title
 
-	title = 'Bottom Elevation grid values - mean sea level'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%zbot_grid)
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%x_grid)
 
-	title = 'Water Surface Elevation - mean sea level'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%wsel)
+      title = 'Y grid values - state plane coord'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%y_grid)
 
-        title = "U Velocity (located at U staggered node)"
-        title(61:75) = block_title
-        CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%uvel)
+      title = 'Bottom Elevation grid values - mean sea level'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax,1,block(iblock)%ymax,block(iblock)%zbot_grid)
 
+      title = 'Water Surface Elevation - mean sea level'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%wsel)
 
-        title = "V Velocity (located at V staggered node)"
-        title(61:75) = block_title
-        CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%vvel)
-
-	title = 'Depth'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%depth)
-
-	title = 'X c.v. node values - state plane coord'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%x)
-
-	title = 'Y c.v. node values - state plane coord'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%y)
-
-	title = 'Bottom Elevation c.v node values - mean sea level'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%zbot)
-
-	title = 'h1 metric coeff at U location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hu1)
-
-	title = 'h2 metric coeff at U location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hu2)
-
-	title = 'h1 metric coeff at V location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hv1)
-
-	title = 'h2 metric coeff at V location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hv2)
-
-	title = 'h1 metric coeff at P location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hp1)
-
-	title = 'h2 metric coeff at P location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hp2)
-
-	title = 'g12 nonorthogonal component of the metric tensor at P location'
-	title(61:75) = block_title
-	CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%gp12)
+      title = "U Velocity (located at U staggered node)"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%uvel)
 
 
-END DO
+      title = "V Velocity (located at V staggered node)"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%vvel)
+
+      title = 'Depth'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%depth)
+
+      title = 'X c.v. node values - state plane coord'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%x)
+
+      title = 'Y c.v. node values - state plane coord'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%y)
+
+      title = 'Bottom Elevation c.v node values - mean sea level'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%zbot)
+
+      title = 'h1 metric coeff at U location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hu1)
+
+      title = 'h2 metric coeff at U location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hu2)
+
+      title = 'h1 metric coeff at V location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hv1)
+
+      title = 'h2 metric coeff at V location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hv2)
+
+      title = 'h1 metric coeff at P location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hp1)
+
+      title = 'h2 metric coeff at P location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%hp2)
+
+      title = 'g12 nonorthogonal component of the metric tensor at P location'
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%gp12)
+
+   END DO
+END IF
 
 !-----------------------------------------------------------------------------------------------------------
 ! write initial fields to the plot file
@@ -2170,94 +2171,91 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,print_freq) =
  
 	1010 FORMAT(50(f12.6,2x))
 
-DO iblock=1,max_blocks
-	WRITE(output_iounit,*)"------ Values for Date - ",current_time%date_string," Time - ",&
-             & current_time%time_string," ------ for block number = ",iblock
+IF (debug) THEN
+   DO iblock=1,max_blocks
+      WRITE(output_iounit,*)"------ Values for Date - ",current_time%date_string," Time - ",&
+           & current_time%time_string," ------ for block number = ",iblock
 	
-	WRITE(block_title(12:15),'(i4)')iblock
-	
+      WRITE(block_title(12:15),'(i4)')iblock
+
+      title = "U Velocity (located at U staggered node)"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%uvel)
 
 
- title = "U Velocity (located at U staggered node)"
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%uvel)
+      title = "V Velocity (located at V staggered node)"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%vvel)
+
+      title = " Depth "
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%depth)
 
 
- title = "V Velocity (located at V staggered node)"
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%vvel)
+      title = "Water Surface Elevation "
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%wsel)
 
- title = " Depth "
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%depth)
+      title = "Depth Correction"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%dp)
 
+      title = "Mass Source"
+      title(61:75) = block_title
+      CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%mass_source)
 
- title = "Water Surface Elevation "
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%wsel)
+      WRITE(output_iounit,*)"Unit Discharge in the 1 direction and total flow (last column) ",block_title
+      DO i=1,block(iblock)%xmax
+         total_flow = 0.0
+         WRITE(output_iounit,1011, advance='no')i
+         DO j=2,block(iblock)%ymax
+            depth_e = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
+            IF(i == 1) depth_e = block(iblock)%depth(i,j)
+            IF(i == block(iblock)%xmax) depth_e = block(iblock)%depth(i+1,j)
 
- title = "Depth Correction"
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%dp)
+            flux_e = block(iblock)%hu2(i,j)*block(iblock)%uvel(i,j)*depth_e
+            WRITE(output_iounit,1012, advance='no')flux_e
+            total_flow = total_flow + flux_e
+         END DO
+         WRITE(output_iounit,1012, advance='no')total_flow
+         WRITE(output_iounit,*)
+      END DO
+      WRITE(output_iounit,*)
+1012  FORMAT(50(f12.4,2x))
+1011  FORMAT(i5,2x)
 
- title = "Mass Source"
- title(61:75) = block_title
- CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%mass_source)
-
-
-
- WRITE(output_iounit,*)"Unit Discharge in the 1 direction and total flow (last column) ",block_title
-DO i=1,block(iblock)%xmax
-		total_flow = 0.0
-		WRITE(output_iounit,1011, advance='no')i
- 	DO j=2,block(iblock)%ymax
-		depth_e = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
-		IF(i == 1) depth_e = block(iblock)%depth(i,j)
-		IF(i == block(iblock)%xmax) depth_e = block(iblock)%depth(i+1,j)
-
-    flux_e = block(iblock)%hu2(i,j)*block(iblock)%uvel(i,j)*depth_e
-    WRITE(output_iounit,1012, advance='no')flux_e
-		total_flow = total_flow + flux_e
-  END DO
-		WRITE(output_iounit,1012, advance='no')total_flow
-    WRITE(output_iounit,*)
-END DO
- WRITE(output_iounit,*)
-1012 FORMAT(50(f12.4,2x))
-1011 FORMAT(i5,2x)
-
-	IF(do_transport)THEN
-		DO ispecies = 1, max_species
+      IF(do_transport)THEN
+         DO ispecies = 1, max_species
 			title = "Concentration "
 			title(61:75) = block_title
 			CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,species(ispecies)%scalar(iblock)%conc)
-		END DO
+         END DO
 
-		DO i=1,block(iblock)%xmax+1
-		DO j=1,block(iblock)%ymax+1
-		conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-		t_water = species(2)%scalar(iblock)%conc(i,j)
-		block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
-		END DO
-		END DO
-		CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%TDG_stuff)
-
-	END IF
-
-END DO 
+         DO i=1,block(iblock)%xmax+1
+            DO j=1,block(iblock)%ymax+1
+               conc_TDG = species(1)%scalar(iblock)%conc(i,j)
+               t_water = species(2)%scalar(iblock)%conc(i,j)
+               block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
+            END DO
+         END DO
+         CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%TDG_stuff)
+      END IF
+   END DO
+END IF
 
 DO iblock = 1, max_blocks
 
-	WRITE(output_iounit,*)
-	WRITE(output_iounit,*)"*** BLOCK -",iblock," Mass Source Information Summary ***"
-	WRITE(output_iounit,*)" Summation of the Absolute Value of the Mass Source array = ",SUM(ABS(block(iblock)%mass_source))
-	WRITE(output_iounit,*)" Maximum of the Mass Source array = ",MAXVAL(block(iblock)%mass_source)
-	WRITE(output_iounit,*)" Location of Maximum of the Mass Source array = ",MAXLOC(block(iblock)%mass_source)
-	WRITE(output_iounit,*)" Minimum of the Mass Source array = ",MINVAL(block(iblock)%mass_source)
-	WRITE(output_iounit,*)" Location of Minimum of the Mass Source array = ",MINLOC(block(iblock)%mass_source)
-	WRITE(output_iounit,*)
+   WRITE(output_iounit,*)
+   WRITE(output_iounit,*)"*** BLOCK -",iblock," Mass Source Information Summary ***"
+   WRITE(output_iounit,*)" Summation of the Absolute Value of the Mass Source array = ",SUM(ABS(block(iblock)%mass_source))
+   WRITE(output_iounit,*)" Maximum of the Mass Source array = ",MAXVAL(block(iblock)%mass_source)
+   WRITE(output_iounit,*)" Location of Maximum of the Mass Source array = ",MAXLOC(block(iblock)%mass_source)
+   WRITE(output_iounit,*)" Minimum of the Mass Source array = ",MINVAL(block(iblock)%mass_source)
+   WRITE(output_iounit,*)" Location of Minimum of the Mass Source array = ",MINLOC(block(iblock)%mass_source)
+   WRITE(output_iounit,*)
 
 END DO
+
 
 ! end of output to ascii file section
 !-------------------------------------------------------------------------------------------------------
@@ -2270,7 +2268,7 @@ CALL diag_plot_print_tecplot(current_time%date_string, current_time%time_string,
 CALL plot_print_tecplot(current_time%date_string, current_time%time_string, &
      &salinity, baro_press)
 
-ENDIF
+END IF
 ! output/plot if-block
 !------------------------------------------------------------------------------------
 

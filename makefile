@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed May 26 10:18:53 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Tue Aug  3 10:16:44 1999 by William A. Perkins <perk@mack.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -110,19 +110,19 @@ IO_ROUTINES_MODULE.$(MOD): io_routines_module.o
 julian.o: julian.f90
 JULIAN.$(MOD): julian.o
 
-mass2_main_024.o: mass2_main_024.f90 \
+mass2_main_025.o: mass2_main_025.f90 \
    GLOBALS.$(MOD) IO_ROUTINES_MODULE.$(MOD) BLOCK_BOUNDARY_CONDITIONS.$(MOD) \
    TABLE_BOUNDARY_CONDITIONS.$(MOD) DATE_TIME.$(MOD) SCALARS.$(MOD) \
    MET_DATA_MODULE.$(MOD) ENERGY_FLUX.$(MOD) GAS_FUNCTIONS.$(MOD) \
-   PLOT_OUTPUT.$(MOD) \
-	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_024.f90
+   PLOT_OUTPUT.$(MOD)
+	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_025.f90
 
 met_data_module.o: met_data_module.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
    DATE_TIME.$(MOD)
 MET_DATA_MODULE.$(MOD): met_data_module.o
 
 plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) GAS_FUNCTIONS.$(MOD)
-PLOT_OUTPUT.$(MOD): print_output.o
+PLOT_OUTPUT.$(MOD): plot_output.o
 
 scalars_module.o: scalars_module.f90
 SCALARS.$(MOD): scalars_module.o
