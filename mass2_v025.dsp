@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
-# ADD F90 /include:"Debug/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /names:uppercase /debug:full /optimize:0 /warn:nofileopt
+# ADD F90 /include:"Debug/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe

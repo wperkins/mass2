@@ -487,7 +487,7 @@ CONTAINS
          &date_to_decimal(date_string, time_string))
     IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
 
-    ncstat = nf_put_var1_real(gage_ncid, elapsed_varid, index, elapsed)
+    ncstat = nf_put_var1_real(gage_ncid, elapsed_varid, index, REAL(elapsed))
     IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
 
                                 ! loop thru the gage locations and

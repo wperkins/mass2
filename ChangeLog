@@ -1,3 +1,8 @@
+2000-04-06  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90: converted elapsed to REAL before putting
+	to gage file.
+
 2000-04-04  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* tecplot/env.csh: Changed TEC75HOME to	TEC80HOME 
