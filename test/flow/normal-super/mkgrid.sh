@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 25, 2003 by William A. Perkins
-# Last Change: Tue Nov 25 14:00:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jan  8 11:07:29 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -16,7 +16,7 @@
 # This is the supercritical part of the channel.  It is 1000 feet long.
 
 ../../../util/cart_grid/cartgrid <<EOF
-10
+5
 50
 101
 11
@@ -40,7 +40,7 @@ mv grid.out grid2.dat
 0
 
 1.425e-04
-67.6
+33.8
 EOF
 mv grid.out grid1.dat
 

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Dec 31 09:00:04 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jan  8 08:28:52 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -16,12 +16,16 @@ MODEL = ../../../mass2
 EPSFILES = \
 	plot-depth.eps \
 	plot-elev.eps \
-	plot-vel.eps 
+	plot-vel.eps  \
+	plot-depth-metric.eps \
+	plot-elev-metric.eps \
+	plot-vel-metric.eps 
 
 MODELFILES = \
 	bcspecs.dat \
 	mass2_v027.cfg \
-	flow.dat
+	flow.dat \
+	grid.dat
 
 all: $(EPSFILES)
 
