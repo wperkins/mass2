@@ -1,6 +1,6 @@
 #!MC 900
 $!VarSet |LFDSRN1| = 'MASS2 Loader'
-$!VarSet |LFDSFN1| = '"F/home/perk/sac/src/mass2-trunk/test/flow/spur-dike-1/plot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vucart" "Vvcart" "Vdepth" "Vuvel" "Vvvel" "Vvmag" "Vwsel" "Vshear" "Vcourant" "Vfroude" "Visdry" "S1" "E1"'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vucart" "Vvcart" "Vdepth" "Vuvel" "Vvvel" "Vvmag" "Vwsel" "Vshear" "Vcourant" "Vfroude" "Visdry" "S1" "E1"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE
@@ -135,8 +135,8 @@ $!TWODAXIS
   XDETAIL
     {
     AXISPOSITION = 6.667
-    RANGEMIN = -0.247515670557
-    RANGEMAX = 18.7187306398
+    RANGEMIN = -0.271870726497
+    RANGEMAX = 18.0429953601
     GRSPACING = 2
     TICKLABEL
       {
@@ -153,9 +153,9 @@ $!TWODAXIS
   YDETAIL
     {
     AXISPOSITION = 2.632
-    RANGEMIN = -0.277965827427
-    RANGEMAX = 3.31024242832
-    GRSPACING = 1
+    RANGEMIN = -0.289419645619
+    RANGEMAX = 3.17555453111
+    GRSPACING = 0.5
     TICKLABEL
       {
       TEXTSHAPE
@@ -242,8 +242,9 @@ $!GLOBALSTREAM
     DELTATIME = 1.2540412017
     }
   ADDARROWS = NO
+  CELLFRACTION = 0.1
   LINETHICKNESS = 0.02
-  MAXSTEPS = 3000
+  MAXSTEPS = 2200
 $!FIELDLAYERS 
   SHOWMESH = NO
 $!ATTACHGEOM 

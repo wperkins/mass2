@@ -1,10 +1,10 @@
 %!PS-Adobe-2.0 EPSF-2.0
 %%Title: spur-dike-plan.pstex
-%%Creator: fig2dev Version 3.2 Patchlevel 3c
-%%CreationDate: Thu Oct  9 11:58:25 2003
+%%Creator: fig2dev Version 3.2 Patchlevel 3d
+%%CreationDate: Mon Nov 24 12:54:48 2003
 %%For: perk@leechong ( William A. Perkins )
-%%BoundingBox: 0 0 352 150
-%%Magnification: 1.0000
+%%BoundingBox: 0 0 281 122
+%%Magnification: 0.8000
 %%EndComments
 /$F2psDict 200 dict def
 $F2psDict begin
@@ -45,8 +45,8 @@ $F2psDict /mtrx matrix put
 
 end
 save
-newpath 0 150 moveto 0 0 lineto 352 0 lineto 352 150 lineto closepath clip newpath
--63.0 185.0 translate
+newpath 0 122 moveto 0 0 lineto 281 0 lineto 281 122 lineto closepath clip newpath
+-51.0 149.5 translate
 1 -1 scale
 
 /cp {closepath} bind def
@@ -84,9 +84,8 @@ newpath 0 150 moveto 0 0 lineto 352 0 lineto 352 150 lineto closepath clip newpa
 /$F2psEnd {$F2psEnteredState restore end} def
 
 $F2psBegin
-%%Page: 1 1
 10 setmiterlimit
- 0.06000 0.06000 sc
+ 0.04800 0.04800 sc
 %
 % Fig objects follow
 %

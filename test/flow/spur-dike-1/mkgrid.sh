@@ -8,14 +8,23 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created October  8, 2003 by William A. Perkins
-# Last Change: Thu Oct  9 09:25:24 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Jan 19 10:11:29 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
+# dimensions in meters
+
+L=5.4
+W=0.9
+nx=217
+ny=37
+dx=`echo scale=6\;$L/\($nx - 1\) | bc`
+dy=`echo scale=6\;$W/\($ny - 1\) | bc`
+
 ../../../util/cart_grid/cartgrid <<EOF
-0.01   ! longitudinal spacing
-0.01   ! lateral spacing
-541    ! downstream nodes
-91     ! cross stream nodes
+$dx    ! longitudinal spacing
+$dy    ! lateral spacing
+$nx    ! downstream nodes
+$ny    ! cross stream nodes
 0.0    ! starting x coordinate 
 0.0    ! starting y coordinate
 

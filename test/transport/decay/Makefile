@@ -7,14 +7,15 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Thu Feb 14 06:49:08 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Jan 19 14:39:38 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
-	plot-conc.eps
+	plot-conc.eps \
+	plot-conc-metric.eps
 
 MODELFILES = \
 	bcspecs.dat \
@@ -33,6 +34,8 @@ plot.nc: $(MODELFILES) $(MODEL)
 	$(MODEL)
 
 plot-conc.eps: plot-conc.gp plot.nc
+
+plot-conc-metric.eps: plot-conc-metric.gp plot.nc
 
 %.eps: %.gp
 	gnuplot $< > $@

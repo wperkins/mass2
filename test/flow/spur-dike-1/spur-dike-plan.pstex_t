@@ -1,7 +1,7 @@
 \begin{picture}(0,0)%
 \includegraphics{spur-dike-plan.pstex}%
 \end{picture}%
-\setlength{\unitlength}{3947sp}%
+\setlength{\unitlength}{3158sp}%
 %
 \begingroup\makeatletter\ifx\SetFigFont\undefined%
 \gdef\SetFigFont#1#2#3#4#5{%
@@ -9,25 +9,25 @@
   \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
   \selectfont}%
 \fi\endgroup%
-\begin{picture}(5850,2487)(1063,-2236)
-\put(3226,-1261){\makebox(0,0)[rb]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Spur Dike}%
+\begin{picture}(5850,2527)(1063,-2276)
+\put(3226,-1261){\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Spur Dike}%
 }}}
-\put(2401,-2011){\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(5.91 ft)}%
+\put(2401,-2011){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(5.91 ft)}%
 }}}
-\put(1351,-661){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(2.95 ft)}%
+\put(1351,-661){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(2.95 ft)}%
 }}}}
-\put(1951,-586){\makebox(0,0)[lb]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\overline{U} = 0.253$ m/s (0.830 ft/s)}%
+\put(1951,-586){\makebox(0,0)[lb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$U_{o} = 0.253$ m/s (0.830 ft/s)}%
 }}}
-\put(3901,-2236){\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(17.72 ft)}%
+\put(3901,-2236){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(17.72 ft)}%
 }}}
-\put(3422,-1458){\makebox(0,0)[lb]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.152 m (0.50 ft)}%
+\put(3422,-1458){\makebox(0,0)[lb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.152 m (0.50 ft)}%
 }}}
-\put(2408,-1828){\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}1.8 m}%
+\put(2408,-1828){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}1.8 m}%
 }}}
-\put(3901,-2047){\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}5.4 m}%
+\put(3901,-2047){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}5.4 m}%
 }}}
-\put(1168,-654){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.9 m}%
+\put(1168,-654){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.9 m}%
 }}}}
-\put(6826, 14){\makebox(0,0)[rb]{\smash{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$d$ = 0.189 m (1.52 ft)}%
+\put(6826, 14){\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$d$ = 0.189 m (1.52 ft)}%
 }}}
 \end{picture}

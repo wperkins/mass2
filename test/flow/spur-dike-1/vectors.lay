@@ -1,6 +1,6 @@
 #!MC 900
 $!VarSet |LFDSRN1| = 'MASS2 Loader'
-$!VarSet |LFDSFN1| = '"F/home/perk/sac/src/mass2-trunk/test/flow/spur-dike-1/plot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vucart" "Vvcart" "Vdepth" "Vuvel" "Vvvel" "Vvmag" "Vwsel" "Vshear" "Vcourant" "Vfroude" "Visdry" "S1" "E1"'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vucart" "Vvcart" "Vdepth" "Vuvel" "Vvvel" "Vvmag" "Vwsel" "Vshear" "Vcourant" "Vfroude" "Visdry" "S1" "E1"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE
@@ -88,11 +88,6 @@ $!FIELD  [1]
     ARROWHEADSTYLE = FILLED
     COLOR = BLACK
     LINETHICKNESS = 0.02
-    IJKSKIP
-      {
-      I = 2
-      J = 2
-      }
     }
   SCATTER
     {
@@ -127,8 +122,8 @@ $!TWODAXIS
     {
     EXTENTS
       {
-      X1 = 2.6316
-      Y1 = 6.6667
+      X1 = 5.2833
+      Y1 = 5.8197
       X2 = 100
       Y2 = 100
       }
@@ -136,10 +131,10 @@ $!TWODAXIS
   DEPXTOYRATIO = 0.5
   XDETAIL
     {
-    AXISPOSITION = 6.667
-    RANGEMIN = -0.342248821497
-    RANGEMAX = 18.2595078623
-    GRSPACING = 2
+    AXISPOSITION = 5.82
+    RANGEMIN = 4.79855221089
+    RANGEMAX = 9.17641195062
+    GRSPACING = 1
     TICKLABEL
       {
       TEXTSHAPE
@@ -154,10 +149,10 @@ $!TWODAXIS
     }
   YDETAIL
     {
-    AXISPOSITION = 2.632
-    RANGEMIN = -0.165752816704
-    RANGEMAX = 3.11888169684
-    GRSPACING = 0.5
+    AXISPOSITION = 5.284
+    RANGEMIN = -0.0583293453843
+    RANGEMAX = 0.743551422688
+    GRSPACING = 0.1
     TICKLABEL
       {
       TEXTSHAPE
@@ -184,13 +179,13 @@ $!FIELDLAYERS
 $!ATTACHGEOM 
   XYZPOS
     {
-    X = 5.906
+    X = 5.905
     }
   LINETHICKNESS = 0.4
   RAWDATA
 1
 2
 0 0 
-0 0.475721985102 
+0 0.5 
 $!REMOVEVAR |LFDSFN1|
 $!SETSTYLEBASE CONFIG
