@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  5, 2000 by William A. Perkins
-# Last Change: Tue Aug  1 21:04:11 2000 by William A. Perkins <perk@localhost>
+# Last Change: Fri Jan 10 09:35:59 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -20,14 +20,7 @@ export TRAP_FPE
 
 model=${MODEL-../../../mass2_v027}
 
-cp mass2_v027.cfg.1 mass2_v027.cfg
 $model
-cp plot.nc plot.nc.1
-
-cp mass2_v027.cfg.2 mass2_v027.cfg
-$model
-cp plot.nc plot.nc.2
-
 gnuplot plot-depth.gp > plot-depth.eps
 gnuplot plot-elev.gp > plot-elev.eps
 gnuplot plot-vel.gp > plot-vel.eps
