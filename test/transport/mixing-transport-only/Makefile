@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Mon May 19 12:19:00 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Oct 14 08:48:37 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -61,7 +61,7 @@ mixing.eps: plot.nc mixing.lay
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat
+	rm -f gridplot1.dat
 	rm -f plot.nc 
 	rm -f batch.log
 	rm -f $(EPSFILES)

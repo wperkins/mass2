@@ -1,3 +1,13 @@
+2003-10-24  William A. Perkins  <william.perkins@pnl.gov>
+
+	* util/cart_grid/cartgrid.f90: needed more significant figures in
+	output 
+
+2003-10-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/mixing-transport-only/Makefile (clean): do not
+	remove gage_control.dat
+
 2003-09-18  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90 (fillghost_hydro): incorrect indexing of

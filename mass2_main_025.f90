@@ -1728,7 +1728,7 @@ SUBROUTINE hydro(status_flag)
                             &bigfactor*block(iblock)%uvel(i+1,j)
                        coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
                     CASE (FLOWBC_ELEV)
-                       coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
+                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
                        coeff%ae(i,j) = 0.0
                     END SELECT
                  CASE DEFAULT
