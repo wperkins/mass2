@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu Feb 21 08:32:07 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu May 15 12:29:21 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -15,9 +15,11 @@ SUBDIRS =										\
 	1d-advection-1blk							\
 	1d-analytic-1blk							\
 	1d-analytic-2blk							\
+	1d-analytic-3blk							\
 	decay										\
 	partition									\
 	mixing										\
+	mixing-2blk									\
 	pointsource									\
 	bedsource									\
 	multi-bedsource								\

@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:47:14 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu May 15 15:20:23 2003 by William A. Perkins <perk@leechong.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -284,6 +284,7 @@ CONTAINS
        CASE (GEN)
           IF (scalar_source(i)%generic_param%hasbedsrc) THEN
              CALL bedsrc_interp(time, delta_t, scalar_source(i)%generic_param%bedsrc)
+             IF (ASSOCIATED(bedflowsrc)) CALL bedsrc_interp(time, delta_t, bedflowsrc)
           END IF
        END SELECT
     END DO
@@ -329,10 +330,8 @@ CONTAINS
                                 ! dissolved with the bed pore space
 
        IF (source_doing_sed) THEN
-          pconc = bed_pore_conc(ispecies, iblock, i, j)
           scalar_source_term = scalar_source_term + &
-               &generic_bedpore_exch(scalar_source(ispecies)%generic_param, &
-               &    iblock, i, j, conc, pconc)
+               &bed_pore_flux(iblock, ispecies, i, j)
        END IF
 
                                 ! add in exchange with all

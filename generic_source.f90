@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 26, 2000 by William A. Perkins
-! Last Change: Wed Apr 23 10:44:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu May 15 15:29:45 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -107,6 +107,20 @@ CONTAINS
           generic_parse_options%bedsrc => &
                &bedsrc_read(options(i+1), options(i+2))
           i = i + 2
+       CASE ('BEDFLOW')
+          IF ((i + 3 .GT. nopt) .OR. (LEN_TRIM(options(i+3)) .LE. 0) .OR. &
+               &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
+             WRITE(msg, 100) 'BEDFLOW'
+             CALL error_message(msg, fatal=.TRUE.)
+          END IF
+          IF (ASSOCIATED(bedflowsrc)) THEN
+             WRITE(msg, *) 'BEDFLOW already specified, extra specification ignored'
+             CALL error_message(msg, fatal=.FALSE.)
+          ELSE
+             bedflowsrc => bedsrc_read(options(i+1), options(i+2))
+             READ(options(i+3), *) bedflowconv
+          END IF
+          i = i + 3
        CASE ('DIFFUS')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
              WRITE(msg, 100) 'DIFFUS'
@@ -126,38 +140,6 @@ CONTAINS
     END IF
 100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION generic_parse_options
-
-  ! ----------------------------------------------------------------
-  ! DOUBLE PRECISION FUNCTION generic_bedpore_exch
-  ! We need to make sure we are doing sediment before we call this function
-  ! ----------------------------------------------------------------
-  DOUBLE PRECISION FUNCTION generic_bedpore_exch(rec, iblk, i, j, conc, pore)
-
-    USE misc_vars, ONLY: delta_t
-
-    IMPLICIT NONE
-    TYPE(generic_source_rec) :: rec
-    INTEGER, INTENT(IN) :: iblk, i, j
-    DOUBLE PRECISION , INTENT(IN) :: conc, pore
-
-    DOUBLE PRECISION :: bdepth, porosity, diffc, maxexch
-    INCLUDE 'bed_functions.inc'
-  
-    generic_bedpore_exch = 0.0
-
-                                ! use some arbitrary minimum depth so
-                                ! things don't blow up
-
-    bdepth = bed_depth(iblk, i, j)
-    IF (bdepth .GT. 1e-3) THEN
-       porosity = bed_porosity(iblk, i, j)
-       diffc = rec%diffusivity
-       maxexch = pore*bdepth/porosity/delta_t
-       generic_bedpore_exch = diffc*(pore - conc)/(bdepth/2.0)
-       IF (generic_bedpore_exch .GT. maxexch) generic_bedpore_exch = maxexch
-    END IF
-  END FUNCTION generic_bedpore_exch
-
 
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION generic_source_term

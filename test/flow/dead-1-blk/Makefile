@@ -7,11 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 11:57:30 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May  7 15:06:58 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
@@ -30,7 +30,7 @@ MODELFILES = \
 
 all: $(EPSFILES)
 
-plot.eps: plot.nc
+plot.eps: plot.nc dead.lay
 	$(TECPLOT) -b -y plot.eps dead.lay -p ../../../tecplot/macros/export_eps.mcr
 
 plot.nc: $(MODELFILES) $(MODEL)

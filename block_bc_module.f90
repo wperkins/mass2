@@ -25,6 +25,7 @@ MODULE block_boundary_conditions
 
   USE utility
   USE table_boundary_conditions
+  USE globals
 
 IMPLICIT NONE
 
@@ -54,7 +55,7 @@ TYPE  scalar_bc_spec_struct
 	CHARACTER (LEN=10) :: bc_loc
 	CHARACTER (LEN=10) :: bc_type, bc_kind, bc_extent
 	INTEGER :: block, species, x_start, table_num != 0
-	INTEGER :: con_block, con_start_cell(max_cell_values), con_end_cell(max_cell_values)
+	INTEGER :: con_block, con_start_cell(max_cell_values), con_end_cell(max_cell_values), con_row
 	INTEGER :: start_cell(max_cell_values), end_cell(max_cell_values)
 	INTEGER :: num_cell_pairs != 0
 
@@ -179,6 +180,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
              &": block number out of range: ", block
         CALL error_message(msg, fatal=.FALSE.)
      END IF
+     block_bc(block)%bc_spec(num_bc)%block = block
 
                                 ! make sure we understand the BC
                                 ! location
@@ -220,7 +222,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
         SELECT CASE(bc_type)
         
         CASE("BLOCK")
-        
+
            SELECT CASE(bc_extent)
            CASE("ALL")
               READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block
@@ -377,32 +379,155 @@ END SUBROUTINE read_bcspecs
 
 SUBROUTINE set_block_connections(max_blocks, error_iounit, status_iounit)
 
-IMPLICIT NONE
+  IMPLICIT NONE
 
-INTEGER :: max_blocks, error_iounit, status_iounit
-INTEGER :: block,num_bc,con_block, i
+  INTEGER :: max_blocks, error_iounit, status_iounit
+  INTEGER :: block,num_bc,con_block, i, ierr
+  LOGICAL :: bcfound
+  CHARACTER (LEN=1024) :: msg
 
-DO block = 1, max_blocks
+  ierr = 0
 
-DO num_bc = 1, block_bc(block)%num_bc
+  DO block = 1, max_blocks
 
-IF(block_bc(block)%bc_spec(num_bc)%bc_type == "BLOCK")THEN
-	con_block = block_bc(block)%bc_spec(num_bc)%con_block
-	DO i=1,block_bc(con_block)%num_bc
-		IF(block_bc(con_block)%bc_spec(i)%con_block == block)THEN
-			block_bc(block)%bc_spec(num_bc)%con_start_cell = block_bc(con_block)%bc_spec(i)%start_cell
-			block_bc(block)%bc_spec(num_bc)%con_end_cell = block_bc(con_block)%bc_spec(i)%end_cell
-			EXIT
-		END IF
-	END DO
-END IF
+     DO num_bc = 1, block_bc(block)%num_bc
+        IF(block_bc(block)%bc_spec(num_bc)%bc_type == "BLOCK")THEN
+           con_block = block_bc(block)%bc_spec(num_bc)%con_block
+           bcfound = .FALSE.
+           DO i=1,block_bc(con_block)%num_bc
+              IF(block_bc(con_block)%bc_spec(i)%con_block .EQ. block) THEN
+                 bcfound = check_hydro_block_connection(&
+                      &block_bc(block)%bc_spec(num_bc),&
+                      &block_bc(con_block)%bc_spec(i))
+              END IF
+           END DO
+           IF (.NOT. bcfound) THEN
+              WRITE (msg, *) 'No match for BC connecting block ', block, &
+                   &' to ', con_block, ': ',&
+                   &TRIM(block_bc(block)%bc_spec(num_bc)%bc_type), ' ',&
+                   &TRIM(block_bc(block)%bc_spec(num_bc)%bc_loc), ' ',&
+                   &TRIM(block_bc(block)%bc_spec(num_bc)%bc_kind), ' ',&
+                   &TRIM(block_bc(block)%bc_spec(num_bc)%bc_extent), ' '
+              CALL error_message(msg, FATAL=.FALSE.)
+              ierr = ierr + 1
+           END IF
+        END IF
+     END DO
 
-END DO
+  END DO
 
-END DO
+  IF (ierr .GT. 0) THEN
+     CALL error_message('Block connection errors. Unable to continue.', fatal = .TRUE.)
+  END IF
 
 
 END SUBROUTINE set_block_connections
+
+! ----------------------------------------------------------------
+! LOGICAL FUNCTION check_hydro_block_connection
+! RETURNS .TRUE. if the block connection matches
+! ----------------------------------------------------------------
+LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
+
+  IMPLICIT NONE
+
+  TYPE (bc_spec_struct), INTENT(INOUT) :: bc
+  TYPE (bc_spec_struct), INTENT(IN) :: conbc
+  INTEGER :: i, coni, j, conj, n, cells, concells
+  DOUBLE PRECISION :: x1, y1, x2, y2, rdist
+
+  DOUBLE PRECISION :: distance
+  EXTERNAL distance
+
+  check_hydro_block_connection = .FALSE.
+
+                                ! these two bc's match only if they
+                                ! refer to each other
+
+  IF (bc%con_block .EQ. conbc%block .AND. conbc%con_block .EQ. bc%block)THEN
+
+                                ! in order to match, the two bc's
+                                ! should refer have the same number of
+                                ! cell groupings
+     IF (bc%num_cell_pairs .NE. conbc%num_cell_pairs) RETURN
+
+                                ! some indices we'll need alot
+     SELECT CASE (bc%bc_loc)
+     CASE("US")
+        i = 1
+        coni = block(conbc%block)%xmax
+     CASE ("DS")
+        i = block(bc%block)%xmax
+        coni = 1
+     END SELECT
+
+     DO n = 1, bc%num_cell_pairs
+
+                                ! check to see if the ends of the
+                                ! block connection are in about the
+                                ! same location. we do this by
+                                ! computing the distances between the
+                                ! ends.  If that distance is a
+                                ! significant portion of a cell width,
+                                ! the bc's don't match. We cannot do
+                                ! this because the grid has not been
+                                ! read yet
+
+        j = bc%start_cell(n)
+        x1 = block(bc%block)%x_grid(i, j)
+        y1 = block(bc%block)%y_grid(i, j)
+        conj = conbc%start_cell(n)
+        x2 = block(conbc%block)%x_grid(coni, conj)
+        y2 = block(conbc%block)%y_grid(coni, conj)
+        
+        rdist = distance(x1, y1, x2, y2)
+
+        x2 = block(bc%block)%x_grid(i, j+1)
+        y2 = block(bc%block)%y_grid(i, j+1)
+        rdist = rdist/distance(x1, y1, x2, y2)
+
+        IF (rdist .GT. 0.01) RETURN
+
+        j = bc%end_cell(n)
+        x1 = block(bc%block)%x_grid(i, j+1)
+        y1 = block(bc%block)%y_grid(i, j+1)
+        conj = conbc%end_cell(n)
+        x2 = block(conbc%block)%x_grid(coni, conj+1)
+        y2 = block(conbc%block)%y_grid(coni, conj+1)
+        
+        rdist = distance(x1, y1, x2, y2)
+
+        x2 = block(bc%block)%x_grid(i, j)
+        y2 = block(bc%block)%y_grid(i, j)
+        rdist = rdist/distance(x1, y1, x2, y2)
+
+        IF (rdist .GT. 0.01) RETURN
+
+                                ! check to see if there is an integral
+                                ! ratio of fine to coarse cells on
+                                ! either side of the block boundary
+
+        cells = bc%end_cell(n) - bc%start_cell(n) + 1
+        concells = conbc%end_cell(n) - conbc%start_cell(n) + 1
+
+        IF (cells .GE. concells) THEN
+           IF (MOD(cells, concells) .NE. 0) RETURN
+        ELSE
+           IF (MOD(concells, cells) .NE. 0) RETURN
+        END IF
+
+        bc%con_start_cell(n) = conbc%start_cell(n)
+        bc%con_end_cell(n) = conbc%end_cell(n)
+     END DO
+
+                                ! all tests passed
+     
+     check_hydro_block_connection = .TRUE.
+  END IF
+
+  
+END FUNCTION check_hydro_block_connection
+
 
 !###############################################################################
 
@@ -412,34 +537,45 @@ SUBROUTINE set_scalar_block_connections(max_blocks, max_species)
 
   INTEGER :: max_blocks, max_species, error_iounit, status_iounit
   INTEGER :: block,num_bc,con_block, i, start_cell, end_cell
-  INTEGER :: species_con_block, species_num_bc, species_block
+  INTEGER :: species_con_block, species_num_bc, species_block, ispecies
+
+  ! for each hydro block-to-block connection, build a scalar BC for
+  ! each species that copies the hydro connection
 
   DO block = 1, max_blocks
 
-     DO species_num_bc = 1, scalar_bc(block)%num_bc
-
-        IF(scalar_bc(block)%bc_spec(species_num_bc)%bc_type == "BLOCK")THEN
-           species_block = scalar_bc(block)%bc_spec(species_num_bc)%block
-           species_con_block = scalar_bc(block)%bc_spec(species_num_bc)%con_block
-
-
-           DO num_bc = 1, block_bc(block)%num_bc
-              IF(block_bc(block)%bc_spec(num_bc)%bc_type == "BLOCK")THEN
-                 IF(species_con_block == block_bc(block)%bc_spec(num_bc)%con_block)THEN
-                    scalar_bc(block)%bc_spec(species_num_bc)%con_start_cell = block_bc(block)%bc_spec(num_bc)%con_start_cell
-                    scalar_bc(block)%bc_spec(species_num_bc)%con_end_cell = block_bc(block)%bc_spec(num_bc)%con_end_cell
-                    scalar_bc(block)%bc_spec(species_num_bc)%start_cell = block_bc(block)%bc_spec(num_bc)%start_cell
-                    scalar_bc(block)%bc_spec(species_num_bc)%end_cell = block_bc(block)%bc_spec(num_bc)%end_cell
-                    scalar_bc(block)%bc_spec(species_num_bc)%num_cell_pairs = block_bc(block)%bc_spec(num_bc)%num_cell_pairs
-                    EXIT
-                 END IF
-              END IF
-           END DO
-           
-        END IF
+     DO num_bc = 1, block_bc(block)%num_bc
         
+        IF (block_bc(block)%bc_spec(num_bc)%bc_type .EQ. 'BLOCK') THEN
+
+           DO ispecies = 1, max_species
+           
+              scalar_bc(block)%num_bc = scalar_bc(block)%num_bc + 1
+              species_num_bc = scalar_bc(block)%num_bc
+
+              scalar_bc(block)%bc_spec(species_num_bc)%bc_type =	'BLOCK'
+              scalar_bc(block)%bc_spec(species_num_bc)%bc_kind =	'CONC'
+              scalar_bc(block)%bc_spec(species_num_bc)%bc_loc = &
+                   &block_bc(block)%bc_spec(num_bc)%bc_loc
+              scalar_bc(block)%bc_spec(species_num_bc)%bc_extent = &
+                   &block_bc(block)%bc_spec(num_bc)%bc_extent
+              scalar_bc(block)%bc_spec(species_num_bc)%block = block
+              scalar_bc(block)%bc_spec(species_num_bc)%species = ispecies
+              scalar_bc(block)%bc_spec(species_num_bc)%con_block = &
+                   &block_bc(block)%bc_spec(num_bc)%con_block
+              scalar_bc(block)%bc_spec(species_num_bc)%num_cell_pairs = &
+                   &block_bc(block)%bc_spec(num_bc)%num_cell_pairs
+              scalar_bc(block)%bc_spec(species_num_bc)%start_cell = &
+                   &block_bc(block)%bc_spec(num_bc)%start_cell
+              scalar_bc(block)%bc_spec(species_num_bc)%end_cell = &
+                   &block_bc(block)%bc_spec(num_bc)%end_cell
+              scalar_bc(block)%bc_spec(species_num_bc)%con_start_cell = &
+                   &block_bc(block)%bc_spec(num_bc)%con_start_cell
+              scalar_bc(block)%bc_spec(species_num_bc)%con_end_cell = &
+                   &block_bc(block)%bc_spec(num_bc)%con_end_cell
+             END DO
+        END IF
      END DO
-     
   END DO
 
   CALL status_message("done setting scalar block connections")
@@ -562,7 +698,13 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
            
         CASE("BLOCK")
            READ(iounit,*)block, bc_loc, bc_type, species, bc_kind, bc_extent, con_block
-           scalar_bc(block)%bc_spec(num_bc)%con_block = con_block
+
+           scalar_bc(block)%num_bc = scalar_bc(block)%num_bc - 1
+           num_bc = scalar_bc(block)%num_bc
+
+           WRITE (msg, *) TRIM(scalar_bcspecs_name), ": warning: line ", line, &
+                &': block connection ignored'
+           CALL error_message(msg, fatal=.FALSE.)
            
         CASE("TABLE")
            SELECT CASE(bc_extent)

@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Apr 23 12:20:10 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Mon May  5 12:06:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -63,3 +63,7 @@ BUGS
       concentration boundary, the source is cut in half.  This cropped
       up when ghost cells were added.  Until this is fixed, do not
       apply scalar bed sources to boundary cells.
+
+    * One cannot have multiple connections defined between blocks.  An
+      example of how this fails is in test/flow/wall-1-blk.  The
+      culprit is set_block_connections.

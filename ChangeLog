@@ -1,3 +1,102 @@
+2003-05-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* misc_vars_module.f90: filenames too short for SAC runs
+
+	* transport_only_module.f90: filenames too short for SAC runs
+
+	* test: change all of the configuration files because of
+	bed_iterations (there has got to be a better way)
+
+	* mass2_main_025.f90: read bed_iterations from the config file on
+	the bed line
+
+	* bed.f90: use bed source flow to advect pore contaminant into the
+	water column; iterate the computation of bed pore/water column
+	interaction 
+
+	* scalars_source.f90: interpolate bed source flow if it has been
+	specified 
+
+	* bed_source.f90: add global variables to hold bed source flow
+	data 
+
+	* generic_source.f90: add BEDFLOW keyword
+
+2003-05-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/sediment/Makefile: included beddecay
+
+	* test/sediment/beddecay: Updated test case with Makefile
+
+	* scalars_source.f90: use explicitly calculated bed pore exchange
+
+	* generic_source.f90: bed pore exchange is now handled completely
+	in the bed module
+
+	* bed.f90: diffusive flux between bed and water column is now
+	handled explicitly 
+
+	* bed_functions.inc (bed_pore_flux): added definition
+
+	* bed_functions.f90 (bed_pore_flux): added
+
+	* Makefile.am (accumulator.o): depends on bed.o
+
+2003-05-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* bed_source.f90: use time_series to store time series data
+
+2003-05-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/dead-2-blk-nest: added nested version of dead-2-blk
+
+	* test/flow/dead-2-blk: brought over from main branch
+
+	* mass2_main_025.f90: modified ghost cell construction;
+	fillghost_hydro routine to fill ghost cells with neighboring block
+	hydro information
+
+	* global_module_023.f90: several routines to help with grid
+	nesting: uflux, uarea, dinterp
+
+	* distance.f90 (interpolate_point): routine to interpolate a point
+	part way between two points
+
+2003-05-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/normal-2blk/mass2_v027.cfg: dump all time planes to
+	plot output
+
+	* test/flow/normal-2blk/plot-depth.gp: plot last time plane
+	instead of second
+
+	* test/flow/normal-2blk/plot-vel.gp: plot last time plane instead
+	of second
+
+	* test/flow/normal-2blk/plot-elev.gp: plot last time plane instead
+	of second
+
+2003-05-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* distance.f90: created
+
+	* profile_init.f90: moved distance function to its own file
+
+	* block_bc_module.f90: Only the block connections in bcspecs.dat
+	are considered; those in scalar_bcspecs.dat are ignored.  Scalar
+	block connections are generated from the hydro block connections.
+	Some additional checking of hydro block connections was added to
+	make sure the condition specified for one block match that of
+	another. 
+
+	* Makefile.am: block_bc_module.o now depends on
+	global_module_023.o; distance.f90 added to sources
+
+2003-05-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/wall-1-blk/bcspecs.dat: A block to block BC must be
+	specified on one line.
+
 2003-04-28  William A. Perkins  <william.perkins@pnl.gov>
 
 	* configure.in: add --with-extra-fflags to supply extra flags to

@@ -7,12 +7,13 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Mar 19 13:39:56 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu May 15 11:04:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
 SUBDIRS =										\
 	accumulator									\
+	beddecay									\
 	bedpartition								\
 	bedsource									\
 	deposition									\

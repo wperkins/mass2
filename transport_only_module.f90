@@ -38,7 +38,7 @@ TYPE hydro_interp_struct
   DOUBLE PRECISION, POINTER :: work(:,:)	! work array
 END TYPE hydro_interp_struct
 
- CHARACTER (LEN=80), ALLOCATABLE :: hydro_filename(:)
+ CHARACTER (LEN=1024), ALLOCATABLE :: hydro_filename(:)
 
  TYPE(hydro_interp_struct), ALLOCATABLE :: hydro_interp(:)
 
@@ -107,7 +107,7 @@ END SUBROUTINE allocate_hydro_interp_comp
 SUBROUTINE read_transport_only_dat()
   IMPLICIT NONE
   INTEGER :: iounit = 50, count, i, alloc_stat
-  CHARACTER :: junk_char1(10), junk_char2(8), junk_char3(80)
+  CHARACTER :: junk_char1(10), junk_char2(8), junk_char3(1024)
   CHARACTER (LEN=1024) :: buffer
 
   CALL open_existing('transport_only.dat', iounit)

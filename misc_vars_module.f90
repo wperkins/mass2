@@ -114,9 +114,9 @@ DOUBLE PRECISION, SAVE :: transfer_coeff, gasx_a, gasx_b, gasx_c, gasx_d
 
 !--- v013 defs ----------------------------------------------------
 
-CHARACTER (LEN=80), ALLOCATABLE, SAVE :: grid_file_name(:)
-CHARACTER (LEN=80), SAVE :: weather_filename
-CHARACTER (LEN=80), SAVE :: config_file_version, filename
+CHARACTER (LEN=1024), ALLOCATABLE, SAVE :: grid_file_name(:)
+CHARACTER (LEN=1024), SAVE :: weather_filename
+CHARACTER (LEN=1024), SAVE :: config_file_version, filename
 CHARACTER*80, SAVE :: sim_title
 CHARACTER*75, SAVE :: title
 

@@ -139,6 +139,23 @@ ALLOCATE(inlet_area(jmax), table_input(jmax))
 ptemp = 0.0
 qtemp = 0.0
 
+!---------------------------------------------------------------------------------------------------------
+! read in the grid files for each block
+DO iblock=1,max_blocks
+   CALL open_existing(grid_file_name(iblock), grid_iounit)
+   READ(grid_iounit,*)junk
+   CALL status_message('reading in x,y,z from ' // grid_file_name(iblock))
+	 
+   ! read in grid x,y, and bottom elevation
+   DO i=1,block(iblock)%xmax
+      DO j=1,block(iblock)%ymax
+         READ(grid_iounit,*)junk,junk,block(iblock)%x_grid(i,j),block(iblock)%y_grid(i,j),block(iblock)%zbot_grid(i,j)
+      END DO
+   END DO
+   CLOSE(grid_iounit)
+   WRITE(status_iounit,*)'completed in x,y,z for block n = ',iblock
+END DO
+
 !-------------------------------------------------------------------------------
 ! read, allocate, and set up block and table boundary conditions
 
@@ -211,7 +228,7 @@ READ(cfg_iounit,*)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
 
                                 ! initial bed information
 
-READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init
+READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init, bed_iterations
 
 READ(cfg_iounit,*) print_freq, do_accumulate ! printout frequency every print_freq time steps
 READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
@@ -267,23 +284,6 @@ IF(do_gage_print) THEN
    CALL mass_file_setup()
 END IF
 
-
-!---------------------------------------------------------------------------------------------------------
-! read in the grid files for each block
-DO iblock=1,max_blocks
-   CALL open_existing(grid_file_name(iblock), grid_iounit)
-   READ(grid_iounit,*)junk
-   CALL status_message('reading in x,y,z from ' // grid_file_name(iblock))
-	 
-   ! read in grid x,y, and bottom elevation
-   DO i=1,block(iblock)%xmax
-      DO j=1,block(iblock)%ymax
-         READ(grid_iounit,*)junk,junk,block(iblock)%x_grid(i,j),block(iblock)%y_grid(i,j),block(iblock)%zbot_grid(i,j)
-      END DO
-   END DO
-   CLOSE(grid_iounit)
-   WRITE(status_iounit,*)'completed in x,y,z for block n = ',iblock
-END DO
 
 DO iblock=1,max_blocks
 
@@ -767,7 +767,9 @@ SUBROUTINE buildghost(iblock)
   IMPLICIT NONE
   
   INTEGER, INTENT(IN) :: iblock
-  INTEGER :: i, j, k, con_i, con_j
+  INTEGER :: i, j, k, cells, con_cells, fcells
+  INTEGER :: jbeg, jend, coni, conj, conjbeg, conjend
+  DOUBLE PRECISION :: fract
 
                                 ! extrapolate ghost cells in the grid
                                 ! coordinates
@@ -805,23 +807,87 @@ SUBROUTINE buildghost(iblock)
          SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
          CASE("US")
             i = 0
-            con_i = block(con_block)%xmax - 1
+            coni = block(con_block)%xmax - 1
          CASE ("DS")
             i = block(iblock)%xmax + 1
-            con_i = 2
+            coni = 2
          END SELECT
+
          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-            con_j = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
-            DO j = block_bc(iblock)%bc_spec(num_bc)%start_cell(k), &
-                 &block_bc(iblock)%bc_spec(num_bc)%end_cell(k)
-               block(iblock)%x_grid(i,j) = block(con_block)%x_grid(con_i,con_j)
-               block(iblock)%y_grid(i,j) = block(con_block)%y_grid(con_i,con_j)
-               block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(con_i,con_j)
-               block(iblock)%x_grid(i,j+1) = block(con_block)%x_grid(con_i,con_j+1)
-               block(iblock)%y_grid(i,j+1) = block(con_block)%y_grid(con_i,con_j+1)
-               block(iblock)%zbot_grid(i,j+1) = block(con_block)%zbot_grid(con_i,con_j+1)
-               con_j = con_j + 1
-            END DO
+
+                                ! *user* *cell* index ranges on both
+                                ! sides of the block boundary
+            jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
+            jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)
+            conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
+            conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)
+
+                                ! cells in this block
+            cells = jend - jbeg + 1
+                                ! cells in connecting block
+            con_cells = conjend - conjbeg + 1
+
+            IF (cells .EQ. con_cells) THEN
+
+               ! if the number of cells is equal on both sides, we
+               ! just copy the ghost cell corners from the connecting
+               ! block
+
+               conj = conjbeg
+               DO j = jbeg, jend
+                  block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
+                  block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
+                  block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
+                  block(iblock)%x_grid(i,j+1) = block(con_block)%x_grid(coni,conj+1)
+                  block(iblock)%y_grid(i,j+1) = block(con_block)%y_grid(coni,conj+1)
+                  block(iblock)%zbot_grid(i,j+1) = block(con_block)%zbot_grid(coni,conj+1)
+                  conj = conj + 1
+               END DO
+
+            ELSE IF (cells .GT. con_cells) THEN
+
+               ! if this is the fine block, we need to interpolate
+               ! ghost cell corners from the coarse cell corners
+
+                                ! fine cells per coarse cell
+               fcells = cells/con_cells
+
+               DO j = jbeg, jend+1
+
+                  conj = conjbeg + (j - jbeg)/fcells
+
+                  fract = DBLE(MOD(j - jbeg, fcells))
+                  fract = fract/DBLE(fcells)
+
+                  CALL interpolate_point(fract,&
+                       &block(con_block)%x_grid(coni,conj),&
+                       &block(con_block)%y_grid(coni,conj),&
+                       &block(con_block)%zbot_grid(coni,conj),&
+                       &block(con_block)%x_grid(coni,conj+1),&
+                       &block(con_block)%y_grid(coni,conj+1),&
+                       &block(con_block)%zbot_grid(coni,conj+1),&
+                       &block(iblock)%x_grid(i,j), &
+                       &block(iblock)%y_grid(i,j), &
+                       &block(iblock)%zbot_grid(i,j))
+                  
+               END DO
+
+            ELSE IF (cells .LT. con_cells) THEN
+
+               ! if this is the coarse block, we copy selected fine
+               ! block corners for the ghost cells
+
+               fcells = con_cells/cells ! fine cells per coarse cell
+
+               DO j = jbeg, jend+1
+
+                  conj = conjbeg + (j - jbeg)*fcells
+                  block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
+                  block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
+                  block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
+                  
+               END DO
+            END IF
          END DO
       END SELECT
    END DO
@@ -836,7 +902,8 @@ SUBROUTINE fillghost(iblock)
   IMPLICIT NONE
 
   INTEGER, INTENT(IN) :: iblock
-  INTEGER :: i, j, k, con_i, con_j
+  INTEGER :: i, j, k, coni, conj
+  INTEGER :: cells, concells, fcells, jbeg, jend, conjbeg, conjend
 
                                 ! for extrapolated cells, use
                                 ! parameters from the neighboring real
@@ -863,38 +930,382 @@ SUBROUTINE fillghost(iblock)
          SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
          CASE("US")
             i = 1
-            con_i = block(con_block)%xmax
+            coni = block(con_block)%xmax
          CASE ("DS")
             i = block(iblock)%xmax + 1
-            con_i = 2
+            coni = 2
          END SELECT
+         
          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-            con_j = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-            DO j = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1, &
-                 &block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-               block(iblock)%hp1(i,j) = block(con_block)%hp1(con_i,con_j)
-               block(iblock)%hp2(i,j) = block(con_block)%hp2(con_i,con_j)
-               block(iblock)%hv1(i,j-1) = block(con_block)%hv1(con_i,con_j-1)
-               block(iblock)%hv2(i,j-1) = block(con_block)%hv2(con_i,con_j-1)
-               block(iblock)%hv1(i,j) = block(con_block)%hv1(con_i,con_j)
-               block(iblock)%hv2(i,j) = block(con_block)%hv2(con_i,con_j)
+            jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+            jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+            cells = jend - jbeg + 1
+         
+            conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+            conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+            concells = conjend - conjbeg + 1
 
-                                ! do not copy hu1,hu2 - they are calculated
+            IF (cells .EQ. concells) THEN
 
-               block(iblock)%gp12(i,j) = block(con_block)%gp12(con_i,con_j)
-               block(iblock)%gp12(i,j) = block(con_block)%gp12(con_i,con_j)
+               conj = conjbeg
+               DO j = jbeg, jend
+
+                  block(iblock)%hp1(i,j) = block(con_block)%hp1(coni,conj)
+                  block(iblock)%hp2(i,j) = block(con_block)%hp2(coni,conj)
+                  block(iblock)%hv1(i,j-1) = block(con_block)%hv1(coni,conj-1)
+                  block(iblock)%hv2(i,j-1) = block(con_block)%hv2(coni,conj-1)
+                  block(iblock)%hv1(i,j) = block(con_block)%hv1(coni,conj)
+                  block(iblock)%hv2(i,j) = block(con_block)%hv2(coni,conj)
+
+                  ! do not copy hu1,hu2 - they are calculated
+
+                  block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
+                  block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
                
-               block(iblock)%eddy(i,j) = block(con_block)%eddy(con_i,con_j)
-               block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(con_i,con_j)
-               block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(con_i,con_j)
-               block(iblock)%chezy(i,j) = block(con_block)%chezy(con_i,con_j)
-               con_j = con_j + 1
-            END DO
+                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                  conj = conj + 1
+               END DO
+
+            ELSE IF (cells .GT. concells) THEN
+
+               fcells = cells/concells
+
+               DO j = jbeg, jend
+                  conj = conjbeg + (j - jbeg)/fcells
+                  ! do not copy metrics, they are calculated
+                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+               END DO
+
+            ELSE IF (cells .LT. concells) THEN
+               fcells = concells/cells
+               DO j = jbeg, jend
+                  conj = conjbeg + (j - jbeg)*fcells
+                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+               END DO
+            END IF
          END DO
       END SELECT
    END DO
 
 END SUBROUTINE fillghost
+
+! ----------------------------------------------------------------
+! SUBROUTINE fillghost_hydro
+! ----------------------------------------------------------------
+SUBROUTINE fillghost_hydro(blk, cblk, bc)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(INOUT) :: blk
+  TYPE (block_struct), INTENT(IN) :: cblk
+  TYPE (bc_spec_struct), INTENT(IN) :: bc
+
+  INTEGER :: n, cells, concells, fcells
+  INTEGER :: i, j, ju, jbeg, jend
+  INTEGER :: conjbeg, conjend, coni, conj
+  DOUBLE PRECISION :: carea, cflux, farea
+  
+  SELECT CASE (bc%bc_loc)
+  CASE ("US")
+     i = 1
+     coni = cblk%xmax
+  CASE ("DS")
+     i = blk%xmax + 1
+     coni = 2
+  END SELECT
+
+  DO n = 1, bc%num_cell_pairs
+  
+     jbeg = bc%start_cell(n)+1
+     jend = bc%end_cell(n)+1
+     
+     conjbeg = bc%con_start_cell(n)+1
+     conjend = bc%con_end_cell(n)+1
+
+     cells = jend - jbeg + 1
+     concells = conjend - conjbeg + 1
+
+     IF (cells .EQ. concells) THEN
+
+        ! if the same number of cells are on both sides of the
+        ! boundary, just copy the state variables from the connected
+        ! cells
+
+        conj = conjbeg
+        DO j = jbeg, jend
+           blk%uvel(i,j) = cblk%uvel(coni, conj)
+           blk%vvel(i,j) = cblk%vvel(coni, conj)
+           blk%depth(i,j) = cblk%depth(coni, conj)
+           blk%isdry(i,j) = cblk%isdry(coni, conj)
+           conj = conj + 1
+        END DO
+           
+     ELSE IF (cells .GT. concells) THEN
+
+        ! this block has more cells than the neighboring block, we
+        ! need to interpolate some of the variables from the coarse
+        ! block
+
+        fcells = cells/concells
+
+                                ! we need to do the depth first so
+                                ! that flow area calculations are
+                                ! accurate
+
+        DO j = jbeg, jend
+           conj = conjbeg + (j - jbeg)/fcells
+
+                                ! all the fine ghost cells are dry if
+                                ! the neighboring coarse cell is dry
+
+           blk%isdry(i,j) = cblk%isdry(coni,conj)
+
+           blk%depth(i,j) = dinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
+
+                                ! linearly interpolate v within the
+                                ! neighboring coarse cell
+
+           blk%vvel(i,j) = (cblk%vvel(coni, conj+1) - cblk%vvel(coni, conj))*&
+                &(DBLE(j - jbeg) + 0.5)/DBLE(fcells) + cblk%vvel(coni, conj)
+
+        END DO
+
+                                ! now we can calculate the total local
+                                ! flow area and u
+
+        DO conj = conjbeg, conjend
+
+           cflux = uflux(cblk, coni, conj, conj)
+
+           ju = jbeg + (conj - conjbeg)*fcells
+
+           carea = uarea(blk, i, ju, ju + fcells - 1)
+
+           DO j = ju, ju + fcells - 1
+              blk%uvel(i,j) = cflux/carea
+           END DO
+
+        END DO
+
+     ELSE IF (cells .LT. concells) THEN
+
+        ! this block is the coarse block; we should be able to copy
+        ! most of what we need
+
+        fcells = concells/cells
+
+
+                                ! this ghost cell is dry if all
+                                ! neighboring cells are dry, so
+                                ! initialize all here
+        blk%isdry(i,jbeg:jend) = .FALSE.
+
+                                ! copy the first v value
+
+        conj = conjbeg
+        blk%vvel(i,jbeg-1) = cblk%vvel(coni, conjbeg-1)
+
+        DO j = jbeg, jend
+
+                                ! compute u using fluxes
+           IF (i .EQ. 1) THEN
+              carea = uarea(blk, i, j, j)
+           ELSE 
+              carea = uarea(cblk, coni, conj, conj + fcells - 1)
+           END IF
+           IF (carea .GT. 0.0) THEN
+              cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+              blk%uvel(i,j) = cflux/carea
+           ELSE 
+              blk%uvel(i,j) = 0.0
+           END IF
+
+                                ! copy next v value
+
+           blk%vvel(i,j) = cblk%vvel(coni, conj + fcells - 1)
+
+                                ! interpolate depth at the ghost cell
+                                ! centroid, using the closest
+                                ! neighboring cell as a hint
+
+           blk%depth(i,j) = dinterp(cblk, blk%x(i,j), blk%y(i,j), &
+                &coni, conj + fcells/2)
+
+                                ! check wetdry, all neighboring cells
+                                ! must be dry for this cell to be dry
+           blk%isdry(i,j) = (blk%isdry(i,j) .OR. cblk%isdry(coni, conj))
+
+           conj = conj + fcells
+        END DO
+     END IF
+
+     blk%uold(i,jbeg:jend) = blk%uvel(i,jbeg:jend)
+     blk%ustar(i,jbeg:jend) = blk%uvel(i,jbeg:jend)
+     blk%vold(i,jbeg-1:jend) = blk%vvel(i,jbeg-1:jend)
+     blk%vstar(i,jbeg-1:jend) = blk%vvel(i,jbeg-1:jend)
+     blk%depthold(i,jbeg:jend) = blk%depth(i,jbeg:jend)
+     blk%dstar(i,jbeg:jend) = blk%depth(i,jbeg:jend)
+     blk%dp(i,jbeg:jend) = 0.0
+  END DO
+
+
+END SUBROUTINE fillghost_hydro
+
+! ----------------------------------------------------------------
+! SUBROUTINE fillghost_scalar
+! ----------------------------------------------------------------
+SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(IN) :: blk, cblk
+  TYPE (scalar_struct), INTENT(INOUT) :: sclr
+  TYPE (scalar_struct), INTENT(IN) :: csclr
+  TYPE (scalar_bc_spec_struct), INTENT(IN) :: bc
+
+  INTEGER :: n, cells, concells, fcells
+  INTEGER :: i, j, jbeg, jend
+  INTEGER :: conjbeg, conjend, coni, conj
+  DOUBLE PRECISION :: carea, cflux, farea
+  
+  SELECT CASE (bc%bc_loc)
+  CASE ("US")
+     i = 1
+     coni = cblk%xmax
+  CASE ("DS")
+     i = blk%xmax + 1
+     coni = 2
+  END SELECT
+
+  DO n = 1, bc%num_cell_pairs
+  
+     jbeg = bc%start_cell(n)+1
+     jend = bc%end_cell(n)+1
+     
+     conjbeg = bc%con_start_cell(n)+1
+     conjend = bc%con_end_cell(n)+1
+
+     cells = jend - jbeg + 1
+     concells = conjend - conjbeg + 1
+
+     IF (cells .EQ. concells) THEN
+
+        ! if the same number of cells are on both sides of the
+        ! boundary, just copy the state variables from the connected
+        ! cells
+
+        conj = conjbeg
+        DO j = jbeg, jend
+           sclr%conc(i, j) = csclr%conc(coni, conj)
+           conj = conj + 1
+        END DO
+           
+     ELSE IF (cells .GT. concells) THEN
+
+        ! this block has more cells than the neighboring block, we
+        ! need to interpolate the variables from the coarse block
+
+        fcells = cells/concells
+
+        DO j = jbeg, jend
+           conj = conjbeg + (j - jbeg)/fcells
+
+           sclr%conc(i,j) = scalar_interp(cblk, csclr, &
+                &blk%x(i,j), blk%y(i,j), coni, conj)
+
+        END DO
+
+     ELSE IF (cells .LT. concells) THEN
+
+        ! this block is the coarse block
+
+        fcells = concells/cells
+
+
+        conj = conjbeg
+
+        DO j = jbeg, jend
+
+           sclr%conc(i,j) = scalar_interp(cblk, csclr, &
+                &blk%x(i,j), blk%y(i,j), coni, conj + fcells/2)
+
+           conj = conj + fcells
+        END DO
+     END IF
+     sclr%concold(i,jbeg:jend) = sclr%conc(i,jbeg:jend)
+  END DO
+
+
+END SUBROUTINE fillghost_scalar
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION scalar_interp
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION scalar_interp(blk, sclr, x, y, ihint, jhint)
+
+  IMPLICIT NONE
+
+  DOUBLE PRECISION, EXTERNAL :: distance
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  TYPE (scalar_struct), INTENT(IN) :: sclr
+  DOUBLE PRECISION, INTENT(IN) :: x, y
+  INTEGER, INTENT(IN) :: ihint, jhint
+
+  INTEGER :: i, j, ibeg, iend, jbeg, jend
+  DOUBLE PRECISION :: d, wtotal
+
+  jbeg = jhint - 1
+  jend = jhint + 1
+  IF (jbeg .LT. 2) jbeg = 2
+  IF (jend .GT. blk%ymax) jend = blk%ymax
+  
+  ibeg = ihint - 1
+  iend = ihint + 1
+  IF (ibeg .LT. 2) ibeg = 2
+  IF (iend .GT. blk%xmax) iend = blk%xmax
+
+  wtotal = 0.0
+  scalar_interp = 0.0
+
+  j = jhint
+
+  DO i = ibeg, iend
+     d = distance(x, y, blk%x(i,j), blk%y(i,j))
+     IF (d .LT. 1.0d-10) THEN
+        scalar_interp = sclr%conc(i,j)
+        RETURN
+     END IF
+     wtotal = wtotal + 1.0/d
+     scalar_interp = scalar_interp + sclr%conc(i,j)/d
+  END DO
+
+  i = ihint
+  DO j = jbeg, jend
+     IF (j .NE. jhint) THEN
+        d = distance(x, y, blk%x(i,j), blk%y(i,j))
+        IF (d .LT. 1.0d-10) THEN
+           scalar_interp = sclr%conc(i,j)
+           RETURN
+        END IF
+        wtotal = wtotal + 1.0/d
+        scalar_interp = scalar_interp + sclr%conc(i,j)/d
+     END IF
+  END DO
+
+  scalar_interp = scalar_interp / wtotal
+
+END FUNCTION scalar_interp
+
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE metrics
@@ -1656,6 +2067,7 @@ SUBROUTINE hydro(status_flag)
 
                     SELECT CASE (block(iblock)%cell(i,j)%bctype)
                     CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                       coeff%cp(i,j) = coeff%cp(i,j) - coeff%ce(i,j)
                        coeff%ce(i,j) = 0.0
                     END SELECT
                  CASE DEFAULT
@@ -1937,31 +2349,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      SELECT CASE(bc%bc_type)
      CASE("BLOCK")
         IF (dsonly) RETURN
-        SELECT CASE(bc%bc_kind)
-        CASE("VELO")
-           con_block = bc%con_block
-           DO j=1,bc%num_cell_pairs
-              con_j = bc%con_start_cell(j) + 1
-              con_i = block(con_block)%xmax
-              j_beg = bc%start_cell(j)+1
-              j_end = bc%end_cell(j)+1
-              DO jj = j_beg, j_end
-                 blk%uvel(i,jj) = block(con_block)%uvel(con_i, con_j)
-                 blk%uold(i,jj) = block(con_block)%uold(con_i, con_j)
-                 blk%ustar(i,jj) = block(con_block)%ustar(con_i, con_j)
-                 blk%vvel(i,jj) = block(con_block)%vvel(con_i, con_j)
-                 blk%vold(i,jj) = block(con_block)%vold(con_i, con_j)
-                 blk%vstar(i,jj) = block(con_block)%vstar(con_i, con_j)
-                 blk%depth(i,jj) = block(con_block)%depth(con_i, con_j)
-                 blk%depthold(i,jj) = block(con_block)%depthold(con_i, con_j)
-                 blk%dstar(i,jj) = block(con_block)%dstar(con_i, con_j)
-                 blk%isdry(i,jj) = block(con_block)%isdry(con_i, con_j)
-                 blk%dp(i,jj) = 0.0 ! depth in other block needs no correction
-                 con_j = con_j + 1
-              END DO
-              ! blk%cell(i+1,j_beg:j_end)%type = CELL_NORMAL_TYPE
-           END DO
-        END SELECT
+        con_block = bc%con_block
+        CALL fillghost_hydro(block(iblock), block(con_block), bc)
         
      CASE("TABLE")
         CALL table_interp(current_time%time, bc%table_num, table_input, &
@@ -2032,32 +2421,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      SELECT CASE(bc%bc_type)
      CASE("BLOCK")
         IF (dsonly) RETURN
-        SELECT CASE(bc%bc_kind)
-        CASE("FLUX")
-        CASE("ELEV")
-           con_block = bc%con_block
-           DO j=1,bc%num_cell_pairs
-              con_i = 2
-              con_j = bc%con_start_cell(j) + 1
-              j_beg = bc%start_cell(j)+1
-              j_end = bc%end_cell(j)+1
-              DO jj = j_beg, j_end
-                 blk%uvel(i,jj) = block(con_block)%uvel(con_i, con_j)
-                 blk%uold(i,jj) = block(con_block)%uold(con_i, con_j)
-                 blk%ustar(i,jj) = block(con_block)%ustar(con_i, con_j)
-                 blk%vvel(i,jj) = block(con_block)%vvel(con_i, con_j)
-                 blk%vold(i,jj) = block(con_block)%vold(con_i, con_j)
-                 blk%vstar(i,jj) = block(con_block)%vstar(con_i, con_j)
-                 blk%depth(i, jj) = block(con_block)%depth(con_i, con_j)
-                 blk%dstar(i, jj) = block(con_block)%dstar(con_i, con_j)
-                 blk%depthold(i, jj) = block(con_block)%depthold(con_i, con_j)
-                 blk%isdry(i, jj) =  block(con_block)%isdry(con_i, con_j)
-                 blk%dp(i,jj) = 0.0 ! depth in other block needs no correction
-                 con_j = con_j + 1
-              END DO
-              ! Xblk%cell(i-1,j_beg:j_end)%type = CELL_NORMAL_TYPE
-           END DO
-        END SELECT
+        con_block = bc%con_block
+        CALL fillghost_hydro(block(iblock), block(con_block), bc)
         
      CASE("TABLE")
         CALL table_interp(current_time%time, bc%table_num, table_input, &
@@ -2773,24 +3138,9 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
         END DO
                        
      CASE("BLOCK")
-        SELECT CASE(spec%bc_kind)
-        CASE("CONC")
-           con_block = spec%con_block
-           con_i = block(con_block)%xmax
-           DO j=1,spec%num_cell_pairs
-              j_beg = spec%start_cell(j)+1
-              j_end = spec%end_cell(j)+1
-              con_j = spec%con_start_cell(j)+1
-              sclr%conc(i,j_beg:j_end) = &
-                   &species(spec%species)%scalar(con_block)%&
-                   &conc(con_i, spec%con_start_cell(j)+1:spec%con_end_cell(j)+1)
-              sclr%concold(i,j_beg:j_end) = &
-                   &species(spec%species)%scalar(con_block)%&
-                   &concold(con_i, spec%con_start_cell(j)+1:spec%con_end_cell(j)+1)
-              sclr%cell(i,j_beg:j_end)%type = SCALAR_NORMAL_TYPE
-           END DO
-              
-        END SELECT
+        con_block = spec%con_block
+        CALL fillghost_scalar(blk, sclr, block(con_block), &
+             &species(spec%species)%scalar(con_block), spec)
            
      CASE("TABLE")
         CALL scalar_table_interp(current_time%time, spec%table_num,&
@@ -2851,24 +3201,9 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
         END DO
 
      CASE("BLOCK")
-        SELECT CASE(spec%bc_kind)
-        CASE("CONC")
-           con_block = spec%con_block
-           con_i = 2
-           DO j=1,spec%num_cell_pairs
-              j_beg = spec%start_cell(j)+1
-              j_end = spec%end_cell(j)+1
-              con_j = spec%con_start_cell(j)+1
-              sclr%conc(i,j_beg:j_end) = &
-                   &species(spec%species)%scalar(con_block)%&
-                   &conc(con_i, spec%con_start_cell(j)+1:spec%con_end_cell(j)+1)
-              sclr%concold(i,j_beg:j_end) = &
-                   &species(spec%species)%scalar(con_block)%&
-                   &concold(con_i, spec%con_start_cell(j)+1:spec%con_end_cell(j)+1)
-              sclr%cell(i,j_beg:j_end)%type = SCALAR_NORMAL_TYPE
-           END DO
-              
-        END SELECT
+        con_block = spec%con_block
+        CALL fillghost_scalar(blk, sclr, block(con_block), &
+             &species(spec%species)%scalar(con_block), spec)
            
      END SELECT
   END SELECT

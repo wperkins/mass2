@@ -13,7 +13,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created September  6, 2000 by William A. Perkins
-! Last Change: Mon Jul 23 09:45:20 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Thu May 15 08:24:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -176,3 +176,18 @@ DOUBLE PRECISION FUNCTION bed_sediment_mass(ifract, iblk, i, j)
 
   bed_sediment_mass = bed(iblk)%sediment(ifract, i, j)
 END FUNCTION bed_sediment_mass
+
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION bed_pore_flux
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION bed_pore_flux(iblk, ispecies, i, j)
+
+  USE bed_module
+
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: iblk, ispecies, i, j
+
+  bed_pore_flux = bed(iblk)%poreflux(ispecies, i, j)
+END FUNCTION bed_pore_flux

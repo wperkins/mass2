@@ -417,4 +417,121 @@ SUBROUTINE velocity_shift()
   END DO
 END SUBROUTINE velocity_shift
 
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION uarea
+! computes the flow area for an arbitrary u location, i is a u
+! location, jbeg and jend are cell locations
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION uarea(blk, i, jbeg, jend)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  INTEGER, INTENT(IN) :: i, jbeg, jend
+  
+  INTEGER :: j
+  DOUBLE PRECISION :: d, a
+
+  uarea = 0.0
+
+  DO j = jbeg, jend
+     IF (i .GT. blk%xmax) THEN
+        d = blk%depth(i-1, j)
+     ELSE IF (i .LT. 2) THEN
+        d = blk%depth(i, j)
+     ELSE
+        d = 0.5*(blk%depth(i+1, j) + blk%depth(i, j))
+     END IF
+     a = d*blk%hu2(i,j)
+     uarea = uarea + a
+  END DO
+
+END FUNCTION uarea
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION uflux
+! computes the flux through an arbitrary u location, i is a u
+! location, jbeg and jend are cell locations
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION uflux(blk, i, jbeg, jend)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  INTEGER, INTENT(IN) :: i, jbeg, jend
+  
+  INTEGER :: j, ioff
+  DOUBLE PRECISION :: a, q
+
+  uflux = 0.0
+
+  DO j = jbeg, jend
+     a = uarea(blk, i, j, j)
+     q = a*blk%uvel(i,j)
+     uflux = uflux + q
+  END DO
+END FUNCTION uflux
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION dinterp
+! Interpolate depth at the location x, y which should be close to the
+! centroid of cell i, j.  The method used is inverse distance
+! weighting.  The cell and its 4 immediate neighbors (if they exist)
+! are used.
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION dinterp(blk, x, y, ihint, jhint)
+
+  IMPLICIT NONE
+
+  DOUBLE PRECISION, EXTERNAL :: distance
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  DOUBLE PRECISION, INTENT(IN) :: x, y
+  INTEGER, INTENT(IN) :: ihint, jhint
+
+  INTEGER :: i, j, ibeg, iend, jbeg, jend
+  DOUBLE PRECISION :: d, wtotal
+
+  jbeg = jhint - 1
+  jend = jhint + 1
+  IF (jbeg .LT. 2) jbeg = 2
+  IF (jend .GT. blk%ymax) jend = blk%ymax
+  
+  ibeg = ihint - 1
+  iend = ihint + 1
+  IF (ibeg .LT. 2) ibeg = 2
+  IF (iend .GT. blk%xmax) iend = blk%xmax
+
+  wtotal = 0.0
+  dinterp = 0.0
+
+  j = jhint
+
+  DO i = ibeg, iend
+     d = distance(x, y, blk%x(i,j), blk%y(i,j))
+     IF (d .LT. 1.0d-10) THEN
+        dinterp = blk%depth(i,j)
+        RETURN
+     END IF
+     wtotal = wtotal + 1.0/d
+     dinterp = dinterp + blk%depth(i,j)/d
+  END DO
+
+  i = ihint
+  DO j = jbeg, jend
+     IF (j .NE. jhint) THEN
+        d = distance(x, y, blk%x(i,j), blk%y(i,j))
+        IF (d .LT. 1.0d-10) THEN
+           dinterp = blk%depth(i,j)
+           RETURN
+        END IF
+        wtotal = wtotal + 1.0/d
+        dinterp = dinterp + blk%depth(i,j)/d
+     END IF
+  END DO
+
+  dinterp = dinterp / wtotal
+END FUNCTION dinterp
+
+
 END MODULE globals

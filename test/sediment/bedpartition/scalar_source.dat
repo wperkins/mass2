@@ -7,7 +7,7 @@
 2 GEN "stuff" "Transported Stuff" "kg/m^3" 
     CONVERT 0.028317 
     HALFLIFE 0.0 /
-3 PART "particulate "Particulate Stuff" "kg/m^3" 
+3 PART "particulate" "Particulate Stuff" "kg/m^3" 
     CONVERT 0.028317 
     KD 1.0
     BEDKD 1.0
