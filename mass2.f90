@@ -83,12 +83,12 @@ WRITE(*,*)'completion with status=',status_flag
 CLOSE(cfg_iounit)
 CLOSE(output_iounit)
 CALL plot_file_close()
-CLOSE(utility_error_iounit)
-CLOSE(utility_status_iounit)
 CALL gage_file_close()
 CALL diag_plot_file_close()
 CALL mass_file_close()
 CALL time_series_module_done()
+CLOSE(utility_error_iounit)
+CLOSE(utility_status_iounit)
 
 
 

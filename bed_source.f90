@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August  2, 2000 by William A. Perkins
-! Last Change: Fri Apr  4 21:35:46 2003 by William A. Perkins <perk@localhost.localdomain>
+! Last Change: Tue Apr  8 14:34:10 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$
@@ -35,12 +35,17 @@ MODULE bed_source
                                 ! This holds a *cumulative mass* time
                                 ! series
 
+  TYPE bedsrc_ts_entry_rec
+     TYPE(datetime_struct) :: datetime
+     DOUBLE PRECISION :: value(max_cell_values)
+  END TYPE bedsrc_ts_entry_rec
+
   TYPE bedsrc_ts_rec
      INTEGER :: id
      CHARACTER (LEN=1024) :: filename
      INTEGER :: start
      INTEGER :: n
-     TYPE (table_entry_struct), POINTER :: data(:)
+     TYPE (bedsrc_ts_entry_rec), POINTER :: data(:)
   END TYPE bedsrc_ts_rec
 
                                 ! This is allocated for each block in

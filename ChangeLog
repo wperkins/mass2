@@ -1,5 +1,12 @@
 2003-04-08  William A. Perkins  <william.perkins@pnl.gov>
 
+	* mass2.f90: close the error and status output files AFTER
+	everything else
+
+	* bed_source.f90: do not use table_entry_struct any more
+
+	* table_bc_module.f90: use time_series 
+
 	* test/benchmark/mcn-test/results.txt (file): timed some tests
 	with CGNS on/off
 

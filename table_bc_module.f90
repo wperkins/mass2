@@ -24,8 +24,8 @@
 !
 MODULE table_boundary_conditions
 
-USE date_time
 USE utility
+USE time_series
 
 IMPLICIT NONE
 
@@ -33,23 +33,13 @@ INTEGER, PARAMETER  :: max_cell_values = 10
 INTEGER :: max_tables = 0, max_scalar_tables = 0
 
 
-TYPE table_entry_struct
-	
-	TYPE(datetime_struct) :: datetime
-	DOUBLE PRECISION :: value(max_cell_values)
-
-END TYPE table_entry_struct
+                                ! this is a (hopefully) temporary
+                                ! adaptation.  The time_series should
+                                ! be more directly integrated
 
 TYPE table_bc_struct
-
 	CHARACTER (LEN=80) :: file_name
-	CHARACTER (LEN=10) :: table_type
-	!INTEGER :: max_entries = 0				! fails for non-F95 compilers
-	INTEGER :: max_entries
-
-	TYPE(table_entry_struct) :: table_entry(40000)
-
-
+    TYPE(time_series_rec), POINTER :: ts
 END TYPE table_bc_struct
 
 
@@ -73,7 +63,6 @@ SUBROUTINE allocate_table_bc(max_tables)
 	ELSE
        WRITE(buffer,*) 'allocation successful for array of table bc - maxtables =', max_tables
        CALL status_message(buffer)
-       table_bc%max_entries = 0
 	ENDIF
 
 END SUBROUTINE allocate_table_bc
@@ -89,7 +78,6 @@ SUBROUTINE allocate_scalar_table_bc(max_tables)
 	ELSE
        WRITE(buffer,*)'allocation successful for array of scalar table bc - maxtables =', max_tables
        CALL status_message(buffer)
-       scalar_table_bc%max_entries = 0
 	ENDIF
 
 END SUBROUTINE allocate_scalar_table_bc
@@ -101,18 +89,7 @@ SUBROUTINE read_bc_tables
     CHARACTER (LEN=100) :: junk
 
 	DO i = 1, max_tables
-		OPEN(iounit, file = table_bc(i)%file_name)
-        READ(iounit, *) junk
-		j = 0
-		DO WHILE(.TRUE.)
-                   j = j + 1
-                   READ(iounit,*,END=100)table_bc(i)%table_entry(j)%datetime%date_string,&
-                        & table_bc(i)%table_entry(j)%datetime%time_string, table_bc(i)%table_entry(j)%value(:)
-                   table_bc(i)%max_entries = table_bc(i)%max_entries + 1
-                   table_bc(i)%table_entry(j)%datetime%time = date_to_decimal(table_bc(i)%table_entry(j)%datetime%date_string,&
-                        & table_bc(i)%table_entry(j)%datetime%time_string)
-		END DO
-100		CLOSE(iounit)
+       table_bc(i)%ts => time_series_read(table_bc(i)%file_name, fields = max_cell_values)
 	END DO
 
 END SUBROUTINE read_bc_tables
@@ -124,20 +101,7 @@ SUBROUTINE read_scalar_bc_tables
     CHARACTER (LEN=100) :: junk
 
 	DO i = 1, max_scalar_tables
-		OPEN(iounit, file = scalar_table_bc(i)%file_name)
-        READ(iounit, *) junk
-		j = 0
-		DO WHILE(.TRUE.)
-                   j = j + 1
-                   READ(iounit,*,END=100)scalar_table_bc(i)%table_entry(j)%datetime%date_string,&
-                        & scalar_table_bc(i)%table_entry(j)%datetime%time_string,scalar_table_bc(i)%table_entry(j)%value(:)
-                   scalar_table_bc(i)%max_entries = scalar_table_bc(i)%max_entries + 1
-                   scalar_table_bc(i)%table_entry(j)%datetime%time =&
-                        & date_to_decimal(scalar_table_bc(i)%table_entry(j)%datetime%date_string,&
-                        & scalar_table_bc(i)%table_entry(j)%datetime%time_string)
-		
-		END DO
-100		CLOSE(iounit)
+       scalar_table_bc(i)%ts =>  time_series_read(scalar_table_bc(i)%file_name, fields = max_cell_values)
 	END DO
 
 END SUBROUTINE read_scalar_bc_tables
@@ -148,24 +112,12 @@ SUBROUTINE table_interp(time, table_num, table_input, num_values)
 ! returns a VECTOR of the linearly interpolated values in a bc table
 
 	IMPLICIT NONE
+	DOUBLE PRECISION, INTENT(IN) :: time
+	INTEGER, INTENT(IN) :: table_num, num_values
 	DOUBLE PRECISION :: interp(max_cell_values), table_input(:)
-	DOUBLE PRECISION :: time
-	INTEGER :: table_num, i, j, num_values
-	DOUBLE PRECISION :: factor
 
-	DO j=1,table_bc(table_num)%max_entries-1
-
-           IF((time >= table_bc(table_num)%table_entry(j)%datetime%time)&
-                & .AND. (time <= table_bc(table_num)%table_entry(j+1)%datetime%time)) EXIT
-
-	END DO
-        factor = (time - table_bc(table_num)%table_entry(j)%datetime%time)/ &
-             (table_bc(table_num)%table_entry(j+1)%datetime%time - table_bc(table_num)%table_entry(j)%datetime%time)
-
-	interp = table_bc(table_num)%table_entry(j)%value + &
-             factor*(table_bc(table_num)%table_entry(j+1)%value - table_bc(table_num)%table_entry(j)%value	)					
-	
-	table_input(1:num_values) = interp(1:num_values)
+    CALL time_series_interp(table_bc(table_num)%ts, time)
+	table_input(1:num_values) = table_bc(table_num)%ts%current(1:num_values)
 END SUBROUTINE table_interp
 
 !############################################################################################################
@@ -175,24 +127,13 @@ SUBROUTINE scalar_table_interp(time, table_num, table_input, num_values)
 ! returns a VECTOR of the linearly interpolated values in a bc table
 
 	IMPLICIT NONE
-	DOUBLE PRECISION :: interp(max_cell_values), table_input(:)
-	DOUBLE PRECISION :: time
-	INTEGER :: table_num, i, j, num_values
-	DOUBLE PRECISION :: factor
+	DOUBLE PRECISION, INTENT(IN) :: time
+	DOUBLE PRECISION, INTENT(INOUT) :: table_input(:)
+	INTEGER, INTENT(IN) :: table_num, num_values
 
-	DO j=1,scalar_table_bc(table_num)%max_entries-1
+    CALL time_series_interp(scalar_table_bc(table_num)%ts, time)
+	table_input(1:num_values) = scalar_table_bc(table_num)%ts%current(1:num_values)
 
-           IF((time >= scalar_table_bc(table_num)%table_entry(j)%datetime%time)&
-                & .AND. (time <= scalar_table_bc(table_num)%table_entry(j+1)%datetime%time)) EXIT
-
-	END DO
-        factor = (time - scalar_table_bc(table_num)%table_entry(j)%datetime%time)/ &
-             (scalar_table_bc(table_num)%table_entry(j+1)%datetime%time - scalar_table_bc(table_num)%table_entry(j)%datetime%time)
-
-	interp = scalar_table_bc(table_num)%table_entry(j)%value + &
-             factor*(scalar_table_bc(table_num)%table_entry(j+1)%value - scalar_table_bc(table_num)%table_entry(j)%value	)					
-	
-	table_input(1:num_values) = interp(1:num_values)
 END SUBROUTINE scalar_table_interp
 
 END MODULE table_boundary_conditions

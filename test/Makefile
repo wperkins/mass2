@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Feb  6 07:10:35 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Apr 14 08:38:11 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -16,9 +16,9 @@ SUBDIRS = \
 	flow \
 	transport \
     src-sink \
- 	sediment 
+	sediment 
 
-MODEL = ../mass2_v027
+MODEL = ../mass2
 TECPLOT = tecplot
 
 all: 
