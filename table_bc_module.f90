@@ -28,7 +28,7 @@ USE date_time
 
 IMPLICIT NONE
 
-INTEGER, PARAMETER  :: max_cell_values = 1000
+INTEGER, PARAMETER  :: max_cell_values = 10
 INTEGER :: max_tables = 0, max_scalar_tables = 0
 
 
@@ -46,7 +46,7 @@ TYPE table_bc_struct
 	!INTEGER :: max_entries = 0				! fails for non-F95 compilers
 	INTEGER :: max_entries
 
-	TYPE(table_entry_struct) :: table_entry(10000)
+	TYPE(table_entry_struct) :: table_entry(40000)
 
 
 END TYPE table_bc_struct

@@ -1,3 +1,9 @@
+1999-07-28  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90: had to increase the size of table_entry
+	  again to 40000 and reduce max_cell_values to 10 (was 1000 by
+	  mistake) 
+
 1999-07-27  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* table_bc_module.f90: increased the size of table_entry in
