@@ -29,7 +29,7 @@ INTEGER  :: max_blocks
 
 INTEGER :: status
 
-DOUBLE PRECISION, SAVE :: grav = 32.2
+DOUBLE PRECISION, SAVE :: grav = 32.2, tiny = 1.0D-100
 DOUBLE PRECISION, SAVE :: density = 1.94
 DOUBLE PRECISION, SAVE :: density_air = 0.00237  ! 60 degrees F
 
@@ -45,7 +45,7 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: y_eta(:,:)	! y derivative wrt eta
   DOUBLE PRECISION, POINTER :: hp1(:,:)		! metric coeff. 1 in xsi direction : P loc
   DOUBLE PRECISION, POINTER :: hp2(:,:)		! metric coeff. 2 in eta direction : P loc
-	DOUBLE PRECISION, POINTER :: gp12(:,:)	! nonorthogonal part of the metric tensor
+  DOUBLE PRECISION, POINTER :: gp12(:,:)	! nonorthogonal part of the metric tensor
   DOUBLE PRECISION, POINTER :: hv1(:,:)		! metric coeff. 1 in xsi direction : v vel loc
   DOUBLE PRECISION, POINTER :: hv2(:,:)		! metric coeff. 2 in eta direction : v vel loc
   DOUBLE PRECISION, POINTER :: hu1(:,:)		! metric coeff. 1 in xsi direction : u vel loc
@@ -58,28 +58,31 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: vvel(:,:)		! v depth-ave velocity
   
   DOUBLE PRECISION, POINTER :: depth(:,:)		! water DEPTH (NOT WS ELEVATION)
-	DOUBLE PRECISION, POINTER :: wsel(:,:)		! Water Surface ELEVATION
+  DOUBLE PRECISION, POINTER :: wsel(:,:)		! Water Surface ELEVATION
   DOUBLE PRECISION, POINTER :: eddy(:,:)		! eddy viscosity depth-ave
-	DOUBLE PRECISION, POINTER :: kx_diff(:,:)		! scalar turb diffusivity xsi direction
-	DOUBLE PRECISION, POINTER :: ky_diff(:,:)		! scalar turb diffusivity eta direction
+  DOUBLE PRECISION, POINTER :: kx_diff(:,:)		! scalar turb diffusivity xsi direction
+  DOUBLE PRECISION, POINTER :: ky_diff(:,:)		! scalar turb diffusivity eta direction
   DOUBLE PRECISION, POINTER :: uold(:,:) 		! old time u depth-ave velocity
   DOUBLE PRECISION, POINTER :: vold(:,:)		! old time v depth-ave velocity
   
   DOUBLE PRECISION, POINTER :: depthold(:,:)		! old time water depth (NOT WS ELEVATION)
   DOUBLE PRECISION, POINTER :: zbot(:,:)				! bottom elevation at control volume nodes
-	DOUBLE PRECISION, POINTER :: zbot_grid(:,:)		! bottom elevation at grid points (c.v. corners)
+  DOUBLE PRECISION, POINTER :: zbot_grid(:,:)		! bottom elevation at grid points (c.v. corners)
   DOUBLE PRECISION, POINTER :: ustar(:,:)   ! u* velocity field
   DOUBLE PRECISION, POINTER :: vstar(:,:) 	! v* velocity field
   DOUBLE PRECISION, POINTER :: dstar(:,:)		! d* depth field
   DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
   DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
   DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
-	DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
+  DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
   DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
   DOUBLE PRECISION, POINTER :: chezy(:,:)				! chezy bed shear stress coefficient
-	DOUBLE PRECISION, POINTER :: mass_source(:,:)		!  mass source term or residual
+  DOUBLE PRECISION, POINTER :: mass_source(:,:)		!  mass source term or residual
 
-	DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)		! work array for output of TDG delP, %Sat
+  DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)	! work array for output of TDG delP, %Sat
+  DOUBLE PRECISION, POINTER :: work(:,:)        ! general work array
+  DOUBLE PRECISION, POINTER :: froude_num(:,:)  ! Froude number based on local depth - velocity
+  DOUBLE PRECISION, POINTER :: courant_num(:,:) ! Courant number
 
 END TYPE block_struct
 
@@ -185,8 +188,12 @@ WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
 	ALLOCATE(block(n)%windshear1(imax,jmax))	! wind shear stress in xsi direction
   ALLOCATE(block(n)%windshear2(imax,jmax))	! wind shear stress in eta direction
   ALLOCATE(block(n)%chezy(imax,jmax))				! chezy bed shear stress coefficient
-	ALLOCATE(block(n)%mass_source(imax,jmax))	! mass source
-	ALLOCATE(block(n)%TDG_stuff(imax,jmax))		! TDG work array
+  ALLOCATE(block(n)%mass_source(imax,jmax))	! mass source
+  ALLOCATE(block(n)%TDG_stuff(imax,jmax))		! TDG work array
+  ALLOCATE(block(n)%work(imax,jmax))         ! general work array
+  ALLOCATE(block(n)%froude_num(imax,jmax))   ! froude number
+  ALLOCATE(block(n)%courant_num(imax,jmax))  ! courant number
+
 
 WRITE(status_iounit,*)'completed component allocation for block number - ',n
 

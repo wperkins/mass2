@@ -47,7 +47,7 @@ INTEGER :: system_time(8)
 INTEGER :: iblock, con_block, num_bc, ispecies
 INTEGER :: cfg_iounit=10, output_iounit=11, plot_iounit=12, error_iounit=13, status_iounit=14
 INTEGER :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
-INTEGER :: mass_source_iounit=19
+INTEGER :: mass_source_iounit=19, diag_plot_iounit=20
 
 INTEGER :: i_start_cell, i_end_cell, j_start_cell , j_end_cell
 INTEGER :: max_species_in_restart
@@ -169,7 +169,7 @@ OPEN(plot_iounit,file='plot.dat')
 OPEN(error_iounit,file='error-warning.out')
 OPEN(status_iounit,file='status.out')
 OPEN(mass_source_iounit,file='mass_source_monitor.out')
-
+OPEN(diag_plot_iounit,file='diagnostic_plot.dat')
 !-----------------------------------------------------------------------------------
 ! write info to the console
 WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -802,7 +802,14 @@ DO iblock=1,max_blocks
 END DO
 CLOSE(grid_iounit)
 
+!-----------------------------------------------------------------------
+! diagnostic plot; tecplot format
 
+WRITE(diag_plot_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code"""
+WRITE(diag_plot_iounit,2022)
+2022 FORMAT("variables=""x"" ""y"" ""Froude No."" ""Courant No.""")
+
+!-----------------------------------------------------------------------
 
 WRITE(plot_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code"""
 ! WRITE(plot_iounit,*)"variables=""x"" ""y"" ""u vel"" ""v vel"" ""u cart"" ""v cart"" ""depth"" ""zbot"" ""wsel"" ""TDG con"""
@@ -811,6 +818,8 @@ WRITE(plot_iounit,2021)
            &            ""TDG con"" ""Temp"" ""TGP"" ""TDG delP"" ""%Sat""")
 ! 2021 FORMAT("variables=""x"" ""y"" ""u cart"" ""u vel"" ""v vel"" ""v cart"" ""depth"" ""zbot"" ""wsel"" &
 !           &            ""TDG con"" ""Temp"" ""TGP"" ""TDG delP"" ""%Sat""")
+
+
 
 zone_name(1:10) = start_time%date_string
 zone_name(11:11) = ' '
@@ -2397,6 +2406,22 @@ DO iblock=1,max_blocks
    END DO
    WRITE(plot_iounit,*)block(iblock)%TDG_stuff
 
+!---------------------------------------------------------------
+! diagnostic plot file output; tecplot format
+   WRITE(diag_plot_iounit,*)"zone f=block"," t=""",zone_name,iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
+   WRITE(diag_plot_iounit,*)block(iblock)%x
+   WRITE(diag_plot_iounit,*)block(iblock)%y
+
+   block(iblock)%froude_num = SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
+        SQRT(grav*block(iblock)%depth)
+   WRITE(diag_plot_iounit,*)block(iblock)%froude_num
+
+   block(iblock)%courant_num = delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
+         SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
+         SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
+   WRITE(diag_plot_iounit,*)block(iblock)%courant_num
+   
+
 END DO
 
 ENDIF
@@ -2493,30 +2518,72 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
 	END IF
 
 	DO iblock=1,max_blocks
-		! WHERE(block(iblock)%uvel < 1e-10) block(iblock)%uvel = 0.0
-		! WHERE(block(iblock)%uold < 1e-10) block(iblock)%uold = 0.0
-		! WHERE(block(iblock)%ustar < 1e-10) block(iblock)%ustar = 0.0
-		! WHERE(block(iblock)%vvel < 1e-10) block(iblock)%vvel = 0.0
-		! WHERE(block(iblock)%vold < 1e-10) block(iblock)%vold = 0.0
-		! WHERE(block(iblock)%vstar < 1e-10) block(iblock)%vstar = 0.0
-		
-		WRITE(restart_iounit,*) block(iblock)%uvel
-		WRITE(restart_iounit,*) block(iblock)%uold
-		WRITE(restart_iounit,*) block(iblock)%ustar
-		WRITE(restart_iounit,*) block(iblock)%vvel
-		WRITE(restart_iounit,*) block(iblock)%vold
-		WRITE(restart_iounit,*) block(iblock)%vstar
-		WRITE(restart_iounit,*) block(iblock)%depth
-		WRITE(restart_iounit,*) block(iblock)%depthold
-		WRITE(restart_iounit,*) block(iblock)%dstar	
-		WRITE(restart_iounit,*) block(iblock)%eddy
+       block(iblock)%work = block(iblock)%uvel
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+       
+       block(iblock)%work = block(iblock)%uold
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%ustar
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%vvel
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%vold
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%vstar
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%depth
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%depthold
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%dstar
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%eddy
+       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WRITE(restart_iounit,*)block(iblock)%work
+
+!!$		WRITE(restart_iounit,*) block(iblock)%uvel
+!!$		WRITE(restart_iounit,*) block(iblock)%uold
+!!$		WRITE(restart_iounit,*) block(iblock)%ustar
+!!$		WRITE(restart_iounit,*) block(iblock)%vvel
+!!$		WRITE(restart_iounit,*) block(iblock)%vold
+!!$		WRITE(restart_iounit,*) block(iblock)%vstar
+
+!!$		WRITE(restart_iounit,*) block(iblock)%depth
+!!$		WRITE(restart_iounit,*) block(iblock)%depthold
+!!$		WRITE(restart_iounit,*) block(iblock)%dstar	
+!!$		WRITE(restart_iounit,*) block(iblock)%eddy
 	END DO 
 
 	IF(do_transport)THEN
 		DO i=1,max_species
 			DO iblock = 1, max_blocks
-				WRITE(restart_iounit,*) species(i)%scalar(iblock)%conc
-				WRITE(restart_iounit,*) species(i)%scalar(iblock)%concold
+              block(iblock)%work = species(i)%scalar(iblock)%conc
+              WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+              WRITE(restart_iounit,*)block(iblock)%work
+              
+              block(iblock)%work = species(i)%scalar(iblock)%concold
+              WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+              WRITE(restart_iounit,*)block(iblock)%work
+
+             ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%conc
+             ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%concold
 			END DO
 		END DO
 	END IF
@@ -2545,6 +2612,7 @@ CLOSE(plot_iounit)
 CLOSE(error_iounit)
 CLOSE(status_iounit)
 CLOSE(mass_source_iounit)
+CLOSE(diag_plot_iounit)
 
 ! WRITE(*,*)'*** ALL DONE - PRESS RETURN ***'
 ! READ(*,*)
