@@ -772,9 +772,9 @@ SUBROUTINE buildghost(iblock)
            &(block(iblock)%x_grid(i+2,j) - block(iblock)%x_grid(i+1,j))
       block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i+1,j) - &
            &(block(iblock)%y_grid(i+2,j) - block(iblock)%y_grid(i+1,j))
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j)
-      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j) - &
-      !      &(block(iblock)%zbot_grid(i+2,j) - block(iblock)%zbot_grid(i+1,j))
+      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j)
+      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j) - &
+           &(block(iblock)%zbot_grid(i+2,j) - block(iblock)%zbot_grid(i+1,j))
    END DO
    i = block(iblock)%xmax + 1
    DO j = 1, block(iblock)%ymax
@@ -782,9 +782,9 @@ SUBROUTINE buildghost(iblock)
            &(block(iblock)%x_grid(i-2,j) - block(iblock)%x_grid(i-1,j))
       block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i-1,j) - &
            &(block(iblock)%y_grid(i-2,j) - block(iblock)%y_grid(i-1,j))
-      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) - &
-      !      &(block(iblock)%zbot_grid(i-2,j) - block(iblock)%zbot_grid(i-1,j))
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) 
+      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) - &
+           &(block(iblock)%zbot_grid(i-2,j) - block(iblock)%zbot_grid(i-1,j))
+      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) 
    END DO
 
                                 ! copy ghost cell coordinates for those
@@ -2270,15 +2270,18 @@ SUBROUTINE compute_uflow_area(blk, i, jmin, jmax, area, total)
   INTEGER, INTENT(IN) :: i, jmin, jmax
   DOUBLE PRECISION, INTENT(OUT) :: area(:), total
 
-  INTEGER :: j
+  INTEGER :: ioff, j
   DOUBLE PRECISION :: d, w
   
+  ioff = 1                      ! by default, do the upstream end.
+  IF (i .GE. 2) ioff = -1
+
   area = 0.0
   DO j = jmin, jmax
      IF (do_wetdry .AND. blk%depth(i,j) .LE. dry_depth) THEN
         area(j) = 0.0
      ELSE 
-        area(j) = blk%depth(i,j)*blk%hu2(i,j)
+        area(j) = 0.5*(blk%depth(i,j) + blk%depth(i+ioff,j))*blk%hu2(i,j)
      END IF
   END DO
   total = SUM(area)

@@ -1,3 +1,13 @@
+2003-04-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am: add a target from makefile.linux to make mass2.ps
+	using a2ps
+
+	* mass2_main_025.f90 (buildghost): go back to extrapolating the
+	bottom elevation in ghost cells (instead of level)
+	(compute_uflow_area): use the depth at the boundary, not the depth
+	in the ghost cell
+
 2003-04-16  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90: adjust for changes to routines in

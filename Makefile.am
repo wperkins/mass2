@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Fri Apr  4 09:50:59 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Apr 16 13:23:35 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 SUBDIRS = @SUBDIRS@
@@ -139,6 +139,8 @@ clean-local:
 	rm -f *.$(F90MODULEEXT)
 	rm -f *~
 
+mass2.ps: $(SRCS)
+	a2ps --prologue=color -C -R --columns=1 --medium=Letter --font-size=8 --sides=duplex -o $@ $(sort $(mass2_SOURCES))
 
 # extra files to distribute
 

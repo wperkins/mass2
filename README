@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Apr  8 09:13:28 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Thu Apr 17 11:52:38 2003 by William A. Perkins <perk@leechong.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -41,6 +41,50 @@ of the available compilers.  The Absoft compiler flags need to be
 changed to
 
     -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
+
+-------------------------------------------------------------
+CGNS
+-------------------------------------------------------------
+
+MASS2 also requires Version 2.1 of the CGNS library.  This can be
+obtained from http://www.icemcfd.com/cgns.  On Linux platforms, it is
+by default compiled with gcc and g77, and the -fno-second-underscore
+flag is used on g77.  Compile CGNS as follows
+
+    SGI: make SYSTEM=mips4_n32 ==> lib/libcgns.mips4_n32.a
+    Intel Linux: make SYSTEM=linux ==> lib/libcgns.linux.a
+    Alpha Linux: cp Makefile.linux Makefile.alinux; make SYSTEM=alinux ==> lib/libcgns.alinux.a
+
+The second to last line in the MASS2 configuration file controls the
+CGNS output.  The following is expected to be on that line:
+
+    1. (T/F) Flag to turn CGNS output on.  CGNS output can be on at
+       the same time as NetCDF, but there is really no reason to do
+       that.  
+
+    2. (T/F) Flag to cause CGNS output to be cell-centered.  If true,
+       the CGNS output will have a grid like the input grid (and
+       output in gridplot1.dat) and all output values will be
+       cell-centered.  Otherwise, the output grid will be like that
+       produced in the NetCDF file: vertexes at model cell centers
+       and artifical edges.  
+
+    3. (T/F) Flag to add descriptions to solution output fields.  If
+       true, each field of each solution has descriptors for the field
+       name and the units.  This is meant to duplicate the NetCDF
+       behavior.  It does not take a great deal of extra space, but
+       the extra nodes can cause the model to slow down.
+
+    4. (integer) Maximum number of time planes to put in the CGNS
+       output files.  The number of time planes can be limited to
+       avoid the problem that CGNS has with lots of nodes in the
+       file.  
+
+CGNS has some problems when there are a lot of nodes in the file.  Is
+some tests of SAC problems, putting 1050 time planes in a single CGNS
+output file doubled the MASS2 execution time (and the extra time was
+not spent in I/O).  Whereas, putting a maximum of 100 time planes in
+11 files increased the MASS2 execution time only 3%.  
 
 -------------------------------------------------------------
 compilation via GNU autotools
@@ -111,9 +155,17 @@ The options specific to the compilation of MASS2 are as follows:
         where NetCDF libraries and headers are located.  The specified
         directory is expected to have include and lib subdirectories.
 
+    --with-cgns=dir
+
+        CGNS is required for compilation.  This option specifies where
+        the CGNS libraries were unpacked and built.  The specified
+        directory is expected to have the structure of the CGNS source
+        as it is extracted.
+
 A typical configure 
 
-    configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4 --enable-optimize --enable-profile
+    configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4
+    --enable-optimize --enable-profile --with-cgns=/usr/unsupported/CGNSLib
 
 -------------------------------------------------------------
 distributing MASS2
@@ -138,50 +190,6 @@ distribution file with
 This will make a gzip'd tar file named something like
 mass2-0.30.tar.gz.  It contains the MASS2 distribution and should have
 all the necessary files to build MASS2. 
-
--------------------------------------------------------------
-CGNS
--------------------------------------------------------------
-
-MASS2 also requires Version 2.2 of the CGNS library.  This can be
-obtained from http://www.icemcfd.com/cgns.  On Linux platforms, it is
-by default compiled with gcc and g77, and the -fno-second-underscore
-flag is used on g77.  Compile CGNS as follows
-
-    SGI: make SYSTEM=mips4_n32 ==> lib/libcgns.mips4_n32.a
-    Intel Linux: make SYSTEM=linux ==> lib/libcgns.linux.a
-    Alpha Linux: cp Makefile.linux Makefile.alinux; make SYSTEM=alinux ==> lib/libcgns.alinux.a
-
-The second to last line in the MASS2 configuration file controls the
-CGNS output.  The following is expected to be on that line:
-
-    1. (T/F) Flag to turn CGNS output on.  CGNS output can be on at
-       the same time as NetCDF, but there is really no reason to do
-       that.  
-
-    2. (T/F) Flag to cause CGNS output to be cell-centered.  If true,
-       the CGNS output will have a grid like the input grid (and
-       output in gridplot1.dat) and all output values will be
-       cell-centered.  Otherwise, the output grid will be like that
-       produced in the NetCDF file: vertexes at model cell centers
-       and artifical edges.  
-
-    3. (T/F) Flag to add descriptions to solution output fields.  If
-       true, each field of each solution has descriptors for the field
-       name and the units.  This is meant to duplicate the NetCDF
-       behavior.  It does not take a great deal of extra space, but
-       the extra nodes can cause the model to slow down.
-
-    4. (integer) Maximum number of time planes to put in the CGNS
-       output files.  The number of time planes can be limited to
-       avoid the problem that CGNS has with lots of nodes in the
-       file.  
-
-CGNS has some problems when there are a lot of nodes in the file.  Is
-some tests of SAC problems, putting 1050 time planes in a single CGNS
-output file doubled the MASS2 execution time (and the extra time was
-not spent in I/O).  Whereas, putting a maximum of 100 time planes in
-11 files increased the MASS2 execution time only 3%.  
 
 -------------------------------------------------------------
 old compilation  -- no longer maintained
