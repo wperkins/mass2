@@ -30,7 +30,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 0.2			uvel_initial	! initial uniform value of u velocity
 0.0			vvel_initial	! initial uniform value of v velocity
 25.0			conc_initial	! initial uniform value of concentration						
-5.0			wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
+4.0			wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
 0.0			uvel_wind	! uniform value of u wind velocity
 0.0			vvel_wind	! uniform value of v wind velocity
 F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth

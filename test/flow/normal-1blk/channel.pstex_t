@@ -1,0 +1,19 @@
+\begin{picture}(0,0)%
+\epsfig{file=channel.pstex}%
+\end{picture}%
+\setlength{\unitlength}{2960sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(7906,4271)(2370,-6061)
+\put(6601,-3586){\makebox(0,0)[lb]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}velocity = 2.0 fps}}}
+\put(6001,-6061){\makebox(0,0)[b]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}10000 ft}}}
+\put(10276,-4636){\makebox(0,0)[lb]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}1.425 ft}}}
+\put(10276,-2986){\makebox(0,0)[lb]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}5.0 ft}}}
+\put(4201,-4786){\makebox(0,0)[rb]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}$1.425 \times 10^{-4}$}}}
+\put(4726,-4561){\makebox(0,0)[b]{\smash{\SetFigFont{9}{10.8}{\rmdefault}{\mddefault}{\updefault}1}}}
+\end{picture}
