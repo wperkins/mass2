@@ -25,6 +25,8 @@
 MODULE globals
 IMPLICIT NONE
 
+CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
 INTEGER  :: max_blocks
 
 INTEGER :: status
@@ -76,6 +78,7 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
   DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
   DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
+  DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
   DOUBLE PRECISION, POINTER :: chezy(:,:)				! chezy bed shear stress coefficient
   DOUBLE PRECISION, POINTER :: mass_source(:,:)		!  mass source term or residual
 
@@ -84,6 +87,19 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: froude_num(:,:)  ! Froude number based on local depth - velocity
   DOUBLE PRECISION, POINTER :: courant_num(:,:) ! Courant number
 
+                                ! These variables are used for
+                                ! transport; they hold hydrdynamic
+                                ! values that are calculated before
+                                ! the transport calculations begin
+
+  DOUBLE PRECISION, POINTER :: inlet_area(:) 
+  DOUBLE PRECISION, POINTER :: k_e(:,:), k_w(:,:), k_n(:,:), k_s(:,:)
+  DOUBLE PRECISION, POINTER :: depth_e(:,:), depth_w(:,:), depth_n(:,:), depth_s(:,:)
+  DOUBLE PRECISION, POINTER :: flux_e(:,:), flux_w(:,:), flux_n(:,:), flux_s(:,:)
+  DOUBLE PRECISION, POINTER :: diffu_e(:,:), diffu_w(:,:), diffu_n(:,:), diffu_s(:,:)
+  DOUBLE PRECISION, POINTER :: pec_e(:,:), pec_w(:,:), pec_n(:,:), pec_s(:,:)
+  DOUBLE PRECISION, POINTER :: apo(:,:)
+  
 END TYPE block_struct
 
 ! structure for disposable variables that can be overwritten for each block
@@ -178,14 +194,15 @@ WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
   
   ALLOCATE(block(n)%depthold(imax,jmax))	! old time water depth (NOT WS ELEVATION)
   ALLOCATE(block(n)%zbot(imax,jmax))			! bottom elevation at control volume nodes
-	ALLOCATE(block(n)%zbot_grid(imax,jmax))	! bottom elevation at grid nodes
+  ALLOCATE(block(n)%zbot_grid(imax,jmax))	! bottom elevation at grid nodes
   ALLOCATE(block(n)%ustar(imax,jmax))			! u* velocity field
   ALLOCATE(block(n)%vstar(imax,jmax)) 		! v* velocity field
   ALLOCATE(block(n)%dstar(imax,jmax))			! d* depth field
   ALLOCATE(block(n)%dp(imax,jmax))				! d' depth correction field
   ALLOCATE(block(n)%bedshear1(imax,jmax)) ! bed shear stress in xsi direction
   ALLOCATE(block(n)%bedshear2(imax,jmax)) ! bed shear stress in eta direction
-	ALLOCATE(block(n)%windshear1(imax,jmax))	! wind shear stress in xsi direction
+  ALLOCATE(block(n)%shear(imax,jmax)) ! bed shear stress magnitude @ velocity locations
+  ALLOCATE(block(n)%windshear1(imax,jmax))	! wind shear stress in xsi direction
   ALLOCATE(block(n)%windshear2(imax,jmax))	! wind shear stress in eta direction
   ALLOCATE(block(n)%chezy(imax,jmax))				! chezy bed shear stress coefficient
   ALLOCATE(block(n)%mass_source(imax,jmax))	! mass source
@@ -194,6 +211,15 @@ WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
   ALLOCATE(block(n)%froude_num(imax,jmax))   ! froude number
   ALLOCATE(block(n)%courant_num(imax,jmax))  ! courant number
 
+                                ! precalculated values for transport 
+
+  ALLOCATE(block(n)%inlet_area(jmax))
+  ALLOCATE(block(n)%k_e(imax,jmax),block(n)%k_w(imax,jmax),block(n)%k_n(imax,jmax),block(n)%k_s(imax,jmax))
+  ALLOCATE(block(n)%depth_e(imax,jmax),block(n)%depth_w(imax,jmax),block(n)%depth_n(imax,jmax),block(n)%depth_s(imax,jmax))
+  ALLOCATE(block(n)%flux_e(imax,jmax),block(n)%flux_w(imax,jmax),block(n)%flux_n(imax,jmax),block(n)%flux_s(imax,jmax))
+  ALLOCATE(block(n)%diffu_e(imax,jmax),block(n)%diffu_w(imax,jmax),block(n)%diffu_n(imax,jmax),block(n)%diffu_s(imax,jmax))
+  ALLOCATE(block(n)%pec_e(imax,jmax),block(n)%pec_w(imax,jmax),block(n)%pec_n(imax,jmax),block(n)%pec_s(imax,jmax))
+  ALLOCATE(block(n)%apo(imax,jmax))
 
 WRITE(status_iounit,*)'completed component allocation for block number - ',n
 
@@ -246,5 +272,50 @@ IMPLICIT NONE
 
 END SUBROUTINE deallocate_globals
 
+! ----------------------------------------------------------------
+! SUBROUTINE velocity_shift
+! This routine computes velocity components at the cell center
+! ----------------------------------------------------------------
+SUBROUTINE velocity_shift()
+
+  IMPLICIT NONE
+
+  INTEGER :: iblk, i, j
+
+  DO iblk = 1, max_blocks
+
+                                ! cell center velocity components
+
+     DO i=2, block(iblk)%xmax
+        DO j=2, block(iblk)%ymax
+           block(iblk)%uvel_p(i,j) = &
+                &0.5*(block(iblk)%uvel(i,j)+block(iblk)%uvel(i-1,j))
+           block(iblk)%vvel_p(i,j) = &
+                &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+        END DO
+     END DO
+     i = 1
+     DO j=2, block(iblk)%ymax
+        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i,j)
+        block(iblk)%vvel_p(i,j) = &
+             &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+     END DO
+     i=block(iblk)%xmax+1
+     DO j=2, block(iblk)%ymax
+        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(block(iblk)%xmax,j)
+        block(iblk)%vvel_p(i,j) = &
+             &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+     END DO
+
+                                ! eastward & northward velocity @ cell center
+
+     block(iblk)%u_cart = &
+          &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%x_xsi + &
+          &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%x_eta
+     block(iblk)%v_cart = &
+          &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%y_xsi + &
+          &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%y_eta
+  END DO
+END SUBROUTINE velocity_shift
 
 END MODULE globals

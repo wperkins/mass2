@@ -10,7 +10,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 17, 1999 by William A. Perkins
-# Last Change: Fri Feb 25 09:43:24 2000 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Thu Aug  3 13:24:53 2000 by William A. Perkins <perk@dora.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -619,7 +619,7 @@ if ($docdf) {
   $i = 0;
   foreach $value (sort { $a <=> $b; } @gagevalues) {
     my $p = ($times - $i++) / $times;
-    printf(OUTPUT "%15.5f %15.3f${end}\n", $p, $value);
+    printf(OUTPUT "%15.5f %15.5g${end}\n", $p, $value);
   }
 } else {
   for ($i = 0; $i < $times; $i++) {
@@ -630,7 +630,7 @@ if ($docdf) {
     my $tstamp = pack("C*", @values);
     chop($tstamp);
 
-    printf(OUTPUT "%s %15.3f${end}\n", $tstamp, $gagevalues[$i]);
+    printf(OUTPUT "%s %15.5g${end}\n", $tstamp, $gagevalues[$i]);
   }
 }
 

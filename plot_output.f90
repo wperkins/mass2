@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Tue Aug 24 12:29:33 1999 by William A. Perkins <perk@mack.pnl.gov>
+! Last Change: Fri Jul 27 13:41:06 2001 by William A. Perkins <perk@dora.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -15,6 +15,13 @@
 ! MODULE plot_output
 ! ----------------------------------------------------------------
 MODULE plot_output
+
+  USE accumulator
+  USE misc_vars, ONLY: do_accumulate
+
+  IMPLICIT NONE
+
+  CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
                                 ! module constants
 
@@ -29,11 +36,17 @@ MODULE plot_output
   INTEGER, PRIVATE :: block_dimid, eta_dimid, xi_dimid, time_dimid, tslen_dimid
   INTEGER, PRIVATE :: etamax_varid, ximax_varid
   INTEGER, PRIVATE :: x_varid, y_varid, zbot_varid, time_varid, ts_varid
-  INTEGER, PRIVATE :: hp1_varid, hp2_varid, gp12_varid
-  INTEGER, PRIVATE :: u_varid, v_varid, ucart_varid, vcart_varid, vmag_varid
+  INTEGER, PRIVATE :: hp1_varid, hp2_varid, gp12_varid, area_varid
+  INTEGER, PRIVATE :: u_varid, v_varid, ucart_varid, vcart_varid, vmag_varid, shear_varid
   INTEGER, PRIVATE :: depth_varid, wsel_varid
-  INTEGER, PRIVATE :: temp_varid, conc_varid, press_varid, dp_varid, sat_varid
+  INTEGER, PRIVATE, POINTER :: scalar_varid(:)
+  INTEGER, PRIVATE :: press_varid, dp_varid, sat_varid
   INTEGER, PRIVATE :: courant_varid, froude_varid
+  INTEGER, PRIVATE, POINTER :: part_depos_varid(:), depos_varid(:), erode_varid(:)
+  INTEGER, PRIVATE, POINTER :: bedsed_varid(:), bedmass_varid(:)
+  INTEGER, PRIVATE, POINTER :: beddis_varid(:), bedpore_varid(:), bedporemass_varid(:)
+  INTEGER, PRIVATE, POINTER :: bedpart_varid(:), bedpartmass_varid(:)
+  INTEGER, PRIVATE :: beddepth_varid
   REAL, ALLOCATABLE, PRIVATE :: nctmp_real(:,:,:)
   DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: nctmp_double(:,:,:)
 
@@ -57,54 +70,6 @@ CONTAINS
     zone_name(21:26) = 'block '
 
   END SUBROUTINE plot_zone_name
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE plot_fix_velocity
-  ! ----------------------------------------------------------------
-  SUBROUTINE plot_fix_velocity()
-
-    USE globals
-    
-    IMPLICIT NONE
-
-    INTEGER :: i, j, iblock
-
-
-    DO iblock=1,max_blocks
-       DO i=2, block(iblock)%xmax
-          DO j=2, block(iblock)%ymax
-             block(iblock)%uvel_p(i,j) = &
-                  &0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i-1,j))
-             block(iblock)%vvel_p(i,j) = &
-                  &0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-          END DO
-       END DO
-       DO i=1, 1
-          DO j=2, block(iblock)%ymax
-             block(iblock)%uvel_p(i,j) = block(iblock)%uvel(i,j)
-             block(iblock)%vvel_p(i,j) = &
-                  &0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-          END DO
-       END DO
-       DO i=block(iblock)%xmax+1, block(iblock)%xmax+1
-          DO j=2, block(iblock)%ymax
-             block(iblock)%uvel_p(i,j) = block(iblock)%uvel(block(iblock)%xmax,j)
-             block(iblock)%vvel_p(i,j) = &
-                  &0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-          END DO
-       END DO
-       
-       ! transform to cartesian coordinates for plotting
-       block(iblock)%u_cart = &
-            &(block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%x_xsi + &
-            &(block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%x_eta
-       block(iblock)%v_cart = &
-            &(block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%y_xsi + &
-            &(block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%y_eta
-    END DO
-
-  END SUBROUTINE plot_fix_velocity
-
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_file_setup_tecplot
@@ -153,41 +118,154 @@ CONTAINS
        WRITE(plot_iounit,*)block(iblock)%depth
        WRITE(plot_iounit,*)block(iblock)%zbot
        WRITE(plot_iounit,*)block(iblock)%wsel
-       WRITE(plot_iounit,*)species(1)%scalar(iblock)%conc
-       WRITE(plot_iounit,*)species(2)%scalar(iblock)%conc
 
-       DO i=1,block(iblock)%xmax+1
-          DO j=1,block(iblock)%ymax+1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             block(iblock)%TDG_stuff(i,j) = &
-                  &TDGasPress(conc_TDG,  t_water,  salinity)
-          END DO
-       END DO
-       WRITE(plot_iounit,*)block(iblock)%TDG_stuff
+                                ! need to fix for transport
 
-       DO i=1,block(iblock)%xmax+1
-          DO j=1,block(iblock)%ymax+1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             block(iblock)%TDG_stuff(i,j) = &
-                  &TDGasDP(conc_TDG, t_water,  salinity,  baro_press)
-          END DO
-       END DO
-       WRITE(plot_iounit,*)block(iblock)%TDG_stuff
+!        WRITE(plot_iounit,*)species(1)%scalar(iblock)%conc
+!        WRITE(plot_iounit,*)species(2)%scalar(iblock)%conc
 
-       DO i=1,block(iblock)%xmax+1
-          DO j=1,block(iblock)%ymax+1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             block(iblock)%TDG_stuff(i,j) = &
-                  &TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
-          END DO
-       END DO
-       WRITE(plot_iounit,*)block(iblock)%TDG_stuff
+!        DO i=1,block(iblock)%xmax+1
+!           DO j=1,block(iblock)%ymax+1
+!              conc_TDG = species(1)%scalar(iblock)%conc(i,j)
+!              t_water = species(2)%scalar(iblock)%conc(i,j)
+!              block(iblock)%TDG_stuff(i,j) = &
+!                   &TDGasPress(conc_TDG,  t_water,  salinity)
+!           END DO
+!        END DO
+!        WRITE(plot_iounit,*)block(iblock)%TDG_stuff
+
+!        DO i=1,block(iblock)%xmax+1
+!           DO j=1,block(iblock)%ymax+1
+!              conc_TDG = species(1)%scalar(iblock)%conc(i,j)
+!              t_water = species(2)%scalar(iblock)%conc(i,j)
+!              block(iblock)%TDG_stuff(i,j) = &
+!                   &TDGasDP(conc_TDG, t_water,  salinity,  baro_press)
+!           END DO
+!        END DO
+!        WRITE(plot_iounit,*)block(iblock)%TDG_stuff
+
+!        DO i=1,block(iblock)%xmax+1
+!           DO j=1,block(iblock)%ymax+1
+!              conc_TDG = species(1)%scalar(iblock)%conc(i,j)
+!              t_water = species(2)%scalar(iblock)%conc(i,j)
+!              block(iblock)%TDG_stuff(i,j) = &
+!                   &TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
+!           END DO
+!        END DO
+!        WRITE(plot_iounit,*)block(iblock)%TDG_stuff
 
     END DO
   END SUBROUTINE plot_print_tecplot
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_set_var_attributes
+  ! General attributes used for (floating point) spatial and temporal
+  ! variables in the plot file
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_set_var_attributes(plot_ncid, varid, desc, units, isbed)
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER, INTENT(IN) :: plot_ncid, varid
+    CHARACTER (LEN=*), INTENT(IN) :: desc, units
+    LOGICAL, INTENT(IN) :: isbed
+
+    INTEGER :: xtype, ncstat
+
+    ncstat = nf_put_att_text (plot_ncid, varid, "Units", LEN_TRIM(units), units)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    ncstat = nf_put_att_text (plot_ncid, varid, "Description", LEN_TRIM(desc), desc)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+                                ! these fit the attribute conventions
+                                ! in the NetCDF manual
+
+    ncstat = nf_put_att_text (plot_ncid, varid, "units", LEN_TRIM(units), units)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    ncstat = nf_put_att_text (plot_ncid, varid, "long_name", LEN_TRIM(desc), desc)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+                                ! choose a fill value based on the
+                                ! variable type
+
+    ncstat = nf_inq_vartype(plot_ncid, varid, xtype)
+    SELECT CASE (xtype)
+    CASE (NF_FLOAT)
+       ncstat = nf_put_att_real (plot_ncid, varid, "_FillValue", NF_FLOAT, 1, nf_fill_real)
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    CASE (NF_DOUBLE)
+       ncstat = nf_put_att_double (plot_ncid, varid, "_FillValue", NF_DOUBLE, 1, nf_fill_double)
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    END SELECT
+
+                                ! mark bed variables 
+
+    IF (isbed) THEN
+       ncstat = nf_put_att_text (plot_ncid, varid, "isbed", 4, "true")
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    END IF
+    
+  END SUBROUTINE plot_set_var_attributes
+
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION plot_add_space_var
+  ! Adds a variable to the plot file that is not time-varying, but is
+  ! spatially-varying
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION plot_add_space_var(name, desc, units)
+
+    IMPLICIT NONE
+    CHARACTER (LEN=*) :: name, desc, units
+    INTEGER :: varid, dimids(3), ncstat
+
+    INCLUDE 'netcdf.inc'
+
+    dimids(1) = block_dimid
+    dimids(2) = eta_dimid
+    dimids(3) = xi_dimid
+
+    ncstat = nf_def_var (plot_ncid, name, nf_float, 3, dimids, varid)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    CALL plot_set_var_attributes(plot_ncid, varid, desc, units, .FALSE.)
+
+    plot_add_space_var = varid
+
+  END FUNCTION plot_add_space_var
+
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION plot_add_tim_var
+  ! Adds a variable to the plot file that is time- and spatially-varying
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION plot_add_time_var(name, desc, units, flag)
+
+    IMPLICIT NONE
+    CHARACTER (LEN=*) :: name, desc, units
+    LOGICAL, OPTIONAL :: flag
+    INTEGER :: varid, dimids(4), ncstat
+    LOGICAL :: isbed
+
+    INCLUDE 'netcdf.inc'
+
+    IF (PRESENT(flag)) THEN
+       isbed = flag
+    ELSE
+       isbed = .FALSE.
+    END IF
+
+    dimids(1) = block_dimid
+    dimids(2) = eta_dimid
+    dimids(3) = xi_dimid
+    dimids(4) = time_dimid
+
+    ncstat = nf_def_var (plot_ncid, name, nf_float, 4, dimids, varid)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    CALL plot_set_var_attributes(plot_ncid, varid, desc, units, isbed)
+
+    plot_add_time_var = varid
+
+  END FUNCTION plot_add_time_var
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_file_setup_netcdf
@@ -195,12 +273,16 @@ CONTAINS
   SUBROUTINE plot_file_setup_netcdf()
 
     USE globals
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_transport
+    USE scalars, ONLY: max_species
+    USE scalars_source
 
     IMPLICIT NONE
 
     INTEGER :: ncstat, dimids(10)
     INTEGER :: iblock, index(10), len(10)
-    INTEGER :: i, j, max_x, max_y
+    INTEGER :: i, j, ispecies, max_x, max_y, ifract
+    CHARACTER (LEN=128) :: buffer
 
     INCLUDE 'netcdf.inc'
 
@@ -247,161 +329,198 @@ CONTAINS
     dimids(1) = block_dimid
     dimids(2) = eta_dimid
     dimids(3) = xi_dimid
+
+                                ! easting (x) and northing (y) have to
+                                ! be double precision
+
     ncstat = nf_def_var (plot_ncid, "x", nf_double, 3, dimids, x_varid)
     IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    CALL plot_set_var_attributes(plot_ncid, x_varid, "Easting", "feet", .FALSE.)
+
     ncstat = nf_def_var (plot_ncid, "y", nf_double, 3, dimids, y_varid)
     IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_def_var (plot_ncid, "zbot", nf_float, 3, dimids, zbot_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    CALL plot_set_var_attributes(plot_ncid, y_varid, "Northing", "feet", .FALSE.)
 
-    ncstat = nf_put_att_text(plot_ncid, x_varid, "Units", 4, "feet")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_copy_att (plot_ncid, x_varid, "Units", plot_ncid, y_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_copy_att (plot_ncid, x_varid, "Units", plot_ncid, zbot_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, zbot_varid, "Description", &
-         &16, "Bottom Elevation")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "hp1", nf_float, 3, dimids, hp1_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, hp1_varid, "Description", &
-         &15, "Grid Metric hp1")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_def_var (plot_ncid, "hp2", nf_float, 3, dimids, hp2_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, hp2_varid, "Description", &
-         &15, "Grid Metric hp2")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_def_var (plot_ncid, "gp12", nf_float, 3, dimids, gp12_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, gp12_varid, "Description", &
-         &16, "Grid Metric gp12")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
+    zbot_varid = plot_add_space_var("zbot", "Bottom Elevation", "feet")
+    hp1_varid = plot_add_space_var("hp1", "Grid Metric hp1", "feet")
+    hp2_varid = plot_add_space_var("hp2", "Grid Metric hp2", "feet")
+    gp12_varid = plot_add_space_var("gp12", "Grid Metric gp12", "feet")
 
                                 ! time-dependant data variables
 
     dimids(4) = time_dimid
 
-    ncstat = nf_def_var (plot_ncid, "uvel", nf_float, 4, dimids, u_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, u_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, u_varid, "Description", &
-         &21, "Longitudinal Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    IF (do_flow .OR. do_flow_output) THEN
 
-    ncstat = nf_def_var (plot_ncid, "vvel", nf_float, 4, dimids, v_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, v_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, v_varid, "Description", &
-         &16, "Lateral Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "ucart", nf_float, 4, dimids, ucart_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, ucart_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, ucart_varid, "Description", &
-         &17, "Eastward Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "vcart", nf_float, 4, dimids, vcart_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, vcart_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, vcart_varid, "Description", &
-         &18, "Northward Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "vmag", nf_float, 4, dimids, vmag_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, vmag_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, vmag_varid, "Description", &
-         &18, "Velocity Magnitude")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "depth", nf_float, 4, dimids, depth_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_copy_att (plot_ncid, x_varid, "Units", plot_ncid, depth_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, depth_varid, "Description", &
-         &11, "Water Depth")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
-    ncstat = nf_def_var (plot_ncid, "wsel", nf_float, 4, dimids, wsel_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_copy_att (plot_ncid, x_varid, "Units", plot_ncid, wsel_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, wsel_varid, "Description", &
-         &23, "Water Surface Elevation")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-
+       u_varid = plot_add_time_var("uvel", "Longitudinal Velocity", "feet/second")
+       v_varid = plot_add_time_var("vvel", "Lateral Velocity", "feet/second")
+       ucart_varid = plot_add_time_var("ucart", "Eastward Velocity", "feet/second")
+       vcart_varid = plot_add_time_var("vcart", "Northward Velocity", "feet/second")
+       vmag_varid = plot_add_time_var("vmag", "Velocity Magnitude", "feet/second")
+       depth_varid = plot_add_time_var("depth", "Water Depth", "feet")
+       wsel_varid = plot_add_time_var("wsel", "Water Surface Elevation", "feet")
+    
                                 ! diagnostic values
 
-    ncstat = nf_def_var (plot_ncid, "courant", nf_float, 4, dimids, courant_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, courant_varid, "Description", &
-         &14, "Courant Number")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    
-    ncstat = nf_def_var (plot_ncid, "froude", nf_float, 4, dimids, froude_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, froude_varid, "Description", &
-         &13, "Froude Number")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+       shear_varid = plot_add_time_var("shear", "Bed Shear Stress", "pound/foot^2")
+       courant_varid = plot_add_time_var("courant", "Courant Number", "none")
+       froude_varid = plot_add_time_var("froude", "Froude Number", "none")
 
                                 ! water quality variables
 
-                                ! TDG concentration 
+    END IF
 
-    ncstat = nf_def_var (plot_ncid, "tdgconc", nf_float, 4, dimids, conc_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, conc_varid, "Units", 15, "milligram/liter")
-    ncstat = nf_put_att_text (plot_ncid, conc_varid, "Description", &
-         &33, "Total Dissolved Gas Concentration")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+    IF (do_transport) THEN
+       ALLOCATE(scalar_varid(max_species))
 
-                                ! temperature
+       IF (source_doing_sed) THEN
+          ALLOCATE(depos_varid(sediment_fractions))
+          ALLOCATE(erode_varid(sediment_fractions))
+          ALLOCATE(part_depos_varid(max_species))
+          ALLOCATE(bedsed_varid(sediment_fractions))
+          ALLOCATE(bedmass_varid(sediment_fractions))
+          ALLOCATE(bedpart_varid(max_species))
+          ALLOCATE(bedpartmass_varid(max_species))
+          ALLOCATE(bedpore_varid(max_species))
+          ALLOCATE(bedporemass_varid(max_species))
+          ALLOCATE(beddis_varid(max_species))
+       END IF
 
-    ncstat = nf_def_var (plot_ncid, "temperature", nf_float, 4, dimids, temp_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, temp_varid, "Units", 7, "Celcius")
-    ncstat = nf_put_att_text (plot_ncid, temp_varid, "Description", &
-         &11, "Temperature")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+       DO ispecies = 1, max_species
+
+          scalar_varid(ispecies) = plot_add_time_var(scalar_source(ispecies)%name, &
+               &scalar_source(ispecies)%description, scalar_source(ispecies)%units)
+          ncstat = nf_put_att_double (plot_ncid, scalar_varid(ispecies), &
+               &"Conversion", NF_DOUBLE, 1,scalar_source(ispecies)%conversion)
+          IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+          SELECT CASE(scalar_source(ispecies)%srctype)
+          CASE (TDG)
 
                                 ! TDG pressure
 
-    ncstat = nf_def_var (plot_ncid, "tdgpress", nf_float, 4, dimids, press_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, press_varid, "Units", 17, "millimeters of Hg")
-    ncstat = nf_put_att_text (plot_ncid, press_varid, "Description", &
-         &29, "Total Dissolved Gas Pressure")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+             press_varid = plot_add_time_var("tdgpress", &
+                  &"Total Dissolved Gas Pressure", "millimeters of Hg")
 
                                 ! TDG delta P
 
-    ncstat = nf_def_var (plot_ncid, "tdgdeltap", nf_float, 4, dimids, dp_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, dp_varid, "Units", 17, "millimeters of Hg")
-    ncstat = nf_put_att_text (plot_ncid, dp_varid, "Description", &
-         &35, "Total Dissolved Gas Pressure Delta")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+             dp_varid = plot_add_time_var("tdgdeltap", &
+                  &"Total Dissolved Gas Pressure Delta", "millimeters of Hg")
 
                                 ! TDG percent saturation
 
-    ncstat = nf_def_var (plot_ncid, "tdgsat", nf_float, 4, dimids, sat_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-    ncstat = nf_put_att_text (plot_ncid, sat_varid, "Units", 7, "percent")
-    ncstat = nf_put_att_text (plot_ncid, sat_varid, "Description", &
-         &30, "Total Dissolved Gas Saturation")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+             sat_varid = plot_add_time_var("tdgsat", &
+                  &"Total Dissolved Gas Saturation", "percent")
 
+          CASE (GEN)
+             IF (source_doing_sed) THEN
+                
+                                ! dissolved mass in bed pores
+
+                bedporemass_varid(ispecies) = plot_add_time_var(&
+                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                     &"mass", .TRUE.)
+
+                                ! dissolved mass per unit area in bed
+
+                bedpore_varid(ispecies) = plot_add_time_var(&
+                     &TRIM(scalar_source(ispecies)%name) // '-bed', &
+                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                     &"mass/foot^2", .TRUE.)
+
+                                ! dissolved mass per unit volume in bed pores
+
+                beddis_varid(ispecies) = plot_add_time_var(&
+                     &TRIM(scalar_source(ispecies)%name) // '-pore', &
+                     &"Concentration of " // TRIM(scalar_source(ispecies)%description) // " in Bed Pores", &
+                     &scalar_source(ispecies)%units, .TRUE.)
+                ncstat = nf_put_att_double (plot_ncid, beddis_varid(ispecies), &
+                     &"Conversion", NF_DOUBLE, 1,scalar_source(ispecies)%conversion)
+                IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                
+             END IF
+
+
+          CASE (SED)
+
+             ifract = scalar_source(ispecies)%sediment_param%ifract
+
+                                ! sediment deposition rate
+
+             depos_varid(ifract) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-depos',&
+                  &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description),&
+                  &"mass/foot^2/second", .TRUE.)
+
+                                ! sediment erosion rate
+
+             erode_varid(ifract) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-erode', &
+                  &"Rate of Erosion of " // TRIM(scalar_source(ispecies)%description),&
+                  &"mass/foot^2/second", .TRUE.)
+
+                                ! sediment mass in bed
+
+             bedmass_varid(ifract) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                  &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                  &"mass", .TRUE.)
+
+                                ! sediment mass per unit area in bed
+
+             bedsed_varid(ifract) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-bed', &
+                  &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                  &"mass/foot^2", .TRUE.)
+
+          CASE (PART)
+
+             buffer = scalar_source(scalar_source(ispecies)%part_param%disidx)%name
+
+             ncstat = nf_put_att_text (plot_ncid, scalar_varid(ispecies), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+                                ! particulate deposition rate
+
+             part_depos_varid(ispecies) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-depos', &
+                  &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description), &
+                  &"mass/foot^2/second", .TRUE.)
+             ncstat = nf_put_att_text (plot_ncid, part_depos_varid(ispecies), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+                                ! sediment mass in bed
+
+             bedpartmass_varid(ispecies) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                  &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                  &"mass", .TRUE.)
+             ncstat = nf_put_att_text (plot_ncid, bedpartmass_varid(ispecies), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+                                ! sediment mass per unit area in bed
+
+             bedpart_varid(ispecies) = plot_add_time_var(&
+                  &TRIM(scalar_source(ispecies)%name) // '-bed', &
+                  &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                  &"mass/foot^2", .TRUE.)
+             ncstat = nf_put_att_text (plot_ncid, bedpart_varid(ispecies), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+          END SELECT
+       END DO
+    END IF
+
+                                ! bed depth if called for
+
+    IF (source_doing_sed) THEN
+       beddepth_varid = plot_add_time_var("beddepth", "Depth of Bed Sediments", "feet", .TRUE.)
+    END IF
                                 ! done w/ file definition
 
     ncstat = nf_enddef(plot_ncid)
@@ -427,6 +546,8 @@ CONTAINS
        len(1) = 1
        len(2) = max_x
        len(3) = max_y
+       ! len(2) = block(iblock)%xmax + 1
+       ! len(3) = block(iblock)%ymax + 1
 
                                 ! grid coordinates: x
 
@@ -472,7 +593,46 @@ CONTAINS
 
     END DO
 
+    CALL accum_initialize()
+
   END SUBROUTINE plot_file_setup_netcdf
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_print_time_var
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_print_time_var(varid, start, length, xmax, ymax, var, convert)
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER, INTENT(IN) :: varid, start(:), length(:), xmax, ymax
+    DOUBLE PRECISION, INTENT(IN) :: var(:,:)
+    DOUBLE PRECISION, INTENT(IN), OPTIONAL :: convert
+    INTEGER :: ncstat, i, j
+    DOUBLE PRECISION :: conversion
+
+    IF (.NOT. PRESENT(convert)) THEN
+       conversion = 1.0
+    ELSE
+       conversion = convert
+    END IF
+
+    nctmp_real = nf_fill_real
+    DO i = 1, xmax
+       DO j = 1, ymax
+          IF (DABS(var(i,j)) .LT. 1.0d-37) THEN
+              nctmp_real(1, i, j) = 0.0
+           ELSE
+              nctmp_real(1, i, j) = SNGL(var(i, j)/conversion)
+           END IF
+        END DO
+     END DO
+     ncstat = nf_put_vara_real(plot_ncid, varid, start, length, nctmp_real)
+     IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+
+  END SUBROUTINE plot_print_time_var
+
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print_netcdf
@@ -480,9 +640,12 @@ CONTAINS
   SUBROUTINE plot_print_netcdf(date_string, time_string, salinity, baro_press)
 
     USE globals
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_transport
     USE scalars
+    USE scalars_source
     USE date_time
     USE gas_functions
+    USE bed_module
 
     IMPLICIT NONE
 
@@ -494,7 +657,7 @@ CONTAINS
     DOUBLE PRECISION :: salinity, baro_press
     INTEGER :: ncstat
     INTEGER :: start(4), length(4)
-    INTEGER :: iblock, i, j, max_x, max_y, trec, max_blkx, max_blky
+    INTEGER :: iblock, i, j, ispecies, max_x, max_y, trec, max_blkx, max_blky, ifract
     DOUBLE PRECISION :: conc_TDG, t_water
 
     max_x = MAXVAL(block(:)%xmax) + 1
@@ -505,9 +668,9 @@ CONTAINS
 
                                 ! do the time stamp
 
-    timestamp(1:10) = date_string
+    timestamp(1:10) = accum_time%date_string
     timestamp(11:11) = ' '
-    timestamp(12:19) = time_string
+    timestamp(12:19) = accum_time%time_string
     timestamp(tslen:tslen) = CHAR(0)
 
     start(1) = 1
@@ -533,145 +696,198 @@ CONTAINS
     DO iblock = 1, max_blocks
 
        max_blkx = block(iblock)%xmax + 1
-       max_blky = block(iblock)%xmax + 1
+       max_blky = block(iblock)%ymax + 1
+       ! length(2) = max_blkx
+       ! length(3) = max_blky
 
        start(1) = iblock
 
-                                ! u
+       IF (do_flow .OR. do_flow_output) THEN
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%uvel_p(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, u_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-       
-                                ! v
+                                ! average u
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%vvel_p(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, v_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+          CALL plot_print_time_var(u_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%uvelp%sum)
+          
+                                ! average v
 
-                                ! u_cart
+          CALL plot_print_time_var(v_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%vvelp%sum)
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%u_cart(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, ucart_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
-       
-                                ! v_cart
+                                ! average u_cart
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%v_cart(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, vcart_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+          CALL plot_print_time_var(ucart_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%ucart%sum)
+          
+                                ! average v_cart
 
-                                ! depth
+          CALL plot_print_time_var(vcart_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%vcart%sum)
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%depth(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, depth_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                                ! average depth
 
-                                ! wsel
+          CALL plot_print_time_var(depth_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%depth%sum)
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%wsel(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, wsel_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                                ! average wsel
 
-                                ! vmag
+          CALL plot_print_time_var(wsel_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%wsel%sum)
 
-       nctmp_real = nf_fill_real
-       DO i = 1, block(iblock)%xmax + 1
-          DO j = 1, block(iblock)%ymax + 1
-             nctmp_real(1, i, j) = &
-                  &SQRT(block(iblock)%vvel_p(i,j)*block(iblock)%vvel_p(i,j) + &
-                  &block(iblock)%uvel_p(i,j)*block(iblock)%uvel_p(i,j))
-          END DO
-       END DO
-       ncstat = nf_put_vara_real(plot_ncid, vmag_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                                ! average vmag
+
+          CALL plot_print_time_var(vmag_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%vmag%sum)
+
+                                ! average bed shear
+
+          CALL plot_print_time_var(shear_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%shear%sum)
 
                                 ! Froude number
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%froude_num(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, froude_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+          CALL plot_print_time_var(froude_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%froude%sum)
 
                                 ! Courant number
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%courant_num(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, courant_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+          CALL plot_print_time_var(courant_varid, start, length, &
+               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &accum_block(iblock)%hydro%courant%sum)
 
-                                ! water quality variables
+       END IF
 
-                                ! TDG conc
+                                ! extra water quality variables
 
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &species(1)%scalar(iblock)%conc(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, conc_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+       IF (do_transport) THEN
+          DO ispecies = 1, max_species
+             CALL plot_print_time_var(scalar_varid(ispecies), start, length, &
+                  &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                  &accum_block(iblock)%conc(ispecies)%sum, &
+                  &scalar_source(ispecies)%conversion)
 
-                                ! temp
-       
-       nctmp_real = nf_fill_real
-       nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &species(2)%scalar(iblock)%conc(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
-       ncstat = nf_put_vara_real(plot_ncid, temp_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+             SELECT CASE (scalar_source(ispecies)%srctype)
 
+                                ! If we are doing TDG we need to
+                                ! output several variations of gas
+                                ! "concentration"
+
+             CASE (TDG)
                                 ! computed: TDG pressure
 
-       nctmp_real = nf_fill_real
-       DO i = 1, block(iblock)%xmax + 1
-          DO j = 1, block(iblock)%ymax + 1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             nctmp_real(1, i, j) = TDGasPress(conc_TDG, t_water, salinity)
-          END DO
-       END DO
-       ncstat = nf_put_vara_real(plot_ncid, press_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                CALL plot_print_time_var(press_varid, start, length, &
+                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &accum_block(iblock)%tdg%press%sum)
 
                                 ! computed: TDG delta P
 
-       nctmp_real = nf_fill_real
-       DO i = 1, block(iblock)%xmax + 1
-          DO j = 1, block(iblock)%ymax + 1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             nctmp_real(1, i, j) = TDGasDP(conc_TDG, t_water, salinity, baro_press)
-          END DO
-       END DO
-       ncstat = nf_put_vara_real(plot_ncid, dp_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                CALL plot_print_time_var(dp_varid, start, length, &
+                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &accum_block(iblock)%tdg%deltap%sum)
 
-                                ! computed: TDG delta P
+                                ! computed: TDG saturation
 
-       nctmp_real = nf_fill_real
-       DO i = 1, block(iblock)%xmax + 1
-          DO j = 1, block(iblock)%ymax + 1
-             conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-             t_water = species(2)%scalar(iblock)%conc(i,j)
-             nctmp_real(1, i, j) = TDGasSaturation(conc_TDG, t_water, salinity, baro_press)
-          END DO
-       END DO
-       ncstat = nf_put_vara_real(plot_ncid, sat_varid, start, length, nctmp_real)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
+                CALL plot_print_time_var(sat_varid, start, length, &
+                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &accum_block(iblock)%tdg%sat%sum)
+                   
+                CASE (GEN)
+                   IF (source_doing_sed) THEN
 
+                                ! dissolved contaminant mass in bed pores
+                   
+                      CALL plot_print_time_var(bedporemass_varid(ispecies), start, length, &
+                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &accum_block(iblock)%bed%mass(ispecies)%sum)
+                      
+                      ! dissolved contaminant mass per unit bed area
+
+                      CALL plot_print_time_var(bedpore_varid(ispecies), start, length, &
+                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &accum_block(iblock)%bed%conc(ispecies)%sum)
+
+                                ! dissolved contaminant mass per unit volume bed pore water
+                   
+                      CALL plot_print_time_var(beddis_varid(ispecies), start, length, &
+                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &accum_block(iblock)%bed%pore(ispecies)%sum, &
+                           &scalar_source(ispecies)%conversion)
+
+                   END IF
+
+
+                                ! If we are doing sediment, output
+                                ! sediment erosion and deposition
+                                ! rates
+
+                CASE (SED)
+                   ifract = scalar_source(ispecies)%sediment_param%ifract
+
+                                ! deposition rate
+
+                   CALL plot_print_time_var(depos_varid(ifract), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%deposit(ispecies)%sum)
+
+                   
+                                ! erosion rate
+
+                   CALL plot_print_time_var(erode_varid(ifract), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%erosion(ispecies)%sum)
+
+                                ! bed total mass
+
+                   CALL plot_print_time_var(bedmass_varid(ifract), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%mass(ispecies)%sum)
+                   
+                                ! bed mass per unit area
+
+                   CALL plot_print_time_var(bedsed_varid(ifract), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%conc(ispecies)%sum)
+
+                CASE (PART)
+
+                                ! particulate deposition rate
+
+                   CALL plot_print_time_var(part_depos_varid(ispecies), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%deposit(ispecies)%sum)
+
+                                ! particulate bed mass
+
+                   CALL plot_print_time_var(bedpartmass_varid(ispecies), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%mass(ispecies)%sum)
+
+                                ! particulate bed mass per unit area
+
+                   CALL plot_print_time_var(bedpart_varid(ispecies), start, length, &
+                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &accum_block(iblock)%bed%conc(ispecies)%sum)
+
+                END SELECT
+             END DO
+             IF (source_doing_sed) THEN
+                CALL plot_print_time_var(beddepth_varid, start, length, &
+                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &accum_block(iblock)%bed%depth%sum)
+             END IF
+             
+          END IF
     END DO
+
 
     ncstat = nf_sync(plot_ncid)
     IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
@@ -696,6 +912,10 @@ CONTAINS
   ! SUBROUTINE plot_print
   ! ----------------------------------------------------------------
   SUBROUTINE plot_print(date_string, time_string, salinity, baro_press)
+
+    USE scalars_source, ONLY: source_doing_sed
+    USE bed_module
+    USE globals
     
     IMPLICIT NONE
 
@@ -703,12 +923,15 @@ CONTAINS
     CHARACTER (LEN=8) :: time_string
     DOUBLE PRECISION :: delta_t, salinity, baro_press
 
-    CALL plot_fix_velocity()
+    CALL accum_calc()
+    CALL velocity_shift()
 
     IF (plot_do_tecplot) &
          &CALL plot_print_tecplot(date_string, time_string, salinity, baro_press)
     IF (plot_do_netcdf) &
          &CALL plot_print_netcdf(date_string, time_string, salinity, baro_press)
+
+    CALL accum_reset()
 
   END SUBROUTINE plot_print
 
@@ -728,9 +951,23 @@ CONTAINS
        ncstat = nf_close(plot_ncid)
        IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
        DEALLOCATE(nctmp_real)
+       DEALLOCATE(nctmp_double)
     ELSE
        CLOSE(plot_iounit)
     END IF
+
+    CALL accum_done()
+    IF (ASSOCIATED(scalar_varid)) DEALLOCATE(scalar_varid)
+    IF (ASSOCIATED(depos_varid)) DEALLOCATE(depos_varid)
+    IF (ASSOCIATED(erode_varid)) DEALLOCATE(erode_varid)
+    IF (ASSOCIATED(part_depos_varid)) DEALLOCATE(part_depos_varid)
+    IF (ASSOCIATED(bedsed_varid)) DEALLOCATE(bedsed_varid)
+    IF (ASSOCIATED(bedmass_varid)) DEALLOCATE(bedmass_varid)
+    IF (ASSOCIATED(bedpart_varid)) DEALLOCATE(bedpart_varid)
+    IF (ASSOCIATED(bedpartmass_varid)) DEALLOCATE(bedpartmass_varid)
+    IF (ASSOCIATED(beddis_varid)) DEALLOCATE(beddis_varid)
+    IF (ASSOCIATED(bedpore_varid)) DEALLOCATE(bedpore_varid)
+    IF (ASSOCIATED(bedporemass_varid)) DEALLOCATE(bedporemass_varid)
 
   END SUBROUTINE plot_file_close
 

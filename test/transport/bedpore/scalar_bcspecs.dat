@@ -1,0 +1,4 @@
+1 US TABLE 1 CONC ALL "zero.dat" 1 /
+1 DS ZEROG 1 CONC ALL /
+1 US TABLE 2 CONC ALL "stuff-bc.dat" 1 /
+1 DS ZEROG 2 CONC ALL /

@@ -7,13 +7,15 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created June  3, 1998 by William A. Perkins
-! Last Change: Fri Jun 19 08:52:44 1998 by William A. Perkins <d3g096@WA_PERKINS>
+! Last Change: Sun Mar 11 12:27:34 2001 by William A. Perkins <perk@dora.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
 MODULE julian
 
-IMPLICIT NONE
+  IMPLICIT NONE
+
+  CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
 CONTAINS
 
@@ -146,5 +148,42 @@ SUBROUTINE NDYIN(jd, d, m, y)
   CALL CALCDATE(jd, m, d, y, h, min, sec)
 
 END SUBROUTINE NDYIN
+
+! ----------------------------------------------------------------
+! INTEGER FUNCTION dayofyear
+! ----------------------------------------------------------------
+INTEGER FUNCTION dayofyear(jdate)
+  IMPLICIT NONE
+
+  DOUBLE PRECISION :: jdate
+  INTEGER :: m, d, y, h, mi
+  DOUBLE PRECISION :: sec
+
+  CALL calcdate(jdate, m, d, y, h, mi, sec)
+  m = 1
+  d = 1
+  h = 0
+  mi = 0
+  sec = 0.0
+  dayofyear = INT(jdate - juldays(m, d, y, h, m, sec)) + 1
+END FUNCTION dayofyear
+
+! ----------------------------------------------------------------
+! INTEGER FUNCTION year
+! ----------------------------------------------------------------
+INTEGER FUNCTION year(jdate)
+
+  IMPLICIT NONE
+
+  DOUBLE PRECISION :: jdate
+  INTEGER :: m, d, y, h, mi
+  DOUBLE PRECISION :: sec
+
+  CALL calcdate(jdate, m, d, y, h, mi, sec)
+  year = y
+
+END FUNCTION year
+
+
 
 END MODULE JULIAN

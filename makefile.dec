@@ -1,6 +1,7 @@
 # -*- makefile -*----------------------------------------------
 # file: Makefile.dec
-# Makefile for mass2 on DEC Alpha running OSF1
+# Makefile for mass2 on DEC Alpha running Linux
+# Makefile for mass2 on DEC Alpha running OSF1 (use F90=f95)
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Battelle Memorial Institute
@@ -8,11 +9,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Mar 23 10:59:21 2000 by William A. Perkins <perk@gehenna.pnl.gov>
+# Last Change: Thu Nov 29 08:29:36 2001 by William A. Perkins <perk@gehenna.pnl.gov>
 # -------------------------------------------------------------
 
 
-F90 = f95
+#F90 = f95 # for OSF1
+F90 = fort # for Linux
 COMPILE.f90 = $(F90) $(F90FLAGS) -c $(DEBUG)
 LINK.f90 = $(F90) $(LDFLAGS)
 MOD=mod
@@ -30,8 +32,9 @@ NETCDFLDFLAGS = -L$(NETCDFDIR)/lib
 NETCDFLIBS = -lnetcdf
 
 # Options that will work on erebus:
-DEBUG =  -O -fast 
-FLAGS = $(NETCDFFLAGS) $(DEBUG) -fpe1 -non_shared 
+DEBUG =  -O -fast
+PROFILE = # -pg
+FLAGS = $(NETCDFFLAGS) $(DEBUG) $(PROFILE) -fpe # -non_shared # -fpe1
 
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
@@ -39,7 +42,7 @@ LIBLOC =
 LDFLAGS = $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) -non_shared
 LIBS = $(NETCDFLIBS) 
 
-TARGET = mass2_v025
+TARGET = mass2_v027
 SRCS =											\
      julian.f90									\
      date_time_module.f90						\
@@ -56,25 +59,52 @@ SRCS =											\
      block_bc_module.f90						\
      met_data_module.f90						\
      profile_init.f90							\
-     mass2_main_025.f90
+     misc_vars_module.f90						\
+     transport_only_module.f90					\
+     mass2_main_025.f90							\
+     mass2.f90									\
+	 scalars_source.f90							\
+	 temperature_source.f90						\
+	 tdg_source.f90								\
+	 generic_source.f90							\
+	 bed_source.f90								\
+	 sediment_source.f90						\
+	 particulate_source.f90						\
+	 bed.f90									\
+	 bed_functions.f90							\
+	 accumulator.f90							\
+	 total_conc.f90
 
 OBJS = $(SRCS:%.f90=%.o)
 
 MODULES =										\
-    block_boundary_conditions.mod				\
-    date_time.mod								\
-    energy_flux.mod								\
-    f90_unix_proc.mod							\
-    gage_output.mod								\
-    gas_coeffs.mod								\
-    gas_functions.mod							\
-    globals.mod									\
-    io_routines_module.mod						\
-    julian.mod									\
-    met_data_module.mod							\
-	plot_output.mod								\
-    scalars.mod									\
-    table_boundary_conditions.mod
+    block_boundary_conditions.$(MOD)			\
+    date_time.$(MOD)							\
+    energy_flux.$(MOD)							\
+    f90_unix_proc.$(MOD)						\
+    gage_output.$(MOD)							\
+    gas_coeffs.$(MOD)							\
+    gas_functions.$(MOD)						\
+    globals.$(MOD)								\
+    io_routines_module.$(MOD)					\
+    julian.$(MOD)								\
+    met_data_module.$(MOD)						\
+	plot_output.$(MOD)							\
+    scalars.$(MOD)								\
+    table_boundary_conditions.$(MOD)			\
+    misc_vars.$(MOD)							\
+    transport_only.$(MOD)						\
+    mass2_main_025.$(MOD)						\
+    scalars_source.$(MOD)						\
+	temperature_source.$(MOD)					\
+	tdg_source.$(MOD)							\
+	generic_source.$(MOD)						\
+	bed_source.$(MOD)							\
+	rdblk_mod.$(MOD)							\
+	sediment_source.$(MOD)						\
+    particulate_source.$(MOD)					\
+	bed_module.$(MOD)							\
+	accumulator.$(MOD)
 
 ${TARGET}: ${OBJS}
 	${LINK.f90} ${OBJS} ${LIBS} -o ${TARGET}
@@ -91,6 +121,20 @@ clean::
 
 # dependancies for individual object files
 
+accumulator.o: accumulator.f90 globals.$(MOD) scalars.$(MOD) \
+	scalars_source.$(MOD) misc_vars.$(MOD) date_time.$(MOD)
+accumulator.$(MOD): accumulator.o
+
+bed.o: bed.f90 scalars_source.$(MOD) scalars.$(MOD) globals.$(MOD) \
+	misc_vars.$(MOD)
+bed_module.$(MOD): bed.o
+
+bed_functions.o: bed_functions.f90 bed_module.$(MOD)
+
+bed_source.o: bed_source.f90 table_boundary_conditions.$(MOD) \
+	globals.$(MOD) misc_vars.$(MOD)
+bed_source.$(MOD): bed_source.o
+
 block_bc_module.o: block_bc_module.f90 \
 		table_boundary_conditions.$(MOD)
 block_boundary_conditions.$(MOD): block_bc_module.o
@@ -101,7 +145,9 @@ date_time.$(MOD): date_time_module.o
 energy_flux_module.o: energy_flux_module.f90
 energy_flux.$(MOD): energy_flux_module.o
 
-gage_output_module.o: gage_output_module.f90 globals.$(MOD) $(STUPIDMOD)
+gage_output_module.o: gage_output_module.f90 globals.$(MOD) \
+	scalars.$(MOD) scalars_source.$(MOD) gas_functions.$(MOD) \
+	date_time.$(MOD) bed_module.$(MOD)
 gage_output.$(MOD): gage_output_module.o
 
 gas_coeffs_module.o: gas_coeffs_module.f90
@@ -109,6 +155,9 @@ gas_coeffs.$(MOD): gas_coeffs_module.o
 
 gas_functions_module.o: gas_functions_module.f90 gas_coeffs.$(MOD)
 gas_functions.$(MOD): gas_functions_module.o
+
+generic_source.o: generic_source.f90 misc_vars.$(MOD) bed_source.$(MOD)
+generic_source.$(MOD): generic_source.o
 
 global_module_023.o: global_module_023.f90 $(STUPIDMOD) 
 globals.$(MOD): global_module_023.o
@@ -123,8 +172,16 @@ mass2_main_025.o: mass2_main_025.f90 \
    globals.$(MOD) io_routines_module.$(MOD) block_boundary_conditions.$(MOD) \
    table_boundary_conditions.$(MOD) date_time.$(MOD) scalars.$(MOD) \
    met_data_module.$(MOD) energy_flux.$(MOD) gas_functions.$(MOD) \
-   plot_output.$(MOD)
-	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_025.f90
+   plot_output.$(MOD) gage_output.$(MOD) misc_vars.$(MOD) transport_only.$(MOD) \
+   scalars_source.$(MOD) bed_module.$(MOD) accumulator.$(MOD)
+mass2_main_025.$(MOD): mass2_main_025.o
+
+mass2.o: mass2.f90 \
+	mass2_main_025.$(MOD)
+	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2.f90
+
+misc_vars_module.o: misc_vars_module.f90 date_time.$(MOD)
+misc_vars.$(MOD): misc_vars_module.o
 
 met_data_module.o: met_data_module.f90 table_boundary_conditions.$(MOD) \
    date_time.$(MOD)
@@ -132,14 +189,41 @@ met_data_module.$(MOD): met_data_module.o
 
 netcdferror.o: netcdferror.f90
 
-plot_output.o: plot_output.f90 globals.$(MOD) scalars.$(MOD) gas_functions.$(MOD)
+particulate_source.o: particulate_source.f90 globals.$(MOD) scalars.$(MOD) \
+	misc_vars.$(MOD) bed_functions.inc
+particulate_source.$(MOD): particulate_source.o
+
+plot_output.o: plot_output.f90 globals.$(MOD) scalars.$(MOD) scalars_source.$(MOD) \
+	gas_functions.$(MOD) bed_module.$(MOD) misc_vars.$(MOD) accumulator.$(MOD)
 plot_output.$(MOD): plot_output.o
 
 scalars_module.o: scalars_module.f90
 scalars.$(MOD): scalars_module.o
 
+scalars_source.o: scalars_source.f90 temperature_source.$(MOD) tdg_source.$(MOD) \
+	generic_source.$(MOD) scalars.$(MOD) met_data_module.$(MOD) \
+	sediment_source.$(MOD) particulate_source.$(MOD)
+scalars_source.$(MOD): scalars_source.o
+
+sediment_source.o: sediment_source.f90 globals.$(MOD) scalars.$(MOD) misc_vars.$(MOD)
+sediment_source.$(MOD): sediment_source.o
+
 table_bc_module.o: table_bc_module.f90 date_time.$(MOD)
 table_boundary_conditions.$(MOD): table_bc_module.o
+
+tdg_source.o: tdg_source.f90 misc_vars.$(MOD) gas_functions.$(MOD) \
+	met_data_module.$(MOD)
+tdg_source.$(MOD): tdg_source.o
+
+temperature_source.o: temperature_source.f90 met_data_module.$(MOD) \
+	misc_vars.$(MOD) energy_flux.$(MOD)
+temperature_source.$(MOD): temperature_source.o
+
+total_conc.o: total_conc.f90 scalars_source.$(MOD)
+
+transport_only_module.o: transport_only_module.f90 date_time.$(MOD) globals.$(MOD)
+transport_only.$(MOD): transport_only_module.o
+
 
 profile_init.o: profile_init.f90 globals.$(MOD)
 

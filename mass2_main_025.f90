@@ -16,12 +16,12 @@
 !
 ! COMMENTS:   
 !
-! MOD HISTORY:	4-28-98 0.23 version fully implements multiblock, dynamic arrays
+! MOD HISTORY:	7-2000 0.26 version - starting to spilt this monster up
 !
 !***************************************************************
 !
 
-PROGRAM mass2_main
+MODULE mass2_main_025
 
 !-------------------------------------------------------------------------------------------------------
 
@@ -33,127 +33,41 @@ USE date_time
 USE gage_output
 USE plot_output
 USE scalars
+USE scalars_source
 USE met_data_module
 USE energy_flux
 USE gas_functions
 
+USE misc_vars
+USE transport_only
+USE scalars_source
+USE bed_module
 
 !-------------------------------------------------------------------------------------------------------
 
 IMPLICIT NONE
 
-INTEGER :: n, i, j, jj, junk, icell, jcell
-INTEGER :: imax,jmax,ivec(4),jvec(4),ivec2(4),jvec2(4)
-INTEGER :: system_time(8)
-INTEGER :: iblock, con_block, num_bc, ispecies
-INTEGER :: cfg_iounit=10, output_iounit=11, error_iounit=13, status_iounit=14
-INTEGER :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
-! INTEGER :: mass_source_iounit=19
-
-INTEGER :: i_start_cell, i_end_cell, j_start_cell , j_end_cell
-INTEGER :: max_species_in_restart
-
-DOUBLE PRECISION :: roughness, species_io_vec(100)
-
-DOUBLE PRECISION, ALLOCATABLE :: aa(:),bb(:),cc(:),dd(:),tt(:),ptemp(:),qtemp(:)
-DOUBLE PRECISION, ALLOCATABLE :: work(:,:),cos_ij(:,:),inlet_area(:),table_input(:)
+CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
 !---------------------------------------------------------------------------------
 ! derived type (structures) declarations
-TYPE(datetime_struct) :: start_time, end_time, current_time
 
-
-!--- v013 defs ---------------------------------------------------
-
-INTEGER :: x_end,y_end
-DOUBLE PRECISION :: delta_x,delta_y
-DOUBLE PRECISION :: eddy_default, kx_diff_default, ky_diff_default ! default diffusion coeff for scalar transport
-DOUBLE PRECISION :: k_p,k_e,k_w,k_n,k_s 
-
-DOUBLE PRECISION :: delta_t
-INTEGER :: time_step_count = 0, print_freq = 1, gage_print_freq = 1, restart_print_freq = 1
+! moved to 
+! TYPE(datetime_struct), SAVE :: start_time, end_time, current_time
 
 
 
-DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
-DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
-DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
-DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
-DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
-DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
-DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
-DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
+CONTAINS
 
+!----------------------------------------------------------------------------
+!----------------------------------------------------------------------------
 
+SUBROUTINE start_up(status_flag)
 
-DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
-DOUBLE PRECISION :: curve_1,curve_2,curve_3,curve_4,curve_5,curve_6,curve_7	! curvature terms
+IMPLICIT NONE
 
-DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
-DOUBLE PRECISION :: h1_eta_e, h1_eta_w, h1_eta_n, h1_eta_s	! e.g., h1_eta_p is the partial deriv
-DOUBLE PRECISION :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
+INTEGER :: status_flag, var
 
-DOUBLE PRECISION :: chezy_con_default, slope,ds_elev,z_step
-DOUBLE PRECISION :: relax_dp,mann_con
-
-INTEGER :: jspill_start   ! y node line to start spill at
-INTEGER :: jspill_end			! y node line to stop spill at
-INTEGER :: jgen_start  		! y node line to start generation at
-INTEGER :: jgen_end				! y node line to stop generation ** max is block%ymax
-
-INTEGER :: j_dsflux_start, j_dsflux_end
-
-INTEGER :: x_start			! x line to start scalar calculations (usually = 2)
-
-DOUBLE PRECISION :: spill_flow	! unit spill flow (cfs)
-DOUBLE PRECISION :: gen_flow   	! unit generation flow (cfs)
-DOUBLE PRECISION :: gen_conc    ! unit generation TDG %Saturation
-DOUBLE PRECISION :: spill_conc  ! unit spill TDG %Saturation
-
-DOUBLE PRECISION :: uvel_initial, vvel_initial, conc_initial, wsel_or_depth_initial ! intial values to assign over field
-
-DOUBLE PRECISION :: uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
-
-DOUBLE PRECISION :: max_mass_source_sum, maxx_mass
-DOUBLE PRECISION :: salinity = 0.0, ccstar, conc_TDG
-
-INTEGER :: iteration, number_hydro_iterations, number_scalar_iterations
-INTEGER :: sweep,scalar_sweep, depth_sweep
-!LOGICAL :: x_sweep, y_sweep, x_sweep_dp, y_sweep_dp
-LOGICAL :: debug, manning, read_grid
-LOGICAL :: write_restart_file, read_hotstart_file
-LOGICAL :: ds_flux_given, given_initial_wsel, read_initial_profile
-LOGICAL :: update_depth = .TRUE.
-LOGICAL :: do_flow = .TRUE. , do_transport = .FALSE. , do_gage_print = .FALSE.
-LOGICAL :: do_transport_restart = .FALSE.
-LOGICAL :: do_spatial_eddy, do_spatial_kx, do_spatial_ky, do_spatial_chezy
-LOGICAL :: do_surface_heatx = .FALSE. , do_surface_gasx = .FALSE.
-
-DOUBLE PRECISION :: inlet_flow
-DOUBLE PRECISION :: total_flow
-
-DOUBLE PRECISION :: ds_elev_read(27)
-
-DOUBLE PRECISION :: transfer_coeff, gasx_a, gasx_b, gasx_c, gasx_d
-
-!--- v013 defs ----------------------------------------------------
-
-CHARACTER (LEN=80), ALLOCATABLE :: grid_file_name(:)
-CHARACTER (LEN=80) :: weather_filename
-CHARACTER (LEN=80) :: config_file_version, filename
-CHARACTER*80 :: sim_title
-CHARACTER*75 :: title
-CHARACTER (LEN=80) :: code_version = "mass2 code version 0.252"
-CHARACTER (LEN=80) :: code_date = "release date: July 26, 1999"
-CHARACTER*15 :: block_title
-CHARACTER*30 :: restart_filename
-CHARACTER*26 :: zone_name
-
-!-------------------------------------------------------------------------------------------------------
-! debugging temps
-INTEGER :: dum_start, dum_end
-DOUBLE PRECISION :: dum_vel(100), dum_depth(100), dum_val
-CHARACTER (LEN=80) :: dum_char
 !-------------------------------------------------------------------------------------------------------
 ! format definitions all placed here
 2000 FORMAT(a80)
@@ -164,7 +78,7 @@ CHARACTER (LEN=80) :: dum_char
 !-------------------------------------------------------------------------------------------------------
 ! open io units
 
-OPEN(cfg_iounit,file='mass2_v025.cfg')
+OPEN(cfg_iounit,file='mass2_v027.cfg')
 OPEN(output_iounit,file='output.out', access='sequential', RECL=1024)
 OPEN(error_iounit,file='error-warning.out')
 OPEN(status_iounit,file='status.out')
@@ -219,13 +133,11 @@ DO i=1, max_species
 	END DO
 END DO
 
-
-
-
-
-ALLOCATE(aa(jmax),bb(jmax),cc(jmax),dd(jmax),tt(jmax),ptemp(jmax),qtemp(jmax))
+ALLOCATE(aa(jmax),bb(jmax),cc(jmax),dd(jmax),tt(jmax),ptemp(0:jmax),qtemp(0:jmax))
 ALLOCATE(work(imax,jmax),cos_ij(imax,jmax))
 ALLOCATE(inlet_area(jmax), table_input(jmax))
+ptemp = 0.0
+qtemp = 0.0
 
 !-------------------------------------------------------------------------------
 ! read, allocate, and set up block and table boundary conditions
@@ -247,6 +159,7 @@ END IF
 ! finish reading cfg file
 READ(cfg_iounit,*)do_flow				! on/off switch for hydrodynamics
 READ(cfg_iounit,*)do_transport	! on/off switch for transport calculations
+baro_press = 760.0              ! in case weather is not read
 READ(cfg_iounit,*)do_surface_heatx, do_surface_gasx, weather_filename !*** on/off surface exhange, weather data file
 READ(cfg_iounit,*)debug					! extra debug printing
 
@@ -290,7 +203,11 @@ READ(cfg_iounit,*)wsel_or_depth_initial	! initial uniform value of depth OR wate
 READ(cfg_iounit,*)uvel_wind		! initial uniform value of u wind velocity
 READ(cfg_iounit,*)vvel_wind		! initial uniform value of v wind velocity
 
-READ(cfg_iounit,*) print_freq		! printout frequency every print_freq time steps
+                                ! initial bed information
+
+READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init
+
+READ(cfg_iounit,*) print_freq, do_accumulate		! printout frequency every print_freq time steps
 READ(cfg_iounit,*) gage_print_freq
 !--------------------------------------------------------------------------------------------------------
 ! do some pre-processing of the config data
@@ -308,22 +225,35 @@ IF(do_transport)THEN
 	CALL read_scalar_bcspecs(bcspec_iounit, error_iounit, status_iounit, block%xmax, block%ymax)
 	CALL read_scalar_bc_tables
 	CALL set_scalar_block_connections(max_blocks, max_species, error_iounit, status_iounit)
+    CALL scalar_source_read()
+    IF (source_doing_sed) CALL bed_initialize()
+
+! transport only mode
+  IF(.NOT. do_flow)THEN
+     CALL allocate_hydro_interp_blocks(error_iounit, status_iounit)
+     DO i=1,max_blocks
+	CALL allocate_hydro_interp_comp(i, block(i)%xmax+1, block(i)%ymax+1, status_iounit)
+     END DO
+     CALL read_transport_only_dat(status_iounit, error_iounit)
+     CALL check_transport_only_dat(start_time%time,end_time%time, status_iounit, error_iounit)
+  END IF
+
 END IF
 
 ! read in met data from a file
-IF(do_surface_heatx .OR. do_surface_gasx)THEN
+IF (source_need_met) THEN
 	CALL read_met_data(weather_filename)
 	CALL update_met_data(current_time%time)
 END IF
 
-! read in surface gas exchange coefficients
+! read in surface gas exchange coefficients, now handled in source module
 !
-IF(do_surface_gasx)THEN
-	OPEN(grid_iounit,file='gas_exchange_coeff.dat')
-	READ(grid_iounit,*)gasx_a, gasx_b, gasx_c, gasx_d
-	CLOSE(grid_iounit)
-	WRITE(status_iounit,*)'completed reading surface gas exchange coefficients'
-END IF
+! IF(do_surface_gasx)THEN
+! 	OPEN(grid_iounit,file='gas_exchange_coeff.dat')
+! 	READ(grid_iounit,*)gasx_a, gasx_b, gasx_c, gasx_d
+! 	CLOSE(grid_iounit)
+! 	WRITE(status_iounit,*)'completed reading surface gas exchange coefficients'
+! END IF
 
 !------------------------------------------------------------------------------------
 ! set up the gage print files
@@ -434,16 +364,43 @@ IF(read_hotstart_file)THEN
 !WRITE(*,*)'done with eddy read for block -',iblock
 	END DO
 	IF( (do_transport).AND.(do_transport_restart) )THEN
-		IF(max_species_in_restart > max_species) max_species_in_restart = max_species
-		DO i=1,max_species_in_restart
-			DO iblock = 1, max_blocks
-				READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
-			WRITE(*,*)'done with conc read for species -',i,'and block -',iblock
-				READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
-			WRITE(*,*)'done with concold read for species -',i,'and block -',iblock
-			END DO
-		END DO
-        ELSE IF (do_transport) THEN
+
+                                ! if a bed is expected in the
+                                ! hotstart, the number of scalars must
+                                ! be the same in the hotstart as was
+                                ! specified for the simulation
+
+       IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
+          WRITE (*,*) 'FATAL ERROR: specified number of scalar species, ', &
+               &max_species, ', does not match that in hotstart file (',&
+               &max_species_in_restart, ')'
+          WRITE (error_iounit,*) 'FATAL ERROR: specified number of scalar species, ', &
+               &max_species, ', does not match that in hotstart file (',&
+               &max_species_in_restart, ')'
+          CALL EXIT(15)
+       END IF
+
+                                ! if we don't expect a bed, don't
+                                ! worry about the number of scalar
+                                ! species
+
+       IF(max_species_in_restart > max_species) max_species_in_restart = max_species
+       DO i=1,max_species_in_restart
+          DO iblock = 1, max_blocks
+             READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
+             WRITE(*,*)'done with conc read for species -',i,'and block -',iblock
+             READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
+             WRITE(*,*)'done with concold read for species -',i,'and block -',iblock
+          END DO
+       END DO
+
+                                ! if any sediment species were
+                                ! specified, we expect to find a bed
+                                ! in the hotstart file
+
+       IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
+
+    ELSE IF (do_transport) THEN
            DO i = 1, max_species
               DO iblock =1, max_blocks
                  species(i)%scalar(iblock)%conc = conc_initial
@@ -483,7 +440,29 @@ ELSE
 		END DO
 	END DO
 
-	WRITE(status_iounit,*)'done setting initial values for all blocks'
+! handle case if we are doing transport-only and not restarting
+    IF((.NOT. do_flow).AND.(do_transport))THEN
+       CALL hydro_restart_read(current_time%time)
+       DO iblock=1,max_blocks
+          var = 1
+          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%uvel)
+          block(iblock)%uold = block(iblock)%uvel
+          block(iblock)%ustar = block(iblock)%uvel
+          
+          var = 2
+          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%vvel)
+          block(iblock)%vold = block(iblock)%vvel
+          block(iblock)%vstar = block(iblock)%vvel
+          
+          var = 3
+          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%depth)
+          block(iblock)%depthold = block(iblock)%depth
+          block(iblock)%dstar = block(iblock)%depth
+       END DO
+       WRITE(status_iounit,*)'done setting transport-only initial values for all blocks'
+    END IF
+
+    WRITE(status_iounit,*)'done setting initial values for all blocks'
 ENDIF
 
 !--------------------------------------------------------------------------------
@@ -815,6 +794,7 @@ CALL diag_plot_file_setup()
 !-----------------------------------------------------------------------
 
 CALL plot_file_setup()
+CALL accumulate(start_time%time)
 CALL plot_print(start_time%date_string, start_time%time_string, &
      &salinity, baro_press)
 
@@ -830,16 +810,37 @@ END IF
 !END DO
 !CLOSE(55)
 
-!----------------------------------------------------------------------------------------------------------
+END SUBROUTINE start_up
+
+
+!#################################################################################
+!---------------------------------------------------------------------------------
+!
 ! SOLUTION OF THE MOMENTUM, DEPTH CORRECTION, AND SCALAR TRANSPORT EQUATIONS
-!----------------------------------------------------------------------------------
-! Time Marching Loop
+!
+!---------------------------------------------------------------------------------
+SUBROUTINE hydro(status_flag)
 
-DO WHILE( current_time%time <= end_time%time ) 
+IMPLICIT NONE
 
+DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
+DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
+DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
+DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
+DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
+DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
+DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
+DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
 
+INTEGER :: status_flag
 
-IF(do_flow)THEN
+!-------------------------------------------------------------------------------------------------------
+! format definitions all placed here
+2000 FORMAT(a80)
+1000 FORMAT(50(f12.4,2x))
+1020 FORMAT(2(f12.4,2x),50(f12.6,2x))
+2010 FORMAT('Simulation Run on Date - ',i2,'-',i2,'-',i4,' at time ',i2,':',i2,':',i2/)
+
 
 ! Assign U,V,D BCs for this time
 ! set U boundary conditions for this time
@@ -1807,408 +1808,481 @@ IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
 
 END DO    ! internal time iteration loop for momentum, depth correction equations
 
-END IF		! if-block for on/off hydrodynamics
+CALL bedshear()
 
+END SUBROUTINE hydro		
 
-!********************************************************************************************************
-!--------------------------------------------------------------------------------------------------------
-! scalar transport solution
-!--------------------------------------------------------------------------------------------------------
-!********************************************************************************************************
+! ----------------------------------------------------------------
+! SUBROUTINE transport_precalc
+! This routine precalculates various hydrodynamic values needed
+! ----------------------------------------------------------------
+SUBROUTINE transport_precalc()
 
-IF(do_transport)THEN
+  IMPLICIT NONE
 
-IF(do_surface_heatx .OR. do_surface_gasx)THEN
-	CALL update_met_data(current_time%time)
-END IF
+  DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
 
-! INTERNAL ITERATION AT THIS TIME LEVEL LOOP
-DO iteration = 1,number_scalar_iterations
+  DO iblock = 1, max_blocks
+     x_end = block(iblock)%xmax
+     y_end = block(iblock)%ymax
 
-! BLOCK LOOP
-DO iblock = 1,max_blocks
+     i = 1
+     block(iblock)%inlet_area(2:y_end) = block(iblock)%depth(i,2:y_end)*block(iblock)%hu2(i,2:y_end)
 
-x_end = block(iblock)%xmax
-y_end = block(iblock)%ymax
+     DO i= 2,x_end
+        DO j=2,y_end
 
-! SPECIES LOOP - multiple numbers of scalar variables
-DO ispecies = 1, max_species
+           hp1 = block(iblock)%hp1(i,j)
+           hp2 = block(iblock)%hp2(i,j)
+           he1 = block(iblock)%hu1(i,j)
+           he2 = block(iblock)%hu2(i,j)
+           hw1 = block(iblock)%hu1(i-1,j)
+           hw2 = block(iblock)%hu2(i-1,j)
+           hs1 = block(iblock)%hv1(i,j-1)
+           hs2 = block(iblock)%hv2(i,j-1)
+           hn1 = block(iblock)%hv1(i,j)
+           hn2 = block(iblock)%hv2(i,j)
 
-! set boundary conditions for this time
-!IF(iblock == 1)THEN
-!		block(iblock)%conc(i,2:y_end) = 100.0
-!		block(iblock)%concold(i,2:y_end) = 100.0
-!	
-!		block(iblock)%conc(i,jspill_start:jspill_end) = spill_conc
-!		block(iblock)%concold(i,jspill_start:jspill_end) = spill_conc
-!	
-!		block(iblock)%conc(i,jgen_start:jgen_end) = gen_conc
-!		block(iblock)%concold(i,jgen_start:jgen_end) = gen_conc
-!ELSE
-!		block(iblock)%conc(i,2:y_end) = block(iblock-1)%conc(block(iblock-1)%xmax,2:block(iblock-1)%ymax)
-!		block(iblock)%concold(i,2:y_end) = block(iblock-1)%concold(block(iblock-1)%xmax,2:block(iblock-1)%ymax)
-!END IF
+           block(iblock)%k_e(i,j) = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i+1,j))
+           block(iblock)%k_w(i,j) = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i-1,j))
+           block(iblock)%k_n(i,j) = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j+1))
+           block(iblock)%k_s(i,j) = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j-1))
 
-! loop over the total number of bc specifications
-DO num_bc = 1, scalar_bc(iblock)%num_bc
+           block(iblock)%depth_e(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
+           block(iblock)%depth_w(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i-1,j))
+           block(iblock)%depth_n(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1))
+           block(iblock)%depth_s(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j-1))
 
-IF(scalar_bc(iblock)%bc_spec(num_bc)%species == ispecies)THEN
+           IF(i == 2) block(iblock)%depth_w(i,j) = block(iblock)%depth(i-1,j)
+           IF(i == x_end) block(iblock)%depth_e(i,j) = block(iblock)%depth(i+1,j)
+           IF(j == 2) block(iblock)%depth_s(i,j) = block(iblock)%depth(i,j-1)
+           IF(j == y_end) block(iblock)%depth_n(i,j) = block(iblock)%depth(i,j+1)
 
-SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_loc)
+           block(iblock)%flux_e(i,j) = he2*block(iblock)%uvel(i,j)*block(iblock)%depth_e(i,j)
+           block(iblock)%flux_w(i,j) = hw2*block(iblock)%uvel(i-1,j)*block(iblock)%depth_w(i,j)
+           block(iblock)%flux_n(i,j) = hn1*block(iblock)%vvel(i,j)*block(iblock)%depth_n(i,j)
+           block(iblock)%flux_s(i,j) = hs1*block(iblock)%vvel(i,j-1)*block(iblock)%depth_s(i,j)
+           block(iblock)%diffu_e(i,j) = block(iblock)%k_e(i,j)*block(iblock)%depth_e(i,j)*he2/he1
+           block(iblock)%diffu_w(i,j) = block(iblock)%k_w(i,j)*block(iblock)%depth_w(i,j)*hw2/hw1
+           block(iblock)%diffu_n(i,j) = block(iblock)%k_n(i,j)*block(iblock)%depth_n(i,j)*hn1/hn2
+           block(iblock)%diffu_s(i,j) = block(iblock)%k_s(i,j)*block(iblock)%depth_s(i,j)*hs1/hs2
+           block(iblock)%pec_e(i,j) = block(iblock)%flux_e(i,j)/block(iblock)%diffu_e(i,j)
+           block(iblock)%pec_w(i,j) = block(iblock)%flux_w(i,j)/block(iblock)%diffu_w(i,j)
+           block(iblock)%pec_n(i,j) = block(iblock)%flux_n(i,j)/block(iblock)%diffu_n(i,j)
+           block(iblock)%pec_s(i,j) = block(iblock)%flux_s(i,j)/block(iblock)%diffu_s(i,j)
+           
+        END DO
+     END DO
 
-	CASE("US")
-	i=1
-	x_start = i + 1
-	inlet_area(2:y_end) = block(iblock)%depth(i,2:y_end)*block(iblock)%hu2(i,2:y_end)
-		SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
-
-		CASE("ZEROG")
-			DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-				species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                     & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
-                                     & species(ispecies)%scalar(iblock)%conc(i+1,&
-                                     & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                     & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1)
-
-			END DO
-
-		CASE("BLOCK")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("CONC")
-				con_block = scalar_bc(iblock)%bc_spec(num_bc)%con_block
-				DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-                                   species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
-                                        & 0.5*(species(ispecies)%scalar(iblock)%&
-                                        & conc(2,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) +&
-                                        & species(ispecies)%scalar(con_block)%conc(block(con_block)%xmax,&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%con_start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%con_end_cell(j)+1))
-				
-				END DO
-
-			END SELECT
-
-		CASE("TABLE")
-			CALL scalar_table_interp(current_time%time,&
-                             & scalar_bc(iblock)%bc_spec(num_bc)%table_num,&
-                             & table_input, scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
-				DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-					inlet_flow = table_input(j)/(1 + scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j) -&
-                                             & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j))
-					DO jj=scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1,&
-                                             & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
-                                           species(ispecies)%scalar(iblock)%conc(i,jj) =  inlet_flow/inlet_area(jj)
-
-					END DO
-				END DO
-
-			CASE("CONC")
-				i = scalar_bc(iblock)%bc_spec(num_bc)%x_start
-				x_start = i + 1
-				DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-          species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                           & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) = table_input(j)
-
-				END DO
-			
-			END SELECT
-
-	END SELECT
-	species(ispecies)%scalar(iblock)%concold(i,:) =  species(ispecies)%scalar(iblock)%conc(i,:)
-	
-	CASE("DS")
-		i = x_end+1
-		SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
-
-		CASE("ZEROG")
-			DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-                           species(ispecies)%scalar(iblock)%conc(x_end+1,&
-                                & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
-                                & species(ispecies)%scalar(iblock)%conc(x_end,&
-                                & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1)
-
-			END DO
-		CASE("BLOCK")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
-			CASE("CONC")
-				con_block = scalar_bc(iblock)%bc_spec(num_bc)%con_block
-				DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-                                   species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
-                                        & 0.5*(species(ispecies)%scalar(iblock)%conc(x_end,&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) +&
-                                        & species(ispecies)%scalar(con_block)%conc(2,&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%con_start_cell(j)+1:&
-                                        & scalar_bc(iblock)%bc_spec(num_bc)%con_end_cell(j)+1) )
-				
-				END DO
-
-			END SELECT
-
-		CASE("TABLE")
-			CALL scalar_table_interp(current_time%time,&
-                             & scalar_bc(iblock)%bc_spec(num_bc)%table_num,&
-                             & table_input, scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
-			CASE("CONC") ! can specifiy the concentration
-
-				!DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-				!	j_dsflux_start = scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
-				!	j_dsflux_end	 = scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
-				!	block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end) = table_input(j)
-				!	block(iblock)%ustar(x_end,j_dsflux_start:j_dsflux_end) = block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
-				!	block(iblock)%uold(x_end,j_dsflux_start:j_dsflux_end) =  block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
-				!	block(iblock)%depth(x_end+1,j_dsflux_start:j_dsflux_end) = (block(iblock)%depth(x_end,j_dsflux_start:j_dsflux_end) + block(iblock)%zbot(x_end,j_dsflux_start:j_dsflux_end)) &
-	      ! - block(iblock)%zbot(x_end+1,j_dsflux_start:j_dsflux_end)
-				!END DO
-
-
-
-			END SELECT
-
-		END SELECT
-		
-		species(ispecies)%scalar(iblock)%concold(i,1:y_end) = species(ispecies)%scalar(iblock)%conc(i,1:y_end)
-
-! these are dummied in for later implementation
-	CASE("RIGHT")
-		SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
-		CASE("BLOCK")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("MATCH")
-
-			END SELECT
-
-		CASE("TABLE")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
-			CASE("VELO")
-			
-			END SELECT
-		END SELECT
-
-	CASE("LEFT")
-		SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
-		CASE("BLOCK")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("MATCH")
-
-			END SELECT
-
-		CASE("TABLE")
-			SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
-			CASE("VELO")
-			
-			END SELECT
-
-		END SELECT
-
-
-END SELECT
-
-END IF 
-
-END DO ! num bc loop
-
-
-!-------------------------------------------------------------------------
-! compute scalar transport discretization equation coefficients
-
- DO i= x_start,x_end
-    DO j=2,y_end
-      hp1 = block(iblock)%hp1(i,j)
-      hp2 = block(iblock)%hp2(i,j)
-      he1 = block(iblock)%hu1(i,j)
-      he2 = block(iblock)%hu2(i,j)
-      hw1 = block(iblock)%hu1(i-1,j)
-      hw2 = block(iblock)%hu2(i-1,j)
-      hs1 = block(iblock)%hv1(i,j-1)
-      hs2 = block(iblock)%hv2(i,j-1)
-      hn1 = block(iblock)%hv1(i,j)
-      hn2 = block(iblock)%hv2(i,j)
-  
-			k_e = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i+1,j))
-      k_w = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i-1,j))
-      k_n = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j+1))
-      k_s = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j-1))
-
-      depth_e = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
-      depth_w = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i-1,j))
-      depth_n = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1))
-      depth_s = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j-1))
-
-			IF(i == 2)			depth_w = block(iblock)%depth(i-1,j)
-			IF(i == x_end)	depth_e = block(iblock)%depth(i+1,j)
-			IF(j == 2)			depth_s = block(iblock)%depth(i,j-1)
-			IF(j == y_end)	depth_n = block(iblock)%depth(i,j+1)
-
-      flux_e = he2*block(iblock)%uvel(i,j)*depth_e
-      flux_w = hw2*block(iblock)%uvel(i-1,j)*depth_w
-      flux_n = hn1*block(iblock)%vvel(i,j)*depth_n
-      flux_s = hs1*block(iblock)%vvel(i,j-1)*depth_s
-      diffu_e =  k_e*depth_e*he2/he1
-      diffu_w =  k_w*depth_w*hw2/hw1
-      diffu_n =  k_n*depth_n*hn1/hn2
-      diffu_s =  k_s*depth_s*hs1/hs2
-      pec_e = flux_e/diffu_e
-      pec_w = flux_w/diffu_w
-      pec_n = flux_n/diffu_n
-      pec_s = flux_s/diffu_s
-
-      coeff%ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
-      coeff%aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
-      coeff%an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
-      coeff%as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
-
-      apo = hp1*hp2*block(iblock)%depthold(i,j)/delta_t
-
-      coeff%source(i,j) = 0.0 
-			IF( (ispecies == 2) .AND. do_surface_heatx )THEN
-				t_water = species(ispecies)%scalar(iblock)%conc(i,j)
-				coeff%source(i,j) = net_heat_flux(net_solar, t_water, t_air, t_dew, windspeed) &
-															/(1000.0*4186.0/3.2808) ! rho*specifc heat*depth in feet
-				
-				!WRITE(*,*)"net heat flux = ",net_heat_flux(net_solar, t_water, t_air, t_dew, windspeed)
-				!WRITE(*,*)"source term = ", coeff%source(i,j)
-				!WRITE(*,*)"net_solar = ", net_solar
-				!WRITE(*,*)"t_water = ", t_water
-				!WRITE(*,*)"t_air = ",t_air
-				!WRITE(*,*)"t_dew = ",t_dew
-				!WRITE(*,*)"windspeed =",windspeed
-				!READ(*,*)
-			
-			END IF
-
-			IF((ispecies == 1) .AND. do_surface_gasx )THEN
-				conc_TDG = species(ispecies)%scalar(iblock)%conc(i,j)
-				t_water = species(2)%scalar(iblock)%conc(i,j)
-				ccstar = TDGasConc( baro_press, t_water,  salinity ) ! c* will be the conc at Barometric Press.
-				
-				transfer_coeff = gasx_a + gasx_b*windspeed + gasx_c*windspeed**2 + gasx_d*windspeed**3
-				transfer_coeff = transfer_coeff*3.2808/86400.0 ! convert from meters/day to feet/sec
-
-				coeff%source(i,j) = transfer_coeff*( ccstar - conc_TDG )
-
-			END IF
-
-      coeff%ap(i,j) = coeff%ae(i,j)+coeff%aw(i,j)+coeff%an(i,j)+coeff%as(i,j) &
-       + apo 
-      coeff%bp(i,j) = coeff%source(i,j)*hp1*hp2 + apo*species(ispecies)%scalar(iblock)%concold(i,j)
-    
-		END DO
- END DO
-
- ! solve using line-by-line TDMA
- !  solves a set of linear equations of the form:
- !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
- !
-DO sweep=1,scalar_sweep
-! if(x_sweep)THEN
-! DO j=2,y_end
-!    DO i=2,x_end
-!    cc(i) = coeff%aw(i,j)
-!    aa(i) = coeff%ap(i,j)
-!    bb(i) = coeff%ae(i,j)
-!    dd(i) = coeff%an(i,j)*block(iblock)%conc(i,j+1) + coeff%as(i,j)*block(iblock)%conc(i,j-1) &
-!            + coeff%bp(i,j)
-!    END DO
-
- ! set the special boundary coefficients
-
-!  aa(1) = 1.0
-!  bb(1) = 0.0
-!  cc(1) = 0.0
-!  dd(1) = block(iblock)%conc(1,j) 
-!  aa(x_end+1) = 1.0
-!  bb(x_end+1) = 0.0
-!  cc(x_end+1) = 1.0
-!  dd(x_end+1) = 0.0
-!  CALL tridag(1,x_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
-!  DO i=1,x_end+1
-!    block(iblock)%conc(i,j) = tt(i)
-!    END DO
-!   END DO
-!  END IF
-  ! LBL sweep in the y direction
-  !
-!  if(y_sweep)THEN
-DO i= x_start,x_end
-	DO j=2,y_end
-    cc(j) = coeff%as(i,j)
-    aa(j) = coeff%ap(i,j)
-    bb(j) = coeff%an(i,j)
-    dd(j) = coeff%ae(i,j)*species(ispecies)%scalar(iblock)%conc(i+1,j) +&
-         & coeff%aw(i,j)*species(ispecies)%scalar(iblock)%conc(i-1,j) &
-            + coeff%bp(i,j)
-	END DO
-  aa(1) = 1.0
-  bb(1) = 1.0
-  cc(1) = 0.0
-  dd(1) = 0.0 !block(iblock)%conc(i,0) 
-  aa(y_end+1) = 1.0
-  bb(y_end+1) = 0.0
-  cc(y_end+1) = 1.0
-  dd(y_end+1) = 0.0 !block(iblock)%conc(i,y_end+1) 
-  CALL tridag(1,y_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
-  DO j=1,y_end+1
-    species(ispecies)%scalar(iblock)%conc(i,j) = tt(j)
+     block(iblock)%apo(2:x_end,2:y_end) = &
+          &block(iblock)%hp1(2:x_end,2:y_end)*&
+          &block(iblock)%hp2(2:x_end,2:y_end)*&
+          &block(iblock)%depthold(2:x_end,2:y_end)/delta_t
   END DO
-  ! set zero gradient at shoreline
-  !block(iblock)%conc(i,0) = block(iblock)%conc(i,1)
-  !block(iblock)%conc(i,y_end+1) = block(iblock)%conc(i,y_end)
-END DO
-! ENDIF ! y-sweep
 
-! set zero downstream gradient at exit if last block
-!IF(max_blocks == 1)THEN
-!	block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
-!	block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
-!ELSE
-!	IF(iblock == 1)THEN
-!		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock+1)%conc(2,1:y_end+1)
-!		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock+1)%concold(2,1:y_end+1)
-!	ELSE
-!		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
-!		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
-!	END IF
-!END IF
-
-END DO ! conc scalar sweep
+END SUBROUTINE transport_precalc
 
 
-! fill in the unused corner nodes so that the plots look ok
-species(ispecies)%scalar(iblock)%conc(x_start-1,1) = species(ispecies)%scalar(iblock)%conc(x_start-1,2)
-species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax+1) =&
-     & species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax)
-species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,1) =&
-     & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,2)
-species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,block(iblock)%ymax+1) =&
-     & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,block(iblock)%ymax)
+!################################################################################
+!--------------------------------------------------------------------------------
+! scalar transport solution
+!--------------------------------------------------------------------------------
+!
+
+SUBROUTINE transport(status_flag)
+
+  IMPLICIT NONE
+
+  INTEGER :: status_flag, var
+
+  IF(.NOT. do_flow)THEN
+     dum_val = current_time%time + delta_t/86400.0d0 ! velocity and depth are at the NEW time
+     CALL hydro_restart_read(dum_val)
+     DO iblock=1,max_blocks
+        var = 1
+        CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%uvel)
+        
+        var = 2
+        CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%vvel)
+        
+        var = 3
+        CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%depth)
+     END DO
+     CALL bedshear()
+  END IF
+  
+  CALL scalar_source_timestep(current_time%time, delta_t)
+  IF (source_doing_sed) CALL bed_dist_bedsrc(delta_t)
+  CALL transport_precalc()
+
+  ! INTERNAL ITERATION AT THIS TIME LEVEL LOOP
+  DO iteration = 1,number_scalar_iterations
+     
+     ! BLOCK LOOP
+     DO iblock = 1,max_blocks
+        
+        x_end = block(iblock)%xmax
+        y_end = block(iblock)%ymax
+        
+        ! SPECIES LOOP - multiple numbers of scalar variables
+        DO ispecies = 1, max_species
+           
+           ! set boundary conditions for this time
+           !IF(iblock == 1)THEN
+           !		block(iblock)%conc(i,2:y_end) = 100.0
+           !		block(iblock)%concold(i,2:y_end) = 100.0
+           !	
+           !		block(iblock)%conc(i,jspill_start:jspill_end) = spill_conc
+           !		block(iblock)%concold(i,jspill_start:jspill_end) = spill_conc
+           !	
+           !		block(iblock)%conc(i,jgen_start:jgen_end) = gen_conc
+           !		block(iblock)%concold(i,jgen_start:jgen_end) = gen_conc
+           !ELSE
+           !		block(iblock)%conc(i,2:y_end) = block(iblock-1)%conc(block(iblock-1)%xmax,2:block(iblock-1)%ymax)
+           !		block(iblock)%concold(i,2:y_end) = block(iblock-1)%concold(block(iblock-1)%xmax,2:block(iblock-1)%ymax)
+           !END IF
+           
+           ! loop over the total number of bc specifications
+           DO num_bc = 1, scalar_bc(iblock)%num_bc
+              
+              IF(scalar_bc(iblock)%bc_spec(num_bc)%species == ispecies)THEN
+                 
+                 SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_loc)
+                    
+                 CASE("US")
+                    i=1
+                    x_start = i + 1
+                    SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
+                       
+                    CASE("ZEROG")
+                       DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                          species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
+                               & species(ispecies)%scalar(iblock)%conc(i+1,&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1)
+                          
+                       END DO
+                       
+                    CASE("BLOCK")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("CONC")
+                          con_block = scalar_bc(iblock)%bc_spec(num_bc)%con_block
+                          DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                             species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
+                                  & 0.5*(species(ispecies)%scalar(iblock)%&
+                                  & conc(2,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) +&
+                                  & species(ispecies)%scalar(con_block)%conc(block(con_block)%xmax,&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%con_start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%con_end_cell(j)+1))
+                             
+                          END DO
+                          
+                       END SELECT
+
+                    CASE("TABLE")
+                       CALL scalar_table_interp(current_time%time,&
+                            & scalar_bc(iblock)%bc_spec(num_bc)%table_num,&
+                            & table_input, scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("FLUX")
+                          DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                             inlet_flow = table_input(j)/(1 + scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j) -&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j))
+                             DO jj=scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1,&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+                                species(ispecies)%scalar(iblock)%conc(i,jj) =  inlet_flow/block(iblock)%inlet_area(jj)
+                                
+                             END DO
+                          END DO
+                          
+                       CASE("CONC")
+                          i = scalar_bc(iblock)%bc_spec(num_bc)%x_start
+                          x_start = i + 1
+                          DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                             species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) = &
+                                  & table_input(j)*scalar_source(ispecies)%conversion
+                          END DO
+                          
+                       END SELECT
+                       
+                    END SELECT
+                    species(ispecies)%scalar(iblock)%concold(i,:) =  species(ispecies)%scalar(iblock)%conc(i,:)
+                    
+                 CASE("DS")
+                    i = x_end+1
+                    SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
+                       
+                    CASE("ZEROG")
+                       DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                          species(ispecies)%scalar(iblock)%conc(x_end+1,&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
+                               & species(ispecies)%scalar(iblock)%conc(x_end,&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                               & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1)
+                          
+                       END DO
+                    CASE("BLOCK")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("FLUX")
+                       CASE("CONC")
+                          con_block = scalar_bc(iblock)%bc_spec(num_bc)%con_block
+                          DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                             species(ispecies)%scalar(iblock)%conc(i,scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) =&
+                                  & 0.5*(species(ispecies)%scalar(iblock)%conc(x_end,&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1) +&
+                                  & species(ispecies)%scalar(con_block)%conc(2,&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%con_start_cell(j)+1:&
+                                  & scalar_bc(iblock)%bc_spec(num_bc)%con_end_cell(j)+1) )
+                             
+                          END DO
+                          
+                       END SELECT
+                       
+                    CASE("TABLE")
+                       CALL scalar_table_interp(current_time%time,&
+                            & scalar_bc(iblock)%bc_spec(num_bc)%table_num,&
+                            & table_input, scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("FLUX")
+                       CASE("CONC") ! can specifiy the concentration
+                          
+                          !DO j=1,scalar_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+                          !	j_dsflux_start = scalar_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
+                          !	j_dsflux_end	 = scalar_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+                          !	block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end) = table_input(j)
+                          !	block(iblock)%ustar(x_end,j_dsflux_start:j_dsflux_end) = block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+                          !	block(iblock)%uold(x_end,j_dsflux_start:j_dsflux_end) =  block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+                          !	block(iblock)%depth(x_end+1,j_dsflux_start:j_dsflux_end) = (block(iblock)%depth(x_end,j_dsflux_start:j_dsflux_end) + block(iblock)%zbot(x_end,j_dsflux_start:j_dsflux_end)) &
+                          ! - block(iblock)%zbot(x_end+1,j_dsflux_start:j_dsflux_end)
+                          !END DO
+                       END SELECT
+
+                    END SELECT
+		
+                    species(ispecies)%scalar(iblock)%concold(i,1:y_end) = species(ispecies)%scalar(iblock)%conc(i,1:y_end)
+
+                    ! these are dummied in for later implementation
+                 CASE("RIGHT")
+                    SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
+                    CASE("BLOCK")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("MATCH")
+                          
+                       END SELECT
+                       
+                    CASE("TABLE")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("FLUX")
+                       CASE("VELO")
+                          
+                       END SELECT
+                    END SELECT
+                    
+                 CASE("LEFT")
+                    SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_type)
+                    CASE("BLOCK")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("MATCH")
+                          
+                       END SELECT
+                       
+                    CASE("TABLE")
+                       SELECT CASE(scalar_bc(iblock)%bc_spec(num_bc)%bc_kind)
+                       CASE("FLUX")
+                       CASE("VELO")
+                          
+                       END SELECT
+                       
+                    END SELECT
+                 END SELECT
+                 
+              END IF
+
+           END DO ! num bc loop
 
 
-END DO ! species loop
+           !-------------------------------------------------------------------------
+           ! compute scalar transport discretization equation coefficients
+           
+           block(iblock)%apo(x_start:x_end,2:y_end) = &
+                &block(iblock)%hp1(x_start:x_end,2:y_end)*&
+                &block(iblock)%hp2(x_start:x_end,2:y_end)*&
+                &block(iblock)%depthold(x_start:x_end,2:y_end)/delta_t
 
-END DO ! block loop end
+           DO i= x_start,x_end
+              DO j=2,y_end
+!!$           FORALL (i= x_start:x_end,j=2:y_end)
+              coeff%ae(i,j) = block(iblock)%diffu_e(i,j)*&
+                   &afunc(block(iblock)%pec_e(i,j)) + &
+                   &max(-block(iblock)%flux_e(i,j),0.0d0)
+              coeff%aw(i,j) = block(iblock)%diffu_w(i,j)*&
+                   &afunc(block(iblock)%pec_w(i,j)) + &
+                   &max(block(iblock)%flux_w(i,j),0.0d0)
+              coeff%an(i,j) = block(iblock)%diffu_n(i,j)*&
+                   &afunc(block(iblock)%pec_n(i,j)) + &
+                   &max(-block(iblock)%flux_n(i,j),0.0d0)
+              coeff%as(i,j) = block(iblock)%diffu_s(i,j)*&
+                   &afunc(block(iblock)%pec_s(i,j)) + &
+                   &max(block(iblock)%flux_s(i,j),0.0d0)
 
-END DO ! internal time loop end for concentration
+!!$                 block(iblock)%apo(i,j) = block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)*&
+!!$                      &block(iblock)%depthold(i,j)/delta_t
 
-END IF	! if-block for transport equation solution
+              IF (source_doing_temp) THEN
+                 t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
+              ELSE
+                 t_water = 0
+              END IF
+
+              coeff%source(i,j) = &
+                   &scalar_source_term(iblock, i, j, ispecies, &
+                   &species(ispecies)%scalar(iblock)%concold(i,j),&
+                   &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
+                   &t_water, salinity)
+
+!!$                 coeff%ap(i,j) = coeff%ae(i,j)+coeff%aw(i,j)+coeff%an(i,j)+coeff%as(i,j) &
+!!$                      + block(iblock)%apo(i,j) 
+!!$                 coeff%bp(i,j) = coeff%source(i,j)*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j) + &
+!!$                      &block(iblock)%apo(i,j)*species(ispecies)%scalar(iblock)%concold(i,j)
+    
+!!$           END FORALL
+              END DO
+           END DO
+
+           coeff%ap(x_start:x_end,2:y_end) = &
+                &coeff%ae(x_start:x_end,2:y_end)+coeff%aw(x_start:x_end,2:y_end)+&
+                &coeff%an(x_start:x_end,2:y_end)+coeff%as(x_start:x_end,2:y_end) + &
+                &block(iblock)%apo(x_start:x_end,2:y_end) 
+           coeff%bp(x_start:x_end,2:y_end) = &
+                &coeff%source(x_start:x_end,2:y_end)*&
+                &block(iblock)%hp1(x_start:x_end,2:y_end)*&
+                &block(iblock)%hp2(x_start:x_end,2:y_end) + &
+                &block(iblock)%apo(x_start:x_end,2:y_end)*&
+                &species(ispecies)%scalar(iblock)%concold(x_start:x_end,2:y_end)
+           ! solve using line-by-line TDMA
+           !  solves a set of linear equations of the form:
+           !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
+           !
+           DO sweep=1,scalar_sweep
+              ! if(x_sweep)THEN
+              ! DO j=2,y_end
+              !    DO i=2,x_end
+              !    cc(i) = coeff%aw(i,j)
+              !    aa(i) = coeff%ap(i,j)
+              !    bb(i) = coeff%ae(i,j)
+              !    dd(i) = coeff%an(i,j)*block(iblock)%conc(i,j+1) + coeff%as(i,j)*block(iblock)%conc(i,j-1) &
+              !            + coeff%bp(i,j)
+              !    END DO
+              
+              ! set the special boundary coefficients
+              
+              !  aa(1) = 1.0
+              !  bb(1) = 0.0
+              !  cc(1) = 0.0
+              !  dd(1) = block(iblock)%conc(1,j) 
+              !  aa(x_end+1) = 1.0
+              !  bb(x_end+1) = 0.0
+              !  cc(x_end+1) = 1.0
+              !  dd(x_end+1) = 0.0
+              !  CALL tridag(1,x_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
+              !  DO i=1,x_end+1
+              !    block(iblock)%conc(i,j) = tt(i)
+              !    END DO
+              !   END DO
+              !  END IF
+              ! LBL sweep in the y direction
+              !
+              !  if(y_sweep)THEN
+              DO i= x_start,x_end
+                 cc(2:y_end) = coeff%as(i,2:y_end)
+                 aa(2:y_end) = coeff%ap(i,2:y_end)
+                 bb(2:y_end) = coeff%an(i,2:y_end)
+                 dd(2:y_end) = coeff%ae(i,2:y_end)*species(ispecies)%scalar(iblock)%conc(i+1,2:y_end) +&
+                      & coeff%aw(i,2:y_end)*species(ispecies)%scalar(iblock)%conc(i-1,2:y_end) &
+                      + coeff%bp(i,2:y_end)
+!!$                 DO j=2,y_end
+!!$                    cc(j) = coeff%as(i,j)
+!!$                    aa(j) = coeff%ap(i,j)
+!!$                    bb(j) = coeff%an(i,j)
+!!$                    dd(j) = coeff%ae(i,j)*species(ispecies)%scalar(iblock)%conc(i+1,j) +&
+!!$                         & coeff%aw(i,j)*species(ispecies)%scalar(iblock)%conc(i-1,j) &
+!!$                         + coeff%bp(i,j)
+!!$                 END DO
+                 aa(1) = 1.0
+                 bb(1) = 1.0
+                 cc(1) = 0.0
+                 dd(1) = 0.0 !block(iblock)%conc(i,0) 
+                 aa(y_end+1) = 1.0
+                 bb(y_end+1) = 0.0
+                 cc(y_end+1) = 1.0
+                 dd(y_end+1) = 0.0 !block(iblock)%conc(i,y_end+1) 
+                 CALL tridag(1,y_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
+!!$                 DO j=1,y_end+1
+!!$                    species(ispecies)%scalar(iblock)%conc(i,j) = tt(j)
+!!$                 END DO
+                 species(ispecies)%scalar(iblock)%conc(i,1:y_end+1) = tt(1:y_end+1)
+
+                 ! set zero gradient at shoreline
+                 !block(iblock)%conc(i,0) = block(iblock)%conc(i,1)
+                 !block(iblock)%conc(i,y_end+1) = block(iblock)%conc(i,y_end)
+              END DO
+              ! ENDIF ! y-sweep
+              
+              ! set zero downstream gradient at exit if last block
+              !IF(max_blocks == 1)THEN
+              !	block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
+              !	block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
+              !ELSE
+              !	IF(iblock == 1)THEN
+              !		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock+1)%conc(2,1:y_end+1)
+              !		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock+1)%concold(2,1:y_end+1)
+              !	ELSE
+              !		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
+              !		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
+              !	END IF
+              !END IF
+              
+           END DO ! conc scalar sweep
+
+
+           ! fill in the unused corner nodes so that the plots look ok
+           species(ispecies)%scalar(iblock)%conc(x_start-1,1) = species(ispecies)%scalar(iblock)%conc(x_start-1,2)
+           species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax+1) =&
+                & species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax)
+           species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,1) =&
+                & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,2)
+           species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,block(iblock)%ymax+1) =&
+                & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,block(iblock)%ymax)
+           
+           
+        END DO ! species loop
+        
+     END DO ! block loop end
+
+  END DO ! internal time loop end for concentration
 
 ! end scalar transport soultion
 !----------------------------------------------------------------------------
+END SUBROUTINE transport 
 
+!############################################################################
 !----------------------------------------------------------------------------
 ! update old values of dependent variables
+
+SUBROUTINE update(status_flag)
+
+IMPLICIT NONE
+
+INTEGER :: status_flag
+
+
 DO iblock=1,max_blocks
 
   block(iblock)%uold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
@@ -2221,25 +2295,45 @@ DO iblock=1,max_blocks
 
 END DO
 
-DO ispecies = 1, max_species
-	DO iblock = 1, max_blocks
-		species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
-				= species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
-	END DO
-END DO
-!---------------------------------------------------------------------------
-!update model time
- time_step_count = time_step_count + 1
+IF (do_transport) THEN
+   DO ispecies = 1, max_species
+      DO iblock = 1, max_blocks
+         species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
+              = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
+      END DO
+   END DO
+   IF (source_doing_sed) CALL bed_accounting(delta_t)
+END IF
 
-! update decimal julian day time
-current_time%time = current_time%time + delta_t/86400.0d0 ! remember that the delta is in SECONDS
+IF (do_accumulate) CALL accumulate(current_time%time)
 
-CALL decimal_to_date(current_time%time, current_time%date_string, current_time%time_string)
-
+END SUBROUTINE update
 
 
+
+!#############################################################################
 !----------------------------------------------------------------------------
 ! printout variables over the whole field to ascii file and TECPLOT format file
+!
+!-----------------------------------------------------------------------------
+
+SUBROUTINE output(status_flag)
+
+IMPLICIT NONE
+
+
+DOUBLE PRECISION :: depth_e, flux_e
+
+INTEGER :: status_flag
+
+!-----------------------------------------------------------------------------
+! format definitions all placed here
+2000 FORMAT(a80)
+1000 FORMAT(50(f12.4,2x))
+1020 FORMAT(2(f12.4,2x),50(f12.6,2x))
+2010 FORMAT('Simulation Run on Date - ',i2,'-',i2,'-',i4,' at time ',i2,':',i2,':',i2/)
+
+
 IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,print_freq) == 0) )THEN
  
 	1010 FORMAT(50(f12.6,2x))
@@ -2302,16 +2396,19 @@ IF (debug) THEN
 			title = "Concentration "
 			title(61:75) = block_title
 			CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,species(ispecies)%scalar(iblock)%conc)
-         END DO
 
-         DO i=1,block(iblock)%xmax+1
-            DO j=1,block(iblock)%ymax+1
-               conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-               t_water = species(2)%scalar(iblock)%conc(i,j)
-               block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
-            END DO
+            SELECT CASE (scalar_source(ispecies)%srctype)
+            CASE (TDG)
+               DO i=1,block(iblock)%xmax+1
+                  DO j=1,block(iblock)%ymax+1
+                     conc_TDG = species(ispecies)%scalar(iblock)%conc(i,j)
+                     t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
+                     block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
+                  END DO
+               END DO
+               CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%TDG_stuff)
+            END SELECT
          END DO
-         CALL output_2d_array(output_iounit,title,1,block(iblock)%xmax+1,1,block(iblock)%ymax+1,block(iblock)%TDG_stuff)
       END IF
    END DO
 END IF
@@ -2338,6 +2435,7 @@ CALL diag_plot_print(current_time%date_string, current_time%time_string, delta_t
 !-------------------------------------------------------------------------------------------------------
 ! print out in tecplot block format
 !
+IF (.NOT. do_accumulate) CALL accumulate(current_time%time)
 CALL plot_print(current_time%date_string, current_time%time_string, &
      &salinity, baro_press)
 
@@ -2358,10 +2456,22 @@ IF(do_gage_print)THEN
 
 	END IF
 END IF
+status_flag = 99
 
+END SUBROUTINE output
+
+
+!##########################################################################
 !---------------------------------------------------------------------------
-! write a binary restart file
-IF(write_restart_file)THEN
+! write a  restart file
+!---------------------------------------------------------------------------
+
+SUBROUTINE write_restart(status_flag)
+IMPLICIT NONE
+
+INTEGER :: status_flag
+
+
 IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print_freq) == 0) )THEN
 	
 	restart_filename(1:9) = 'hotstart_'
@@ -2386,43 +2496,53 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
 
 	DO iblock=1,max_blocks
        block(iblock)%work = block(iblock)%uvel
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
        
        block(iblock)%work = block(iblock)%uold
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%ustar
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%vvel
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%vold
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%vstar
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%depth
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%depthold
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%dstar
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%eddy
-       WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
 !!$		WRITE(restart_iounit,*) block(iblock)%uvel
@@ -2442,53 +2562,37 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
 		DO i=1,max_species
 			DO iblock = 1, max_blocks
               block(iblock)%work = species(i)%scalar(iblock)%conc
-              WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+              WHERE(abs(block(iblock)%work) < tiny) &
+                   &block(iblock)%work = sign(tiny, block(iblock)%work)
               WRITE(restart_iounit,*)block(iblock)%work
               
               block(iblock)%work = species(i)%scalar(iblock)%concold
-              WHERE(block(iblock)%work < tiny) block(iblock)%work = tiny
+              WHERE(abs(block(iblock)%work) < tiny) &
+                   &block(iblock)%work = sign(tiny, block(iblock)%work) 
               WRITE(restart_iounit,*)block(iblock)%work
 
              ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%conc
              ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%concold
 			END DO
 		END DO
+
+        IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
 	END IF
 
 	CLOSE(restart_iounit)
 
 ENDIF
-ENDIF
 
-
-!***************************************************************************
-END DO
-! end time loop
-!***************************************************************************
+END SUBROUTINE write_restart
 
 
 
 
-!--------------------------------------------------------------------------
-! end of flow_solver **************
-!---------------------------------------------------------------------------
-
-CLOSE(cfg_iounit)
-CLOSE(output_iounit)
-CALL plot_file_close()
-CLOSE(error_iounit)
-CLOSE(status_iounit)
-CALL gage_file_close()
-CALL mass_file_close()
-CALL diag_plot_file_close()
-
-! WRITE(*,*)'*** ALL DONE - PRESS RETURN ***'
-! READ(*,*)
 
 
-CONTAINS
-!-------------------
-! internal routines
+!#############################################################################
+!----------------------------------------------------------------------------
+! other internal routines
 !-----------------------------------------------------------------------------
 !
 ! Tridiangonal Matrix Solution
@@ -2497,18 +2601,26 @@ SUBROUTINE tridag(start, finish, a, b, c, d,sol, ptemp, qtemp)
 IMPLICIT NONE
 
 INTEGER :: i,last,ifp1,k,start,finish
-DOUBLE PRECISION, DIMENSION(:) :: a,b,c,d,sol,ptemp,qtemp
+DOUBLE PRECISION, DIMENSION(:) :: a,b,c,d,sol
+DOUBLE PRECISION :: ptemp(0:), qtemp(0:)
 
 DO i=start,finish
 ptemp(i) = b(i)/(a(i) - c(i)*ptemp(i-1))
 qtemp(i) = (d(i) + c(i)*qtemp(i-1))/(a(i)-c(i)*ptemp(i-1))
 END DO
+!!$FORALL (i=start:finish)
+!!$   ptemp(i) = b(i)/(a(i) - c(i)*ptemp(i-1))
+!!$   qtemp(i) = (d(i) + c(i)*qtemp(i-1))/(a(i)-c(i)*ptemp(i-1))
+!!$END FORALL
 
 sol(finish) = qtemp(finish)
 
 DO i=finish-1,start,-1
 sol(i) = ptemp(i)*sol(i+1) + qtemp(i)
 END DO
+!!$FORALL (i=finish-1:start:-1)
+!!$   sol(i) = ptemp(i)*sol(i+1) + qtemp(i)
+!!$END FORALL
 
 
 END SUBROUTINE tridag
@@ -2534,6 +2646,42 @@ afunc = max(0.0d0,(1.0-0.1*peclet_num)**5)  !power-law
 END FUNCTION afunc
 !-----------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------
+! ----------------------------------------------------------------
+! SUBROUTINE bedshear
+! computes the shear used by biota/sediment scalars
+! ----------------------------------------------------------------
+SUBROUTINE bedshear()
 
-END PROGRAM mass2_main
+  IMPLICIT NONE
+
+  INTEGER :: iblk, i, j
+  DOUBLE PRECISION :: roughness, u, v
+
+  DO iblk = 1, max_blocks
+     block(iblk)%shear = 0 
+     DO i = 1, block(iblk)%xmax + 1
+        DO j = 2, block(iblk)%ymax
+           IF (i .EQ. 1) THEN
+              u = block(iblk)%uvel(i,j)
+              v = 0.0
+           ELSE IF (i .EQ. block(iblk)%xmax + 1) THEN
+              u = block(iblk)%uvel(i-1,j)
+              v = 0.0
+           ELSE 
+              u = 0.5*(block(iblk)%uvel(i-1,j) + block(iblk)%uvel(i,j))
+              v = 0.5*(block(iblk)%vvel(i-1,j) + block(iblk)%vvel(i,j))
+           END IF
+           IF(manning)THEN
+              roughness = (grav*block(iblk)%chezy(i,j)**2)/&
+                   &(mann_con*block(iblk)%depth(i,j)**0.3333333)
+           ELSE
+              roughness = block(iblk)%chezy(i,j)
+           ENDIF
+           block(iblk)%shear(i,j) = roughness*density*sqrt(u*u + v*v)
+        END DO
+     END DO
+  END DO
+END SUBROUTINE bedshear
+
+
+END MODULE mass2_main_025

@@ -50,6 +50,8 @@ ALL : "$(OUTDIR)\cart_grid.exe"
 
 CLEAN :
 	-@erase "$(INTDIR)\cartgrid.obj"
+	-@erase "$(INTDIR)\elevtbl.mod"
+	-@erase "$(INTDIR)\elevtbl.obj"
 	-@erase "$(OUTDIR)\cart_grid.exe"
 
 "$(OUTDIR)" :
@@ -69,7 +71,8 @@ LINK32=link.exe
 LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:no\
  /pdb:"$(OUTDIR)\cart_grid.pdb" /machine:I386 /out:"$(OUTDIR)\cart_grid.exe" 
 LINK32_OBJS= \
-	"$(INTDIR)\cartgrid.obj"
+	"$(INTDIR)\cartgrid.obj" \
+	"$(INTDIR)\elevtbl.obj"
 
 "$(OUTDIR)\cart_grid.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -96,6 +99,8 @@ ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\DF50.PDB"
 
 CLEAN :
 	-@erase "$(INTDIR)\cartgrid.obj"
+	-@erase "$(INTDIR)\elevtbl.mod"
+	-@erase "$(INTDIR)\elevtbl.obj"
 	-@erase "$(OUTDIR)\cart_grid.exe"
 	-@erase "$(OUTDIR)\cart_grid.ilk"
 	-@erase "$(OUTDIR)\cart_grid.pdb"
@@ -120,7 +125,8 @@ LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:yes\
  /pdb:"$(OUTDIR)\cart_grid.pdb" /debug /machine:I386\
  /out:"$(OUTDIR)\cart_grid.exe" /pdbtype:sept 
 LINK32_OBJS= \
-	"$(INTDIR)\cartgrid.obj"
+	"$(INTDIR)\cartgrid.obj" \
+	"$(INTDIR)\elevtbl.obj"
 
 "$(OUTDIR)\cart_grid.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -146,8 +152,51 @@ LINK32_OBJS= \
  "cart_grid - Win32 Debug"
 SOURCE=.\cartgrid.f90
 
-"$(INTDIR)\cartgrid.obj" : $(SOURCE) "$(INTDIR)"
+!IF  "$(CFG)" == "cart_grid - Win32 Release"
 
+DEP_F90_CARTG=\
+	".\Release\elevtbl.mod"\
+	
+
+"$(INTDIR)\cartgrid.obj" : $(SOURCE) $(DEP_F90_CARTG) "$(INTDIR)"\
+ "$(INTDIR)\elevtbl.mod"
+
+
+!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
+
+DEP_F90_CARTG=\
+	".\Debug\elevtbl.mod"\
+	
+
+"$(INTDIR)\cartgrid.obj" : $(SOURCE) $(DEP_F90_CARTG) "$(INTDIR)"\
+ "$(INTDIR)\elevtbl.mod"
+
+
+!ENDIF 
+
+SOURCE=.\elevtbl.f90
+
+!IF  "$(CFG)" == "cart_grid - Win32 Release"
+
+F90_MODOUT=\
+	"elevtbl"
+
+
+"$(INTDIR)\elevtbl.obj"	"$(INTDIR)\elevtbl.mod" : $(SOURCE) "$(INTDIR)"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
+
+F90_MODOUT=\
+	"elevtbl"
+
+
+"$(INTDIR)\elevtbl.obj"	"$(INTDIR)\elevtbl.mod" : $(SOURCE) "$(INTDIR)"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
 
 
 !ENDIF 

@@ -1,3 +1,321 @@
+2001-11-29  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* Merged SAC branch.
+
+2001-07-27  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* plot_output.f90: placed a lower limit on the absolute value of
+	data in plot output
+
+2001-07-18  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scalars_source.f90: sediment_source_timestep is no longer
+	necessary
+
+	* bed.f90: deposition and erosion are recomputed here using the
+	final concentration for the timestep; the values computed here are
+	saved for output
+
+	* sediment_source.f90: deposition and erosion are now computed in
+	sediment_source_term using the current concentration, rather than
+	being computed before the timestep.  sediment_source_timestep is no
+	longer necessary
+
+	* test/sediment/test1/plot-mass.gp: added
+
+	* test/sediment/test1/runit.sh: add mass plot
+
+	* particulate_source.f90: partioning between dissolved and
+	particulate now uses the last iteration instead of being computed
+	at the beginning of the time step.
+
+2001-07-17  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* bed_functions.f90 : VF for Windows had trouble with USE
+	scalars_source, ONLY -- took out the ONLY
+
+	* total_conc.f90: Added (a long time ago).
+
+	* makefile.sun: Dynamic linking to the C library no longer
+	necessary. 
+
+	* makefile.linux: Added checking of INEXACT floating point
+	errors. 
+
+	* bed_source.f90: When reading bed source time series, store the
+	mass in a temporary REAL value before placing it in the time
+	series array.  This was a failed attempt to fix some apparent
+	precision problems when reading a bed source file. 
+
+2001-04-12  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* biota.f90: Eslingers new code incorporated.
+
+2001-02-27  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scalars_source.f90: part_param%bedkd was not converted as was
+	part_param%kd
+
+2001-02-12  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile.sun: Added
+
+	* accumulator.f90: Removed a FORALL loop - the Sun F90 compiler
+	does not understand them
+
+2000-12-19  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/pointsource/stuff-map-1.dat: modified for correct
+	indexing scheme
+
+	* test/transport/multi-bedsource/morestuff-map-1.dat: modified for
+	correct indexing scheme
+
+	* test/transport/multi-bedsource/stuff-map-1.dat: modified for
+	correct indexing scheme
+
+	* test/sediment/bedsource/stuff-map-1.dat: modified for correct
+	indexing scheme
+
+	* test/transport/bedsource/stuff-map-1.dat: modified for correct
+	indexing scheme
+
+	* test/benchmark/mcn-test/mass2_v027.base (and others): include
+	flag for reading initial bed from a file. 
+
+	* scripts/mass2dump.pl: added 
+
+2000-12-07  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* bed.f90: bed_read_init added to read initial bed from
+	"initial_bed.dat". 
+
+	* mass2_main_025.f90: read the read_bed_init flag.
+
+2000-12-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* accumulator.f90: use do_flow_output flag
+
+	* bed_source.f90: Indices used to read source map were
+	corrected 
+
+	* biota_source.f90: comments added only
+
+	* makefile.linux: make the lowercase externals compiler flag the
+	default. 
+
+	* plot_output.f90: make use of the do_flow_output flag  
+
+	* sediment_source.f90: erodibility can now be 0.0 
+
+	* misc_vars_module.f90: added do_flow_output flag
+
+2000-09-08  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: Changes to add bed, most important are to
+	the configuration file input and to hotstart output.
+
+	* bed_functions.f90: added
+
+	* bed.f90: added
+
+	* gage_output_module.f90: bed output
+
+	* particulate_source.f90: added bed exchange and particulate count
+
+	* plot_output.f90: Simplified some of the file creation routine
+	and added bed variable output
+
+	* sediment_source.f90: add particle density (DENSITY) parameter 
+
+	* scalars_source.f90: count particulate species for the bed
+
+2000-09-05  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* sediment_source.f90: allow only erosion or deposition, not both
+
+	* TODO: changes to sediment_source_rec 
+
+	* gage_output_module.f90: changes to sediment_source_rec 
+
+	* plot_output.f90: changes to sediment_source_rec 
+
+	* particulate_source.f90: changes to sediment_source_rec 
+
+	* sediment_source.f90: added pdens to sediment_source_rec, moved
+	the "sediment_block" structure into sediment_source_rec
+
+2000-08-28  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* block_bc_module.f90: the bc_spec part of scalar_bc_struct needed
+	to be increased from 100 to 200
+
+2000-08-23  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* global_module_023.f90: added "bedshear" to block
+
+	* plot_output.f90: modifications to output "shear" at the same
+	points as velocity
+
+	* gage_output_module.f90: don't try to write to the NetCDF gage
+	output if there are zero gage locations (should have done this
+	long ago
+
+2000-08-22  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (bedshear): function to compute bedshear at
+	each (velocity) point
+
+	* test/biota/simple: added test case for biota module and
+	interface  
+
+2000-08-18  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: use oldconc instead of conc for
+	scalar_source_term 
+
+2000-08-17  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* biota_source.f90: added
+
+	* test/transport/1d-advection-1blk/runit.sh: mass2_v025 -> mass2_v026
+
+	* test/flow/slopebreak-2/runit.sh: mass2_v025 -> mass2_v026
+
+	* test/flow/slopebreak-1/runit.sh: mass2_v025 -> mass2_v026
+
+	* test/flow/normal-2blk/runit.sh: mass2_v025 -> mass2_v026
+
+	* test/flow/normal-1blk/runit.sh: mass2_v025 -> mass2_v026
+
+	* bed_source.f90: Oops, should have used rec%data(its)%n instead
+	of rec%nts
+
+	* test/flow/jump: added plot of courant number, changed mass2_v025
+	to mass2_v026
+
+2000-08-10  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* biota.f90: added
+
+	* bed_source.f90: allow (but warn about) bed cumulative mass time
+	series that do not completely include the simulation period.  The
+	mass curve is assumed flat outside the simulation period.
+
+2000-08-08  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/bedsource/conc.dat: converted to units per liter 
+
+	* test/transport/bedsource/scalar_source.base: added conversion
+	factor so that concentration is specified in units per liter
+	rather than units per cubic foot
+
+	* scripts/mass2flux.pl (VarConversion): recognize, and correctly,
+	scalar variables with the "Conversion" attribute
+
+	* plot_output.f90: add "Conversion" attribute in NetCDF
+	output for generic scalar species
+
+	* gage_output_module.f90: add "Conversion" attribute in NetCDF
+	output for generic scalar species
+
+	* generic_source.f90: add "CONVERT" option keyword for generic
+	scalar species to specify conversion factor to per cubic feet
+
+2000-08-07  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2flux.pl: new script to compute flow/flux from plot
+	output file 
+
+2000-08-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2slice.pl: changed variable output format from %12.3f
+	to %12.5g
+
+2000-08-02  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/1d-analytic-2blk: Converted the scalar type from
+	"TEMP" to "GEN"
+
+2000-08-01  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scalars_source.f90: Absoft does not have NULL()? -- Commented
+	calls out -- we don't need to initialize if we're careful, right? 
+
+	* makefile.linux: catch up to makefile.dec
+
+	* test/flow/jump: flow test created -- supercritical flow with
+	hydraulic jump.  It's kind of touchy but it works
+
+	* test/transport/mixing: changed the transported species from
+	temperature to a generic species named "stuff"
+
+	* test/transport/decay: created
+
+2000-07-26  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/benchmark/mcn-test: converted to new scalar scheme
+
+	* test/transport/1d-analytic-2blk: converted to new scalar scheme
+	(simulated as temperature)
+
+	* test/transport/1d-analytic-1blk: converted to new scalar scheme
+	(simulated as temperature)
+
+	* test/transport/mixing: converted to new scalar scheme
+	(simulated as temperature)
+
+	* test/transport/1d-advection-1blk: converted to new scalar scheme
+	(simulated as temperature)
+
+2000-07-19  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2slice.pl: added the -l option to extract only the
+	last time slice
+
+2000-07-13  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (start_up): initialized baro_press to 760 in
+	case no weather is read.  (Should have done this years ago.)
+
+2000-07-11  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* transport_only_module.f90 (hydro_restart_read): forward plane
+	error message printed the wrong plane number.
+
+	* makefile.linux (misc_vars_module.o): rule missing
+
+	* makefile: changes to add transport only modules
+
+	* mass2_main_025.f90: Fixed problem with hotstart output -- needed
+	to check *absolute* values against 'tiny'
+
+2000-07-10  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/benchmark/mcn-test: created
+
+2000-07-07  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/1d-analytic-2blk: created
+
+	* test/transport/1d-analytic-1blk: created
+
+2000-07-06  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/1d-advection-1blk: added "pure advection" (like
+	  MASS1's) test case 
+
+	* test/transport/mixing: added lateral mixing test case compared
+	with analytic solution.
+
+	* util/cart_grid/makefile.linux: created
+
+	* util/cart_grid/makefile.dec: created
+
+	* util/cart_grid/cartgrid.f90: x, y, zbot assigned before
+	allocation? 
+	Added code to ask for x and y spacing.
+
 2000-04-06  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* gage_output_module.f90: converted elapsed to REAL before putting

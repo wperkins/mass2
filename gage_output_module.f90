@@ -25,6 +25,8 @@
 
 MODULE gage_output
 
+  CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
   TYPE gage_specs_struct
      !CHARACTER (LEN=80) :: filename = ''  ! fails for non F95 compilers
      CHARACTER (LEN=80) :: filename
@@ -33,7 +35,7 @@ MODULE gage_output
      INTEGER :: i_cell, j_cell
   END TYPE gage_specs_struct
 
-  TYPE(gage_specs_struct), ALLOCATABLE :: gage_specs(:)
+  TYPE(gage_specs_struct), POINTER :: gage_specs(:)
 
   INTEGER, PARAMETER :: gage_iounit = 50
   INTEGER :: num_gages
@@ -50,10 +52,16 @@ MODULE gage_output
   INTEGER, PRIVATE :: time_varid,  ts_varid, id_varid, elapsed_varid
 
   INTEGER, PRIVATE :: wselev_varid, depth_varid, vmag_varid, uvel_varid, vvel_varid
-  INTEGER, PRIVATE :: temp_varid, conc_varid, press_varid, deltap_varid, sat_varid
+  INTEGER, PRIVATE, POINTER :: scalar_varid(:)
+  INTEGER, PRIVATE :: press_varid, deltap_varid, sat_varid
 
   INTEGER, PARAMETER, PRIVATE :: mass_source_iounit = 19
   CHARACTER (LEN=80), PARAMETER, PRIVATE :: mass_source_ioname = 'mass_source_monitor.out'
+
+  INTEGER, PRIVATE, POINTER :: depos_varid(:), erode_varid(:), bedsed_varid(:), bedmass_varid(:)
+  INTEGER, PRIVATE, POINTER :: bedporemass_varid(:), bedpore_varid(:), beddis_varid(:)
+  INTEGER, PRIVATE, POINTER :: part_depos_varid(:), bedpartmass_varid(:), bedpart_varid(:)
+  INTEGER, PRIVATE :: beddepth_varid
 
 CONTAINS
 
@@ -210,24 +218,26 @@ CONTAINS
        icell = gage_specs(i)%i_cell + 1 ! convert from cell to i,j
        jcell = gage_specs(i)%j_cell + 1
 
-       IF(do_transport)THEN
-          DO ispecies=1,max_species
-             species_io_vec(ispecies) = &
-                  &species(ispecies)%scalar(iblock)%conc(icell,jcell)
-          END DO
-          conc_TDG = species(1)%scalar(iblock)%conc(icell,jcell)
-          t_water = species(2)%scalar(iblock)%conc(icell,jcell)
+                                ! need to fix this for transport
 
-          WRITE(50,100)date_string,time_string, elapsed, &
-               block(iblock)%wsel(icell,jcell),block(iblock)%depth(icell,jcell), &
-               SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2), &
-               block(iblock)%uvel(icell,jcell), block(iblock)%vvel(icell,jcell), &
-               SUM(ABS(block(iblock)%mass_source)), &
-               species_io_vec(1:max_species), &
-               TDGasPress(conc_TDG,  t_water,  salinity), &
-               TDGasDP(conc_TDG, t_water,  salinity,  baro_press), &
-               TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
-       ELSE 
+!        IF(do_transport)THEN
+!           DO ispecies=1,max_species
+!              species_io_vec(ispecies) = &
+!                   &species(ispecies)%scalar(iblock)%conc(icell,jcell)
+!           END DO
+!           conc_TDG = species(1)%scalar(iblock)%conc(icell,jcell)
+!           t_water = species(2)%scalar(iblock)%conc(icell,jcell)
+
+!           WRITE(50,100)date_string,time_string, elapsed, &
+!                block(iblock)%wsel(icell,jcell),block(iblock)%depth(icell,jcell), &
+!                SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2), &
+!                block(iblock)%uvel(icell,jcell), block(iblock)%vvel(icell,jcell), &
+!                SUM(ABS(block(iblock)%mass_source)), &
+!                species_io_vec(1:max_species), &
+!                TDGasPress(conc_TDG,  t_water,  salinity), &
+!                TDGasDP(conc_TDG, t_water,  salinity,  baro_press), &
+!                TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
+!        ELSE 
           species_io_vec(1:max_species) = 0
           WRITE(50,100)date_string,time_string, elapsed, &
                block(iblock)%wsel(icell,jcell),block(iblock)%depth(icell,jcell), &
@@ -238,7 +248,7 @@ CONTAINS
                0.0, &
                0.0, &
                0.0
-       END IF
+!       END IF
        
 
        CLOSE(50)
@@ -249,13 +259,102 @@ CONTAINS
 
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_set_var_attributes
+  ! General attributes used for (floating point) spatial and temporal
+  ! variables in the plot file
+  ! ----------------------------------------------------------------
+  SUBROUTINE gage_set_var_attributes(gage_ncid, varid, desc, units, isbed)
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER, INTENT(IN) :: gage_ncid, varid
+    CHARACTER (LEN=*), INTENT(IN) :: desc, units
+    LOGICAL, INTENT(IN) :: isbed
+
+    INTEGER :: xtype, ncstat
+
+    ncstat = nf_put_att_text (gage_ncid, varid, "Units", LEN_TRIM(units), units)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    ncstat = nf_put_att_text (gage_ncid, varid, "Description", LEN_TRIM(desc), desc)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+                                ! these fit the attribute conventions
+                                ! in the NetCDF manual
+
+    ncstat = nf_put_att_text (gage_ncid, varid, "units", LEN_TRIM(units), units)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    ncstat = nf_put_att_text (gage_ncid, varid, "long_name", LEN_TRIM(desc), desc)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+                                ! choose a fill value based on the
+                                ! variable type
+
+    ncstat = nf_inq_vartype(gage_ncid, varid, xtype)
+    SELECT CASE (xtype)
+    CASE (NF_FLOAT)
+       ncstat = nf_put_att_real (gage_ncid, varid, "_FillValue", NF_FLOAT, 1, nf_fill_real)
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    CASE (NF_DOUBLE)
+       ncstat = nf_put_att_double (gage_ncid, varid, "_FillValue", NF_DOUBLE, 1, nf_fill_double)
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    END SELECT
+
+                                ! mark bed variables 
+
+    IF (isbed) THEN
+       ncstat = nf_put_att_text (gage_ncid, varid, "isbed", 4, "true")
+       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    END IF
+    
+  END SUBROUTINE gage_set_var_attributes
+
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION gage_add_tim_var
+  ! Adds a variable to the gage file that is time- and spatially-varying
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION gage_add_time_var(name, desc, units, flag)
+
+    IMPLICIT NONE
+    CHARACTER (LEN=*) :: name, desc, units
+    LOGICAL, OPTIONAL :: flag
+    INTEGER :: varid, dimids(2), ncstat
+    LOGICAL :: isbed
+
+    INCLUDE 'netcdf.inc'
+
+    IF (PRESENT(flag)) THEN
+       isbed = flag
+    ELSE
+       isbed = .FALSE.
+    END IF
+
+    dimids(1) = gage_dimid
+    dimids(2) = time_dimid
+
+    ncstat = nf_def_var (gage_ncid, name, nf_real, 2, dimids, varid)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    CALL gage_set_var_attributes(gage_ncid, varid, desc, units, isbed)
+
+    gage_add_time_var = varid
+
+  END FUNCTION gage_add_time_var
+
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE gage_file_setup_netcdf
   ! ----------------------------------------------------------------
   SUBROUTINE gage_file_setup_netcdf(do_transport)
 
+    USE globals
+    USE scalars, ONLY: max_species
+    USE scalars_source
+    USE bed_module
+
     IMPLICIT NONE
 
-    INTEGER :: ncstat, dimids(10), index(10), i, length(10), l
+    INTEGER :: ncstat, dimids(10), index(10), i, length(10), l, ifract
     LOGICAL :: do_transport
     CHARACTER (LEN=80) :: buffer
 
@@ -319,90 +418,180 @@ CONTAINS
 
                                 ! time-dependant data variables
 
-    dimids(1) = gage_dimid
-    dimids(2) = time_dimid
-    ncstat = nf_def_var (gage_ncid, "wsel", nf_real, 2, dimids, wselev_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, wselev_varid, "Units", 4, "feet")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, wselev_varid, "Description", &
-         &23, "Water Surface Elevation")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+    wselev_varid = gage_add_time_var("wsel", "Water Surface Elevation", "feet")
+    depth_varid = gage_add_time_var("depth", "Depth", "feet")
+    vmag_varid = gage_add_time_var("vmag", "Velocity Magnitude", "feet/second")
+    uvel_varid = gage_add_time_var("uvel", "Longitudinal Velocity", "feet/second")
+    vvel_varid = gage_add_time_var("vvel", "Lateral Velocity", "feet/second")
+
+
+!!$    ncstat = nf_def_var (gage_ncid, "uvel", nf_real, 2, dimids, uvel_varid)
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$    ncstat = nf_put_att_text (gage_ncid, uvel_varid, "Units", 11, "feet/second")
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$    ncstat = nf_put_att_text (gage_ncid, uvel_varid, "Description", &
+!!$         &21, "Longitudinal Velocity")
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
     
-    ncstat = nf_def_var (gage_ncid, "depth", nf_real, 2, dimids, depth_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, depth_varid, "Units", 4, "feet")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, depth_varid, "Description", &
-         &5, "Depth")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    
-    ncstat = nf_def_var (gage_ncid, "vmag", nf_real, 2, dimids, vmag_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, vmag_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, vmag_varid, "Description", &
-         &18, "Velocity Magnitude")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    
-    ncstat = nf_def_var (gage_ncid, "uvel", nf_real, 2, dimids, uvel_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, uvel_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, uvel_varid, "Description", &
-         &21, "Longitudinal Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    
-    ncstat = nf_def_var (gage_ncid, "vvel", nf_real, 2, dimids, vvel_varid)
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, vvel_varid, "Units", 11, "feet/second")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-    ncstat = nf_put_att_text (gage_ncid, vvel_varid, "Description", &
-         &16, "Lateral Velocity")
-    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$    ncstat = nf_def_var (gage_ncid, "vvel", nf_real, 2, dimids, vvel_varid)
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$    ncstat = nf_put_att_text (gage_ncid, vvel_varid, "Units", 11, "feet/second")
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$    ncstat = nf_put_att_text (gage_ncid, vvel_varid, "Description", &
+!!$         &16, "Lateral Velocity")
+!!$    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
 
     IF (do_transport) THEN
 
-       ncstat = nf_def_var (gage_ncid, "temperature", nf_real, 2, dimids, temp_varid)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, temp_varid, "Units", 10, "Centigrade")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, temp_varid, "Description", &
-            &17, "Water Temperature")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+       ALLOCATE(scalar_varid(max_species))
+
+       IF (source_doing_sed) THEN
+          ALLOCATE(depos_varid(sediment_fractions))
+          ALLOCATE(erode_varid(sediment_fractions))
+          ALLOCATE(bedsed_varid(sediment_fractions))
+          ALLOCATE(bedmass_varid(sediment_fractions))
+          ALLOCATE(part_depos_varid(max_species))
+          ALLOCATE(bedpartmass_varid(max_species))
+          ALLOCATE(bedpart_varid(max_species))
+          ALLOCATE(bedporemass_varid(max_species))
+          ALLOCATE(bedpore_varid(max_species))
+          ALLOCATE(beddis_varid(max_species))
+       END IF
+
+       DO i = 1, max_species
+
+          scalar_varid(i) = gage_add_time_var(scalar_source(i)%name, &
+               &scalar_source(i)%description, scalar_source(i)%units)
+
+!!$          ncstat = nf_def_var (gage_ncid, TRIM(scalar_source(i)%name), &
+!!$               &nf_real, 2, dimids, scalar_varid(i))
+!!$          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$          buffer = TRIM(scalar_source(i)%units)
+!!$          ncstat = nf_put_att_text (gage_ncid, scalar_varid(i), "Units", &
+!!$               &LEN_TRIM(buffer), buffer)
+!!$          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+!!$          buffer = scalar_source(i)%description
+!!$          ncstat = nf_put_att_text (gage_ncid, scalar_varid(i), "Description", &
+!!$               &LEN_TRIM(buffer), buffer)
+!!$          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+          ncstat = nf_put_att_double(gage_ncid, scalar_varid(i), "Conversion", &
+               &NF_DOUBLE, 1, scalar_source(i)%conversion)
+          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+          
+          SELECT CASE (scalar_source(i)%srctype)
+
+          CASE (GEN)
+             IF (source_doing_sed) THEN
+                                ! dissolved mass in bed pores
+
+                bedporemass_varid(i) = gage_add_time_var(&
+                     &TRIM(scalar_source(i)%name) // '-bedmass', &
+                     &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                     &"mass", .TRUE.)
+
+                                ! dissolved mass per unit area in bed
+
+                bedpore_varid(i) = gage_add_time_var(&
+                     &TRIM(scalar_source(i)%name) // '-bed', &
+                     &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                     &"mass/foot^2", .TRUE.)
+
+                                ! dissolved mass per unit volume in bed pores
+
+                beddis_varid(i) = gage_add_time_var(&
+                     &TRIM(scalar_source(i)%name) // '-pore', &
+                     &"Concentration of " // TRIM(scalar_source(i)%description) // " in Bed Pores", &
+                     &"mass/foot^3", .TRUE.)
+
+             END IF
+
+          CASE (PART)
+
+             part_depos_varid(i) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-depos', &
+                  &"Rate of Deposition of " // TRIM(scalar_source(i)%description), &
+                  &"mass/foot^2/second", .TRUE.)
+             ncstat = nf_put_att_text (gage_ncid, part_depos_varid(i), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+                                ! sediment mass in bed
+
+             bedpartmass_varid(i) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-bedmass', &
+                  &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                  &"mass", .TRUE.)
+             ncstat = nf_put_att_text (gage_ncid, bedpartmass_varid(i), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+                                ! sediment mass per unit area in bed
+
+             bedpart_varid(i) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-bed', &
+                  &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                  &"mass/foot^2", .TRUE.)
+             ncstat = nf_put_att_text (gage_ncid, bedpart_varid(i), "dissolved", &
+                  &LEN_TRIM(buffer), buffer)
+             IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+          CASE (TDG)
+
+             press_varid = gage_add_time_var("tdgpress", &
+                  &"Total Dissolved Gas Pressure", "millibars")
        
-       ncstat = nf_def_var (gage_ncid, "tdgconc", nf_real, 2, dimids, conc_varid)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, conc_varid, "Units", 15, "milligram/liter")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, conc_varid, "Description", &
-            &33, "Total Dissolved Gas Concentration")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+             deltap_varid = gage_add_time_var("tdgdeltap", &
+                  &"Total Dissolved Gas Pressure above Atmospheric", "millibars")
+
+             sat_varid =  gage_add_time_var("tdgsat", &
+                  &"Total Dissolved Gas Pressure Saturation", "percent")
+
+          CASE (SED)
+
+             ifract = scalar_source(i)%sediment_param%ifract
+
+                                ! sediment deposition rate
+             
+             depos_varid(ifract) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-depos', &
+                  &"Deposition Rate of " // TRIM(scalar_source(i)%description), &
+                  &"mass/foot^2/second", .TRUE.)
+
+                                ! sediment erosion rate
+
+             erode_varid(ifract) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-erode', &
+                  &"Deposition Rate of " // TRIM(scalar_source(i)%description), &
+                  &"mass/foot^2/second", .TRUE.)
+             
+                                ! sediment mass in bed
+
+             bedmass_varid(ifract) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-bedmass', &
+                  &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                  &"mass", .TRUE.)
+
+                                ! sediment mass per unit area in bed
+
+             bedsed_varid(ifract) = gage_add_time_var(&
+                  &TRIM(scalar_source(i)%name) // '-bed', &
+                  &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
+                  &"mass/foot^2", .TRUE.)
+
+
+          END SELECT
+       END DO
+
+                                ! bed depth, if called for
+
+       IF (source_doing_sed) THEN
+          beddepth_varid = gage_add_time_var("beddepth", "Bed Depth", "feet", .TRUE.)
+       END IF
+
        
-       ncstat = nf_def_var (gage_ncid, "tdgpress", nf_real, 2, dimids, press_varid)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, press_varid, "Units", 9, "millibars")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, press_varid, "Description", &
-            &32, "Total Dissolved Gas Pressure")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       
-       ncstat = nf_def_var (gage_ncid, "tdgdeltap", nf_real, 2, dimids, deltap_varid)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, deltap_varid, "Units", 9, "millibars")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, deltap_varid, "Description", &
-            &48, "Total Dissolved Gas Pressure above Atmospheric")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       
-       ncstat = nf_def_var (gage_ncid, "tdgsat", nf_real, 2, dimids, sat_varid)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, sat_varid, "Units", 7, "percent")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-       ncstat = nf_put_att_text (gage_ncid, sat_varid, "Description", &
-            &39, "Total Dissolved Gas Pressure Saturation")
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
     END IF
+
                                 ! done w/ file definition
 
     ncstat = nf_enddef(gage_ncid)
@@ -437,6 +626,34 @@ CONTAINS
   END SUBROUTINE gage_file_setup_netcdf
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE gage_print_time_var
+  ! ----------------------------------------------------------------
+  SUBROUTINE gage_print_time_var(varid, start, var, convert)
+
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER, INTENT(IN) :: varid, start(:)
+    DOUBLE PRECISION, INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(IN), OPTIONAL :: convert
+    INTEGER :: ncstat
+    DOUBLE PRECISION :: conversion
+    REAL :: value
+
+    IF (.NOT. PRESENT(convert)) THEN
+       conversion = 1.0
+    ELSE
+       conversion = convert
+    END IF
+
+    value = var/conversion
+    ncstat = nf_put_var1_real(gage_ncid, varid, start, value)
+    IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+
+  END SUBROUTINE gage_print_time_var
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE gage_print_netcdf
   ! ----------------------------------------------------------------
   SUBROUTINE gage_print_netcdf(date_string, time_string, elapsed, &
@@ -446,6 +663,8 @@ CONTAINS
     USE scalars
     USE date_time
     USE gas_functions
+    USE scalars_source
+    USE bed_module
    
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
@@ -454,11 +673,13 @@ CONTAINS
     DOUBLE PRECISION :: elapsed, salinity, baro_press
     LOGICAL :: do_transport
 
-    INTEGER :: i, iblock, icell, jcell
+    INTEGER :: i, j, iblock, icell, jcell, ifract
     DOUBLE PRECISION :: conc_TDG, t_water
-    REAL :: value
+    DOUBLE PRECISION :: value
     INTEGER :: ncstat, trec, dimid(2), index(2), length(2)
     CHARACTER (LEN=tslen) :: timestamp
+
+    IF (num_gages .LE. 0) RETURN
 
                                 ! find the last time index
 
@@ -505,53 +726,81 @@ CONTAINS
        index(1) = i
 
                                 ! put the hydrodynamic variables
-
-       value = block(iblock)%wsel(icell,jcell)
-       ncstat = nf_put_var1_real(gage_ncid, wselev_varid, index, value)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-
-       value = block(iblock)%depth(icell,jcell)
-       ncstat = nf_put_var1_real(gage_ncid, depth_varid, index, value)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-
-       value = SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2)
-       ncstat = nf_put_var1_real(gage_ncid, vmag_varid, index, value)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-
-       value = block(iblock)%uvel(icell,jcell)
-       ncstat = nf_put_var1_real(gage_ncid, uvel_varid, index, value)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-
-       value = block(iblock)%vvel(icell,jcell)
-       ncstat = nf_put_var1_real(gage_ncid, vvel_varid, index, value)
-       IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-
+       
+       CALL gage_print_time_var(wselev_varid, index, block(iblock)%wsel(icell,jcell))
+       CALL gage_print_time_var(depth_varid, index, block(iblock)%depth(icell,jcell))
+       CALL gage_print_time_var(vmag_varid, index, &
+            &SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2))
+       CALL gage_print_time_var(uvel_varid, index, block(iblock)%uvel(icell,jcell))
+       CALL gage_print_time_var(vvel_varid, index, block(iblock)%vvel(icell,jcell))
 
        IF(do_transport)THEN
 
-                                ! assume we know what the species are
+          IF (source_doing_temp) THEN
+             t_water = species(source_temp_idx)%scalar(iblock)%conc(icell,jcell)
+          END IF
+          DO j = 1, max_species
 
-          t_water = species(2)%scalar(iblock)%conc(icell,jcell)
-          value = t_water
-          ncstat = nf_put_var1_real(gage_ncid, temp_varid, index, value)
-          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+             CALL gage_print_time_var(scalar_varid(j), index, &
+                  &species(j)%scalar(iblock)%conc(icell,jcell), &
+                  &scalar_source(j)%conversion)
 
-          conc_TDG = species(1)%scalar(iblock)%conc(icell,jcell)
-          value = conc_TDG
-          ncstat = nf_put_var1_real(gage_ncid, conc_varid, index, value)
-          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+             SELECT CASE(scalar_source(j)%srctype)
+             CASE (GEN)
+                
+                IF (scalar_source(j)%generic_param%issorbed) THEN
+                   CALL gage_print_time_var(bedpore_varid(j), index, &
+                        &bed(iblock)%pore(j, icell, jcell))
+                   CALL gage_print_time_var(bedporemass_varid(j), index, &
+                        &bed(iblock)%pore(j, icell, jcell)*&
+                        &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell))
+                   value = 0.0
+                   IF (bed(iblock)%depth(icell, jcell) .GT. 0.0) value= &
+                        &bed(iblock)%pore(j, icell, jcell)/ &
+                        &(bed(iblock)%depth(icell, jcell)* &
+                        &bed(iblock)%porosity(icell, jcell))
+                   CALL gage_print_time_var(beddis_varid(j), index, value)
+                END IF
 
-          value = TDGasPress(conc_TDG,  t_water,  salinity)
-          ncstat = nf_put_var1_real(gage_ncid, press_varid, index, value)
-          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+             CASE (TDG)
+                conc_TDG = species(j)%scalar(iblock)%conc(icell,jcell)
+                value = TDGasPress(conc_TDG,  t_water,  salinity)
+                CALL gage_print_time_var(press_varid, index, value)
+                
+                value = TDGasDP(conc_TDG,  t_water,  salinity, baro_press)
+                CALL gage_print_time_var(deltap_varid, index, value)
           
-          value = TDGasDP(conc_TDG,  t_water,  salinity, baro_press)
-          ncstat = nf_put_var1_real(gage_ncid, deltap_varid, index, value)
-          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
-          
-          value = TDGasSaturation(conc_TDG,  t_water,  salinity, baro_press)
-          ncstat = nf_put_var1_real(gage_ncid, sat_varid, index, value)
-          IF (ncstat .ne. nf_noerr) CALL netcdferror(gage_ncname, ncstat)
+                value = TDGasSaturation(conc_TDG,  t_water,  salinity, baro_press)
+                CALL gage_print_time_var(sat_varid, index, value)
+
+             CASE (SED)
+                ifract = scalar_source(j)%sediment_param%ifract
+                
+                CALL gage_print_time_var(depos_varid(ifract), index, &
+                     &scalar_source(j)%sediment_param%block(iblock)%deposition(icell, jcell))
+                CALL gage_print_time_var(erode_varid(ifract), index,&
+                     &scalar_source(j)%sediment_param%block(iblock)%erosion(icell, jcell))
+                CALL  gage_print_time_var(bedsed_varid(ifract), index, &
+                     &bed(iblock)%sediment(ifract, icell, jcell))
+                CALL gage_print_time_var(bedmass_varid(ifract), index, &
+                     &bed(iblock)%sediment(ifract, icell, jcell)* &
+                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell))
+
+             CASE (PART)
+                CALL  gage_print_time_var(part_depos_varid(j), index, &
+                     &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell))
+                CALL  gage_print_time_var(bedpart_varid(j), index, &
+                     &bed(iblock)%particulate(j, icell, jcell))
+                CALL gage_print_time_var(bedpartmass_varid(j), index, &
+                     &bed(iblock)%sediment(j, icell, jcell)* &
+                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell))
+                
+             END SELECT
+          END DO
+          IF (source_doing_sed) THEN
+             CALL gage_print_time_var(beddepth_varid, index, &
+                  &bed(iblock)%depth(icell, jcell))
+          END IF
        END IF
     END DO
 
@@ -568,6 +817,12 @@ CONTAINS
     IMPLICIT NONE
     LOGICAL :: do_transport
     INTEGER :: error_iounit, status_iounit
+
+    NULLIFY(gage_specs)
+    NULLIFY(scalar_varid)
+    NULLIFY(depos_varid)
+    NULLIFY(erode_varid)
+    NULLIFY(bedsed_varid)
 
     CALL gage_read_control(error_iounit, status_iounit)
 
@@ -619,6 +874,12 @@ CONTAINS
     IF (gage_do_netcdf) THEN
        ncstat = nf_close(gage_ncid)
     END IF
+    IF (ASSOCIATED(gage_specs)) DEALLOCATE(gage_specs)
+    IF (ASSOCIATED(scalar_varid)) DEALLOCATE(scalar_varid)
+    IF (ASSOCIATED(depos_varid)) DEALLOCATE(depos_varid)
+    IF (ASSOCIATED(erode_varid)) DEALLOCATE(erode_varid)
+    IF (ASSOCIATED(bedsed_varid)) DEALLOCATE(bedsed_varid)
+
   END SUBROUTINE gage_file_close
   
 

@@ -1,0 +1,12 @@
+ 1 SED  "silt"      "Silt-sized sediment" "kg/ft^3"
+    DENSITY 75.04
+    D50 0.001
+    SETVEL      1.0e-02     DSHEAR  0.030 
+    ERODIBILTY  5.0e-03     ESHEAR  0.025 / 
+ 2 GEN  "stuff"     "Transportable stuff" "kg/ft^3" /
+ 3 PART "stuff-silt" "Stuff sorbed to silt" "kg/ft^3"
+    KD 1.0
+    BEDKD 1.0
+    RATE 5.0E-05
+    SEDIMENT 1  
+    DISSOLVED 2 /

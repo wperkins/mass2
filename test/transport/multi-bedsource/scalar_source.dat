@@ -1,0 +1,4 @@
+1 GEN stuff "Conservative Transportable Stuff" "bulldogs/ft3" 
+   BEDSOURCE "stuff-list.dat" "stuff-map.dat" / 
+2 GEN morestuff "More Conservative Transportable Stuff" "bulldogs/ft3"
+   BEDSOURCE "morestuff-list.dat" "morestuff-map.dat" /

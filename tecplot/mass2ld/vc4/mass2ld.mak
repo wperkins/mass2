@@ -33,9 +33,9 @@ NULL=nul
 ################################################################################
 # Begin Project
 # PROP Target_Last_Scanned "mass2ld - Win32 Debug"
-MTL=mktyplib.exe
 CPP=cl.exe
 RSC=rc.exe
+MTL=mktyplib.exe
 
 !IF  "$(CFG)" == "mass2ld - Win32 Release"
 
@@ -56,11 +56,11 @@ ALL : "$(OUTDIR)\mass2ld.dll"
 
 CLEAN : 
 	-@erase ".\Release\mass2ld.dll"
-	-@erase ".\Release\mass2ld.obj"
 	-@erase ".\Release\guicb.obj"
-	-@erase ".\Release\dllmain.obj"
 	-@erase ".\Release\mass2file.obj"
 	-@erase ".\Release\guidefs.obj"
+	-@erase ".\Release\mass2ld.obj"
+	-@erase ".\Release\dllmain.obj"
 	-@erase ".\Release\mass2ld.ilk"
 	-@erase ".\Release\mass2ld.lib"
 	-@erase ".\Release\mass2ld.exp"
@@ -95,11 +95,11 @@ LINK32_FLAGS=E:\Software\NetCDF\lib\netcdfs.lib\
  /subsystem:windows /dll /incremental:yes /pdb:"$(OUTDIR)/mass2ld.pdb"\
  /machine:I386 /out:"$(OUTDIR)/mass2ld.dll" /implib:"$(OUTDIR)/mass2ld.lib" 
 LINK32_OBJS= \
-	"$(INTDIR)/mass2ld.obj" \
 	"$(INTDIR)/guicb.obj" \
-	"$(INTDIR)/dllmain.obj" \
 	"$(INTDIR)/mass2file.obj" \
-	"$(INTDIR)/guidefs.obj"
+	"$(INTDIR)/guidefs.obj" \
+	"$(INTDIR)/mass2ld.obj" \
+	"$(INTDIR)/dllmain.obj"
 
 "$(OUTDIR)\mass2ld.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -127,11 +127,11 @@ CLEAN :
 	-@erase ".\Debug\vc40.pdb"
 	-@erase ".\Debug\vc40.idb"
 	-@erase ".\Debug\mass2ld.dll"
-	-@erase ".\Debug\guidefs.obj"
 	-@erase ".\Debug\guicb.obj"
+	-@erase ".\Debug\mass2file.obj"
 	-@erase ".\Debug\mass2ld.obj"
 	-@erase ".\Debug\dllmain.obj"
-	-@erase ".\Debug\mass2file.obj"
+	-@erase ".\Debug\guidefs.obj"
 	-@erase ".\Debug\mass2ld.ilk"
 	-@erase ".\Debug\mass2ld.lib"
 	-@erase ".\Debug\mass2ld.exp"
@@ -168,11 +168,11 @@ LINK32_FLAGS=E:\Software\NetCDF\lib\netcdfs.lib\
  /machine:I386 /nodefaultlib:"libcmt.lib" /out:"$(OUTDIR)/mass2ld.dll"\
  /implib:"$(OUTDIR)/mass2ld.lib" 
 LINK32_OBJS= \
-	"$(INTDIR)/guidefs.obj" \
 	"$(INTDIR)/guicb.obj" \
+	"$(INTDIR)/mass2file.obj" \
 	"$(INTDIR)/mass2ld.obj" \
 	"$(INTDIR)/dllmain.obj" \
-	"$(INTDIR)/mass2file.obj"
+	"$(INTDIR)/guidefs.obj"
 
 "$(OUTDIR)\mass2ld.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -215,26 +215,8 @@ LINK32_OBJS= \
 # Begin Source File
 
 SOURCE=\src\perk\mass2\tecplot\mass2ld\mass2ld.c
-DEP_CPP_MASS2=\
-	"E:\Software\TEC80\Include\TECADDON.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\ADDGLBL.h"\
-	"E:\Software\TEC80\Include\GUI.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\GUIDEFS.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\mass2file.h"\
-	"E:\Software\TEC80\Include\MASTER.h"\
-	"E:\Software\TEC80\Include\GLOBAL.h"\
-	"E:\Software\TEC80\Include\TECGLBL.h"\
-	"E:\Software\TEC80\Include\ADDON.h"\
-	"E:\Software\TEC80\Include\TECUTILO.h"\
-	"E:\Software\TEC80\Include\TECUTILS.h"\
-	"E:\Software\TEC80\Include\TECUTILQ.h"\
-	"E:\Software\TEC80\Include\TECUTILM.h"\
-	"E:\Software\TEC80\Include\VERSION.h"\
-	"E:\Software\TEC80\Include\SV.h"\
-	{$(INCLUDE)}"\sys\TYPES.H"\
-	
 
-"$(INTDIR)\mass2ld.obj" : $(SOURCE) $(DEP_CPP_MASS2) "$(INTDIR)"
+"$(INTDIR)\mass2ld.obj" : $(SOURCE) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
 
@@ -243,12 +225,8 @@ DEP_CPP_MASS2=\
 # Begin Source File
 
 SOURCE=\src\perk\mass2\tecplot\mass2ld\mass2file.c
-DEP_CPP_MASS2F=\
-	"E:\Software\NetCDF\include\netcdf.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\mass2file.h"\
-	
 
-"$(INTDIR)\mass2file.obj" : $(SOURCE) $(DEP_CPP_MASS2F) "$(INTDIR)"
+"$(INTDIR)\mass2file.obj" : $(SOURCE) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
 
@@ -257,24 +235,8 @@ DEP_CPP_MASS2F=\
 # Begin Source File
 
 SOURCE=\src\perk\mass2\tecplot\mass2ld\guidefs.c
-DEP_CPP_GUIDE=\
-	"E:\Software\TEC80\Include\TECADDON.h"\
-	"E:\Software\TEC80\Include\GUI.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\GUIDEFS.h"\
-	"E:\Software\TEC80\Include\MASTER.h"\
-	"E:\Software\TEC80\Include\GLOBAL.h"\
-	"E:\Software\TEC80\Include\TECGLBL.h"\
-	"E:\Software\TEC80\Include\ADDON.h"\
-	"E:\Software\TEC80\Include\TECUTILO.h"\
-	"E:\Software\TEC80\Include\TECUTILS.h"\
-	"E:\Software\TEC80\Include\TECUTILQ.h"\
-	"E:\Software\TEC80\Include\TECUTILM.h"\
-	"E:\Software\TEC80\Include\VERSION.h"\
-	"E:\Software\TEC80\Include\SV.h"\
-	{$(INCLUDE)}"\sys\TYPES.H"\
-	
 
-"$(INTDIR)\guidefs.obj" : $(SOURCE) $(DEP_CPP_GUIDE) "$(INTDIR)"
+"$(INTDIR)\guidefs.obj" : $(SOURCE) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
 
@@ -283,27 +245,8 @@ DEP_CPP_GUIDE=\
 # Begin Source File
 
 SOURCE=\src\perk\mass2\tecplot\mass2ld\guicb.c
-DEP_CPP_GUICB=\
-	"E:\Software\TEC80\Include\TECADDON.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\ADDGLBL.h"\
-	"E:\Software\TEC80\Include\GUI.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\GUIDEFS.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\mass2file.h"\
-	".\..\..\..\..\mass2\tecplot\mass2ld\guibld.c"\
-	"E:\Software\TEC80\Include\MASTER.h"\
-	"E:\Software\TEC80\Include\GLOBAL.h"\
-	"E:\Software\TEC80\Include\TECGLBL.h"\
-	"E:\Software\TEC80\Include\ADDON.h"\
-	"E:\Software\TEC80\Include\TECUTILO.h"\
-	"E:\Software\TEC80\Include\TECUTILS.h"\
-	"E:\Software\TEC80\Include\TECUTILQ.h"\
-	"E:\Software\TEC80\Include\TECUTILM.h"\
-	"E:\Software\TEC80\Include\VERSION.h"\
-	"E:\Software\TEC80\Include\SV.h"\
-	{$(INCLUDE)}"\sys\TYPES.H"\
-	
 
-"$(INTDIR)\guicb.obj" : $(SOURCE) $(DEP_CPP_GUICB) "$(INTDIR)"
+"$(INTDIR)\guicb.obj" : $(SOURCE) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
 

@@ -1,0 +1,53 @@
+# -*- makefile -*----------------------------------------------
+# file: makefile.linux
+# Makefile for Linux systems with the Absoft compiler
+# -------------------------------------------------------------
+# -------------------------------------------------------------
+# Battelle Memorial Institute
+# Pacific Northwest Laboratory
+# -------------------------------------------------------------
+# -------------------------------------------------------------
+# Created July  6, 2000 by William A. Perkins
+# Last Change: Thu Oct 19 08:20:01 2000 by William A. Perkins <perk@dora.pnl.gov>
+# -------------------------------------------------------------
+
+
+F90 = f90
+COMPILE.f90 = $(F90) $(F90FLAGS) -c $(DEBUG)
+LINK.f90 = $(F90) $(LDFLAGS)
+
+DEBUG = -O
+FLAGS = $(DEBUG) 
+
+F90FLAGS = $(FLAGS)
+LIBLOC = 
+LDFLAGS = ${LIBLOC} $(FLAGS)
+LIBS = -lU77
+
+
+TARGET = cartgrid
+SRCS =											\
+     cartgrid.f90								\
+	 elevtbl.f90 
+OBJS = ${SRCS:%.f90=%.o}
+
+${TARGET}: ${OBJS}
+	${LINK.f90} ${OBJS} ${LIBS} -o ${TARGET}
+
+clean::
+	rm -f ${TARGET}
+
+# dependancies for individual object files
+
+cartgrid.o: cartgrid.f90 elevtbl.o
+elevtbl.o: elevtbl.f90
+
+clean::
+	rm -f ${OBJS}
+
+%.o: %.f90
+	${COMPILE.f90} $<
+
+tags: TAGS
+TAGS: $(SRCS)
+	etags $(SRCS)

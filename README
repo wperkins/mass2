@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov 23 07:36:10 1999 by William A. Perkins <perk@tophet.pnl.gov>
+Last Change: Mon Feb 12 10:25:29 2001 by William A. Perkins <perk@dora.pnl.gov>
 -------------------------------------------------------------
 
 -------------------------------------------------------------
@@ -16,35 +16,40 @@ compilation
 -------------------------------------------------------------
 
 By default all of the makefiles will produce an executable called
-`mass2_v025'.  This can be changed by setting the `TARGET' macro on
-the command line.  Some suggested `TARGET's are shown below. Currently
-the following platforms are supported
+`mass2_v027'.  This can be changed by setting the `TARGET' macro on
+the command line.  Some suggested `TARGET's are shown below (using the
+condor codes for OpSys and Arch). Currently the following platforms
+are supported
 
     IRIX:   
 
-        make -f makefile [DEBUG=-g [-O]] 
-      
-        Compile on mack or erebus
+        make -f makefile [DEBUG=-g [-O]] [TARGET=mass2.IRIX65.SGI]
 
     DEC OSF/1:      
 
-        make -f makefile.dec [DEBUG=-g [-O]] [TARGET=mass2_v025.dec]
+        make -f makefile.dec F90=f95 [DEBUG=-g [-O]] [TARGET=mass2_v025.dec]
 
         Compile on tophet.  Can run on both OSF/1 and Linux alpha.
 
     Linux i386:     
 
-        make -f makefile.linux [DEBUG=-g] [TARGET=mass2_v025.linux]
+        make -f makefile.linux [DEBUG=-g] [TARGET=mass2.LINUX.INTEL]
 
-        This is for the Absoft Pro Fortran 90 compiler.  This is
-        installed on minos. 
+        This is for the Absoft Pro Fortran 90/95 compiler. 
 
     Linux alpha:    
 
-        make -f makefile.dec NETCDFDIR=/usr F90=fort [DEBUG=-g [-O]] [TARGET=mass2_v025.axplinux]
+        make -f makefile.dec [DEBUG=-g [-O]] [TARGET=mass2.LINUX.ALPHA]
 
         This uses the DEC Fortran 90 compiler for Linux.  This is
         installed only on gehenna. 
+
+    Sun Solaris SPARC:
+
+        make -f makefile.sun [DEBUG=-g] [TARGET=mass2.SOLARIS27.SUN4u]
+
+        This is for the Sun Fortran 90 compiler.  This can be found on
+        artemis. 
 
     Windows:        
 

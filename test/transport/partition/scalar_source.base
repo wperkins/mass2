@@ -1,0 +1,16 @@
+1 SED "sediment" "Transported Sediment" "kg/m^3" 
+    CONVERT 0.028317 
+    DENSITY 2650.0
+    D50 0.05
+    SETVEL      5.0e-02     DSHEAR  0.010
+    ERODIBILTY  9.3E-07     ESHEAR  0.045 /
+2 GEN "stuff" "Transported Stuff" "kg/m^3" 
+    CONVERT 0.028317 
+    HALFLIFE 0.0 /
+3 PART "particulate "Particulate Stuff" "kg/m^3" 
+    CONVERT 0.028317 
+    KD 1.0
+    BEDKD 1.0
+    RATE 5.0E-4
+    SEDIMENT 1
+    DISSOLVED 2  /

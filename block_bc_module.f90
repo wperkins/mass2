@@ -27,6 +27,8 @@ USE table_boundary_conditions
 
 IMPLICIT NONE
 
+CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
 TYPE  bc_spec_struct
 
 	CHARACTER (LEN=10) :: bc_loc
@@ -41,7 +43,7 @@ END TYPE bc_spec_struct
 TYPE block_bc_struct
 
 	INTEGER  :: num_bc != 0
-	TYPE(bc_spec_struct) :: bc_spec(100)
+	TYPE(bc_spec_struct) :: bc_spec(200)
 
 END TYPE block_bc_struct
 
@@ -60,7 +62,7 @@ END TYPE scalar_bc_spec_struct
 TYPE scalar_bc_struct
 
 	INTEGER  :: num_bc != 0
-	TYPE(scalar_bc_spec_struct) :: bc_spec(100)
+	TYPE(scalar_bc_spec_struct) :: bc_spec(200)
 
 END TYPE scalar_bc_struct
 !---------------------------------------------------
@@ -319,6 +321,8 @@ IMPLICIT NONE
 	
 	! now allocate the number of table bc structs that we need
 100	CALL allocate_scalar_table_bc(max_scalar_tables, error_iounit, status_iounit)
+
+    scalar_bc(:)%num_bc = 0
 
 	! now start over to fill and parse
 	REWIND(iounit)

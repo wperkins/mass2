@@ -43,7 +43,12 @@ case "$PLATFORM" in
     linux*)
         CFLAGS="$CFLAGS"
         LDFLAGS="$LDFLAGS"
-        NETCDFLIB="-lnetcdf -lc"
+        NETCDFLIB="-lnetcdf"
+        ;;
+    decalpha*)
+        CFLAGS="$CFLAGS -ieee -I/usr/unsupported/ucar/include"
+        LDFLAGS="$LDFLAGS -L/usr/unsupported/ucar/lib"
+        NETCDFLIB="-lnetcdf"
         ;;
     *)
         CFLAGS="$CFLAGS -I/usr/unsupported/ucar/include"

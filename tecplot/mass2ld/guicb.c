@@ -130,7 +130,7 @@ static void Dialog1Init_CB(void)
   }
 
   GUI_ListDeleteAllItems(StartList_SLST_D1);
-  GUI_ListDeleteAllItems(StartList_SLST_D1);
+  GUI_ListDeleteAllItems(EndList_SLST_D1);
 
   times = mass2Times();
   TRACE1("Building timestamp lists: %d entries\n", mass2Times());

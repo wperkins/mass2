@@ -25,8 +25,9 @@ LDFLAGS = ${LIBLOC} $(FLAGS)
 LIBS = -lfpe
 
 TARGET = cartgrid
-SRCS = \
-     cartgrid.f90 
+SRCS =											\
+     cartgrid.f90								\
+	 elevtbl.f90 
 
 OBJS = $(SRCS:%.f90=%.o)
 $(TARGET): $(OBJS)
@@ -35,7 +36,8 @@ clean::
 	rm -f ${TARGET}
 
 # dependancies for individual object files
-cartgrid.o:cartgrid.f90
+cartgrid.o:cartgrid.f90 elevtbl.o
+elevtbl.o: elevtbl.f90
 
 %.o: %.f90
 	${COMPILE.f90} $<

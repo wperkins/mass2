@@ -1,4 +1,4 @@
--------------------------------------------------------------
+-*- text -*--------------------------------------------------
 file: TODO
 List of things to do to MASS2, timer permitting
 -------------------------------------------------------------
@@ -8,13 +8,22 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov 23 07:41:50 1999 by William A. Perkins <perk@tophet.pnl.gov>
+Last Change: Mon Feb 12 10:24:49 2001 by William A. Perkins <perk@dora.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
 
-
 High Priority:
+
+    * faster, Faster, FASTER
+
+    * documentation? (yea right)
+
+    * check the id of a scalar source specification to make sure it
+      has not already been specified
+
+    * arbitrary id's in the scalar source specification, instead of
+      consecutive integers
 
     * check for file existance for all files opened
 
@@ -22,17 +31,27 @@ High Priority:
       ending dates are within the simulation, and crash if not, or (2)
       just use the first/last values before/after table start/end.
 
-    * utility to extract data from a single point in the plot.nc file
-
     * utility to extract and integrate flows, velocities, temperature,
       and concentration along the border of a group of cells,
       e.g. the average concentration along the spillway at the
-      downstream end of the grid.
+      downstream end of the grid. (partially done with mass2flux.pl)
 
 Low Priority:
-
-    * split up the main module
 
     * utility to plot gage.nc directly -- perhaps some combination of
       perl script and gnuplot, maybe even with a GUI like pTk.
 
+    * check through the source terms, and be sure we're consistent
+      about using the previous time step, or previous iteration,
+      concentrations  
+
+    * internal mass balance check for contaminants
+
+    * add the capability to specify a non-point contaminant source
+      that avoids the bed; this could be implemented by just using a
+      different keyword (instead of BEDSOUCE) in scalar_source.dat
+
+    * get rid of the stupid multiple makefiles; the first step would
+      be to eliminate the module files as intermediate targets; then a
+      series of special targets could be used to set the target,
+      compiler, and flags; condor compilation may also be included.

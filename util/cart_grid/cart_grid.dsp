@@ -62,6 +62,7 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "..\..\Debug"
 # PROP Intermediate_Dir "Debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
 # ADD F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
@@ -83,6 +84,32 @@ LINK32=link.exe
 # Begin Source File
 
 SOURCE=.\cartgrid.f90
+
+!IF  "$(CFG)" == "cart_grid - Win32 Release"
+
+NODEP_F90_CARTG=\
+	".\Release\elevtbl.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
+
+NODEP_F90_CARTG=\
+	".\Debug\elevtbl.mod"\
+	
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\elevtbl.f90
+
+!IF  "$(CFG)" == "cart_grid - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # End Target
 # End Project

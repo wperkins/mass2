@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November 19, 1998 by William A. Perkins
-! Last Change: Fri Dec 11 10:35:20 1998 by William A. Perkins <perk@erebus.pnl.gov>
+! Last Change: Tue Oct 17 13:47:16 2000 by William A. Perkins <perk@dora.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -194,7 +194,7 @@ SUBROUTINE profile_init(given_initial_wsel, manning, mann_con, status_iounit)
      DO i = 2, block(iblock)%xmax
         s = abs(u_slope_avg(iblock, i)) ! assume only downstream flow
         ! block(iblock)%uvel(i, 1) = 0.0
-        DO j = 1, block(iblock)%ymax + 1
+        DO j = 2, block(iblock)%ymax
            IF (i .LE. 1) THEN
               d = block(iblock)%depth(i, j)
               w = distance(block(iblock)%x_grid(i, j - 1), block(iblock)%y_grid(i, j - 1),&

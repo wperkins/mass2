@@ -1,0 +1,6 @@
+1 SED "sediment" "Transported Sediment" "kg/m^3" 
+    CONVERT 0.028317 
+    DENSITY     2650.0
+    D50            0.001
+    SETVEL      1.0e-01     DSHEAR  0.024
+    ERODIBILTY  5.0E-04     ESHEAR  0.045 /
