@@ -7,7 +7,7 @@
    ------------------------------------------------------------- */
 /* -------------------------------------------------------------
    Created August 17, 1999 by William A. Perkins
-   Last Change: Tue Aug 24 14:50:21 1999 by William A. Perkins <perk@mack.pnl.gov>
+   Last Change: Tue Feb 15 15:43:37 2000 by William A. Perkins <perk@gehenna.pnl.gov>
    ------------------------------------------------------------- */
 
 static const char* RCS_ID = "$Id$ Battelle PNL";
@@ -139,7 +139,7 @@ MASS2LoaderEngine(StringList_pa cmdlist)
           TecUtilDialogMessageBox("Error creating zone", MessageBox_Error);
         }
         
-        TRACE1("Loader: Doing Block %d ", blk);
+        TRACE1("Loader: Doing Block %d ", blk + 1);
         TRACE1("which has max eta = %d ", maxeta);
         TRACE1("and max xi = %d\n", maxxi);
 
@@ -211,11 +211,11 @@ MASS2LoaderEngine(StringList_pa cmdlist)
   if (IsOK) {
     Set_pa zone_set;
 
-    mass2CloseFile();
-
     TecUtilImportSetLoaderInstr(ADDON_NAME, cmdlist);
     TecUtilFrameSetMode(Frame_TwoD);
     
+    TRACE1("Loader: displaying zones 1 through %d\n", mass2Blocks());
+            
     zone_set = TecUtilSetAlloc(TRUE);
     for (i = 1; i <= mass2Blocks(); i++) {
       TecUtilSetAddMember(zone_set, i, TRUE);
@@ -224,6 +224,9 @@ MASS2LoaderEngine(StringList_pa cmdlist)
     
     TecUtilSetDealloc(&zone_set);
     TecUtilRedraw(TRUE);
+
+    mass2CloseFile();
+
   }
 
 
@@ -231,6 +234,15 @@ MASS2LoaderEngine(StringList_pa cmdlist)
   TecUtilLockOff();
   return IsOK;
 }
+
+/* -------------------------------------------------------------
+   MASS2LoaderOverride
+   ------------------------------------------------------------- */
+/*  Boolean_t STDCALL */
+/*  MASS2LoaderOverride(StringList_pa sl) */
+/*  { */
+
+/*  } */
 
 /* -------------------------------------------------------------
    LaunchMASS2LoaderInterface
@@ -260,20 +272,6 @@ LaunchMASS2LoaderInterface(void)
         sprintf(msg, "Unable to open \"%s\":\n%s", fname, mass2_error);
         (void)TecUtilDialogMessageBox(msg, MessageBox_Error);
       } else {
-        int i;
-        int ntimes = mass2Times();
-        char buffer[100000];
-        TRACE1("Building timestamp menu lists: %d entries\n", mass2Times());
-        strcpy(buffer, "");
-        for (i = 0; i < ntimes; i++) {
-          const char *s = mass2TimeStamp(i);
-          TRACE1("Building timestamp menu lists: appending %s\n", s);
-          if (i > 0) strcat(buffer, ",");
-          strcat(buffer, s);
-        }
-        TRACE1("Building timestamp menu lists: duplicating \"%s\"\n", buffer);
-        strcpy(StartTime_OPT_D1_List, buffer);
-        strcpy(EndTime_OPT_D1_List, buffer);
         BuildDialog1(MAINDIALOGID);
         GUI_DialogLaunch(Dialog1Manager);
         filedone = 1;

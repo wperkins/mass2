@@ -1,10 +1,11 @@
-#!MC 750
-$!VarSet |LFBD| = '/files0/do9/src/perk/mass2/tecplot/mass2ld'
+#!MC 800
+$!VarSet |LFBD| = '/projects/do9/src/perk/mass2-trunk/tecplot/mass2ld'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE
   ISTRANSPARENT = NO
   ORIENTPORTRAIT = NO
+  SHOWGRID = YES
   SHOWRULER = NO
   SHOWPAPER = YES
   PAPERSIZE = LETTER
@@ -25,6 +26,7 @@ $!PAPER
       HEIGHT = 3
       }
     }
+  RULERSPACING = ONEINCH
   PAPERGRIDSPACING = QUARTERINCH
   REGIONINWORKAREA
     {
@@ -56,10 +58,10 @@ $!FRAMELAYOUT
   XYPOS
     {
     X = 0.5
-    Y = 0.5
+    Y = 0.75
     }
   WIDTH = 5.8137
-  HEIGHT = 3.8737
+  HEIGHT = 5.25
 $!FRAMENAME  = 'ID=1 MODE=MODAL TITLE="MASS2 Loader"' 
 $!SKETCHAXIS 
   DEPXTOYRATIO = 1
@@ -72,14 +74,14 @@ $!SKETCHAXIS
   YDETAIL
     {
     RANGEMIN = 0
-    RANGEMAX = 0.666310848141
+    RANGEMAX = 0.903046687338
     GRSPACING = 0.1
     }
 $!ATTACHTEXT 
   XYPOS
     {
-    X = 5
-    Y = 39.0208264994
+    X = 4.30018748817
+    Y = 52.380952381
     }
   TEXTSHAPE
     {
@@ -93,7 +95,7 @@ $!ATTACHTEXT
     FILLCOLOR = CUSTOM2
     }
   MACROFUNCTIONCOMMAND = 'VarList' 
-  TEXT = 'MLST:                                                                              \n\n\n\n\n\n\n' 
+  TEXT = 'MLST:                                                                                    \n\n\n\n\n\n\n' 
 $!ATTACHTEXT 
   XYPOS
     {
@@ -114,27 +116,8 @@ $!ATTACHTEXT
 $!ATTACHTEXT 
   XYPOS
     {
-    X = 94.999230485
-    Y = 27.0144183458
-    }
-  TEXTSHAPE
-    {
-    HEIGHT = 16
-    }
-  BOX
-    {
-    BOXTYPE = FILLED
-    MARGIN = 60
-    FILLCOLOR = CUSTOM2
-    }
-  ANCHOR = MIDRIGHT
-  MACROFUNCTIONCOMMAND = 'StartTime' 
-  TEXT = 'OPT: OptionMenu5       ' 
-$!ATTACHTEXT 
-  XYPOS
-    {
-    X = 4.99995949921
-    Y = 27.0144183458
+    X = 4.30018748817
+    Y = 42.8571428571
     }
   TEXTSHAPE
     {
@@ -150,8 +133,8 @@ $!ATTACHTEXT
 $!ATTACHTEXT 
   XYPOS
     {
-    X = 4.99995949921
-    Y = 12.0064081537
+    X = 4.30018748817
+    Y = 19.0476190476
     }
   TEXTSHAPE
     {
@@ -167,8 +150,8 @@ $!ATTACHTEXT
 $!ATTACHTEXT 
   XYPOS
     {
-    X = 95
-    Y = 12.0064081537
+    X = 43.0018748817
+    Y = 5.29100529101
     }
   TEXTSHAPE
     {
@@ -177,11 +160,28 @@ $!ATTACHTEXT
   BOX
     {
     BOXTYPE = FILLED
-    MARGIN = 60
+    MARGIN = 50
     FILLCOLOR = CUSTOM2
     }
-  ANCHOR = MIDRIGHT
-  MACROFUNCTIONCOMMAND = 'EndTime' 
-  TEXT = 'OPT: OptionMenu5       ' 
+  MACROFUNCTIONCOMMAND = 'EndList' 
+  TEXT = 'SLST:                                          \n\n\n' 
+$!ATTACHTEXT 
+  XYPOS
+    {
+    X = 43.0018748817
+    Y = 29.1005291005
+    }
+  TEXTSHAPE
+    {
+    HEIGHT = 16
+    }
+  BOX
+    {
+    BOXTYPE = FILLED
+    MARGIN = 50
+    FILLCOLOR = CUSTOM2
+    }
+  MACROFUNCTIONCOMMAND = 'StartList' 
+  TEXT = 'SLST:                                          \n\n\n' 
 $!REMOVEVAR |LFBD|
 $!SETSTYLEBASE CONFIG

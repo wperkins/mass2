@@ -28,6 +28,7 @@ static void Dialog1OkButton_CB(void)
   char buffer[1024];
   int i;
   int nvar, var, *selvar;
+  int *t, nt;
   Boolean_t IsOK;
 
                                 /* include file name */
@@ -57,12 +58,21 @@ static void Dialog1OkButton_CB(void)
 
                                 /* set start and end time slices */
 
+
+  GUI_ListGetSelectedItems(StartList_SLST_D1, &t, &nt);
+  i = *t - 1;
+  /*
   i = GUI_OptionMenuGet(StartTime_OPT_D1) - 1;
+  */
   sprintf(buffer, "S%d", i);
   TRACE1("Loader Commands: \"%s\"\n", buffer);
   TecUtilStringListAppendString(LoaderCMD, buffer);
 
+  GUI_ListGetSelectedItems(EndList_SLST_D1, &t, &nt);
+  i = *t - 1;
+  /*
   i = GUI_OptionMenuGet(EndTime_OPT_D1) - 1;
+  */
   sprintf(buffer, "E%d", i);
   TRACE1("Loader Commands: \"%s\"\n", buffer);
   TecUtilStringListAppendString(LoaderCMD, buffer);
@@ -119,9 +129,23 @@ static void Dialog1Init_CB(void)
     GUI_ListAppendItem(VarList_MLST_D1, mass2VarName(mass2_timedep_varid[i]));
   }
 
+  GUI_ListDeleteAllItems(StartList_SLST_D1);
+  GUI_ListDeleteAllItems(StartList_SLST_D1);
+
+  times = mass2Times();
+  TRACE1("Building timestamp lists: %d entries\n", mass2Times());
+  for (i = 0; i < times; i++) {
+    const char *s = mass2TimeStamp(i);
+    TRACE1("Building timestamp lists: appending %s\n", s);
+    GUI_ListAppendItem(StartList_SLST_D1, s);
+    GUI_ListAppendItem(EndList_SLST_D1, s);
+  }
+  GUI_ListSetSelectedItem(StartList_SLST_D1, 1);
+  GUI_ListSetSelectedItem(EndList_SLST_D1, mass2Times());
+  /*
   GUI_OptionMenuSet(StartTime_OPT_D1, 1);
   GUI_OptionMenuSet(EndTime_OPT_D1, mass2Times());
-
+  */
   VarList_MLST_D1_SetAll();
 }
 
@@ -132,6 +156,32 @@ static void VarList_MLST_D1_CB(const int *I)
   TecUtilLockOff();
 }
 
+static void EndList_SLST_D1_CB(const int *I)
+{
+  int n, *s;
+  TecUtilLockOn();
+  TRACE1("Single selection list (EndList_SLST_D1) item selected,  Item is: %d\n",*I);
+  GUI_ListGetSelectedItems(StartList_SLST_D1, &s, &n);
+  if (*I < *s) {
+    GUI_ListSetSelectedItem(StartList_SLST_D1, *I);
+  }
+  TecUtilLockOff();
+}
+
+
+static void StartList_SLST_D1_CB(const int *I)
+{
+  int n, *e;
+  TecUtilLockOn();
+  TRACE1("Single selection list (StartList_SLST_D1) item selected,  Item is: %d\n",*I);
+  GUI_ListGetSelectedItems(EndList_SLST_D1, &e, &n);
+  if (*I > *e) {
+    GUI_ListSetSelectedItem(EndList_SLST_D1, *I);
+  }
+  TecUtilLockOff();
+}
+
+/*
 char StartTime_OPT_D1_List[100000];
 static void StartTime_OPT_D1_CB(const int *I)
 {
@@ -146,7 +196,6 @@ static void StartTime_OPT_D1_CB(const int *I)
   TecUtilLockOff();
 }
 
-
 char EndTime_OPT_D1_List[100000];
 static void EndTime_OPT_D1_CB(const int *I)
 {
@@ -160,5 +209,7 @@ static void EndTime_OPT_D1_CB(const int *I)
   }
   TecUtilLockOff();
 }
+
+*/
 
 #include "guibld.c"
