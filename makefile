@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Nov 17 09:54:55 1999 by William A. Perkins <perk@tophet.pnl.gov>
+# Last Change: Tue Nov 23 13:05:22 1999 by William A. Perkins <perk@tophet.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -29,8 +29,8 @@ NETCDFLDFLAGS = -L$(NETCDFDIR)/lib
 NETCDFLIBS = -lnetcdf
 
 # Options that will work on erebus:
-DEBUG =  -Ofast
-FLAGS = $(NETCDFFLAGS) $(DEBUG) # -TARG:platform=IP30  -OPT:Olimit=0 
+DEBUG =  -O
+FLAGS = $(NETCDFFLAGS) $(DEBUG) -TARG:platform=IP30  -OPT:Olimit=0 
 
 # general compile/link flags
 
