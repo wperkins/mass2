@@ -7,15 +7,17 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 12:01:13 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Feb  6 10:37:20 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 
 EPSFILES = \
 	plot-depth.eps \
+	plot-depth-metric.eps \
 	plot-elev.eps \
+	plot-elev-metric.eps \
 	plot-vel.eps
 
 MODELFILES = \
