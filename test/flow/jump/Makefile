@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Feb  6 06:35:45 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan 10 09:25:43 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -25,30 +25,27 @@ MODELFILES = \
 	flow.dat \
 	stage.dat \
 	grid.dat \
-	gage_control.dat
+	gage_control.dat \
+	mass2_v027.cfg 
 
 all: $(EPSFILES)
 
-$(EPSFILES): plot.nc.2
+$(EPSFILES): plot.nc
 
-plot.nc.2 gage.nc.2: $(MODELFILES) mass2_v027.cfg.2 hotstart.bin $(MODEL)
-	cp mass2_v027.cfg.2 mass2_v027.cfg
-	$(MODEL)
-	mv plot.nc plot.nc.2 
+clean::	
+	rm -f $(EPSFILES)
 
-hotstart.bin: $(MODELFILES) mass2_v027.cfg.1 $(MODEL)
-	cp mass2_v027.cfg.1 mass2_v027.cfg
+plot.nc gage.nc: $(MODELFILES) $(MODEL)
 	$(MODEL)
-	mv hotstart_04-01-1996_180000.bin hotstart.bin
+
+clean::
+	rm -f plot.nc gage.nc
 
 %.eps: %.gp
 	gnuplot $< > $@
 
-
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat mass2_v027.cfg
-	rm -f plot.nc.1 plot.nc.2 gage.nc
+	rm -f gridplot1.dat
 	rm -f hotstart*
-	rm -f $(EPSFILES)

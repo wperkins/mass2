@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July 23, 2000 by William A. Perkins
-# Last Change: Sun Jul 23 21:26:51 2000 by William A. Perkins <perk@localhost>
+# Last Change: Fri Jan 10 09:27:37 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # $Id$
@@ -24,4 +24,4 @@ set mytics
 set pointsize 0.5
 set nokey
 
-plot '<perl ../../../scripts/mass2slice.pl -l -i plot.nc.2 froude 1 5' using 3:4 title 'Steady State' with linespoints 1
+plot '<perl ../../../scripts/mass2slice.pl -l -i plot.nc froude 1 5' using 3:4 title 'Steady State' with linespoints 1
