@@ -8,21 +8,21 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 16, 1999 by William A. Perkins
-# Last Change: Thu Sep  9 08:40:30 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Tue Apr  4 14:31:54 2000 by William A. Perkins <perk@gehenna.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-if( ! $?TEC75HOME ) then
-    setenv TEC75HOME /usr/software/tecplot
+if( ! $?TEC80HOME ) then
+    setenv TEC80HOME /usr/software/tecplot8
 endif
 setenv TECADDONDEVDIR $PWD
-set path = ($path $TEC75HOME/util/addons/bin)
+set path = ($path $TEC80HOME/adk/bin)
 
 set os = `uname -s`
 
 switch( $os )
     case Linux*:
-        setenv TECADDONDEVPLATFORM linux-s.203
+        setenv TECADDONDEVPLATFORM linux.203
         breaksw
     case IRIX64*:
         setenv TECADDONDEVPLATFORM sgix.62

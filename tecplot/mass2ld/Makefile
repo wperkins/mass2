@@ -2,9 +2,9 @@ SHELL=/bin/sh
 LIB=$(TECADDONDEVDIR)/lib/$(PLATFORM)/$(OBJSUBDIR)/lib$(LIBBASENAME).$(LIBEXT)
 STATLIB=$(TECADDONLIBDIR)/lib$(LIBBASENAME).a
 OBJDIR=obj/$(PLATFORM)/$(OBJSUBDIR)
-IOUTILLIB=$(TEC75HOME)/lib/ext/$(PLATFORM)/libioutil.a
-GUILIB=$(TEC75HOME)/lib/ext/$(PLATFORM)/libgui.a
-NETCDFLIB=-lnetcdf 
+IOUTILLIB=$(TEC80HOME)/lib/ext/$(PLATFORM)/libioutil.a
+GUILIB=$(TEC80HOME)/lib/ext/$(PLATFORM)/libgui.a
+# NETCDFLIB=-lnetcdf 
 shlib: $(LIB)
 statlib: $(STATLIB)
 #
@@ -17,10 +17,10 @@ OBJS=$(OBJDIR)/mass2ld.o $(OBJDIR)/guidefs.o $(OBJDIR)/guicb.o $(OBJDIR)/mass2fi
 #
  
 $(LIB) : $(OBJS)
-	cd $(OBJDIR); $(LD) $(LDFLAGS) *.o $(NETCDFLIB) $(GUILIB) -o $(LIB)
+	cd $(OBJDIR); $(LD) $(LDFLAGS) *.o $(GUILIB) $(NETCDFLIB) -o $(LIB)
  
 $(STATLIB) : $(OBJS)
-	cd $(OBJDIR); $(AR) q lib$(LIBBASENAME).a *.o $(NETCDFLIB) $(GUILIB); mv lib$(LIBBASENAME).a  $(STATLIB)
+	cd $(OBJDIR); $(AR) q lib$(LIBBASENAME).a *.o $(GUILIB) $(NETCDFLIB) ; mv lib$(LIBBASENAME).a  $(STATLIB)
  
 #
 # Duplicate the next line for additional source files...

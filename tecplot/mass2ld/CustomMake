@@ -41,13 +41,18 @@
 
 case "$PLATFORM" in
     linux*)
-        CFLAGS="$CFLAGS -I/usr/X11R6/include"
-        LDFLAGS="$LDFLAGS -L/usr/X11R6/lib"
-        NETCDFLIB="/usr/lib/libnetcdf.a"
+        CFLAGS="$CFLAGS"
+        LDFLAGS="$LDFLAGS"
+        NETCDFLIB="-lnetcdf -lc"
         ;;
     *)
         CFLAGS="$CFLAGS -I/usr/unsupported/ucar/include"
         LDFLAGS="$LDFLAGS -L/usr/unsupported/ucar/lib"
-        NETCDFLIB="/usr/unsupported/ucar/lib/libnetcdf.a"
+        NETCDFLIB="-lnetcdf"
 esac
+export CFLAGS
+export LDFLAGS
+export NETCDFLIB
+
 CLIBS="$NETCDFLIB $CLIBS"
+export CLIBS
