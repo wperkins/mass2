@@ -7,11 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Apr 29 10:02:50 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan  2 10:27:34 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 
 EPSFILES = \
 	plot-depth-flow-stage.eps \
@@ -22,7 +22,16 @@ EPSFILES = \
 	plot-vel-stage-stage.eps \
 	plot-depth-flow-flow.eps \
 	plot-elev-flow-flow.eps \
-	plot-vel-flow-flow.eps
+	plot-vel-flow-flow.eps \
+	plot-depth-flow-stage-metric.eps \
+	plot-elev-flow-stage-metric.eps \
+	plot-vel-flow-stage-metric.eps \
+	plot-depth-stage-stage-metric.eps \
+	plot-elev-stage-stage-metric.eps \
+	plot-vel-stage-stage-metric.eps \
+	plot-depth-flow-flow-metric.eps \
+	plot-elev-flow-flow-metric.eps \
+	plot-vel-flow-flow-metric.eps
 #	plot-depth-stage-flow.eps \
 #	plot-elev-stage-flow.eps \
 #	plot-vel-stage-flow.eps \
@@ -37,6 +46,10 @@ $(filter %-flow-stage.eps, $(EPSFILES)): plot-flow-stage.nc
 $(filter %-stage-stage.eps, $(EPSFILES)): plot-stage-stage.nc
 $(filter %-flow-flow.eps, $(EPSFILES)): plot-flow-flow.nc
 $(filter %-stage-flow.eps, $(EPSFILES)): plot-stage-flow.nc
+$(filter %-flow-stage-metric.eps, $(EPSFILES)): plot-flow-stage.nc
+$(filter %-stage-stage-metric.eps, $(EPSFILES)): plot-stage-stage.nc
+$(filter %-flow-flow-metric.eps, $(EPSFILES)): plot-flow-flow.nc
+$(filter %-stage-flow-metric.eps, $(EPSFILES)): plot-stage-flow.nc
 
 
 plot-flow-stage.nc hotstart.bin: $(MODELFILES) $(MODEL) flow.dat stage.dat
@@ -96,6 +109,18 @@ clean::
 	sed -e 's/plot\.nc/plot-stage-stage.nc/g' $< | gnuplot > $@
 
 %-flow-flow.eps: %.gp
+	sed -e 's/plot\.nc/plot-flow-flow.nc/g' $< | gnuplot > $@
+
+%-stage-flow-metric.eps: %-metric.gp
+	sed -e 's/plot\.nc/plot-stage-flow.nc/g' $< | gnuplot > $@
+
+%-flow-stage-metric.eps: %-metric.gp
+	sed -e 's/plot\.nc/plot-flow-stage.nc/g' $< | gnuplot > $@
+
+%-stage-stage-metric.eps: %-metric.gp
+	sed -e 's/plot\.nc/plot-stage-stage.nc/g' $< | gnuplot > $@
+
+%-flow-flow-metric.eps: %-metric.gp
 	sed -e 's/plot\.nc/plot-flow-flow.nc/g' $< | gnuplot > $@
 
 clean:: 

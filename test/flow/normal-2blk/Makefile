@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed May  7 14:27:26 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan  2 10:31:16 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -17,7 +17,10 @@ EPSFILES = \
 	plot-depth.eps \
 	plot-depth-all.eps \
 	plot-elev.eps \
-	plot-vel.eps
+	plot-vel.eps \
+	plot-depth-metric.eps \
+	plot-elev-metric.eps \
+	plot-vel-metric.eps
 
 MODELFILES = \
 	bcspecs.dat \
