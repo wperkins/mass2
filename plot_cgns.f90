@@ -19,6 +19,14 @@ MODULE plot_cgns
 
   IMPLICIT NONE
 
+  INTERFACE 
+    SUBROUTINE cg_goto_f
+	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
+	END SUBROUTINE cg_goto_f
+	SUBROUTINE cg_array_write_f
+	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
+	END SUBROUTINE cg_array_write_f
+  END INTERFACE
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"

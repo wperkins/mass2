@@ -16,6 +16,7 @@ INTEGER :: status_flag = 1
 
 WRITE(*,*)'calling mass2_main' 
 
+CALL fpinit()
 CALL time_series_module_init()
 CALL date_time_flags()
 

@@ -38,12 +38,12 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "Release"
+# PROP Output_Dir ""
 # PROP Intermediate_Dir "Release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
-# ADD F90 /include:"Release/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /warn:nofileopt
+# ADD F90 /include:"Release/" /include:"E:\Software\NetCDF\include" /include:"time_series/Release" /include:"E:\Software\CGNSLib-v2.1" /compile_only /nologo /optimize:4 /fpe:3 /math_library:check /warn:nofileopt
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -51,7 +51,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /machine:I386 /nodefaultlib:"libcmt.lib" /out:"Release/mass2_v027.exe" /libpath:"E:\Software\NetCDF\lib"
+# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"libcmtd.lib" /libpath:"E:\Software\NetCDF\lib"
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
@@ -67,7 +67,8 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
-# ADD F90 /include:"Debug/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
+# ADD F90 /include:"Debug/" /include:"E:\Software\NetCDF\include" /include:"time_series/Debug/" /include:"E:\Software\CGNSLib-v2.1" /compile_only /nologo /recursive /debug:full /optimize:0 /warn:nofileopt
+# SUBTRACT F90 /check:overflow /check:underflow
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -75,7 +76,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /debug /machine:I386 /nodefaultlib:"libcmt.lib" /out:"Debug/mass2_v027.exe" /pdbtype:sept /libpath:"E:\Software\NetCDF\lib"
+# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /debug /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"libcmtd.lib" /pdbtype:sept /libpath:"E:\Software\NetCDF\lib"
 
 !ENDIF 
 
@@ -89,28 +90,28 @@ SOURCE=.\accumulator.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_ACCUM=\
+DEP_F90_ACCUM=\
 	".\Release\bed_module.mod"\
-	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\met_data_module.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
+	".\time_series\Release\date_time.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_ACCUM=\
+DEP_F90_ACCUM=\
 	".\Debug\bed_module.mod"\
-	".\Debug\date_time.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
 	".\Debug\met_data_module.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\date_time.mod"\
 	
 
 !ENDIF 
@@ -122,20 +123,24 @@ SOURCE=.\bed.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_BED_F=\
+DEP_F90_BED_F=\
+	".\bed_functions.inc"\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BED_F=\
+DEP_F90_BED_F=\
+	".\bed_functions.inc"\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -147,14 +152,14 @@ SOURCE=.\bed_functions.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_BED_FU=\
+DEP_F90_BED_FU=\
 	".\Release\bed_module.mod"\
 	".\Release\scalars_source.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BED_FU=\
+DEP_F90_BED_FU=\
 	".\Debug\bed_module.mod"\
 	".\Debug\scalars_source.mod"\
 	
@@ -168,18 +173,20 @@ SOURCE=.\bed_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_BED_S=\
+DEP_F90_BED_S=\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\table_boundary_conditions.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BED_S=\
+DEP_F90_BED_S=\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -191,33 +198,18 @@ SOURCE=.\block_bc_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_BLOCK=\
+DEP_F90_BLOCK=\
+	".\Release\misc_vars.mod"\
 	".\Release\table_boundary_conditions.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BLOCK=\
+DEP_F90_BLOCK=\
+	".\Debug\misc_vars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
-	
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\date_time_module.f90
-
-!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
-
-NODEP_F90_DATE_=\
-	".\Release\julian.mod"\
-	
-
-!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
-
-NODEP_F90_DATE_=\
-	".\Debug\julian.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -226,6 +218,17 @@ NODEP_F90_DATE_=\
 # Begin Source File
 
 SOURCE=.\energy_flux_module.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\fpinit_nt.f90
 # End Source File
 # Begin Source File
 
@@ -234,29 +237,29 @@ SOURCE=.\gage_output_module.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_GAGE_=\
-	"E:\Software\NetCDF\include\netcdf.inc"\
-	
-NODEP_F90_GAGE_=\
 	".\Release\bed_module.mod"\
-	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
+	".\time_series\Release\date_time.mod"\
+	".\time_series\Release\utility.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_GAGE_=\
-	"E:\Software\NetCDF\include\netcdf.inc"\
-	
-NODEP_F90_GAGE_=\
 	".\Debug\bed_module.mod"\
-	".\Debug\date_time.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\date_time.mod"\
+	".\time_series\Debug\utility.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ENDIF 
@@ -265,6 +268,13 @@ NODEP_F90_GAGE_=\
 # Begin Source File
 
 SOURCE=.\gas_coeffs_module.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -272,13 +282,13 @@ SOURCE=.\gas_functions_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_GAS_F=\
+DEP_F90_GAS_F=\
 	".\Release\gas_coeffs.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_GAS_F=\
+DEP_F90_GAS_F=\
 	".\Debug\gas_coeffs.mod"\
 	
 
@@ -291,16 +301,20 @@ SOURCE=.\generic_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_GENER=\
+DEP_F90_GENER=\
+	".\bed_functions.inc"\
 	".\Release\bed_source.mod"\
 	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_GENER=\
+DEP_F90_GENER=\
+	".\bed_functions.inc"\
 	".\Debug\bed_source.mod"\
 	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -309,14 +323,46 @@ NODEP_F90_GENER=\
 # Begin Source File
 
 SOURCE=.\global_module_023.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_GLOBA=\
+	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_GLOBA=\
+	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
+	
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
 SOURCE=.\io_routines_module.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_IO_RO=\
+	".\Release\misc_vars.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_IO_RO=\
+	".\Debug\misc_vars.mod"\
+	
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
-SOURCE=.\julian.f90
+SOURCE="E:\Software\CGNSLib-v2.1\lib\libcgns.win40.lib"
 # End Source File
 # Begin Source File
 
@@ -324,14 +370,14 @@ SOURCE=.\mass2.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_MASS2=\
+DEP_F90_MASS2=\
 	".\Release\mass2_main_025.mod"\
 	".\Release\misc_vars.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MASS2=\
+DEP_F90_MASS2=\
 	".\Debug\mass2_main_025.mod"\
 	".\Debug\misc_vars.mod"\
 	
@@ -345,10 +391,9 @@ SOURCE=.\mass2_main_025.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_MASS2_=\
+DEP_F90_MASS2_=\
 	".\Release\bed_module.mod"\
 	".\Release\block_boundary_conditions.mod"\
-	".\Release\date_time.mod"\
 	".\Release\energy_flux.mod"\
 	".\Release\gage_output.mod"\
 	".\Release\gas_functions.mod"\
@@ -361,14 +406,14 @@ NODEP_F90_MASS2_=\
 	".\Release\scalars_source.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	".\Release\transport_only.mod"\
+	".\time_series\Release\date_time.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MASS2_=\
+DEP_F90_MASS2_=\
 	".\Debug\bed_module.mod"\
 	".\Debug\block_boundary_conditions.mod"\
-	".\Debug\date_time.mod"\
 	".\Debug\energy_flux.mod"\
 	".\Debug\gage_output.mod"\
 	".\Debug\gas_functions.mod"\
@@ -381,6 +426,7 @@ NODEP_F90_MASS2_=\
 	".\Debug\scalars_source.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	".\Debug\transport_only.mod"\
+	".\time_series\Debug\date_time.mod"\
 	
 
 !ENDIF 
@@ -394,14 +440,14 @@ SOURCE=.\met_data_module.f90
 
 NODEP_F90_MET_D=\
 	".\Release\date_time.mod"\
-	".\Release\table_boundary_conditions.mod"\
+	".\Release\time_series.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 NODEP_F90_MET_D=\
 	".\Debug\date_time.mod"\
-	".\Debug\table_boundary_conditions.mod"\
+	".\Debug\time_series.mod"\
 	
 
 !ENDIF 
@@ -441,24 +487,94 @@ SOURCE=.\particulate_source.f90
 
 DEP_F90_PARTI=\
 	".\bed_functions.inc"\
-	
-NODEP_F90_PARTI=\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\scalars.mod"\
 	".\Release\sediment_source.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_PARTI=\
 	".\bed_functions.inc"\
-	
-NODEP_F90_PARTI=\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\sediment_source.mod"\
+	".\time_series\Debug\utility.mod"\
+	
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\plot_cgns.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_PLOT_=\
+	".\Release\accumulator.mod"\
+	".\Release\bed_module.mod"\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
+	".\Release\scalars.mod"\
+	".\Release\scalars_source.mod"\
+	".\time_series\Release\date_time.mod"\
+	".\time_series\Release\utility.mod"\
+	"E:\Software\CGNSLib-v2.1\cgnslib_f.h"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_PLOT_=\
+	".\Debug\accumulator.mod"\
+	".\Debug\bed_module.mod"\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
+	".\Debug\scalars.mod"\
+	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\date_time.mod"\
+	".\time_series\Debug\utility.mod"\
+	"E:\Software\CGNSLib-v2.1\cgnslib_f.h"\
+	
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\plot_netcdf.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_PLOT_N=\
+	".\Release\accumulator.mod"\
+	".\Release\bed_module.mod"\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
+	".\Release\scalars.mod"\
+	".\Release\scalars_source.mod"\
+	".\time_series\Release\date_time.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_PLOT_N=\
+	".\Debug\accumulator.mod"\
+	".\Debug\bed_module.mod"\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
+	".\Debug\scalars.mod"\
+	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\date_time.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ENDIF 
@@ -470,32 +586,28 @@ SOURCE=.\plot_output.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_PLOT_=\
-	"E:\Software\NetCDF\include\netcdf.inc"\
-	
-NODEP_F90_PLOT_=\
+DEP_F90_PLOT_O=\
 	".\Release\accumulator.mod"\
 	".\Release\bed_module.mod"\
-	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
+	".\Release\plot_cgns.mod"\
+	".\Release\plot_netcdf.mod"\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_PLOT_=\
-	"E:\Software\NetCDF\include\netcdf.inc"\
-	
-NODEP_F90_PLOT_=\
+DEP_F90_PLOT_O=\
 	".\Debug\accumulator.mod"\
 	".\Debug\bed_module.mod"\
-	".\Debug\date_time.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
+	".\Debug\plot_cgns.mod"\
+	".\Debug\plot_netcdf.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
 	
@@ -509,14 +621,18 @@ SOURCE=.\profile_init.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_PROFI=\
+DEP_F90_PROFI=\
 	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_PROFI=\
+DEP_F90_PROFI=\
 	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -525,6 +641,23 @@ NODEP_F90_PROFI=\
 # Begin Source File
 
 SOURCE=.\scalars_module.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_SCALA=\
+	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_SCALA=\
+	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
+	
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -532,34 +665,32 @@ SOURCE=.\scalars_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_SCALA=\
-	".\Release\Biota_Mod.mod"\
-	".\Release\biota_source_module.mod"\
+DEP_F90_SCALAR=\
+	".\bed_functions.inc"\
 	".\Release\generic_source.mod"\
 	".\Release\globals.mod"\
 	".\Release\met_data_module.mod"\
-	".\Release\misc_vars.mod"\
 	".\Release\particulate_source.mod"\
 	".\Release\scalars.mod"\
 	".\Release\sediment_source.mod"\
 	".\Release\tdg_source.mod"\
 	".\Release\temperature_source.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_SCALA=\
-	".\Debug\Biota_Mod.mod"\
-	".\Debug\biota_source_module.mod"\
+DEP_F90_SCALAR=\
+	".\bed_functions.inc"\
 	".\Debug\generic_source.mod"\
 	".\Debug\globals.mod"\
 	".\Debug\met_data_module.mod"\
-	".\Debug\misc_vars.mod"\
 	".\Debug\particulate_source.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\sediment_source.mod"\
 	".\Debug\tdg_source.mod"\
 	".\Debug\temperature_source.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -571,22 +702,28 @@ SOURCE=.\sediment_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_SEDIM=\
+DEP_F90_SEDIM=\
+	".\bed_functions.inc"\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
-	".\Release\scalars.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_SEDIM=\
+DEP_F90_SEDIM=\
+	".\bed_functions.inc"\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
-	".\Debug\scalars.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=.\solver_tdma.f90
 # End Source File
 # Begin Source File
 
@@ -595,13 +732,15 @@ SOURCE=.\table_bc_module.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 NODEP_F90_TABLE=\
-	".\Release\date_time.mod"\
+	".\Release\time_series.mod"\
+	".\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 NODEP_F90_TABLE=\
-	".\Debug\date_time.mod"\
+	".\Debug\time_series.mod"\
+	".\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -613,18 +752,20 @@ SOURCE=.\tdg_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_TDG_S=\
+DEP_F90_TDG_S=\
 	".\Release\gas_functions.mod"\
 	".\Release\met_data_module.mod"\
 	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TDG_S=\
+DEP_F90_TDG_S=\
 	".\Debug\gas_functions.mod"\
 	".\Debug\met_data_module.mod"\
 	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -636,18 +777,18 @@ SOURCE=.\temperature_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_TEMPE=\
+DEP_F90_TEMPE=\
 	".\Release\energy_flux.mod"\
 	".\Release\met_data_module.mod"\
-	".\Release\misc_vars.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TEMPE=\
+DEP_F90_TEMPE=\
 	".\Debug\energy_flux.mod"\
 	".\Debug\met_data_module.mod"\
-	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 
@@ -659,14 +800,14 @@ SOURCE=.\total_conc.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_TOTAL=\
+DEP_F90_TOTAL=\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TOTAL=\
+DEP_F90_TOTAL=\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
 	
@@ -680,20 +821,22 @@ SOURCE=.\transport_only_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_TRANS=\
-	".\Release\date_time.mod"\
+DEP_F90_TRANS=\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\scalars.mod"\
+	".\time_series\Release\date_time.mod"\
+	".\time_series\Release\utility.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TRANS=\
-	".\Debug\date_time.mod"\
+DEP_F90_TRANS=\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\scalars.mod"\
+	".\time_series\Debug\date_time.mod"\
+	".\time_series\Debug\utility.mod"\
 	
 
 !ENDIF 

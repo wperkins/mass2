@@ -37,11 +37,12 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "..\..\Release"
+# PROP Output_Dir ""
 # PROP Intermediate_Dir "Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
-# ADD F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
+# ADD F90 /include:"Release/" /include:"time_series/Release" /compile_only /nologo /warn:nofileopt /module:"Release"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -60,7 +61,7 @@ LINK32=link.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "..\..\Debug"
+# PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
@@ -84,9 +85,21 @@ LINK32=link.exe
 # Begin Source File
 
 SOURCE=.\cartgrid.f90
+
+!IF  "$(CFG)" == "cart_grid - Win32 Release"
+
 DEP_F90_CARTG=\
-	".\elevtbl.mod"\
+	".\Release\elevtbl.mod"\
 	
+
+!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
+
+NODEP_F90_CARTG=\
+	".\Debug\elevtbl.mod"\
+	
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
