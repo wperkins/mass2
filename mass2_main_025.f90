@@ -2021,7 +2021,7 @@ END DO ! num bc loop
 				ccstar = TDGasConc( baro_press, t_water,  salinity ) ! c* will be the conc at Barometric Press.
 				
 				transfer_coeff = gasx_a + gasx_b*windspeed + gasx_c*windspeed**2 + gasx_d*windspeed**3
-				transfer_coeff = transfer_coeff*3.2808/84600.0 ! convert from meters/day to feet/sec
+				transfer_coeff = transfer_coeff*3.2808/86400.0 ! convert from meters/day to feet/sec
 
 				coeff%source(i,j) = transfer_coeff*( ccstar - conc_TDG )
 
