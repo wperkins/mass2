@@ -10,7 +10,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 17, 1999 by William A. Perkins
-# Last Change: Thu Nov 18 10:47:07 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Tue Feb 22 09:49:35 2000 by William A. Perkins <perk@gehenna.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -43,23 +43,82 @@ list the gages and time-dependant variables in I<file> and exit.
 
 =item B<-v> I<var>
 
-extract the I<var> time-dependant variable from I<file>; I<var> may be
-either an integer or a variable name (as long as the name does not
-start with a number), either of which can be obtained using B<-l>
+(required) extract the I<var> time-dependant variable from I<file>;
+I<var> may be either an integer or a variable name (as long as the
+name does not start with a number), either of which can be obtained
+using B<-l>
 
 =item B<-g> I<gage>
 
-extract data from the I<gage> location; I<gage> may be either an
-integer or a gage location name (as long as the name does not start
-with a number), either of which can be obtained using B<-l>
+(required) extract data from the I<gage> location; I<gage> may be
+either an integer or a gage location name (as long as the name does
+not start with a number), either of which can be obtained using B<-l>
 
 =item B<-o> I<output>
 
 send extracted data to I<output> (does not work with B<-l>)
 
+=item B<-1> 
+
+add a line at the top of the output (line 1) containing some
+information about the extracted data
+
+=item B<-M> 
+
+format as a MASS1/MASS2 boundary condition file (implies -1)
+
 =back
 
 =head1 EXAMPLES
+
+Here is the output from a listing (B<-l>) of a particular gage.nc file: 
+
+    perk@gehenna> perl mass2gage.pl -l gage.nc
+    MASS2 Gage Output File:
+         "gage.nc"
+    3577 time slices:
+        starting: 04-05-1996 00:00:00
+          ending: 09-01-1996 00:00:03
+
+    Available Gage Locations
+    -----------------------------------------------------
+    Gage Name                           Block   Eta    Xi
+    -----------------------------------------------------
+       1 FMS RM106.6 North                  1    25     2
+       2 FMS RM106.6 Mid-channel            1    25    12
+       3 FMS RM106.6 South                  1    25    23
+    -----------------------------------------------------
+
+    Available Time-Dependant Variables:
+      8 wsel                 Water Surface Elevation, feet
+      9 depth                Depth, feet
+     10 vmag                 Velocity Magnitude, feet/second
+     11 uvel                 Longitudinal Velocity, feet/second
+     12 vvel                 Lateral Velocity, feet/second
+     13 temperature          Water Temperature, Centigrade
+     14 tdgconc              Total Dissolved Gas Concentration, milligram/liter
+     15 tdgpress             Total Dissolved Gas Pressure, millibars
+     16 tdgdeltap            Total Dissolved Gas Pressure above Atmospheric, millibars
+     17 tdgsat               Total Dissolved Gas Pressure Saturation, percent
+
+Temperature data is extracted from the same file:
+
+    perk@gehenna> perl mass2gage.pl -g 2 -v temperature gage.nc
+    04-05-1996 00:00:00           7.152
+    04-05-1996 01:00:00           7.165
+    ...
+    08-31-1996 23:00:03          17.848
+    09-01-1996 00:00:03          17.847
+
+The data is formatted as a MASS1/MASS2 boundary condition file:
+
+    perk@gehenna> perl mass2gage.pl -g 19 -v temperature -M gage.nc
+    # gage.nc Extraction: FMS RM106.6 Mid-channel: Water Temperature, Centigrade
+    04-05-1996 00:00:00           7.152 /
+    04-05-1996 01:00:00           7.165 /
+    ...
+    08-31-1996 23:00:03          17.848 /
+    09-01-1996 00:00:03          17.847 /
 
 =head1 AUTHOR(S)
 
@@ -353,10 +412,11 @@ my $program;
 ($program = $0) =~ s/.*\///;
 my $usage = 
   "usage: $program [-l] file \n" .
-  "       $program -v var -g gage [-o output] file";
+  "       $program -v var -g gage [-1] [-M] [-o output] file";
 
 my $dolist = undef;
-my $doline1 = 1;
+my $doline1 = undef;
+my $doasbc = undef;
 my $var = undef;
 my $varisid = undef;
 my $gage = undef;
@@ -367,7 +427,7 @@ my $filename = undef;
 # handle command line
 # -------------------------------------------------------------
 my %opts = ();
-die "$usage\n" unless (getopts("lv:g:1o:", \%opts));
+die "$usage\n" unless (getopts("lv:g:1Mo:", \%opts));
 
 $dolist = 1 if ($opts{l});
 if ($opts{v}) {
@@ -377,9 +437,13 @@ if ($opts{v}) {
 if ($opts{g}) {
   $gage = $opts{g};
   $gageisid = 1 if ($gage + 0 > 0);
+  $gage-- if ($gageisid);
 }
 
-$doline1 = 0 if ($opts{1});
+$doline1 = 1 if ($opts{1});
+
+$doasbc = 1 if ($opts{M});
+$doline1 = 1 if ($doasbc);
 
 if ($opts{o}) {
   my $name = $opts{o};
@@ -461,8 +525,8 @@ if ($dolist) {
 
                                 # describe the file
 
-  printf(STDERR "MASS2 Gage Output File \"%s\"\n", $filename);
-  printf(STDERR "has %d time slices:", $times);
+  printf(STDERR "MASS2 Gage Output File:\n\t \"%s\"\n", $filename);
+  printf(STDERR "%d time slices:\n", $times);
 
   @coords = (0, 0 );
   @length = (1, $tslen);
@@ -470,13 +534,13 @@ if ($dolist) {
   NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
   $name = pack("C*", @values);
   $name =~ s/\0//g;
-  printf(STDERR "starting with %s, and\n", $name);
+  printf(STDERR "\tstarting: %s\n", $name);
   @coords = ($times - 1, 0 );
   @values = ();
   NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
   $name = pack("C*", @values);
   $name =~ s/\0//g;
-  printf(STDERR "ending with %s\n", $name);
+  printf(STDERR "\t  ending: %s\n", $name);
   
   GageList($ncid);
   VarList($ncid);
@@ -524,6 +588,9 @@ if ($doline1) {
   printf(OUTPUT "# %s Extraction: %s: %s\n", $f, $gage, GetVarDesc($ncid, $varid));
 }
 
+my $end = "";
+
+$end = " /" if $doasbc;
 
 my $i;
 for ($i = 0; $i < $times; $i++) {
@@ -538,7 +605,7 @@ for ($i = 0; $i < $times; $i++) {
   @coords = ($i, $gageid);
   NetCDF::varget1($ncid, $varid, \@coords, $value);
   
-  printf(OUTPUT "%s %15.3f\n", $tstamp, $value);
+  printf(OUTPUT "%s %15.3f${end}\n", $tstamp, $value);
 }
 
 NetCDF::close($ncid);
