@@ -1,3 +1,11 @@
+2004-04-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_hydro): fix problems with
+	one-to-many block connections
+	(hydro): compute wsel here to make sure it's computed
+
+	* global_module_023.f90 (wsinterp): replace dinterp with wsinterp 
+
 2004-04-05  William A. Perkins  <william.perkins@pnl.gov>
 
 	* block_bc_module.f90 (read_bcspecs): do not use  out of range

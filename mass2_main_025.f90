@@ -1058,25 +1058,30 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
 
         fcells = cells/concells
 
+        ! The first lateral velocity is just copied.
+
+        blk%vvel(i,jbeg - 1) = cblk%vvel(coni,conjbeg - 1)
+
                                 ! we need to do the depth first so
                                 ! that flow area calculations are
                                 ! accurate
-
+        
         DO j = jbeg, jend
-           conj = conjbeg + (j - jbeg - 1)/fcells
+           conj = conjbeg + (j - jbeg)/fcells
 
                                 ! all the fine ghost cells are dry if
                                 ! the neighboring coarse cell is dry
 
            blk%isdry(i,j) = cblk%isdry(coni,conj)
 
-           blk%depth(i,j) = dinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
+           blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
+           blk%depth(i,j) = blk%wsel(i,j)  - blk%zbot(i,j)
 
                                 ! linearly interpolate v within the
                                 ! neighboring coarse cell
 
-           blk%vvel(i,j) = (cblk%vvel(coni, conj+1) - cblk%vvel(coni, conj))*&
-                &(DBLE(j - jbeg) + 0.5)/DBLE(fcells) + cblk%vvel(coni, conj)
+           blk%vvel(i,j) = (cblk%vvel(coni, conj) - cblk%vvel(coni, conj-1))*&
+                &(DBLE(j - jbeg) + 1)/DBLE(fcells) + cblk%vvel(coni, conj-1)
 
         END DO
 
@@ -1085,8 +1090,11 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
 
         DO conj = conjbeg, conjend
 
-           cflux = uflux(cblk, coni, conj, conj)
-
+           IF (i .GT. 2) THEN
+              cflux = uflux(cblk, coni-1, conj, conj)
+           ELSE
+              cflux = uflux(cblk, coni, conj, conj)
+           END IF
            ju = jbeg + (conj - conjbeg)*fcells
 
            carea = uarea(blk, i, ju, ju + fcells - 1)
@@ -1112,23 +1120,10 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
 
                                 ! copy the first v value
 
-        conj = conjbeg
         blk%vvel(i,jbeg-1) = cblk%vvel(coni, conjbeg-1)
 
+        conj = conjbeg
         DO j = jbeg, jend
-
-                                ! compute u using fluxes
-           IF (i .EQ. 1) THEN
-              carea = uarea(blk, i, j, j)
-           ELSE 
-              carea = uarea(cblk, coni, conj, conj + fcells - 1)
-           END IF
-           IF (carea .GT. 0.0) THEN
-              cflux = uflux(cblk, coni, conj, conj + fcells - 1)
-              blk%uvel(i,j) = cflux/carea
-           ELSE 
-              blk%uvel(i,j) = 0.0
-           END IF
 
                                 ! copy next v value
 
@@ -1138,8 +1133,22 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! centroid, using the closest
                                 ! neighboring cell as a hint
 
-           blk%depth(i,j) = dinterp(cblk, blk%x(i,j), blk%y(i,j), &
+           blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), &
                 &coni, conj + fcells/2)
+           blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+
+                                ! compute u using fluxes
+           IF (i .GT. 2) THEN
+              carea = uarea(cblk, coni-1, conj, conj + fcells - 1)
+           ELSE 
+              carea = uarea(cblk, coni, conj, conj + fcells - 1)
+           END IF
+           IF (carea .GT. 0.0) THEN
+              cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+              blk%uvel(i,j) = cflux/carea
+           ELSE 
+              blk%uvel(i,j) = 0.0
+           END IF
 
                                 ! check wetdry, all neighboring cells
                                 ! must be dry for this cell to be dry
@@ -2159,6 +2168,7 @@ SUBROUTINE hydro(status_flag)
            DO i=2,x_end
               DO j=2,y_end
                  block(iblock)%depth(i,j) = block(iblock)%depth(i,j) + relax_dp*block(iblock)%dp(i,j)
+                 block(iblock)%wsel(i,j) = block(iblock)%depth(i,j) + block(iblock)%zbot(i,j)
               END DO
            END DO
         ENDIF

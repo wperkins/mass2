@@ -475,13 +475,13 @@ DOUBLE PRECISION FUNCTION uflux(blk, i, jbeg, jend)
 END FUNCTION uflux
 
 ! ----------------------------------------------------------------
-! DOUBLE PRECISION FUNCTION dinterp
-! Interpolate depth at the location x, y which should be close to the
+! DOUBLE PRECISION FUNCTION wsinterp
+! Interpolate wsel at the location x, y which should be close to the
 ! centroid of cell i, j.  The method used is inverse distance
 ! weighting.  The cell and its 4 immediate neighbors (if they exist)
 ! are used.
 ! ----------------------------------------------------------------
-DOUBLE PRECISION FUNCTION dinterp(blk, x, y, ihint, jhint)
+DOUBLE PRECISION FUNCTION wsinterp(blk, x, y, ihint, jhint)
 
   IMPLICIT NONE
 
@@ -505,18 +505,18 @@ DOUBLE PRECISION FUNCTION dinterp(blk, x, y, ihint, jhint)
   IF (iend .GT. blk%xmax) iend = blk%xmax
 
   wtotal = 0.0
-  dinterp = 0.0
+  wsinterp = 0.0
 
   j = jhint
 
   DO i = ibeg, iend
      d = distance(x, y, blk%x(i,j), blk%y(i,j))
      IF (d .LT. 1.0d-10) THEN
-        dinterp = blk%depth(i,j)
+        wsinterp = blk%wsel(i,j)
         RETURN
      END IF
      wtotal = wtotal + 1.0/d
-     dinterp = dinterp + blk%depth(i,j)/d
+     wsinterp = wsinterp + blk%wsel(i,j)/d
   END DO
 
   i = ihint
@@ -524,16 +524,15 @@ DOUBLE PRECISION FUNCTION dinterp(blk, x, y, ihint, jhint)
      IF (j .NE. jhint) THEN
         d = distance(x, y, blk%x(i,j), blk%y(i,j))
         IF (d .LT. 1.0d-10) THEN
-           dinterp = blk%depth(i,j)
+           wsinterp = blk%wsel(i,j)
            RETURN
         END IF
         wtotal = wtotal + 1.0/d
-        dinterp = dinterp + blk%depth(i,j)/d
+        wsinterp = wsinterp + blk%wsel(i,j)/d
      END IF
   END DO
 
-  dinterp = dinterp / wtotal
-END FUNCTION dinterp
-
+  wsinterp = wsinterp / wtotal
+END FUNCTION wsinterp
 
 END MODULE globals
