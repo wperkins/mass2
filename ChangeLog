@@ -1,3 +1,23 @@
+2003-03-19  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90: repair small depth warning/error messages
+	for when wetting and drying is off
+
+2003-03-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/partition/scalar_source.base: added missing quote
+
+	* test/benchmark/mcn-test/results.txt: some tests with the intel
+	compiler. 
+
+	* mass2_main_025.f90: rearrange computation of transport equation
+	coefficients 
+
+	* makefile.intel: do not worry about module files -- all
+	dependencies are on object files
+
+	* README: added instructions for NetCDF
+
 2003-01-31  William A. Perkins  <william.perkins@pnl.gov>
 
 	* makefile.lahey: created

@@ -1808,43 +1808,78 @@ SUBROUTINE hydro(status_flag)
         !----------------------------------------------------------------------------------------------
         ! check for small and negative depth condition and report location
         
-        IF(.NOT. do_wetdry .AND. MINVAL(block(iblock)%depth) <= 0.20)THEN
-           WRITE(error_iounit,*)" WARNING: Small Depth = ",MINVAL(block(iblock)%depth)
-           WRITE(error_iounit,*)"     Block Number = ",iblock
-           WRITE(error_iounit,*)"     I,J Location of small depth = ",MINLOC(block(iblock)%depth)
-        END IF
-
-        IF(MINVAL(block(iblock)%depth) <= 0.0)THEN
-           IF (do_wetdry) THEN
-              DO i = 1,x_end+1
-                 DO j = 1,y_end+1
-                    IF (block(iblock)%depth(i,j) .LT. 0.0) THEN
-                       WRITE(error_iounit,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-                       WRITE(error_iounit,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-                       WRITE(error_iounit,*)"     Block Number = ",iblock
-                       WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
-           
-                       WRITE(*,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-                       WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-                       WRITE(*,*)"     Block Number = ",iblock
-                       WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
+        DO i = 1, x_end+1
+           DO j = 1, y_end+1
+              IF (.NOT. do_wetdry .AND. block(iblock)%depth(i,j) <= 0.20) THEN
+                 WRITE(error_iounit,*)" WARNING: Small Depth = ", block(iblock)%depth(i,j)
+                 WRITE(error_iounit,*)"     Block Number = ",iblock
+                 WRITE(error_iounit,*)"     I,J Location of small depth = ",i, j
+              ELSE IF (block(iblock)%depth(i,j) <= 0.0) THEN
+                 IF (do_wetdry) THEN
+                    WRITE(error_iounit,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
+                    WRITE(error_iounit,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
+                    WRITE(error_iounit,*)"     Block Number = ",iblock
+                    WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
+                    
+                    WRITE(*,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
+                    WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
+                    WRITE(*,*)"     Block Number = ",iblock
+                    WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
                        
-                       block(iblock)%depth(i,j) = dry_zero_depth
-                    END IF
-                 END DO
-              END DO
-           ELSE
-              WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth(2:x_end, 2:y_end))
-              WRITE(error_iounit,*)"     Block Number = ",iblock
-              WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth(2:x_end, 2:y_end))
+                    block(iblock)%depth(i,j) = dry_zero_depth
+                 ELSE
+
+                    WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
+                    WRITE(error_iounit,*)"     Block Number = ",iblock
+                    WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
            
-              WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth(2:x_end, 2:y_end))
-              WRITE(*,*)"     Block Number = ",iblock
-              WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth(2:x_end, 2:y_end))
+                    WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
+                    WRITE(*,*)"     Block Number = ",iblock
+                    WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
            
-              CALL EXIT(1)  ! abort run if you hit a negative depth
-           END IF
-        END IF
+                    CALL EXIT(1)  ! abort run if you hit a negative depth
+
+                 END IF
+              END IF
+           END DO
+        END DO
+!!$        IF(.NOT. do_wetdry .AND. MINVAL(block(iblock)%depth) <= 0.20)THEN
+!!$           WRITE(error_iounit,*)" WARNING: Small Depth = ",MINVAL(block(iblock)%depth)
+!!$           WRITE(error_iounit,*)"     Block Number = ",iblock
+!!$           WRITE(error_iounit,*)"     I,J Location of small depth = ",MINLOC(block(iblock)%depth)
+!!$        END IF
+!!$
+!!$        IF(MINVAL(block(iblock)%depth) <= 0.0)THEN
+!!$           IF (do_wetdry) THEN
+!!$              DO i = 1,x_end+1
+!!$                 DO j = 1,y_end+1
+!!$                    IF (block(iblock)%depth(i,j) .LT. 0.0) THEN
+!!$                       WRITE(error_iounit,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
+!!$                       WRITE(error_iounit,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
+!!$                       WRITE(error_iounit,*)"     Block Number = ",iblock
+!!$                       WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
+!!$           
+!!$                       WRITE(*,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
+!!$                       WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
+!!$                       WRITE(*,*)"     Block Number = ",iblock
+!!$                       WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
+!!$                       
+!!$                       block(iblock)%depth(i,j) = dry_zero_depth
+!!$                    END IF
+!!$                 END DO
+!!$              END DO
+!!$           ELSE
+!!$              WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
+!!$              WRITE(error_iounit,*)"     Block Number = ",iblock
+!!$              WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
+!!$           
+!!$              WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
+!!$              WRITE(*,*)"     Block Number = ",iblock
+!!$              WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
+!!$           
+!!$              CALL EXIT(1)  ! abort run if you hit a negative depth
+!!$           END IF
+!!$        END IF
         
         !----------------------------------------------------------------------------------------------
         ! return to momentum equation solution step using updated depth and velocities
