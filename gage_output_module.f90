@@ -689,10 +689,7 @@ CONTAINS
 
                                 ! do the time and time stamp
 
-    timestamp(1:10) = date_string
-    timestamp(11:11) = ' '
-    timestamp(12:19) = time_string
-    timestamp(tslen:tslen) = CHAR(0)
+    timestamp = TRIM(date_string) // ' ' // TRIM(time_string) // CHAR(0)
 
     dimid(1) = tslen_dimid
     dimid(2) = time_dimid
@@ -942,7 +939,7 @@ CONTAINS
     END DO
     WRITE(mass_source_iounit,*)
 
-3013 FORMAT(a10,2x,a8,1x,I3,1X)
+3013 FORMAT(a10,2x,a12,1x,I3,1X)
 3012 FORMAT((f12.2,1x))
     
 

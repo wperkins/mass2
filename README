@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Mar 11 07:07:29 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Mar 28 10:16:56 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 
 -------------------------------------------------------------
@@ -42,7 +42,62 @@ changed to
     -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
 -------------------------------------------------------------
-compilation
+compilation via GNU autotools
+-------------------------------------------------------------
+
+MASS2 is configured and compiled using the GNU autotools.  If you
+check MASS2 out of CVS, you must build the configure script on a
+system that has the GNU autotools installed (Linux systems usually
+do).  The configure script is built by the command
+
+    sh bootstrap.sh
+
+You do not have to do this on the machine you which to compile for;
+the only requirement is that autotools are installed (autoconf and
+automake).  
+
+To compile MASS2, the configure script must be run on the architecture
+you wish to run MASS2.  The following architectures and compilers are
+supported: 
+
+    * Silicon Graphics with SGI Fortran 90 compiler,
+    * OSF4 on DEC/Compaq/HP Alpha with the DEC/Compaq/HP Fortran 90
+      compiler, 
+    * Linux on DEC/Compaq/HP Alpha with the DEC/Compaq/HP Fortran 90
+      compiler,
+    * Linux on Intel with any of 
+        * Absoft Fortran 95/90 (version 7.5 or above),
+        * Intel Fortran (version 7.0 or above) compiler, or
+        * Lahey Fortran 95 Pro (version 6.1 or above).
+
+The selection of the compiler is automatic.  However, if you don't
+like the choice, you can set the F77 environment variable to the
+appropriate command. In addition, the configure script has several
+MASS2 specific options:
+
+    --enable-optimize
+
+        Optimization is turned on using flags appropriate to the
+        compiler/architecture.
+
+    --enable-debug (default)
+
+        Debugging flags are included by default.  If --enable-optimize
+        is specified, the debugging flags are not included.  Use
+        --enable-debug to include debugging with optimization.
+
+    --enable-profile
+
+        Turn on profiling.
+
+    --with-netcdf=dir
+
+        NetCDF is required for compilation.  This option specifies
+        where NetCDF libraries and headers are located.  The specified
+        directory is expected to have include and lib subdirectories.
+
+-------------------------------------------------------------
+old compilation  -- no longer maintained
 -------------------------------------------------------------
 
 By default all of the makefiles will produce an executable called

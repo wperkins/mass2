@@ -1,3 +1,17 @@
+2003-03-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* makefile.sgi: was makefile
+
+	* date_time_module.f90: moved to time_series
+
+	* julian.f90: moved to time_series
+
+	* configure.in: added
+
+	* bootstrap.sh: added
+
+	* Makefile.am: added
+
 2003-03-19  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90: repair small depth warning/error messages

@@ -11,10 +11,12 @@ IMPLICIT NONE
 
 CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
 
-
+INTEGER :: maxsteps
 INTEGER :: status_flag = 1
 
 WRITE(*,*)'calling mass2_main' 
+
+CALL date_time_flags()
 
 CALL start_up(status_flag)
 
@@ -24,36 +26,38 @@ CALL start_up(status_flag)
 !----------------------------------------------------------------------------------
 ! Time Marching Loop
 
-DO WHILE( current_time%time <= end_time%time ) 
+maxsteps = INT((end_time%time - current_time%time)/(delta_t/86400.0d0))
+time_step_count = 0
+DO WHILE(current_time%time .LT. end_time%time) 
 
-IF(do_flow)THEN
-   CALL hydro(status_flag)
-ENDIF
+   IF(do_flow)THEN
+      CALL hydro(status_flag)
+   ENDIF
 
-IF(do_transport)THEN
-   CALL transport(status_flag)
-ENDIF
+   IF(do_transport)THEN
+      CALL transport(status_flag)
+   ENDIF
 
-! update the old time level values of the independent variables
-CALL update(status_flag)
+   ! update the old time level values of the independent variables
+   CALL update(status_flag)
 
-!---------------------------------------------------------------------------
-!update model time prior to output 
-!   since we are advancing in time the dependent variables are now at the next
-!   time level
+   !---------------------------------------------------------------------------
+   !update model time prior to output 
+   !   since we are advancing in time the dependent variables are now at the next
+   !   time level
 
- time_step_count = time_step_count + 1
+   time_step_count = time_step_count + 1
 
-! update decimal julian day time
-current_time%time = current_time%time + delta_t/86400.0d0 ! remember that the delta is in SECONDS
+   ! update decimal julian day time
+   current_time%time = start_time%time + DBLE(time_step_count)*delta_t/86400.000000d0 ! remember that the delta is in SECONDS
 
-CALL decimal_to_date(current_time%time, current_time%date_string, current_time%time_string)
+   CALL decimal_to_date(current_time%time, current_time%date_string, current_time%time_string)
+   
+   CALL output(status_flag)
 
-CALL output(status_flag)
-
-IF(write_restart_file)THEN
-   CALL write_restart(status_flag)
-END IF
+   IF(write_restart_file)THEN
+      CALL write_restart(status_flag)
+   END IF
 
 END DO
 ! end time loop
