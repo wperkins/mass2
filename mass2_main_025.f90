@@ -31,6 +31,7 @@ USE block_boundary_conditions
 USE table_boundary_conditions
 USE date_time
 USE gage_output
+USE plot_output
 USE scalars
 USE met_data_module
 USE energy_flux
@@ -45,7 +46,7 @@ INTEGER :: n, i, j, jj, junk, icell, jcell
 INTEGER :: imax,jmax,ivec(4),jvec(4),ivec2(4),jvec2(4)
 INTEGER :: system_time(8)
 INTEGER :: iblock, con_block, num_bc, ispecies
-INTEGER :: cfg_iounit=10, output_iounit=11, plot_iounit=12, error_iounit=13, status_iounit=14
+INTEGER :: cfg_iounit=10, output_iounit=11, error_iounit=13, status_iounit=14
 INTEGER :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
 INTEGER :: mass_source_iounit=19, diag_plot_iounit=20
 
@@ -165,7 +166,6 @@ CHARACTER (LEN=80) :: dum_char
 
 OPEN(cfg_iounit,file='mass2_v025.cfg')
 OPEN(output_iounit,file='output.out', access='sequential', RECL=1024)
-OPEN(plot_iounit,file='plot.dat')
 OPEN(error_iounit,file='error-warning.out')
 OPEN(status_iounit,file='status.out')
 OPEN(mass_source_iounit,file='mass_source_monitor.out')
@@ -811,78 +811,10 @@ WRITE(diag_plot_iounit,2022)
 
 !-----------------------------------------------------------------------
 
-WRITE(plot_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code"""
-! WRITE(plot_iounit,*)"variables=""x"" ""y"" ""u vel"" ""v vel"" ""u cart"" ""v cart"" ""depth"" ""zbot"" ""wsel"" ""TDG con"""
-WRITE(plot_iounit,2021)
-2021 FORMAT("variables=""x"" ""y"" ""u cart"" ""v cart"" ""depth"" ""zbot"" ""wsel"" &
-           &            ""TDG con"" ""Temp"" ""TGP"" ""TDG delP"" ""%Sat""")
-! 2021 FORMAT("variables=""x"" ""y"" ""u cart"" ""u vel"" ""v vel"" ""v cart"" ""depth"" ""zbot"" ""wsel"" &
-!           &            ""TDG con"" ""Temp"" ""TGP"" ""TDG delP"" ""%Sat""")
+CALL plot_file_setup_tecplot()
+CALL plot_print_tecplot(start_time%date_string, start_time%time_string,&
+     &salinity, baro_press)
 
-
-
-zone_name(1:10) = start_time%date_string
-zone_name(11:11) = ' '
-zone_name(12:19) = start_time%time_string
-zone_name(20:20) = ' '
-zone_name(21:26) = 'block '
-
-DO iblock=1,max_blocks
-   DO i=2, block(iblock)%xmax
-      DO j=2, block(iblock)%ymax
-         block(iblock)%uvel_p(i,j) = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i-1,j))
-         block(iblock)%vvel_p(i,j) = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-      END DO
-   END DO
-
-   ! transform to cartesian coordinates for plotting
-   block(iblock)%u_cart = (block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%x_xsi &
-        + (block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%x_eta
-   block(iblock)%v_cart =  (block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%y_xsi &
-        + (block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%y_eta
-
-
-   WRITE(plot_iounit,*)"zone f=block"," t=""",zone_name,iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
-   WRITE(plot_iounit,*)block(iblock)%x
-   WRITE(plot_iounit,*)block(iblock)%y
-   ! WRITE(plot_iounit,*)block(iblock)%uvel_p
-   ! WRITE(plot_iounit,*)block(iblock)%vvel_p
-   WRITE(plot_iounit,*)block(iblock)%u_cart
-   WRITE(plot_iounit,*)block(iblock)%v_cart
-   WRITE(plot_iounit,*)block(iblock)%depth
-   WRITE(plot_iounit,*)block(iblock)%zbot
-   WRITE(plot_iounit,*)block(iblock)%wsel
-   WRITE(plot_iounit,*)species(1)%scalar(iblock)%conc
-   WRITE(plot_iounit,*)species(2)%scalar(iblock)%conc
-
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
-
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasDP(conc_TDG, t_water,  salinity,  baro_press)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
-
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
-
-END DO
 
 !OPEN(55,file='ds_elev-file2.dat')
 !DO j=1,block(1)%ymax+1
@@ -2333,78 +2265,7 @@ END DO
 ! end of output to ascii file section
 !-------------------------------------------------------------------------------------------------------
 
-!-------------------------------------------------------------------------------------------------------
-! print out in tecplot block format
-!
 DO iblock=1,max_blocks
-   DO i=2, block(iblock)%xmax
-      DO j=2, block(iblock)%ymax
-         block(iblock)%uvel_p(i,j) = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i-1,j))
-         block(iblock)%vvel_p(i,j) = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-      END DO
-   END DO
-   DO i=1, 1
-      DO j=2, block(iblock)%ymax
-         block(iblock)%uvel_p(i,j) = block(iblock)%uvel(i,j)
-         block(iblock)%vvel_p(i,j) = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-      END DO
-   END DO
-   DO i=block(iblock)%xmax+1, block(iblock)%xmax+1
-      DO j=2, block(iblock)%ymax
-         block(iblock)%uvel_p(i,j) = block(iblock)%uvel(block(iblock)%xmax,j)
-         block(iblock)%vvel_p(i,j) = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-      END DO
-   END DO
-   ! transform to cartesian coordinates for plotting
-   block(iblock)%u_cart = (block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%x_xsi &
-        + (block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%x_eta
-   block(iblock)%v_cart =  (block(iblock)%uvel_p/block(iblock)%hp1)*block(iblock)%y_xsi &
-        + (block(iblock)%vvel_p/block(iblock)%hp2)*block(iblock)%y_eta
-
-		zone_name(1:10) = current_time%date_string
-		zone_name(11:11) = ' '
-		zone_name(12:19) = current_time%time_string
-		zone_name(20:20) = ' '
-		zone_name(21:26) = 'block '
-   WRITE(plot_iounit,*)"zone f=block"," t=""",zone_name,iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
-   WRITE(plot_iounit,*)block(iblock)%x
-   WRITE(plot_iounit,*)block(iblock)%y
-   !WRITE(plot_iounit,*)block(iblock)%uvel_p
-   !WRITE(plot_iounit,*)block(iblock)%vvel_p
-   WRITE(plot_iounit,*)block(iblock)%u_cart
-   WRITE(plot_iounit,*)block(iblock)%v_cart
-   WRITE(plot_iounit,*)block(iblock)%depth
-   WRITE(plot_iounit,*)block(iblock)%zbot
-   WRITE(plot_iounit,*)block(iblock)%wsel
-   WRITE(plot_iounit,*)species(1)%scalar(iblock)%conc
-   WRITE(plot_iounit,*)species(2)%scalar(iblock)%conc
-
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasPress(conc_TDG,  t_water,  salinity)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
-   
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasDP(conc_TDG, t_water,  salinity,  baro_press)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
-   
-   DO i=1,block(iblock)%xmax+1
-      DO j=1,block(iblock)%ymax+1
-         conc_TDG = species(1)%scalar(iblock)%conc(i,j)
-         t_water = species(2)%scalar(iblock)%conc(i,j)
-         block(iblock)%TDG_stuff(i,j) = TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
-      END DO
-   END DO
-   WRITE(plot_iounit,*)block(iblock)%TDG_stuff
 
 !---------------------------------------------------------------
 ! diagnostic plot file output; tecplot format
@@ -2423,6 +2284,12 @@ DO iblock=1,max_blocks
    
 
 END DO
+
+!-------------------------------------------------------------------------------------------------------
+! print out in tecplot block format
+!
+CALL plot_print_tecplot(current_time%date_string, current_time%time_string, &
+     &salinity, baro_press)
 
 ENDIF
 ! output/plot if-block

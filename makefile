@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Tue May 11 11:26:31 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Fri May 21 09:09:03 1999 by William A. Perkins <perk@mack.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -40,6 +40,7 @@ SRCS = \
      scalars_module.f90 \
      energy_flux_module.f90 \
      gage_output_module.f90 \
+     plot_output.f90 \
      global_module_023.f90 \
      io_routines_module.f90 \
      table_bc_module.f90 \
@@ -111,12 +112,16 @@ JULIAN.$(MOD): julian.o
 mass2_main_024.o: mass2_main_024.f90 \
    GLOBALS.$(MOD) IO_ROUTINES_MODULE.$(MOD) BLOCK_BOUNDARY_CONDITIONS.$(MOD) \
    TABLE_BOUNDARY_CONDITIONS.$(MOD) DATE_TIME.$(MOD) SCALARS.$(MOD) \
-   MET_DATA_MODULE.$(MOD) ENERGY_FLUX.$(MOD) GAS_FUNCTIONS.$(MOD)
+   MET_DATA_MODULE.$(MOD) ENERGY_FLUX.$(MOD) GAS_FUNCTIONS.$(MOD) \
+   PLOT_OUTPUT.$(MOD) \
 	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_024.f90
 
 met_data_module.o: met_data_module.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
    DATE_TIME.$(MOD)
 MET_DATA_MODULE.$(MOD): met_data_module.o
+
+plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) GAS_FUNCTIONS.$(MOD)
+PLOT_OUTPUT.$(MOD): print_output.o
 
 scalars_module.o: scalars_module.f90
 SCALARS.$(MOD): scalars_module.o

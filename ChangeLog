@@ -1,3 +1,10 @@
+1999-05-21  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: moved all of the plot.dat output to
+	  plot_output.f90  
+
+	* plot_output.f90: created, encapsulates plot file output.
+
 1999-05-11  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* mass2_main_025.f90: The output to mass_source_iounit had lines
