@@ -1323,42 +1323,22 @@ SUBROUTINE hydro(status_flag)
 
            END DO
         END DO
-        
-        ! solve for U* using line-by-line TDMA
-        !  solves a set of linear equations of the form:
-        !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
-        !
-        DO sweep=1,scalar_sweep
-           ! U* solution LBL sweep in the y direction
-           !
-           !  if(y_sweep)THEN
-           DO i=2,x_end
-              DO j=2,y_end
-                 cc(j) = coeff%as(i,j)
-                 aa(j) = coeff%ap(i,j)
-                 bb(j) = coeff%an(i,j)
-                 dd(j) = coeff%ae(i,j)*block(iblock)%ustar(i+1,j) + coeff%aw(i,j)*block(iblock)%ustar(i-1,j) &
-                      + coeff%bp(i,j)
-              END DO
-              aa(1) = 1.0
-              bb(1) = 1.0
-              cc(1) = 0.0
-              dd(1) = 0.0
-              aa(y_end+1) = 1.0
-              bb(y_end+1) = 0.0
-              cc(y_end+1) = 1.0
-              dd(y_end+1) = 0.0
-              CALL tridag(1,y_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
-              DO j=1,y_end+1
-                 block(iblock)%ustar(i,j) = tt(j)
-              END DO
-              
-           END DO
 
-           ! ENDIF  !y-sweep
-           
-        END DO
-        
+        ! apply zero gradient condition on
+        ! left and right sides
+
+        coeff%ap(:,y_beg) = coeff%ap(:,y_beg) - coeff%as(:,y_beg)
+        coeff%as(:,y_beg) = 0.0
+  
+        coeff%ap(:,y_end) = coeff%ap(:,y_end) - coeff%an(:,y_end)
+        coeff%an(:,y_end) = 0.0
+
+        CALL solve_tdma(scalar_sweep, x_beg, x_end, y_beg, y_end, &
+             &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
+             &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
+             &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
+             &block(iblock)%ustar(x_beg-1:x_end+1,y_beg:y_end))
+
         ! end U momentum  solution
         !----------------------------------------------------------------------------
         
@@ -1543,39 +1523,22 @@ SUBROUTINE hydro(status_flag)
            END DO
         END DO
         
-        ! solve for V* using line-by-line TDMA
-        !  solves a set of linear equations of the form:
-        !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
-        !
-        DO sweep=1,scalar_sweep
-           ! V* solution LBL sweep in the y direction
-           !
-           !  if(y_sweep)THEN
-           DO i=2,x_end
-              DO j=2,y_end-1
-                 cc(j) = coeff%as(i,j)
-                 aa(j) = coeff%ap(i,j)
-                 bb(j) = coeff%an(i,j)
-                 dd(j) = coeff%ae(i,j)*block(iblock)%vstar(i+1,j) + coeff%aw(i,j)*block(iblock)%vstar(i-1,j) &
-                      + coeff%bp(i,j)
-              END DO
-              aa(1) = 1.0
-              bb(1) = 0.0
-              cc(1) = 0.0
-              dd(1) = block(iblock)%vvel(i,1)
-              aa(y_end) = 1.0
-              bb(y_end) = 0.0
-              cc(y_end) = 0.0
-              dd(y_end) = block(iblock)%vvel(i,y_end)
-              CALL tridag(1,y_end,aa,bb,cc,dd,tt,ptemp,qtemp)
-              DO j=1,y_end
-                 block(iblock)%vstar(i,j) = tt(j)
-              END DO
-              
-           END DO
-           
-           ! END IF  ! y-sweep
-        END DO
+        ! apply zero flow conditions on sides
+
+        coeff%bp(:,y_beg) = coeff%bp(:,y_beg) + &
+             &coeff%as(:,y_beg)*block(iblock)%vvel(:,1)
+        coeff%as(:,y_beg) = 0
+
+        coeff%bp(:,y_end-1) = coeff%bp(:,y_end-1) + &
+             &coeff%an(:,y_end-1)*block(iblock)%vvel(:,y_end)
+        coeff%an(:,y_end) = 0.0
+
+        CALL solve_tdma(scalar_sweep, x_beg, x_end, y_beg, y_end-1, &
+             &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
+             &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
+             &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
+             &block(iblock)%vstar(x_beg-1:x_end+1,y_beg:y_end-1))
+        
         ! end V momentum  solution
         !----------------------------------------------------------------------------
         
@@ -1666,41 +1629,21 @@ SUBROUTINE hydro(status_flag)
 
            END DO
         END DO
-        ! solve for d' using line-by-line TDMA
-        !  solves a set of linear equations of the form:
-        !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
-        !
 
-        DO sweep=1,depth_sweep
-           ! LBL sweep in the y direction
-           ! d' depth correction equation
-           !  if(y_sweep_dp)THEN
+                                ! apply zero gradient on the sides
+  
+        coeff%cp(:,y_beg) = coeff%cp(:,y_beg) - coeff%cs(:,y_beg)
+        coeff%cs(:,y_beg) = 0.0
+        coeff%cp(:,y_end) = coeff%cp(:,y_end) - coeff%cn(:,y_end)
+        coeff%cn(:,y_end) = 0.0
 
-           DO i=2,x_end
-              DO j=2,y_end
-                 cc(j) = coeff%cs(i,j)
-                 aa(j) = coeff%cp(i,j)
-                 bb(j) = coeff%cn(i,j)
-                 dd(j) = coeff%ce(i,j)*block(iblock)%dp(i+1,j) + coeff%cw(i,j)*block(iblock)%dp(i-1,j) &
-                      + block(iblock)%mass_source(i,j)
-              END DO
-              aa(2) = coeff%cp(i,2) - coeff%cs(i,2)
-              !bb(1) = 1.0
-              cc(2) = 0.0
-              !dd(1) = 0.0
-              aa(y_end) = coeff%cp(i,y_end) - coeff%cn(i,y_end)
-              bb(y_end) = 0.0
-              !cc(y_end) = 1.0
-              !dd(y_end) = 0.0
-              CALL tridag(2,y_end,aa,bb,cc,dd,tt,ptemp,qtemp)
-              DO j=2,y_end
-                 block(iblock)%dp(i,j) = tt(j)
-              END DO
-              
-           END DO
-           ! ENDIF  ! y-sweep
-           
-        END DO
+        CALL solve_tdma(depth_sweep, x_beg, x_end, y_beg, y_end, &
+             &coeff%cp(x_beg:x_end,y_beg:y_end), coeff%cw(x_beg:x_end,y_beg:y_end), &
+             &coeff%ce(x_beg:x_end,y_beg:y_end), coeff%cs(x_beg:x_end,y_beg:y_end), &
+             &coeff%cn(x_beg:x_end,y_beg:y_end), &
+             &block(iblock)%mass_source(x_beg:x_end,y_beg:y_end), &
+             &block(iblock)%dp(x_beg-1:x_end+1,y_beg:y_end))
+
         ! compute updated depth with some underrelaxation
         ! depth = rel*depth_new + (1 - rel)*depth_old
         IF(update_depth)THEN
@@ -1941,6 +1884,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%depthold(i,jj) = block(con_block)%depthold(con_i, con_j)
                  blk%dstar(i,jj) = block(con_block)%dstar(con_i, con_j)
                  blk%isdry(i,jj) = block(con_block)%isdry(con_i, con_j)
+                 ! blk%dp(i,jj) = relax_dp*block(con_block)%dp(con_i, con_j)
                  con_j = con_j + 1
               END DO
               ! blk%cell(i+1,j_beg:j_end)%type = CELL_NORMAL_TYPE
@@ -2036,6 +1980,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%dstar(i, jj) = block(con_block)%dstar(con_i, con_j)
                  blk%depthold(i, jj) = block(con_block)%depthold(con_i, con_j)
                  blk%isdry(i, jj) =  block(con_block)%isdry(con_i, con_j)
+                 ! blk%dp(i,jj) = relax_dp*block(con_block)%dp(con_i, con_j)
                  con_j = con_j + 1
               END DO
               ! Xblk%cell(i-1,j_beg:j_end)%type = CELL_NORMAL_TYPE
@@ -2619,126 +2564,77 @@ SUBROUTINE transport(status_flag)
               END IF
 
               IF (block(iblock)%isdead(i,j)%p) THEN
-                 coeff%source(i,j) = 0.0
+                 coeff%bp(i,j) = 0.0
               ELSE 
-                 coeff%source(i,j) = &
+                 coeff%bp(i,j) = &
                       &scalar_source_term(iblock, i, j, ispecies, &
                       &species(ispecies)%scalar(iblock)%concold(i,j),&
                       &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                       &t_water, salinity)
+                 coeff%bp(i,j) = coeff%bp(i,j)*&
+                      &block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
               END IF
+
+              coeff%ap(i,j) = &
+                   &coeff%ae(i,j) + coeff%aw(i,j) + coeff%an(i,j) + coeff%as(i,j) + &
+                   &block(iblock)%apo(i,j) 
+
+              coeff%bp(i,j) = coeff%bp(i,j) + &
+                   &block(iblock)%apo(i,j)*&
+                   &species(ispecies)%scalar(iblock)%concold(i,j)
 
               SELECT CASE (species(ispecies)%scalar(iblock)%cell(i,j)%type)
               CASE (SCALAR_BOUNDARY_TYPE)
                  SELECT CASE (species(ispecies)%scalar(iblock)%cell(i,j)%bctype)
                  CASE (SCALBC_CONC)
                     IF (i .EQ. x_start) THEN
-                       coeff%source(i,j) = coeff%source(i,j) - 2.0*coeff%aw(i,j)*&
+                       coeff%bp(i,j) = coeff%bp(i,j) + 2.0*coeff%aw(i,j)*&
                             &species(ispecies)%scalar(iblock)%conc(i-1,j)
+                       coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
                        coeff%aw(i,j) = 0.0
                     END IF
                  CASE (SCALBC_ZG)
                     IF (i .EQ. x_start) THEN
-                       coeff%aw(i,j) = 2*coeff%aw(i,j)
+                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
+                       coeff%aw(i,j) = 0.0
                     ELSE IF (i .EQ. x_end) THEN
-                       coeff%ae(i,j) = 2*coeff%ae(i,j)
+                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
+                       coeff%ae(i,j) = 0.0
+                    END IF
+                 CASE DEFAULT
+                    IF (i .EQ. x_start) THEN
+                       coeff%bp(i,j) = coeff%bp(i,j) + coeff%aw(i,j)*&
+                            &species(ispecies)%scalar(iblock)%conc(i-1,j)
+                       coeff%aw(i,j) = 0.0
+                    ELSE IF (i .EQ. x_end) THEN
+                       coeff%bp(i,j) = coeff%bp(i,j) + coeff%ae(i,j)*&
+                            &species(ispecies)%scalar(iblock)%conc(i+1,j)
+                       coeff%ae(i,j) = 0.0
                     END IF
                  END SELECT
               END SELECT
               END DO
            END DO
 
-                                ! for hydrid scheme
+                                ! apply zero gradient to sides
 
-           coeff%ap(x_start:x_end,2:y_end) = &
-                &coeff%ae(x_start:x_end,2:y_end)+coeff%aw(x_start:x_end,2:y_end)+&
-                &coeff%an(x_start:x_end,2:y_end)+coeff%as(x_start:x_end,2:y_end) + &
-                &block(iblock)%flux_e(i,j) - block(iblock)%flux_w(i,j) + &
-                &block(iblock)%flux_n(i,j) - block(iblock)%flux_s(i,j) + &
-                &block(iblock)%apo(x_start:x_end,2:y_end) 
-           coeff%bp(x_start:x_end,2:y_end) = &
-                &coeff%source(x_start:x_end,2:y_end)*&
-                &block(iblock)%hp1(x_start:x_end,2:y_end)*&
-                &block(iblock)%hp2(x_start:x_end,2:y_end) + &
-                &block(iblock)%apo(x_start:x_end,2:y_end)*&
-                &species(ispecies)%scalar(iblock)%concold(x_start:x_end,2:y_end)
+           coeff%ap(:,2) = coeff%ap(:,2) - coeff%as(:,2)
+           coeff%as(:,2) = 0.0
 
-           ! solve using line-by-line TDMA
-           !  solves a set of linear equations of the form:
-           !  a(i)C(i) = b(i)C(i+1) + c(i)C(i-1) + d(i)
-           !
-           DO sweep=1,scalar_sweep
-              ! if(x_sweep)THEN
-              ! DO j=2,y_end
-              !    DO i=2,x_end
-              !    cc(i) = coeff%aw(i,j)
-              !    aa(i) = coeff%ap(i,j)
-              !    bb(i) = coeff%ae(i,j)
-              !    dd(i) = coeff%an(i,j)*block(iblock)%conc(i,j+1) + coeff%as(i,j)*block(iblock)%conc(i,j-1) &
-              !            + coeff%bp(i,j)
-              !    END DO
-              
-              ! set the special boundary coefficients
-              
-              !  aa(1) = 1.0
-              !  bb(1) = 0.0
-              !  cc(1) = 0.0
-              !  dd(1) = block(iblock)%conc(1,j) 
-              !  aa(x_end+1) = 1.0
-              !  bb(x_end+1) = 0.0
-              !  cc(x_end+1) = 1.0
-              !  dd(x_end+1) = 0.0
-              !  CALL tridag(1,x_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
-              !  DO i=1,x_end+1
-              !    block(iblock)%conc(i,j) = tt(i)
-              !    END DO
-              !   END DO
-              !  END IF
-              ! LBL sweep in the y direction
-              !
-              !  if(y_sweep)THEN
-              DO i= x_start,x_end
-                 cc(2:y_end) = coeff%as(i,2:y_end)
-                 aa(2:y_end) = coeff%ap(i,2:y_end)
-                 bb(2:y_end) = coeff%an(i,2:y_end)
-                 dd(2:y_end) = coeff%ae(i,2:y_end)*species(ispecies)%scalar(iblock)%conc(i+1,2:y_end) +&
-                      & coeff%aw(i,2:y_end)*species(ispecies)%scalar(iblock)%conc(i-1,2:y_end) &
-                      + coeff%bp(i,2:y_end)
-                 aa(1) = 1.0
-                 bb(1) = 1.0
-                 cc(1) = 0.0
-                 dd(1) = 0.0 !block(iblock)%conc(i,0) 
-                 aa(y_end+1) = 1.0
-                 bb(y_end+1) = 0.0
-                 cc(y_end+1) = 1.0
-                 dd(y_end+1) = 0.0 !block(iblock)%conc(i,y_end+1) 
-                 CALL tridag(1,y_end+1,aa,bb,cc,dd,tt,ptemp,qtemp)
-!!$                 DO j=1,y_end+1
-!!$                    species(ispecies)%scalar(iblock)%conc(i,j) = tt(j)
-!!$                 END DO
-                 species(ispecies)%scalar(iblock)%conc(i,1:y_end+1) = tt(1:y_end+1)
+           coeff%ap(:,y_end) = coeff%ap(:,y_end) - coeff%an(:,y_end)
+           coeff%an(:,y_end) = 0.0
 
-                 ! set zero gradient at shoreline
-                 !block(iblock)%conc(i,0) = block(iblock)%conc(i,1)
-                 !block(iblock)%conc(i,y_end+1) = block(iblock)%conc(i,y_end)
-              END DO
-              ! ENDIF ! y-sweep
-              
-              ! set zero downstream gradient at exit if last block
-              !IF(max_blocks == 1)THEN
-              !	block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
-              !	block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
-              !ELSE
-              !	IF(iblock == 1)THEN
-              !		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock+1)%conc(2,1:y_end+1)
-              !		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock+1)%concold(2,1:y_end+1)
-              !	ELSE
-              !		block(iblock)%conc(x_end+1,1:y_end+1) = block(iblock)%conc(x_end,1:y_end+1)
-              !		block(iblock)%concold(x_end+1,1:y_end+1) = block(iblock)%concold(x_end,1:y_end+1)
-              !	END IF
-              !END IF
-              
-           END DO ! conc scalar sweep
+           CALL solve_tdma(scalar_sweep, x_start, x_end, 2, y_end,&
+                &coeff%ap(x_start:x_end,2:y_end), coeff%aw(x_start:x_end,2:y_end), &
+                &coeff%ae(x_start:x_end,2:y_end), coeff%as(x_start:x_end,2:y_end), &
+                &coeff%an(x_start:x_end,2:y_end), coeff%bp(x_start:x_end,2:y_end), &
+                &species(ispecies)%scalar(iblock)%conc(x_start-1:x_end+1,2:y_end))
+
+           ! set zero gradient at shoreline
+           species(ispecies)%scalar(iblock)%conc(:,1) = &
+                &species(ispecies)%scalar(iblock)%conc(:,2)
+           species(ispecies)%scalar(iblock)%conc(:,y_end+1) = &
+                &species(ispecies)%scalar(iblock)%conc(:,y_end)
 
 
            ! fill in the unused corner nodes so that the plots look ok
@@ -2837,8 +2733,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
                  sclr%conc(i,jj) =  table_input(j)/tmp
               END DO
               sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-              sclr%cell(i,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-              sclr%cell(i,j_beg:j_end)%bctype = SCALBC_CONC
+              sclr%cell(x_start,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
+              sclr%cell(x_start,j_beg:j_end)%bctype = SCALBC_CONC
            END DO
               
         CASE("CONC")
@@ -2850,8 +2746,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
               sclr%conc(i,j_beg:j_end) = &
                    &table_input(j)*scalar_source(spec%species)%conversion
               sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-              sclr%cell(i,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-              sclr%cell(i,j_beg:j_end)%bctype = SCALBC_CONC
+              sclr%cell(x_start,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
+              sclr%cell(x_start,j_beg:j_end)%bctype = SCALBC_CONC
            END DO
               
         END SELECT
@@ -2868,8 +2764,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
            j_end = spec%end_cell(j)+1
            sclr%conc(i, j_beg:j_end) = sclr%conc(i-1, j_beg:j_end)
            sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-           sclr%cell(i,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-           sclr%cell(i,j_beg:j_end)%bctype = SCALBC_ZG
+           sclr%cell(i-1,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
+           sclr%cell(i-1,j_beg:j_end)%bctype = SCALBC_ZG
         END DO
 
      CASE("BLOCK")

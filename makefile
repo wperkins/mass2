@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Mar 21 09:12:56 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Jan 22 15:39:23 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -71,7 +71,8 @@ SRCS =											\
 	 bed.f90									\
 	 bed_functions.f90							\
 	 accumulator.f90							\
-	 total_conc.f90
+	 total_conc.f90								\
+	 solver_tdma.f90
 
 OBJS = $(SRCS:%.f90=%.o)
 
@@ -206,6 +207,8 @@ SCALARS_SOURCE.$(MOD): scalars_source.o
 
 sediment_source.o: sediment_source.f90 GLOBALS.$(MOD) SCALARS.$(MOD) MISC_VARS.$(MOD)
 SEDIMENT_SOURCE.$(MOD): sediment_source.o
+
+solver_tdma.o: solver_tdma.f90
 
 table_bc_module.o: table_bc_module.f90 DATE_TIME.$(MOD)
 TABLE_BOUNDARY_CONDITIONS.$(MOD): table_bc_module.o

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Feb  6 06:33:38 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Jan 10 13:44:53 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -26,7 +26,7 @@ MODELFILES = \
 
 all: $(EPSFILES)
 
-plot.eps: plot.nc
+plot.eps: plot.nc dead.lay
 	$(TECPLOT) -b -y plot.eps dead.lay -p ../../../tecplot/macros/export_eps.mcr
 
 plot.nc: $(MODELFILES) $(MODEL)
