@@ -1,3 +1,8 @@
+1999-11-17  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: added Marshall's code for handling
+	  downstream velocity boundary conditions
+
 1999-08-03  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* mass2_main_025.f90: most output to "output.out" is now only made

@@ -143,8 +143,8 @@ CHARACTER (LEN=80) :: weather_filename
 CHARACTER (LEN=80) :: config_file_version, filename
 CHARACTER*80 :: sim_title
 CHARACTER*75 :: title
-CHARACTER (LEN=80) :: code_version = "mass2 code version 0.251"
-CHARACTER (LEN=80) :: code_date = "release date: December 19, 1998"
+CHARACTER (LEN=80) :: code_version = "mass2 code version 0.252"
+CHARACTER (LEN=80) :: code_date = "release date: July 26, 1999"
 CHARACTER*15 :: block_title
 CHARACTER*30 :: restart_filename
 CHARACTER*26 :: zone_name
@@ -689,7 +689,7 @@ WRITE(output_iounit,2010)system_time(2),system_time(3),system_time(1),system_tim
 WRITE(output_iounit,*)"Total Number of Blocks = ",max_blocks
 WRITE(output_iounit,*)"Grids read from these files: "
 DO iblock=1,max_blocks
-   WRITE(output_iounit,2000)grid_file_name(iblock)
+	WRITE(output_iounit,2000)grid_file_name(iblock)
 END DO
 WRITE(output_iounit,*)
 
@@ -949,7 +949,36 @@ DO num_bc = 1, block_bc(iblock)%num_bc
                              & block_bc(iblock)%bc_spec(num_bc)%table_num,&
                              & table_input, block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
 			SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_kind)
-			CASE("FLUX")
+
+               !--------------------------------------------------------------------------
+               !*** reusing inlet_area and inlet_flow variables here for outlet conditions
+               
+			CASE("FLUX") ! can specify the outflow discharge; need to convert to velocity
+                ds_flux_given = .TRUE.
+                inlet_area(2:y_end) = block(iblock)%depth(x_end,2:y_end)*block(iblock)%hu2(x_end,2:y_end)
+				DO j=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+					j_dsflux_start = block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
+					j_dsflux_end	 = block_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+
+                    inlet_flow = table_input(j)/(1 + block_bc(iblock)%bc_spec(num_bc)%end_cell(j) &
+                                             & -  block_bc(iblock)%bc_spec(num_bc)%start_cell(j))
+					DO jj=block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1,&
+                                             & block_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+                                           block(iblock)%uvel(x_end,jj) =  inlet_flow/inlet_area(jj)
+
+					END DO
+
+
+					!block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end) = table_input(j)
+					block(iblock)%ustar(x_end,j_dsflux_start:j_dsflux_end) =&
+                                             & block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+					block(iblock)%uold(x_end,j_dsflux_start:j_dsflux_end) =&
+                                             & block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+					block(iblock)%depth(x_end+1,j_dsflux_start:j_dsflux_end) =&
+                                             & (block(iblock)%depth(x_end,j_dsflux_start:j_dsflux_end) +&
+                                             & block(iblock)%zbot(x_end,j_dsflux_start:j_dsflux_end)) -&
+                                             & block(iblock)%zbot(x_end+1,j_dsflux_start:j_dsflux_end)
+				END DO
 			CASE("VELO") ! can specifiy the velocity (e.g, zero flow)
 				ds_flux_given = .TRUE.
 
@@ -1455,8 +1484,39 @@ IF(ds_flux_given)THEN
                      & block_bc(iblock)%bc_spec(num_bc)%table_num,&
                      & table_input, block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
 		SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_kind)
-		CASE("FLUX")
-		CASE("VELO") ! can specifiy the velocity (e.g, zero flow)
+
+           
+
+		CASE("FLUX") ! specified outflow discharge in the 1-direction
+           inlet_area(2:y_end) = block(iblock)%depth(x_end,2:y_end)*block(iblock)%hu2(x_end,2:y_end)
+           DO j=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+				j_dsflux_start = block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
+				j_dsflux_end	 = block_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+
+                inlet_flow = table_input(j)/(1 + block_bc(iblock)%bc_spec(num_bc)%end_cell(j) &
+                                             & -  block_bc(iblock)%bc_spec(num_bc)%start_cell(j))
+				DO jj=block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1,&
+                                & block_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
+                    block(iblock)%uvel(x_end,jj) =  inlet_flow/inlet_area(jj)
+
+				END DO
+
+
+
+				!block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end) = table_input(j)
+				block(iblock)%ustar(x_end,j_dsflux_start:j_dsflux_end) =&
+                                     & block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+				block(iblock)%uold(x_end,j_dsflux_start:j_dsflux_end) =&
+                                     & block(iblock)%uvel(x_end,j_dsflux_start:j_dsflux_end)
+				block(iblock)%depth(x_end+1,j_dsflux_start:j_dsflux_end) =&
+                                     & (block(iblock)%depth(x_end,j_dsflux_start:j_dsflux_end) +&
+                                     & block(iblock)%zbot(x_end,j_dsflux_start:j_dsflux_end)) -&
+                                     & block(iblock)%zbot(x_end+1,j_dsflux_start:j_dsflux_end)
+
+				coeff%lud(x_end,j_dsflux_start:j_dsflux_end) =  0.0
+ 
+			END DO
+		CASE("VELO") ! can specifiy the velocity (e.g, zero flow) in the 1-direction
 			
 
 			DO j=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
@@ -1652,8 +1712,11 @@ IF(ds_flux_given)THEN
                      & block_bc(iblock)%bc_spec(num_bc)%table_num,&
                      & table_input, block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
 		SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_kind)
-		CASE("FLUX")
-		CASE("VELO") ! can specifiy the velocity (e.g, zero flow)
+		!CASE("FLUX")
+!
+! extrapolate depth to side for specified flux, velocity BCs
+! 
+		CASE("VELO","FLUX") 
 
 			DO j=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
 				j_dsflux_start = block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
