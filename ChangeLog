@@ -1,3 +1,23 @@
+2004-01-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/another-jump: Added hydraulic jump case using ELEVELO
+	boundary condition.
+
+2004-01-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (apply_hydro_bc): use the ELEVELO boundary
+	condition type to set FLOWBC_BOTH conditions
+	(start_up): do not write ghost cells to gridplot1.dat anymore
+	(hydro): when velocities are dead (walls) use a slip condition not
+	a non-slip condition to be consistent with block sides
+
+	* block_bc_module.f90 (read_bcspecs): Allow the keyword ELEVELO in
+	bcspecs.dat.
+
+	* global_module_023.f90: added FLOWBC_BOTH hydrodynamic boundary
+	condition where both stage and velocity are specified in the same
+	file. 
+
 2003-12-31  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90 (apply_hydro_bc): handle ZEROG hydro BC type 

@@ -52,7 +52,8 @@ INTEGER, PUBLIC, PARAMETER :: &
      &FLOWBC_FLOW = 2, &
      &FLOWBC_ELEV = 3, &
      &FLOWBC_BLOCK = 4, &
-     &FLOWBC_ZEROG = 5
+     &FLOWBC_ZEROG = 5, &
+     &FLOWBC_BOTH = 6
 
 TYPE cell_type_struct
    INTEGER :: type

@@ -202,7 +202,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
                                 ! make sure we understand the BC kind
      
      SELECT CASE (bc_kind)
-     CASE ("FLUX", "VELO", "ELEV", "ZEROG")
+     CASE ("FLUX", "VELO", "ELEV", "ELEVELO")
      CASE ("UVEL", "VVEL")
      CASE ("CELL")
      CASE DEFAULT

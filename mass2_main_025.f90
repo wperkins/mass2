@@ -712,9 +712,9 @@ WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid"""
 WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
 DO iblock=1,max_blocks
 	WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblock,""""," i=", block(iblock)%xmax + 2, " j= ",block(iblock)%ymax
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%x_grid(0:block(iblock)%xmax+1,1:block(iblock)%ymax)
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%y_grid(0:block(iblock)%xmax+1,1:block(iblock)%ymax)
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%zbot_grid(0:block(iblock)%xmax+1,1:block(iblock)%ymax)
+	WRITE(grid_iounit,'(8G16.8)')block(iblock)%x_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
+	WRITE(grid_iounit,'(8G16.8)')block(iblock)%y_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
+	WRITE(grid_iounit,'(8G16.8)')block(iblock)%zbot_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
 END DO
 CLOSE(grid_iounit)
 
@@ -1740,17 +1740,17 @@ SUBROUTINE hydro(status_flag)
 
               ! IF there is a wall blocking lateral flow, we need to
               ! disconnect from the u cell on the other side (with a
-              ! no-slip condition)
+              ! slip condition)
               IF ((block(iblock)%isdead(i,j)%v .OR. &
                    &block(iblock)%isdead(i+1,j)%v) .AND. .NOT. &
                    &block(iblock)%isdead(i,j+1)%u) THEN 
-                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%an(i,j)
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%an(i,j)
                  coeff%an(i,j) = 0.0
               END IF
               IF ((block(iblock)%isdead(i,j-1)%v .OR. &
                    &block(iblock)%isdead(i+1,j-1)%v) .AND. .NOT. &
                    &block(iblock)%isdead(i,j-1)%u) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%as(i,j)
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%as(i,j)
                  coeff%as(i,j) = 0.0
               END IF
 
@@ -1963,17 +1963,17 @@ SUBROUTINE hydro(status_flag)
 
               ! IF there is a wall blocking longitudinal flow, we need
               ! to disconnect from the v cell on the other side (with
-              ! a no-slip condition)
+              ! a slip condition)
               IF ((block(iblock)%isdead(i-1,j)%u .OR. &
                    &block(iblock)%isdead(i-1,j+1)%u) .AND. .NOT. &
                    &block(iblock)%isdead(i-1,j)%v) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
                  coeff%aw(i,j) = 0.0
               END IF
               IF ((block(iblock)%isdead(i,j)%u .OR. &
                    &block(iblock)%isdead(i,j+1)%u) .AND. .NOT. &
                    &block(iblock)%isdead(i+1,j)%v) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
                  coeff%ae(i,j) = 0.0
               END IF
 
@@ -2082,7 +2082,7 @@ SUBROUTINE hydro(status_flag)
                     CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ZEROG)
                        coeff%cp(i,j) = coeff%cp(i,j) - coeff%cw(i,j)
                        coeff%cw(i,j) = 0.0
-                    CASE (FLOWBC_ELEV)
+                    CASE (FLOWBC_ELEV, FLOWBC_BOTH)
                        coeff%cp(i,j) = coeff%cp(i,j) + coeff%cw(i,j)
                        coeff%cw(i,j) = 0.0
                     END SELECT
@@ -2412,6 +2412,16 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
         CALL fillghost_hydro(blk, block(con_block), bc)
         
      CASE("TABLE")
+
+        SELECT CASE (bc%bc_kind)
+        CASE ("ELEVELO")
+           CALL table_interp(current_time%time, bc%table_num, table_input, &
+                &2*bc%num_cell_pairs)
+        CASE DEFAULT
+           CALL table_interp(current_time%time, bc%table_num, table_input, &
+                &bc%num_cell_pairs)
+        END SELECT
+
         CALL table_interp(current_time%time, bc%table_num, table_input, &
              &bc%num_cell_pairs)
         SELECT CASE(bc%bc_kind)
@@ -2471,6 +2481,26 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%vvel(i,j_beg:j_end) = 0.0
               blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
               blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_ELEV
+           END DO
+        CASE ("ELEVELO")
+           IF (dsonly) RETURN
+           DO j=1,bc%num_cell_pairs
+              j_beg = bc%start_cell(j)+1
+              j_end = bc%end_cell(j)+1
+              DO jj = j_beg, j_end
+                 blk%depth(i,jj) = 2*table_input(j*2-1) - &
+                      &(blk%depth(i+1,jj) + blk%zbot(i+1,jj)) - blk%zbot(i,jj)
+                 blk%uvel(i,jj) = table_input(j*2)
+              END DO
+              blk%dstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+              blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+              blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+              blk%uold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
+              blk%vvel(i,j_beg:j_end) = 0.0
+              blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
+              blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
+              blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
+              blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_BOTH
            END DO
         END SELECT
      CASE ("ZEROG")
@@ -2553,6 +2583,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
               blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_ELEV
            END DO
+        CASE ("ELEVELO")
+           CALL error_message("We really do not know what happens with a DS TABLE ELEVELO BC")
         END SELECT
 
      CASE ("ZEROG")
