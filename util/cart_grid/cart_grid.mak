@@ -32,36 +32,33 @@ RSC=rc.exe
 
 !IF  "$(CFG)" == "cart_grid - Win32 Release"
 
-OUTDIR=.\..\..\Release
+OUTDIR=.
 INTDIR=.\Release
 # Begin Custom Macros
-OutDir=.\..\..\Release
+OutDir=.
 # End Custom Macros
 
 !IF "$(RECURSE)" == "0" 
 
-ALL : "$(OUTDIR)\cart_grid.exe"
+ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\elevtbl.mod"
 
 !ELSE 
 
-ALL : "$(OUTDIR)\cart_grid.exe"
+ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\elevtbl.mod"
 
 !ENDIF 
 
 CLEAN :
 	-@erase "$(INTDIR)\cartgrid.obj"
-	-@erase "$(INTDIR)\elevtbl.mod"
 	-@erase "$(INTDIR)\elevtbl.obj"
 	-@erase "$(OUTDIR)\cart_grid.exe"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
+	-@erase ".\elevtbl.mod"
 
 "$(INTDIR)" :
     if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /warn:nofileopt\
- /module:"Release/" /object:"Release/" 
+F90_PROJ=/include:"$(INTDIR)\\" /include:"time_series/Release" /compile_only\
+ /nologo /warn:nofileopt /module:"Release" /object:"Release/" 
 F90_OBJS=.\Release/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\cart_grid.bsc" 
@@ -81,10 +78,10 @@ LINK32_OBJS= \
 
 !ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
 
-OUTDIR=.\..\..\Debug
+OUTDIR=.\Debug
 INTDIR=.\Debug
 # Begin Custom Macros
-OutDir=.\..\..\Debug
+OutDir=.\Debug
 # End Custom Macros
 
 !IF "$(RECURSE)" == "0" 
@@ -99,22 +96,18 @@ ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\DF50.PDB"
 
 CLEAN :
 	-@erase "$(INTDIR)\cartgrid.obj"
+	-@erase "$(INTDIR)\DF50.PDB"
 	-@erase "$(INTDIR)\elevtbl.mod"
 	-@erase "$(INTDIR)\elevtbl.obj"
 	-@erase "$(OUTDIR)\cart_grid.exe"
 	-@erase "$(OUTDIR)\cart_grid.ilk"
 	-@erase "$(OUTDIR)\cart_grid.pdb"
-	-@erase "..\..\Debug\DF50.PDB"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-"$(INTDIR)" :
-    if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
-
 F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /debug:full /optimize:0\
- /warn:nofileopt /module:"Debug/" /object:"Debug/"\
- /pdbfile:"..\..\Debug/DF50.PDB" 
+ /warn:nofileopt /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
 F90_OBJS=.\Debug/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\cart_grid.bsc" 
@@ -158,8 +151,7 @@ DEP_F90_CARTG=\
 	".\Release\elevtbl.mod"\
 	
 
-"$(INTDIR)\cartgrid.obj" : $(SOURCE) $(DEP_F90_CARTG) "$(INTDIR)"\
- "$(INTDIR)\elevtbl.mod"
+"$(INTDIR)\cartgrid.obj" : $(SOURCE) $(DEP_F90_CARTG) "$(INTDIR)"
 
 
 !ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
@@ -182,7 +174,7 @@ F90_MODOUT=\
 	"elevtbl"
 
 
-"$(INTDIR)\elevtbl.obj"	"$(INTDIR)\elevtbl.mod" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\elevtbl.obj"	".\elevtbl.mod" : $(SOURCE) "$(INTDIR)"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
