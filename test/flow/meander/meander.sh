@@ -6,6 +6,7 @@ AWK=${AWK:-awk}
 vars="clstuff rbstuff lbstuff uvel"
 sects="126 142 164 187 209 231"
 plotscale="-Jx0.75/0.75"
+pltfile="plot.rough.nc"
 
 for v in $vars; do
 
@@ -27,7 +28,7 @@ for v in $vars; do
         if [ $i = "231" ]; then
             close="-Sx20/0/${scale}${units} -K "
         fi
-        perl ../../../scripts/mass2slice.pl -j -l plot.nc $v 1 $i | \
+        perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc $v 1 $i | \
             awk 'NF == 4 { print $1*0.3048, $2*0.3048, $4*'${factor}' } { next; }' | \
             pswiggle -R $plotscale -O -T2 -W -Z$scale -A90 $close >> junk.ps
     done
