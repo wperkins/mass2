@@ -1,3 +1,8 @@
+2004-04-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_bc_module.f90 (read_bcspecs): do not use  out of range
+	block numbers
+
 2004-01-30  William A. Perkins  <william.perkins@pnl.gov>
 
 	* scripts/mass2slice.pl: add -D option to eliminate output from

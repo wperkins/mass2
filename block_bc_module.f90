@@ -179,6 +179,8 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
              &": block number out of range: ", block
         CALL error_message(msg, fatal=.FALSE.)
+        ierr = ierr + lerr
+        CYCLE
      END IF
      block_bc(block)%bc_spec(num_bc)%block = block
 
@@ -707,6 +709,8 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
         WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
              &": block number out of range: ", block
         CALL error_message(msg, fatal=.FALSE.)
+        ierr = ierr + 1
+        CYCLE
      END IF
 
                                 ! check species number
