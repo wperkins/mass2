@@ -29,13 +29,13 @@ plot.1.eps: plot.gp gage.1.nc
 plot.2.eps: plot.gp gage.2.nc
 	sed -e 's/gage\.nc/gage.2.nc/g' plot.gp | gnuplot > $@
 
-gage.1.nc plot.1.nc: $(MODELFILES) flow.dat bcspecs.dat.1
+gage.1.nc plot.1.nc: $(MODELFILES) flow.dat bcspecs.dat.1 $(MODEL)
 	cp bcspecs.dat.1 bcspecs.dat
 	$(MODEL)
 	mv gage.nc gage.1.nc
 	mv plot.nc plot.1.nc
 
-gage.2.nc plot.2.nc: $(MODELFILES) rate.dat bcspecs.dat.2
+gage.2.nc plot.2.nc: $(MODELFILES) rate.dat bcspecs.dat.2 $(MODEL)
 	cp bcspecs.dat.2 bcspecs.dat
 	$(MODEL)
 	mv gage.nc gage.2.nc

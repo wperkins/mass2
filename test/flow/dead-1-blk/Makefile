@@ -33,6 +33,9 @@ all: $(EPSFILES)
 plot.eps: plot.nc dead.lay
 	$(TECPLOT) -b -y plot.eps dead.lay -p ../../../tecplot/macros/export_eps.mcr
 
+clean::
+	rm -f plot.eps
+
 plot.nc: $(MODELFILES) $(MODEL)
 	$(MODEL)
 

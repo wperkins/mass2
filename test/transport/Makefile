@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu May 15 12:29:21 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon May 19 12:18:42 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -19,6 +19,7 @@ SUBDIRS =										\
 	decay										\
 	partition									\
 	mixing										\
+	mixing-transport-only						\
 	mixing-2blk									\
 	pointsource									\
 	bedsource									\

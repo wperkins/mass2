@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu May 15 11:04:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon May 19 08:38:01 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -16,6 +16,7 @@ SUBDIRS =										\
 	beddecay									\
 	bedpartition								\
 	bedsource									\
+	bedsource-flow								\
 	deposition									\
 	hotstart									\
 	test1

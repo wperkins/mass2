@@ -78,7 +78,7 @@ plot.case3blk.eps: plot.case3blk.nc plot.gp
 clean:: 
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat bcspecs.dat
+	rm -f gridplot1.dat bcspecs.dat
 	rm -f plot.nc gage.nc
 	rm -f $(EPSFILES)
 

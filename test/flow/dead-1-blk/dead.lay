@@ -151,7 +151,7 @@ $!FIELD  [1]
     }
   BOUNDARY
     {
-    COLOR = RED
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -189,7 +189,7 @@ $!FIELD  [2]
     }
   BOUNDARY
     {
-    COLOR = GREEN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -227,7 +227,7 @@ $!FIELD  [3]
     }
   BOUNDARY
     {
-    COLOR = BLUE
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -265,7 +265,7 @@ $!FIELD  [4]
     }
   BOUNDARY
     {
-    COLOR = CYAN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -439,7 +439,7 @@ $!FIELD  [1]
     }
   BOUNDARY
     {
-    COLOR = RED
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -477,7 +477,7 @@ $!FIELD  [2]
     }
   BOUNDARY
     {
-    COLOR = GREEN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -515,7 +515,7 @@ $!FIELD  [3]
     }
   BOUNDARY
     {
-    COLOR = BLUE
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -553,7 +553,7 @@ $!FIELD  [4]
     }
   BOUNDARY
     {
-    COLOR = CYAN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
