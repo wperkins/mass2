@@ -93,7 +93,7 @@ DEP_F90_BLOCK=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_BLOCK=\
+NODEP_F90_BLOCK=\
 	".\Debug\table_boundary_conditions.mod"\
 	
 
@@ -112,7 +112,7 @@ DEP_F90_DATE_=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_DATE_=\
+NODEP_F90_DATE_=\
 	".\Debug\julian.mod"\
 	
 
@@ -164,7 +164,7 @@ DEP_F90_GAS_F=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_GAS_F=\
+NODEP_F90_GAS_F=\
 	".\Debug\gas_coeffs.mod"\
 	
 
@@ -219,13 +219,14 @@ DEP_F90_MASS2=\
 	".\Release\globals.mod"\
 	".\Release\io_routines_module.mod"\
 	".\Release\met_data_module.mod"\
+	".\Release\plot_output.mod"\
 	".\Release\scalars.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_MASS2=\
+NODEP_F90_MASS2=\
 	".\Debug\block_boundary_conditions.mod"\
 	".\Debug\date_time.mod"\
 	".\Debug\energy_flux.mod"\
@@ -234,6 +235,7 @@ DEP_F90_MASS2=\
 	".\Debug\globals.mod"\
 	".\Debug\io_routines_module.mod"\
 	".\Debug\met_data_module.mod"\
+	".\Debug\plot_output.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	
@@ -254,9 +256,32 @@ DEP_F90_MET_D=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_MET_D=\
+NODEP_F90_MET_D=\
 	".\Debug\date_time.mod"\
 	".\Debug\table_boundary_conditions.mod"\
+	
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\plot_output.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_PLOT_=\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\scalars.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+NODEP_F90_PLOT_=\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\scalars.mod"\
 	
 
 !ENDIF 
@@ -274,7 +299,7 @@ DEP_F90_PROFI=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_PROFI=\
+NODEP_F90_PROFI=\
 	".\Debug\globals.mod"\
 	
 
@@ -304,7 +329,7 @@ DEP_F90_TABLE=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_TABLE=\
+NODEP_F90_TABLE=\
 	".\Debug\date_time.mod"\
 	
 

@@ -48,7 +48,7 @@ INTEGER :: system_time(8)
 INTEGER :: iblock, con_block, num_bc, ispecies
 INTEGER :: cfg_iounit=10, output_iounit=11, error_iounit=13, status_iounit=14
 INTEGER :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
-INTEGER :: mass_source_iounit=19, diag_plot_iounit=20
+INTEGER :: mass_source_iounit=19
 
 INTEGER :: i_start_cell, i_end_cell, j_start_cell , j_end_cell
 INTEGER :: max_species_in_restart
@@ -169,7 +169,6 @@ OPEN(output_iounit,file='output.out', access='sequential', RECL=1024)
 OPEN(error_iounit,file='error-warning.out')
 OPEN(status_iounit,file='status.out')
 OPEN(mass_source_iounit,file='mass_source_monitor.out')
-OPEN(diag_plot_iounit,file='diagnostic_plot.dat')
 !-----------------------------------------------------------------------------------
 ! write info to the console
 WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -805,9 +804,7 @@ CLOSE(grid_iounit)
 !-----------------------------------------------------------------------
 ! diagnostic plot; tecplot format
 
-WRITE(diag_plot_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code"""
-WRITE(diag_plot_iounit,2022)
-2022 FORMAT("variables=""x"" ""y"" ""Froude No."" ""Courant No.""")
+CALL diag_plot_file_setup_tecplot()
 
 !-----------------------------------------------------------------------
 
@@ -2265,25 +2262,7 @@ END DO
 ! end of output to ascii file section
 !-------------------------------------------------------------------------------------------------------
 
-DO iblock=1,max_blocks
-
-!---------------------------------------------------------------
-! diagnostic plot file output; tecplot format
-   WRITE(diag_plot_iounit,*)"zone f=block"," t=""",zone_name,iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
-   WRITE(diag_plot_iounit,*)block(iblock)%x
-   WRITE(diag_plot_iounit,*)block(iblock)%y
-
-   block(iblock)%froude_num = SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
-        SQRT(grav*block(iblock)%depth)
-   WRITE(diag_plot_iounit,*)block(iblock)%froude_num
-
-   block(iblock)%courant_num = delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
-         SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
-         SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
-   WRITE(diag_plot_iounit,*)block(iblock)%courant_num
-   
-
-END DO
+CALL diag_plot_print_tecplot(current_time%date_string, current_time%time_string, delta_t)
 
 !-------------------------------------------------------------------------------------------------------
 ! print out in tecplot block format

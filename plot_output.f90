@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Fri May 21 14:53:05 1999 by William A. Perkins <perk@mack.pnl.gov>
+! Last Change: Fri May 21 15:11:53 1999 by William A. Perkins <perk@mack.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -20,9 +20,28 @@ MODULE plot_output
 
   INTEGER, PARAMETER, PUBLIC :: plot_iounit=12
   CHARACTER (LEN=10), PARAMETER :: plot_ioname = 'plot.dat'
-  LOGICAL, PARAMETER, PRIVATE :: plot_do_netcdf = .false.
+
+  INTEGER, PARAMETER, PUBLIC :: diag_plot_iounit=20
+  CHARACTER (LEN=80), PARAMETER :: diag_plot_ioname = 'diagnostic_plot.dat'
 
 CONTAINS
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_zone_name
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_zone_name(date_string, time_string, zone_name)
+    
+    IMPLICIT NONE
+    CHARACTER*(*) :: date_string, time_string, zone_name
+
+    zone_name(1:10) = date_string
+    zone_name(11:11) = ' '
+    zone_name(12:19) = time_string
+    zone_name(20:20) = ' '
+    zone_name(21:26) = 'block '
+
+  END SUBROUTINE plot_zone_name
+
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_file_setup_tecplot
@@ -39,7 +58,6 @@ CONTAINS
     
 
   END SUBROUTINE plot_file_setup_tecplot
-
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print_tecplot
@@ -58,11 +76,7 @@ CONTAINS
     CHARACTER*26 :: zone_name
     INTEGER :: i, j, iblock
 
-    zone_name(1:10) = date_string
-    zone_name(11:11) = ' '
-    zone_name(12:19) = time_string
-    zone_name(20:20) = ' '
-    zone_name(21:26) = 'block '
+    CALL plot_zone_name(date_string, time_string, zone_name)
 
     DO iblock=1,max_blocks
        DO i=2, block(iblock)%xmax
@@ -142,6 +156,59 @@ CONTAINS
 
     END DO
   END SUBROUTINE plot_print_tecplot
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE diag_plot_file_setup_tecplot
+  ! ----------------------------------------------------------------
+  SUBROUTINE diag_plot_file_setup_tecplot()
+
+    IMPLICIT NONE
+
+    OPEN(diag_plot_iounit,file=diag_plot_ioname)
+    WRITE(diag_plot_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code"""
+    WRITE(diag_plot_iounit,100)
+100 FORMAT("variables=""x"" ""y"" ""Froude No."" ""Courant No.""")
+
+  END SUBROUTINE diag_plot_file_setup_tecplot
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE diag_plot_print_tecplot
+  ! ----------------------------------------------------------------
+  SUBROUTINE diag_plot_print_tecplot(date_string, time_string, delta_t)
+
+    USE globals
+
+    IMPLICIT NONE
+
+    CHARACTER (LEN=10) :: date_string
+    CHARACTER (LEN=8) :: time_string
+    DOUBLE PRECISION :: delta_t
+    CHARACTER*26 :: zone_name
+    INTEGER :: i, iblock
+
+    CALL plot_zone_name(date_string, time_string, zone_name)
+
+    DO iblock=1,max_blocks
+
+       !---------------------------------------------------------------
+       ! diagnostic plot file output; tecplot format
+       WRITE(diag_plot_iounit,*) "zone f=block"," t=""",zone_name,iblock,"""",&
+            &" i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
+       WRITE(diag_plot_iounit,*)block(iblock)%x
+       WRITE(diag_plot_iounit,*)block(iblock)%y
+
+       block(iblock)%froude_num = &
+            &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
+            &SQRT(grav*block(iblock)%depth)
+       WRITE(diag_plot_iounit,*)block(iblock)%froude_num
+       
+       block(iblock)%courant_num = &
+            &delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
+            &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
+            &SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
+       WRITE(diag_plot_iounit,*)block(iblock)%courant_num
+    END DO
+  END SUBROUTINE diag_plot_print_tecplot
 
 
 END MODULE plot_output

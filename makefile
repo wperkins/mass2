@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Fri May 21 09:09:03 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Wed May 26 10:18:53 1999 by William A. Perkins <perk@mack.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -55,14 +55,15 @@ MODULES = 					\
     BLOCK_BOUNDARY_CONDITIONS.mod		\
     DATE_TIME.mod				\
     ENERGY_FLUX.mod				\
-    F90_UNIX_PROC.mod				\
+    F90_UNIX_PROC.mod			\
     GAGE_OUTPUT.mod				\
     GAS_COEFFS.mod				\
-    GAS_FUNCTIONS.mod				\
+    GAS_FUNCTIONS.mod			\
     GLOBALS.mod					\
-    IO_ROUTINES_MODULE.mod			\
+    IO_ROUTINES_MODULE.mod		\
     JULIAN.mod					\
-    MET_DATA_MODULE.mod				\
+    MET_DATA_MODULE.mod			\
+    PLOT_OUTPUT.mod				\
     SCALARS.mod					\
     TABLE_BOUNDARY_CONDITIONS.mod
 

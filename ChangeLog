@@ -1,4 +1,20 @@
+1999-05-26  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_v025.mak: regenerated
+
+	* mass2_v025.dsp:  added plot_output module -- seems to work
+
+	* makefile.dec (plot_output.o): added
+
+	* makefile (MODULES): added PLOT_OUTPUT to module list
+
 1999-05-21  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: moved all of the diagnostic_plot.dat output to
+	  plot_output.f90
+
+	* plot_output.f90: moved all of the diagnostic_plot.dat output from
+	  mass2_main_025.f90
 
 	* mass2_main_025.f90: moved all of the plot.dat output to
 	  plot_output.f90  

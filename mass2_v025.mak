@@ -71,6 +71,8 @@ CLEAN :
 	-@erase "$(INTDIR)\mass2_main_025.obj"
 	-@erase "$(INTDIR)\met_data_module.mod"
 	-@erase "$(INTDIR)\met_data_module.obj"
+	-@erase "$(INTDIR)\plot_output.mod"
+	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
 	-@erase "$(INTDIR)\scalars.mod"
 	-@erase "$(INTDIR)\scalars_module.obj"
@@ -103,6 +105,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\julian.obj" \
 	"$(INTDIR)\mass2_main_025.obj" \
 	"$(INTDIR)\met_data_module.obj" \
+	"$(INTDIR)\plot_output.obj" \
 	"$(INTDIR)\profile_init.obj" \
 	"$(INTDIR)\scalars_module.obj" \
 	"$(INTDIR)\table_bc_module.obj"
@@ -153,6 +156,8 @@ CLEAN :
 	-@erase "$(INTDIR)\mass2_main_025.obj"
 	-@erase "$(INTDIR)\met_data_module.mod"
 	-@erase "$(INTDIR)\met_data_module.obj"
+	-@erase "$(INTDIR)\plot_output.mod"
+	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
 	-@erase "$(INTDIR)\scalars.mod"
 	-@erase "$(INTDIR)\scalars_module.obj"
@@ -188,6 +193,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\julian.obj" \
 	"$(INTDIR)\mass2_main_025.obj" \
 	"$(INTDIR)\met_data_module.obj" \
+	"$(INTDIR)\plot_output.obj" \
 	"$(INTDIR)\profile_init.obj" \
 	"$(INTDIR)\scalars_module.obj" \
 	"$(INTDIR)\table_bc_module.obj"
@@ -479,6 +485,7 @@ DEP_F90_MASS2=\
 	".\Release\globals.mod"\
 	".\Release\io_routines_module.mod"\
 	".\Release\met_data_module.mod"\
+	".\Release\plot_output.mod"\
 	".\Release\scalars.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	
@@ -487,7 +494,7 @@ DEP_F90_MASS2=\
  "$(INTDIR)\globals.mod" "$(INTDIR)\io_routines_module.mod"\
  "$(INTDIR)\block_boundary_conditions.mod"\
  "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gage_output.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gage_output.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
  "$(INTDIR)\met_data_module.mod" "$(INTDIR)\energy_flux.mod"\
  "$(INTDIR)\gas_functions.mod"
 
@@ -503,6 +510,7 @@ DEP_F90_MASS2=\
 	".\Debug\globals.mod"\
 	".\Debug\io_routines_module.mod"\
 	".\Debug\met_data_module.mod"\
+	".\Debug\plot_output.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	
@@ -511,7 +519,7 @@ DEP_F90_MASS2=\
  "$(INTDIR)\globals.mod" "$(INTDIR)\io_routines_module.mod"\
  "$(INTDIR)\block_boundary_conditions.mod"\
  "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gage_output.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gage_output.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
  "$(INTDIR)\met_data_module.mod" "$(INTDIR)\energy_flux.mod"\
  "$(INTDIR)\gas_functions.mod"
 
@@ -531,8 +539,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\met_data_module.obj"	"$(INTDIR)\met_data_module.mod" : $(SOURCE)\
- $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
- "$(INTDIR)\date_time.mod"
+ $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\date_time.mod"\
+ "$(INTDIR)\table_boundary_conditions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -549,6 +557,44 @@ F90_MODOUT=\
 "$(INTDIR)\met_data_module.obj"	"$(INTDIR)\met_data_module.mod" : $(SOURCE)\
  $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
  "$(INTDIR)\date_time.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\plot_output.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_PLOT_=\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\scalars.mod"\
+	
+F90_MODOUT=\
+	"plot_output"
+
+
+"$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
+ $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gas_functions.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_PLOT_=\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\scalars.mod"\
+	
+F90_MODOUT=\
+	"plot_output"
+
+
+"$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
+ $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gas_functions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
