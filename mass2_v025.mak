@@ -176,8 +176,8 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
- /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt /module:"Debug/"\
- /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
+ /compile_only /nologo /names:uppercase /debug:full /optimize:0 /warn:nofileopt\
+ /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
 F90_OBJS=.\Debug/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
