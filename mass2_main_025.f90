@@ -2577,24 +2577,31 @@ SUBROUTINE transport(status_flag)
            !-------------------------------------------------------------------------
            ! compute scalar transport discretization equation coefficients
            
-           block(iblock)%apo(x_start:x_end,2:y_end) = &
-                &block(iblock)%hp1(x_start:x_end,2:y_end)*&
-                &block(iblock)%hp2(x_start:x_end,2:y_end)*&
-                &block(iblock)%depthold(x_start:x_end,2:y_end)/delta_t
+           ! block(iblock)%apo(x_start:x_end,2:y_end) = &
+           !      &block(iblock)%hp1(x_start:x_end,2:y_end)*&
+           !      &block(iblock)%hp2(x_start:x_end,2:y_end)*&
+           !      &block(iblock)%depthold(x_start:x_end,2:y_end)/delta_t
+
+           coeff%ae(x_start:x_end,2:y_end) = &
+                &max(0d+00, -block(iblock)%flux_e(x_start:x_end,2:y_end), &
+                &block(iblock)%diffu_e(x_start:x_end,2:y_end) - &
+                &block(iblock)%flux_e(x_start:x_end,2:y_end)/2.0)
+           coeff%aw(x_start:x_end,2:y_end) = &
+                &max(0d+00, block(iblock)%flux_w(x_start:x_end,2:y_end), &
+                &block(iblock)%diffu_w(x_start:x_end,2:y_end) + &
+                &block(iblock)%flux_w(x_start:x_end,2:y_end)/2.0)
+           coeff%an(x_start:x_end,2:y_end) = &
+                &max(0d+00, -block(iblock)%flux_n(x_start:x_end,2:y_end), &
+                &block(iblock)%diffu_n(x_start:x_end,2:y_end) - &
+                &block(iblock)%flux_n(x_start:x_end,2:y_end)/2.0)
+           coeff%as(x_start:x_end,2:y_end) = &
+                &max(0d+00, block(iblock)%flux_s(x_start:x_end,2:y_end), &
+                &block(iblock)%diffu_s(x_start:x_end,2:y_end) + &
+                &block(iblock)%flux_s(x_start:x_end,2:y_end)/2.0)
+           coeff%bp = 0.0
 
            DO i= x_start,x_end
               DO j=2,y_end
-
-                                ! use hybrid scheme
-
-              coeff%ae(i,j) = max(0d+00, -block(iblock)%flux_e(i,j), &
-                   &block(iblock)%diffu_e(i,j) - block(iblock)%flux_e(i,j)/2.0)
-              coeff%aw(i,j) = max(0d+00, block(iblock)%flux_w(i,j), &
-                   &block(iblock)%diffu_w(i,j) + block(iblock)%flux_w(i,j)/2.0)
-              coeff%an(i,j) = max(0d+00, -block(iblock)%flux_n(i,j), &
-                   &block(iblock)%diffu_n(i,j) - block(iblock)%flux_n(i,j)/2.0)
-              coeff%as(i,j) = max(0d+00, block(iblock)%flux_s(i,j), &
-                   &block(iblock)%diffu_s(i,j) + block(iblock)%flux_s(i,j)/2.0)
 
               IF (source_doing_temp) THEN
                  t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)

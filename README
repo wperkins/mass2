@@ -8,8 +8,38 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Mon Feb 12 10:25:29 2001 by William A. Perkins <perk@dora.pnl.gov>
+Last Change: Tue Mar 11 07:07:29 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
+
+-------------------------------------------------------------
+NetCDF
+-------------------------------------------------------------
+
+MASS2 requires version 3.4 of the NetCDF library.  Some initial tests
+with the 3.5 version were veerrry slow, so the older version must be
+used. 
+
+On Intel Linux, one has to be careful how NetCDF is compiled.  With
+the original 3.4 distribution, there is really only one way to go.
+First, compile and install NetCDF with g77.  Then, use the Absoft
+compiler with these flags:
+
+    -B108 -YEXT_NAMES=LCS -YCFRL=1
+
+If you want to use another compiler, then NetCDF must be compiled
+differently.  Unpack the 3.4 distribution and replace 
+src/fortran/cfortran.h with the cfortran.h from the 3.5
+distribution. Configure and compile NetCDF specifying the following 
+
+    FC=g77
+    FFLAGS=-fno-second-underscore
+    CPPFLAGS=-DNDEBUG -DpgiFortran
+
+When the NetCDF library is built this way, it can be linked using any
+of the available compilers.  The Absoft compiler flags need to be
+changed to
+
+    -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
 -------------------------------------------------------------
 compilation
@@ -35,7 +65,16 @@ are supported
 
         make -f makefile.linux [DEBUG=-g] [TARGET=mass2.LINUX.INTEL]
 
-        This is for the Absoft Pro Fortran 90/95 compiler. 
+        This is for the Absoft Pro Fortran 90/95 compiler, currently
+        version 7.5. 
+
+        make -f makefile.intel [DEBUG=-g] [TARGET=mass2.LINUX.INTEL]
+
+        This is for the Intel Fortran 90 compiler, version 6.0.1. 
+
+        make -f makefile.lahey [DEBUG=-g] [TARGET=mass2.LINUX.INTEL]
+
+        This is for the Lahey Fortran 95 compiler, version 6.10a
 
     Linux alpha:    
 

@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 12, 1999 by William A. Perkins
-# Last Change: Fri Jan 31 14:23:18 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Feb 10 10:12:52 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -19,8 +19,8 @@
 # be the condor library.  In Condor 6.3, this is not included in a
 # full install for some reason.
 
-CONDOR=# condor_compile
-CONDORLDFLAGS=# -L/usr/condor/lib
+# CONDOR=condor_compile
+# CONDORLDFLAGS=-L/usr/condor/lib
 
 # Compiler specific flags
 F90 = $(CONDOR) f95
@@ -30,17 +30,20 @@ MOD=mod
 
 # stuff to include netcdf
 
-NETCDFDIR = /usr
+NETCDFDIR = /home/perk/Projects/ParallelMASS2/src/netcdf-3.4
+# NETCDFDIR = /usr
 NETCDFFLAGS = -I$(NETCDFDIR)/include
 NETCDFLDFLAGS = -L$(NETCDFDIR)/lib 
 NETCDFLIBS = -lnetcdf
 
 # Options that will work on Linux when the NetCDF library is compiled
-# with g77:
+# with g77: -B108 -YEXT_NAMES=LCS -YCFRL=1
+# with g77 -fno-second-underscore: -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
-DEBUG =  -O
-FLAGS = $(NETCDFFLAGS) $(DEBUG) \
-	-trap=INVALID,DIVBYZERO,OVERFLOW  -B108 -YEXT_NAMES=LCS -YCFRL=1
+DEBUG =  -g -O
+PROFILE = # -P
+FLAGS = $(NETCDFFLAGS) $(DEBUG) $(PROFILE) \
+	-trap=INVALID,DIVBYZERO,OVERFLOW  -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
 # general compile/link flags
 
