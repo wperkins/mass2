@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Fri Apr  4 09:45:25 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Apr 17 14:47:09 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -117,8 +117,11 @@ if test -z "$CGNSLIBNAME"; then
         i?86*linux*)
             CGNSLIBNAME=cgns.linux
             ;;
-        alpha*linux*|alphaev*-dec-osf*)
+        alpha*linux*)
             CGNSLIBNAME=cgns.alinux
+            ;;
+        alphaev*-dec-osf*)
+            CGNSLIBNAME=cgns.ALPHA
             ;;
         mips-*-irix*)
             CGNSLIBNAME=cgns.mips4_n32

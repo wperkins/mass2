@@ -1,5 +1,14 @@
 2003-04-17  William A. Perkins  <william.perkins@pnl.gov>
 
+	* test/benchmark/jda/Makefile: do not remove gage_control.dat
+
+	* global_module_023.f90: initialize several block variables that
+	were giving the DEC/Alpha compiler fits
+
+	* configure.in: correct name of CGNS library for Alpha OSF
+
+	* accumulator.f90: Initialize the accumulated variables
+
 	* Makefile.am: add a target from makefile.linux to make mass2.ps
 	using a2ps
 

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 18, 2003 by William A. Perkins
-# Last Change: Thu Apr  3 13:07:08 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Apr 17 14:53:33 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2
@@ -38,7 +38,7 @@ jda-netcdf.eps: jda-netcdf.lay plot.nc
 clean:: 
 	rm -f *~ batch.log tecplot.phy
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat gage_control.dat
-	rm -f plot.nc plot.cgns
+	rm -f gridplot1.dat
+	rm -f plot.nc grid.cgns plot*.cgns
 	rm -f hotstart_*
 	rm -f $(EPSFILES)

@@ -219,18 +219,26 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   ALLOCATE(block(n)%x_eta(imin:imax,jmin:jmax))	! x derivative wrt eta
   ALLOCATE(block(n)%y_eta(imin:imax,jmin:jmax))	! y derivative wrt eta
   ALLOCATE(block(n)%hp1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : P loc
+  block(n)%hp1 = 1.0
   ALLOCATE(block(n)%hp2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : P loc
+  block(n)%hp2 = 1.0
   ALLOCATE(block(n)%gp12(imin:imax,jmin:jmax))	! nonorthogonal part of the metric tensor
   ALLOCATE(block(n)%hv1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : v loc
   ALLOCATE(block(n)%hv2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : v loc
   ALLOCATE(block(n)%hu1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : u loc
   ALLOCATE(block(n)%hu2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : u loc
   ALLOCATE(block(n)%uvel_p(imin:imax,jmin:jmax))		! u vel at c.v. node
+  block(n)%uvel_p = 0.0
   ALLOCATE(block(n)%vvel_p(imin:imax,jmin:jmax))		! v vel at c.v. node
+  block(n)%vvel_p = 0.0
   ALLOCATE(block(n)%u_cart(imin:imax,jmin:jmax))	! u cartesian velocity component x-dir
+  block(n)%u_cart = 0.0
   ALLOCATE(block(n)%v_cart(imin:imax,jmin:jmax))	! v cartesian velocity component y-dir
+  block(n)%v_cart = 0.0
   ALLOCATE(block(n)%uvel(imin:imax,jmin:jmax)) 		! u depth-ave velocity
+  block(n)%uvel = 0.0
   ALLOCATE(block(n)%vvel(imin:imax,jmin:jmax))		! v depth-ave velocity
+  block(n)%vvel = 0.0
   
   ALLOCATE(block(n)%depth(imin:imax,jmin:jmax))		! water DEPTH (NOT WS ELEVATION)
   ALLOCATE(block(n)%wsel(imin:imax,jmin:jmax))		! Water Surface ELEVATION
@@ -251,14 +259,18 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   ALLOCATE(block(n)%bedshear1(imin:imax,jmin:jmax)) ! bed shear stress in xsi direction
   ALLOCATE(block(n)%bedshear2(imin:imax,jmin:jmax)) ! bed shear stress in eta direction
   ALLOCATE(block(n)%shear(imin:imax,jmin:jmax)) ! bed shear stress magnitude @ velocity locations
+  block(n)%shear = 0.0
   ALLOCATE(block(n)%windshear1(imin:imax,jmin:jmax))	! wind shear stress in xsi direction
   ALLOCATE(block(n)%windshear2(imin:imax,jmin:jmax))	! wind shear stress in eta direction
   ALLOCATE(block(n)%chezy(imin:imax,jmin:jmax))				! chezy bed shear stress coefficient
   ALLOCATE(block(n)%mass_source(imin:imax,jmin:jmax))	! mass source
+  block(n)%mass_source = 0.0
   ALLOCATE(block(n)%TDG_stuff(imin:imax,jmin:jmax))		! TDG work array
   ALLOCATE(block(n)%work(imin:imax,jmin:jmax))         ! general work array
   ALLOCATE(block(n)%froude_num(imin:imax,jmin:jmax))   ! froude number
+  block(n)%froude_num = 0.0
   ALLOCATE(block(n)%courant_num(imin:imax,jmin:jmax))  ! courant number
+  block(n)%courant_num = 0.0
 
                                 ! precalculated values for transport 
 

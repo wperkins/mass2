@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 25, 2000 by William A. Perkins
-! Last Change: Fri Apr  5 08:54:13 2002 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Apr 17 15:28:02 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -103,6 +103,11 @@ CONTAINS
     ALLOCATE(accum%max(i_index_min:nx, j_index_min:ny))
     ALLOCATE(accum%min(i_index_min:nx, j_index_min:ny))
     ALLOCATE(accum%sum(i_index_min:nx, j_index_min:ny))
+
+    accum%min = 1e20
+    accum%max = -1e20
+    accum%sum = 0.0
+
 
   END SUBROUTINE accum_init_var
 
