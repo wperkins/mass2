@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Tue Apr  1 15:25:52 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Apr  4 09:45:25 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -66,6 +66,19 @@ AC_ARG_WITH(netcdf,
     [  --with-netcdf=dir            specify the location of NetCDF libraries],
     NETCDFDIR="$withval")
 
+                                # CGNS location: set CGNSDIR or --with-cgns=
+
+if test -z "$CGNSDIR"; then
+    CGNSDIR=/usr/unsupported/CGNSLib
+fi
+AC_ARG_WITH(cgns,
+    [  --with-cgns=dir              specify the location of CGNS libraries],
+    CGNSDIR="$withval")
+
+AC_ARG_WITH(cgns-lib,
+    [  --with-cgns-lib=name         name of CGNS library: libcgns.a = cgns],
+    CGNSLIBNAME="$withval")
+
 # -------------------------------------------------------------
 # Checks for Programs we need
 # -------------------------------------------------------------
@@ -97,11 +110,40 @@ F90LIBS="$F90LIBS -lnetcdf"
 
 AC_CHECK_FILE($NETCDFDIR/include/netcdf.inc, , AC_MSG_ERROR(Cannot find required header netcdf.inc))
 
+                                # some of these names for the CGNS
+                                # library are site specific
+if test -z "$CGNSLIBNAME"; then
+    case $host in
+        i?86*linux*)
+            CGNSLIBNAME=cgns.linux
+            ;;
+        alpha*linux*|alphaev*-dec-osf*)
+            CGNSLIBNAME=cgns.alinux
+            ;;
+        mips-*-irix*)
+            CGNSLIBNAME=cgns.mips4_n32
+            ;;
+        *)
+            CGNSLIBNAME=cgns
+    esac
+fi
+
+F90FLAGS="$F90FLAGS -I$CGNSDIR"
+F90LDFLAGS="$F90LDFLAGS -L$CGNSDIR/lib"
+F90LIBS="$F90LIBS -l$CGNSLIBNAME"
+
+AC_CHECK_FILE($CGNSDIR/cgnslib_f.h, , 
+              AC_MSG_ERROR(Cannot find required header cgnslib_f.h))
+
 FFLAGS="$FFLAGS $F90FLAGS ${F90MODPATH}time_series"
 LDFLAGS="$LDFLAGS $F90LDFLAGS"
 LIBS="$LIBS $F90LIBS"
 
-AC_PROG_F77_WORKS
+# AC_PROG_F77_WORKS
+AC_CHECK_LIB(netcdf, nf_create, ,
+             AC_MSG_ERROR(Cannot link to NetCDF library))
+AC_CHECK_LIB($CGNSLIBNAME, cg_open_f, ,
+             AC_MSG_ERROR(Cannot link to CGNS library))
 
 AC_CONFIG_SUBDIRS(time_series)
 AC_OUTPUT(Makefile util/Makefile util/cart_grid/Makefile)

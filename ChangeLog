@@ -1,7 +1,19 @@
 2003-04-04  William A. Perkins  <william.perkins@pnl.gov>
 
+	* plot_cgns.f90: CALL error_message instead of writing to
+	error_iounit. 
+
 	* util/cart_grid/Makefile.am (clean-local): added local clean
 	target and additional EXTRA_DIST files
+
+2003-04-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90: Put a bunch of plot output flags it the
+	configuration file
+
+	* plot_cgns.f90: multiple files are now output: one for the grid
+	alone and several more containing a specified number of time
+	slices 
 
 2003-04-01  William A. Perkins  <william.perkins@pnl.gov>
 
@@ -20,6 +32,11 @@
 
 	* mass2.f90: initialize and shutdown time series module
 
+2003-03-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_netcdf.f90 (plot_print_netcdf): timestamp should be made by
+	concatenation 
+
 2003-03-26  William A. Perkins  <william.perkins@pnl.gov>
 
 	* makefile.sgi: was makefile
@@ -34,10 +51,39 @@
 
 	* Makefile.am: added
 
+2003-03-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_netcdf.f90 (plot_file_setup_netcdf):  accum_initialize was
+	called here
+
+	* plot_output.f90 (plot_file_setup): accum_initialize needed to be
+	called here 
+
+	* makefile.dec: changes to plot output incorporated, but it does
+	not work.  CGNS is compiled with -fno-second-underscore. I would
+	have to compile NetCDF similarly and add the "-assume
+	no2underscores" option.  Later.
+
+	* makefile: incorporate changes to plot output 
+
+	* plot_output.f90: CGNS output default
+
 2003-03-19  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90: repair small depth warning/error messages
 	for when wetting and drying is off
+
+2003-03-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* makefile.intel: incorporate changes to plot output 
+
+	* makefile.linux: incorporate changes to plot output
+
+	* plot_output.f90: incorporate changes to NetCDF and CGNS output
+
+	* plot_netcdf.f90: seperate out NetCDF stuff from plot_output.
+
+	* plot_cgns.f90: created
 
 2003-03-11  William A. Perkins  <william.perkins@pnl.gov>
 

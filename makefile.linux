@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 12, 1999 by William A. Perkins
-# Last Change: Mon Feb 10 10:12:52 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Apr  3 08:06:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -36,13 +36,20 @@ NETCDFFLAGS = -I$(NETCDFDIR)/include
 NETCDFLDFLAGS = -L$(NETCDFDIR)/lib 
 NETCDFLIBS = -lnetcdf
 
-# Options that will work on Linux when the NetCDF library is compiled
-# with g77: -B108 -YEXT_NAMES=LCS -YCFRL=1
-# with g77 -fno-second-underscore: -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
+# stuff to include CGNS
+CGNSDIR = /usr/unsupported/CGNSLib
+CGNSFFLAGS = -I$(CGNSDIR)
+CGNSLDFLAGS = -L$(CGNSDIR)/lib
+CGNSLIBS = -lcgns.linux
+
+# Options that will work on Linux when the NetCDF and CGNL libraries
+# are compiled with:
+#	g77: -B108 -YEXT_NAMES=LCS -YCFRL=1
+#	g77 -fno-second-underscore: -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
 DEBUG =  -g -O
-PROFILE = # -P
-FLAGS = $(NETCDFFLAGS) $(DEBUG) $(PROFILE) \
+PROFILE = -P
+FLAGS = $(NETCDFFLAGS) $(CGNSFFLAGS) $(DEBUG) $(PROFILE) \
 	-trap=INVALID,DIVBYZERO,OVERFLOW  -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
 # general compile/link flags
@@ -50,8 +57,8 @@ FLAGS = $(NETCDFFLAGS) $(DEBUG) $(PROFILE) \
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
 LIBLOC = 
-LDFLAGS = $(CONDORLDFLAGS) $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) 
-LIBS = $(NETCDFLIBS) -lU77
+LDFLAGS = $(CONDORLDFLAGS) $(NETCDFLDFLAGS) $(CGNSLDFLAGS) ${LIBLOC} $(FLAGS) 
+LIBS = $(NETCDFLIBS) $(CGNSLIBS) -lU77
 
 TARGET = mass2_v027
 SRCS =											\
@@ -63,6 +70,8 @@ SRCS =											\
      energy_flux_module.f90						\
      gage_output_module.f90						\
      plot_output.f90							\
+	 plot_netcdf.f90 \
+	 plot_cgns.f90								\
      netcdferror.f90							\
      global_module_023.f90						\
      io_routines_module.f90						\
@@ -102,6 +111,8 @@ MODULES =										\
     JULIAN.$(MOD)								\
     MET_DATA_MODULE.$(MOD)						\
     PLOT_OUTPUT.$(MOD)							\
+    PLOT_NETCDF.$(MOD)							\
+    PLOT_CGNS.$(MOD)							\
     SCALARS.$(MOD)								\
     TABLE_BOUNDARY_CONDITIONS.$(MOD)			\
     MISC_VARS.$(MOD)							\
@@ -206,8 +217,17 @@ particulate_source.o: particulate_source.f90  GLOBALS.$(MOD) SCALARS.$(MOD) \
 	MISC_VARS.$(MOD) bed_functions.inc
 PARTICULATE_SOURCE.$(MOD): particulate_source.o
 
-plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MOD) \
+plot_cgns.o: plot_cgns.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MOD) \
 	GAS_FUNCTIONS.$(MOD) BED_MODULE.$(MOD) MISC_VARS.$(MOD) ACCUMULATOR.$(MOD)
+PLOT_CGNS.$(MOD): plot_cgns.o
+
+plot_netcdf.o: plot_netcdf.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MOD) \
+	GAS_FUNCTIONS.$(MOD) BED_MODULE.$(MOD) MISC_VARS.$(MOD) ACCUMULATOR.$(MOD)
+PLOT_NETCDF.$(MOD): plot_netcdf.o
+
+plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MOD) \
+	GAS_FUNCTIONS.$(MOD) BED_MODULE.$(MOD) MISC_VARS.$(MOD) ACCUMULATOR.$(MOD) \
+	PLOT_CGNS.$(MOD) PLOT_NETCDF.$(MOD)
 PLOT_OUTPUT.$(MOD): plot_output.o
 
 scalars_module.o: scalars_module.f90 MISC_VARS.$(MOD)

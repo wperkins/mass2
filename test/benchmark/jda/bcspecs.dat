@@ -1,0 +1,4 @@
+1 US TABLE FLUX PART "BCFiles/spillbybay.dat" 6 7 8 9 10 11 12 13 14 15 /
+1 US TABLE FLUX PART "BCFiles/q100.dat" 16 30 /
+1 IN WALL VVEL 4 12 31 /
+1 DS TABLE ELEV ALL "BCFiles/stage158.4.dat" /

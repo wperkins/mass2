@@ -213,7 +213,9 @@ READ(cfg_iounit,*)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
 
 READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init
 
-READ(cfg_iounit,*) print_freq, do_accumulate		! printout frequency every print_freq time steps
+READ(cfg_iounit,*) print_freq, do_accumulate ! printout frequency every print_freq time steps
+READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
+READ(cfg_iounit,*) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
 READ(cfg_iounit,*) gage_print_freq
 !--------------------------------------------------------------------------------------------------------
 ! do some pre-processing of the config data
@@ -2748,7 +2750,7 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
   TYPE (block_struct) :: blk
   TYPE (scalar_struct) :: sclr
   TYPE (scalar_bc_spec_struct) :: spec
-  INTEGER, INTENT(OUT) :: xstart
+  INTEGER, INTENT(INOUT) :: xstart
 
   INTEGER :: i, j, jj, con_i, con_j, j_beg, j_end, con_block, x_end
   DOUBLE PRECISION :: tmp

@@ -8,7 +8,8 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Apr  1 14:18:47 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Apr  4 09:04:36 2003 by William A. Perkins <perk@leechong.pnl.gov>
+$Id$
 -------------------------------------------------------------
 
 -------------------------------------------------------------
@@ -137,6 +138,19 @@ distribution file with
 This will make a gzip'd tar file named something like
 mass2-0.30.tar.gz.  It contains the MASS2 distribution and should have
 all the necessary files to build MASS2. 
+
+-------------------------------------------------------------
+CGNS
+-------------------------------------------------------------
+
+MASS2 also requires Version 2.2 of the CGNS library.  This can be
+obtained from http://www.icemcfd.com/cgns.  On Linux platforms, it is
+by default compiled with gcc and g77, and the -fno-second-underscore
+flag is used on g77.  Compile CGNS as follows
+
+    SGI: make SYSTEM=mips4_n32 ==> lib/libcgns.mips4_n32.a
+    Intel Linux: make SYSTEM=linux ==> lib/libcgns.linux.a
+    Alpha Linux: cp Makefile.linux Makefile.alinux; make SYSTEM=alinux ==> lib/libcgns.alinux.a
 
 -------------------------------------------------------------
 old compilation  -- no longer maintained
