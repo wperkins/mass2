@@ -37,5 +37,5 @@ for v in $vars; do
         psxy -O -R  $plotscale -M -N  >> junk.ps
 
     ps2epsi junk.ps $v.eps
-
+    rm junk.ps
 done
