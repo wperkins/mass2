@@ -330,6 +330,12 @@ ALLOCATE(coeff%aw(imax,jmax))		! coeff at loc W in discretization
 ALLOCATE(coeff%an(imax,jmax))		! coeff at loc N in discretization
 ALLOCATE(coeff%as(imax,jmax))		! coeff at loc S in discretization
 ALLOCATE(coeff%bp(imax,jmax))		! coeff at loc P in discretization
+coeff%ap = 0.0
+coeff%ae = 0.0
+coeff%aw = 0.0
+coeff%an = 0.0
+coeff%as = 0.0
+coeff%bp = 0.0
     
 ALLOCATE(coeff%cp(imax,jmax))		! coeff at loc P in discretization  d'
 ALLOCATE(coeff%ce(imax,jmax))		! coeff at loc E in discretization  d'
@@ -340,6 +346,12 @@ ALLOCATE(coeff%dp(imax,jmax))		! coeff at loc P in discretization  d'
 ALLOCATE(coeff%lud(imax,jmax))		! part of p' coeff that has U vel stuff
 ALLOCATE(coeff%lvd(imax,jmax))		! part of p' coeff that has V vel stuff
 ALLOCATE(coeff%source(imax,jmax))	! source term
+coeff%cp = 0.0
+coeff%ce = 0.0
+coeff%cw = 0.0
+coeff%cn = 0.0
+coeff%cs = 0.0
+coeff%bp = 0.0
 
 
 WRITE(status_iounit,*)'completed component allocation for coeff'

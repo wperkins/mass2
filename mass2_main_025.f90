@@ -1541,11 +1541,11 @@ SUBROUTINE hydro(status_flag)
         ! apply zero flow conditions on sides
 
         coeff%bp(:,y_beg) = coeff%bp(:,y_beg) + &
-             &coeff%as(:,y_beg)*block(iblock)%vvel(:,1)
+             &coeff%as(:,y_beg)*0.0 ! block(iblock)%vvel(:,1)
         coeff%as(:,y_beg) = 0
 
         coeff%bp(:,y_end-1) = coeff%bp(:,y_end-1) + &
-             &coeff%an(:,y_end-1)*block(iblock)%vvel(:,y_end)
+             &coeff%an(:,y_end-1)*0.0 ! block(iblock)%vvel(:,y_end)
         coeff%an(:,y_end) = 0.0
 
         CALL solve_tdma(scalar_sweep, x_beg, x_end, y_beg, y_end-1, &

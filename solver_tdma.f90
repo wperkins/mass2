@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 16, 2003 by William A. Perkins
-! Last Change: Tue Jan 28 12:33:40 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Apr 18 07:50:05 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -53,6 +53,9 @@ IMPLICIT NONE
 INTEGER :: i,last,ifp1,k,start,finish
 DOUBLE PRECISION, DIMENSION(start:finish) :: a,b,c,d,sol
 DOUBLE PRECISION :: ptemp(start-1:finish), qtemp(start-1:finish)
+
+ptemp = 0.0
+qtemp = 0.0
 
 DO i=start,finish
 ptemp(i) = b(i)/(a(i) - c(i)*ptemp(i-1))
