@@ -13,7 +13,7 @@ F			read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
 T			do gage print
 T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial water elv.; depth if FALSE
 01-01-1997 05:00:00	start date & time
-01-01-1997 07:59:59	end date & time
+01-01-1997 09:59:59	end date & time
 20.0			delta_t 	! time step (seconds)
 10 10.0		number_hydro_iterations, max_mass_source_sum	! number of internal iterations at a fixed time level
 2			number_scalar_iterations

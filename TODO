@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Oct  3 07:00:06 2002 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Wed Apr 23 12:20:10 2003 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -24,12 +24,6 @@ High Priority:
 
     * arbitrary id's in the scalar source specification, instead of
       consecutive integers
-
-    * check for file existance for all files opened
-
-    * BC and other tables: either (1) make sure that the beginning and
-      ending dates are within the simulation, and crash if not, or (2)
-      just use the first/last values before/after table start/end.
 
     * Open boundary condition for scalars that somehow understands
       flow reversal
@@ -50,18 +44,9 @@ Low Priority:
     * utility to plot gage.nc directly -- perhaps some combination of
       perl script and gnuplot, maybe even with a GUI like pTk.
 
-    * internal mass balance check for contaminants (SAC request)
-
     * add the capability to specify a non-point contaminant source
       that avoids the bed; this could be implemented by just using a
       different keyword (instead of BEDSOUCE) in scalar_source.dat
-
-    * get rid of the stupid multiple makefiles; the first step would
-      be to eliminate the module files as intermediate targets; then a
-      series of special targets could be used to set the target,
-      compiler, and flags; condor compilation may also be included.
-
-    * Read all time series through a single module.
 
     * Open or radiant boundary condition.
 
@@ -72,3 +57,9 @@ Wetting/Drying Issues:
     * Test scalars and wetting and drying, particularly TDG and
       temperature. 
 
+BUGS
+
+    * when a scalar bed source is included in a cell that has a held
+      concentration boundary, the source is cut in half.  This cropped
+      up when ghost cells were added.  Until this is fixed, do not
+      apply scalar bed sources to boundary cells.

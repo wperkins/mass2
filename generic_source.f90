@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 26, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:30:53 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Wed Apr 23 10:44:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -112,7 +112,8 @@ CONTAINS
              WRITE(msg, 100) 'DIFFUS'
              CALL error_message(msg, fatal=.TRUE.)
           END IF
-           READ(options(i+1), *) generic_parse_options%diffusivity
+          READ(options(i+1), *) generic_parse_options%diffusivity
+          i = i + 1
        CASE DEFAULT
           WRITE(msg, *) 'GEN scalar option "', &
                &TRIM(options(i)), '" not understood and ignored'

@@ -52,6 +52,17 @@ TYPE scalar_struct
 	DOUBLE PRECISION, POINTER :: conc(:,:)				! c depth-ave concentration
 	DOUBLE PRECISION, POINTER :: concold(:,:)			! c old depth-ave concentration
     TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
+
+                                ! keep track of the mass of the
+                                ! species in the water column and in
+                                ! the bed
+    DOUBLE PRECISION :: mass, massold
+    DOUBLE PRECISION :: bedmass, bedmassold
+
+                                ! a place to record the accumulated
+                                ! flux of the species into the box
+                                ! (negative means outflow)
+    DOUBLE PRECISION :: netflux
 END TYPE scalar_struct
 
 TYPE species_struct
@@ -138,7 +149,7 @@ END SUBROUTINE allocate_species
 SUBROUTINE allocate_scalar(max_blocks, n, error_iounit,status_iounit)
 
 	IMPLICIT NONE
-	INTEGER :: alloc_stat,error_iounit,status_iounit, n, max_blocks
+	INTEGER :: alloc_stat,error_iounit,status_iounit, n, max_blocks, i
 
 	ALLOCATE(species(n)%scalar(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
@@ -147,6 +158,17 @@ SUBROUTINE allocate_scalar(max_blocks, n, error_iounit,status_iounit)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of scalars'
 	ENDIF
+
+    DO i = 1, max_blocks
+       species(n)%scalar(i)%conc = 0.0
+       species(n)%scalar(i)%concold = 0.0
+       species(n)%scalar(i)%cell(:,:)%type = SCALAR_NORMAL_TYPE
+       species(n)%scalar(i)%netflux = 0.0
+       species(n)%scalar(i)%mass = 0.0
+       species(n)%scalar(i)%bedmass = 0.0
+       species(n)%scalar(i)%massold = 0.0
+       species(n)%scalar(i)%bedmassold = 0.0
+    END DO
 
 END SUBROUTINE allocate_scalar
 

@@ -1,3 +1,34 @@
+2003-04-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* scalars_module.f90: include some places to store mass balance
+	information in scalar record
+
+	* mass2_main_025.f90: use scalar_mass_balance.f90
+
+	* Makefile.am: added scalar_mass_balance.f90
+
+	* generic_source.f90: missing index increment when parsing DIFFUS 
+
+	* mass2.f90: get rid of call to fpinit it was mistakenly left in
+	during the port to the PC.
+
+	* scalar_mass_balance.f90: created
+
+	* test/transport/1d-analytic-1blk/scalar_source.dat: change
+	simulated temperature to generic stuff
+
+	* test/transport/1d-analytic-1blk/plot.gp: change
+	simulated temperature to generic stuff
+
+	* test/transport/1d-advection-1blk/mass2_v027.base: let it run to
+	steady state
+
+	* test/transport/1d-advection-1blk/plot.gp: change
+	simulated temperature to generic stuff
+
+	* test/transport/1d-advection-1blk/scalar_source.dat: change
+	simulated temperature to generic stuff
+
 2003-04-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/benchmark/jda/Makefile: do not remove gage_control.dat

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Fri Apr  4 10:01:12 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Wed Apr 23 12:43:31 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -18,15 +18,14 @@ MODULE plot_cgns
   USE accumulator
 
   IMPLICIT NONE
-
-  INTERFACE 
-    SUBROUTINE cg_goto_f
-	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
-	END SUBROUTINE cg_goto_f
-	SUBROUTINE cg_array_write_f
-	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
-	END SUBROUTINE cg_array_write_f
-  END INTERFACE
+!!$  INTERFACE 
+!!$    SUBROUTINE cg_goto_f
+!!$	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
+!!$	END SUBROUTINE cg_goto_f
+!!$	SUBROUTINE cg_array_write_f
+!!$	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
+!!$	END SUBROUTINE cg_array_write_f
+!!$  END INTERFACE
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"

@@ -10,7 +10,7 @@ F			debug		! extra debug printing
 T			manning		! switch between manning or chezy bottom friction equation
 F	100000	write_restart_file	! write out a binary restart file "restart.bin"
 F			read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
-F			do gage print
+T			do gage print
 T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial water elv.; depth if FALSE
 04-01-1996 00:00:00	start date & time
 04-01-1996 23:59:59	end date & time

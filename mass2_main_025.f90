@@ -40,8 +40,8 @@ USE gas_functions
 
 USE misc_vars
 USE transport_only
-USE scalars_source
 USE bed_module
+USE scalar_mass
 
 !-------------------------------------------------------------------------------------------------------
 
@@ -235,6 +235,7 @@ IF(do_transport)THEN
 	CALL set_scalar_block_connections(max_blocks, max_species)
     CALL scalar_source_read()
     IF (source_doing_sed) CALL bed_initialize()
+    CALL scalar_mass_init()
 
 ! transport only mode
   IF(.NOT. do_flow)THEN
@@ -2900,6 +2901,7 @@ IF (do_transport) THEN
               = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
       END DO
    END DO
+   CALL scalar_mass_balance(delta_t)
    IF (source_doing_sed) CALL bed_accounting(delta_t)
 END IF
 
@@ -3068,6 +3070,7 @@ IF(do_gage_print)THEN
             &DBLE((current_time%time - start_time%time)*24), &
             &do_transport, salinity, baro_press)
        CALL mass_print(current_time%date_string, current_time%time_string)
+       IF (do_transport) CALL scalar_mass_print(current_time)
 ! 3011 FORMAT(i5,5x)
 ! 3005 FORMAT('#date',8x,'time',5x)
 

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Wed Apr 16 13:23:35 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Apr 21 14:46:05 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 SUBDIRS = @SUBDIRS@
@@ -46,7 +46,8 @@ mass2_SOURCES =									\
 	 bed_functions.f90							\
 	 accumulator.f90							\
 	 total_conc.f90								\
-	 solver_tdma.f90
+	 solver_tdma.f90 \
+	 scalar_mass_balance.f90
 mass2_LDADD = time_series/libts.a
 
 # dependancies for individual object files
@@ -83,8 +84,7 @@ mass2_main_025.o: mass2_main_025.f90 \
 	global_module_023.o io_routines_module.o block_bc_module.o table_bc_module.o \
 	 scalars_module.o met_data_module.o energy_flux_module.o \
 	gas_functions_module.o plot_output.o gage_output_module.o misc_vars_module.o \
-	transport_only_module.o scalars_source.o bed.o accumulator.o
-mass2_main_025.$(MOD): mass2_main_025.o
+	transport_only_module.o scalars_source.o bed.o accumulator.o scalar_mass_balance.o
 
 mass2.o: mass2.f90 mass2_main_025.o
 
@@ -108,6 +108,9 @@ plot_netcdf.o: plot_netcdf.f90 global_module_023.o scalars_module.o \
 plot_output.o: plot_output.f90 global_module_023.o scalars_module.o \
 	scalars_source.o bed.o misc_vars_module.o accumulator.o \
 	gas_functions_module.o plot_cgns.o plot_netcdf.o
+
+scalar_mass_balance.o: scalar_mass_balance.f90 global_module_023.o \
+	scalars_source.o bed.o
 
 scalars_module.o: scalars_module.f90 misc_vars_module.o
 
