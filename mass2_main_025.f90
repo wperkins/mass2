@@ -80,11 +80,10 @@ INTEGER :: status_flag, var
 !-------------------------------------------------------------------------------------------------------
 ! open io units
 
-OPEN(cfg_iounit,file='mass2_v027.cfg')
-OPEN(output_iounit,file='output.out', access='sequential', RECL=1024)
-OPEN(error_iounit,file='error-warning.out')
-OPEN(status_iounit,file='status.out')
-! OPEN(mass_source_iounit,file='mass_source_monitor.out')
+CALL open_existing('mass2_v027.cfg', cfg_iounit)
+CALL open_new('output.out', output_iounit)
+CALL open_new('error-warning.out', error_iounit)
+CALL open_new('status.out', status_iounit)
 !-----------------------------------------------------------------------------------
 ! write info to the console
 WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -108,7 +107,7 @@ ALLOCATE(grid_file_name(max_blocks))
 
 DO iblock=1,max_blocks
 	READ(cfg_iounit,*)grid_file_name(iblock)
-	OPEN(grid_iounit,file=grid_file_name(iblock))
+    CALL open_existing(grid_file_name(iblock), grid_iounit)
 	READ(grid_iounit,*)block(iblock)%xmax,block(iblock)%ymax
 	CLOSE(grid_iounit)
 END DO
@@ -274,9 +273,9 @@ END IF
 !---------------------------------------------------------------------------------------------------------
 ! read in the grid files for each block
 DO iblock=1,max_blocks
-   OPEN(grid_iounit,file=grid_file_name(iblock))	
+   CALL open_existing(grid_file_name(iblock), grid_iounit)
    READ(grid_iounit,*)junk
-   WRITE(status_iounit,*)'reading in x,y,z for block n = ',iblock
+   CALL status_message('reading in x,y,z from ' // grid_file_name(iblock))
 	 
    ! read in grid x,y, and bottom elevation
    DO i=1,block(iblock)%xmax
@@ -358,8 +357,8 @@ END DO
 IF(read_hotstart_file)THEN
 	! OPEN(unit=hotstart_iounit,file='hotstart.bin', form='binary')
 	! OPEN(unit=hotstart_iounit,file='hotstart.bin',form='unformatted')
-	OPEN(unit=hotstart_iounit,file='hotstart.bin',form='formatted')
-	WRITE(status_iounit,*)'-- reading hotstart file'
+   CALL open_existing('hotstart.bin', hotstart_iounit)
+   CALL status_message('reading hotstart file')
 	READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
 	DO iblock=1,max_blocks
     READ(hotstart_iounit,*) block(iblock)%uvel

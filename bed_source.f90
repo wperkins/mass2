@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August  2, 2000 by William A. Perkins
-! Last Change: Tue Mar 19 08:47:39 2002 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Apr  4 21:35:46 2003 by William A. Perkins <perk@localhost.localdomain>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$
@@ -24,6 +24,9 @@
 MODULE bed_source
 
   USE table_boundary_conditions
+  USE utility
+
+  IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
@@ -100,25 +103,19 @@ CONTAINS
   SUBROUTINE bedsrc_read_ts(rec)
 
     USE globals, ONLY: max_blocks
-    USE misc_vars, ONLY: restart_iounit, error_iounit, status_iounit
+    USE misc_vars, ONLY: restart_iounit
 
     IMPLICIT NONE
     TYPE(bedsrc_rec) :: rec
     INTEGER :: i, count, istat
     INTEGER :: id
-    CHARACTER (LEN=1024) :: filename
+    CHARACTER (LEN=1024) :: filename, buffer
 
     count = 0
 
-	OPEN(restart_iounit,FILE=rec%ts_list_file, STATUS='old', IOSTAT=istat, FORM='formatted')
-    IF (istat .NE. 0) THEN
-       WRITE(*,*) 'FATAL ERROR: cannot open bed source list file ', &
-            &TRIM(rec%ts_list_file)
-       WRITE(error_iounit,*) 'FATAL ERROR: cannot open bed source list file ', &
-            &TRIM(rec%ts_list_file)
-       CALL EXIT(8)
-    END IF
-    WRITE(status_iounit, *) 'reading bed source time series files from ', TRIM(rec%ts_list_file)
+    CALL open_existing(rec%ts_list_file, restart_iounit)
+    CALL status_message('reading bed source time series files from ' //&
+         & TRIM(rec%ts_list_file))
 
                                 ! read it once to get a count
 
@@ -129,14 +126,12 @@ CONTAINS
 100 CONTINUE
 
     IF (count .le. 0) THEN
-       WRITE(error_iounit, *) 'FATAL ERROR: unable to read bed source time series list from ', &
-            &TRIM(rec%ts_list_file)
-       WRITE(*, *) 'FATAL ERROR: unable to read bed source time series list from ', &
-            &TRIM(rec%ts_list_file)
-       CALL EXIT(8)
+       CALL error_message('unable to read bed source time series list from ' // &
+            &TRIM(rec%ts_list_file), fatal=.TRUE.)
     ELSE
-       WRITE(status_iounit, *) 'counted ', count, ' time series names from ', &
+       WRITE(buffer, *) 'counted ', count, ' time series names from ', &
             &TRIM(rec%ts_list_file)
+       CALL status_message(buffer)
     END IF
 
                                 ! do the allocation based on the
@@ -162,8 +157,9 @@ CONTAINS
     END DO
     CLOSE(restart_iounit)
 
-    WRITE(status_iounit, *) 'successfully read ', rec%nts, &
+    WRITE(buffer, *) 'successfully read ', rec%nts, &
          &' time series files specified in ', TRIM(rec%ts_list_file)
+    CALL status_message(buffer)
     
   END SUBROUTINE bedsrc_read_ts
 
@@ -172,25 +168,17 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE bedsrc_read_ts_file(rec)
 
-    USE misc_vars, ONLY: grid_iounit, error_iounit, status_iounit, start_time, end_time
+    USE misc_vars, ONLY: grid_iounit, start_time, end_time
 
     IMPLICIT NONE
     INTEGER :: count
     TYPE(bedsrc_ts_rec) :: rec
     INTEGER :: istat, i
-    CHARACTER (LEN=80) :: junk
+    CHARACTER (LEN=1024) :: junk
     DOUBLE PRECISION :: tmpreal
 
-	OPEN(grid_iounit,FILE=rec%filename, STATUS='old', IOSTAT=istat, FORM='formatted')
-    IF (ISTAT .NE. 0) THEN
-       WRITE(*, *) 'FATAL ERROR: unable to open bed source time series file ',&
-            &TRIM(rec%filename)
-       WRITE(error_iounit, *) 'FATAL ERROR: unable to open bed source time series file ',&
-            &TRIM(rec%filename)
-       CALL EXIT(8)
-    END IF
-
-    WRITE(status_iounit, *) 'reading bed source data from ', TRIM(rec%filename)
+    CALL open_existing(rec%filename, grid_iounit)
+    CALL status_message('reading bed source data from ' // TRIM(rec%filename))
 
     
     count = 0
@@ -212,43 +200,23 @@ CONTAINS
             &rec%data(i)%datetime%time_string)
        rec%data(i)%value(1) = tmpreal
        IF ((i .EQ. 1) .AND. (rec%data(i)%datetime%time .GT. start_time%time)) THEN
-          WRITE(*,*) 'WARNING: bed source time (', rec%data(i)%datetime%date_string, ' ', &
-               &rec%data(i)%datetime%time_string, ') in file ',&
-               &TRIM(rec%filename), ' is past simulation start time'
-          WRITE(error_iounit,*) 'WARNING: bed source time (', rec%data(i)%datetime%date_string, ' ', &
-               &rec%data(i)%datetime%time_string, ') in file ',&
-               &TRIM(rec%filename), ' is past simulation start time'
+          CALL error_message('bed source time (' // rec%data(i)%datetime%date_string // ' ' // &
+               &rec%data(i)%datetime%time_string // ') in file ' // &
+               &TRIM(rec%filename) // ' is past simulation start time')
        ELSE IF ((i .EQ. count) .AND. (rec%data(i)%datetime%time .LT. end_time%time)) THEN
-          WRITE(*,*) 'WARNING: bed source time (', rec%data(i)%datetime%date_string, ' ', &
-               &rec%data(i)%datetime%time_string, ') in file ',&
-               &TRIM(rec%filename), ' is before simulation end time'
-          WRITE(error_iounit,*) 'WARNING: bed source time (', rec%data(i)%datetime%date_string, ' ', &
-               &rec%data(i)%datetime%time_string, ') in file ',&
-               &TRIM(rec%filename), ' is before simulation end time'
+          CALL error_message('bed source time (' // rec%data(i)%datetime%date_string // &
+               & ' ' // rec%data(i)%datetime%time_string // ') in file ' //&
+               &TRIM(rec%filename) // ' is before simulation end time')
        END IF
           
        IF (i .GT. 1) THEN
           IF (rec%data(i)%datetime%time .LT. rec%data(i-1)%datetime%time) THEN
-             WRITE(*,*) 'FATAL ERROR: bed source time series out of order in file ',&
-                  &TRIM(rec%filename)
-             WRITE(error_iounit,*) 'FATAL ERROR: bed source time series out of order in file ',&
-                  &TRIM(rec%filename)
-             CALL EXIT(10)
+             CALL error_message('bed source time series out of order in file ' //&
+                  &TRIM(rec%filename))
           END IF
           IF (rec%data(i)%value(1) .LT. rec%data(i-1)%value(1)) THEN
-             ! WRITE(*,*) 'FATAL ERROR: bed source mass not monotonically increasing in file ',&
-             !      &TRIM(rec%filename)
-             ! WRITE(error_iounit,*) 'FATAL ERROR: bed source mass not monotonically increasing in file ',&
-             !      &TRIM(rec%filename)
-             ! CALL EXIT(10)
-             WRITE(*,*) 'WARNING: bed source mass not monotonically increasing in file ',&
-                  &TRIM(rec%filename)
-             WRITE(error_iounit,*) 'WARNING: bed source mass not monotonically increasing in file ',&
-                  &TRIM(rec%filename)
-             WRITE(*,*) 'WARNING: set ', rec%data(i)%value(1), ' TO ', rec%data(i-1)%value(1), &
-                  &' ON ', rec%data(i)%datetime%date_string, ' ', rec%data(i)%datetime%time_string
-             WRITE(error_iounit,*) 'WARNING: set ', rec%data(i)%value(1), ' TO ', rec%data(i-1)%value(1), &
-                  &' ON ', rec%data(i)%datetime%date_string, ' ', rec%data(i)%datetime%time_string
+             CALL error_message('bed source mass not monotonically increasing in file ' //&
+                  &TRIM(rec%filename))
           END IF
        END IF
     END DO
@@ -256,8 +224,9 @@ CONTAINS
 
     rec%n = count
 
-    WRITE(status_iounit, *) 'successfully read ', count, ' data points from ',&
+    WRITE(junk, *) 'successfully read ', count, ' data points from ',&
          &TRIM(rec%filename)
+    CALL status_message(junk)
        
   END SUBROUTINE bedsrc_read_ts_file
 
@@ -267,37 +236,23 @@ CONTAINS
   SUBROUTINE bedsrc_read_map(rec)
 
     USE globals, ONLY: max_blocks, block
-    USE misc_vars, ONLY: grid_iounit, restart_iounit, error_iounit, status_iounit, &
+    USE misc_vars, ONLY: grid_iounit, restart_iounit, &
          &i_index_min, i_index_extra, j_index_min, j_index_extra
 
     IMPLICIT NONE
 
     TYPE(bedsrc_rec) :: rec
     INTEGER :: istat, iblk, i, j, ijunk, jjunk
-    CHARACTER (LEN = 1024) :: filename
+    CHARACTER (LEN = 1024) :: filename, buffer
     INTEGER :: imin, imax, jmin, jmax
 
-	OPEN(restart_iounit,FILE=rec%map_file, STATUS='old', IOSTAT=istat, FORM='formatted')
-    IF (ISTAT .NE. 0) THEN
-       WRITE(*, *) 'FATAL ERROR: unable to open bed source map file list ',&
-            &TRIM(rec%map_file)
-       WRITE(error_iounit, *) 'FATAL ERROR: unable to open bed source map file list ',&
-            &TRIM(rec%map_file)
-       CALL EXIT(8)
-    END IF
+    CALL open_existing(rec%map_file, restart_iounit)
 
     ALLOCATE(rec%map(max_blocks))
     DO iblk = 1, max_blocks
        READ(restart_iounit, *) filename
-       
-       OPEN(grid_iounit,FILE=filename, STATUS='old', IOSTAT=istat, FORM='formatted')
-       IF (istat .NE. 0) THEN
-          WRITE(*, *) 'FATAL ERROR: unable to open block ', i,  &
-               &' bed source map file ', TRIM(filename)
-          WRITE(error_iounit, *) 'FATAL ERROR: unable to open block ', i,  &
-               &' bed source map file ', TRIM(filename)
-          CALL EXIT(8)
-       END IF
+
+       CALL open_existing(filename, grid_iounit)
 
        imin = i_index_min
        imax = block(iblk)%xmax + i_index_extra
@@ -333,13 +288,10 @@ CONTAINS
                    END IF
                 END DO
                 IF (rec%map(iblk)%tsidx(i,j) .LT. 0) THEN
-                   WRITE(*,*) 'FATAL ERROR: bed source time series id ', &
+                   WRITE(buffer,*) 'bed source time series id ', &
                         &rec%map(iblk)%tsid(i,j), ' not defined in file ', &
                         &TRIM(filename)
-                   WRITE(error_iounit,*) 'FATAL ERROR: bed source time series id ', &
-                        &rec%map(iblk)%tsid(i,j), ' not defined in file ', &
-                        &TRIM(filename)
-                   CALL EXIT(9)
+                   CALL error_message(buffer, fatal=.TRUE.)
                 END IF
              END IF
           END DO

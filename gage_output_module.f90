@@ -25,6 +25,10 @@
 
 MODULE gage_output
 
+  USE utility
+
+  IMPLICIT NONE
+
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   TYPE gage_specs_struct
@@ -898,7 +902,7 @@ CONTAINS
 
     INTEGER iblock
 
-    OPEN(mass_source_iounit,file=mass_source_ioname)
+    CALL open_new(mass_source_ioname, mass_source_iounit)
     WRITE(mass_source_iounit,*)"# mass source history - summation of the mass source in each block "
     WRITE(mass_source_iounit,*)"#      total mass imbalance for each block in ft3/sec"
     WRITE(mass_source_iounit,100,advance='no')

@@ -18,6 +18,7 @@ MODULE transport_only
 
 USE date_time
 USE globals
+USE utility
 
 IMPLICIT NONE
 
@@ -53,37 +54,39 @@ CONTAINS
 !##############################################################################
 
 SUBROUTINE allocate_hydro_interp_blocks(error_iounit, status_iounit)
-	IMPLICIT NONE
-	INTEGER :: alloc_stat,error_iounit,status_iounit
+  IMPLICIT NONE
+  INTEGER :: alloc_stat,error_iounit,status_iounit
 
-	ALLOCATE(hydro_interp(max_blocks), STAT = alloc_stat)
-	IF(alloc_stat /= 0)THEN
-                WRITE(error_iounit,*)'FATAL ERROR : allocate_hydro_interp_blocks'
-		WRITE(error_iounit,*)'-- allocation failed for the array of hydro interp blocks'
-		CALL EXIT(1)
-	ELSE
-                WRITE(status_iounit,*)'INITIALIZATION : allocate_hydro_interp_blocks'
-		WRITE(status_iounit,*)'-- allocation successful for array of hydro interp blocks'
-	ENDIF
+  ALLOCATE(hydro_interp(max_blocks), STAT = alloc_stat)
+  IF(alloc_stat /= 0)THEN
+     CALL error_message('allocate_hydro_interp_blocks: allocation failed for the array of hydro interp blocks', &
+          &fatal=.TRUE.)
+  ELSE
+     CALL status_message('allocate_hydro_interp_blocks: allocation successful for array of hydro interp blocks')
+  END IF
 END SUBROUTINE allocate_hydro_interp_blocks
 
 !##############################################################################
 SUBROUTINE allocate_hydro_interp_comp(n, status_iounit)
-! this routine allocates each component in the array of hydro_interp blocks
-! allows minimal memory use for each block
+  ! this routine allocates each component in the array of hydro_interp blocks
+  ! allows minimal memory use for each block
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
   IMPLICIT NONE
   INTEGER :: n, imin, imax, jmin, jmax, status_iounit	! block number, max i elements, max j elements
+  CHARACTER (LEN=1024) :: buffer
 
   imin = i_index_min
   imax = block(n)%xmax + i_index_extra
   jmin = j_index_min
   jmax = block(n)%ymax + j_index_extra
 
-  WRITE(status_iounit,*)'INITIALIZATION : allocate_hydro_interp_comp'
-  WRITE(status_iounit,*)'    starting component allocation for block number - ',n
-  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  CALL status_message('INITIALIZATION: allocate_hydro_interp_comp')
+  WRITE(buffer,*)'    starting component allocation for block number - ',n
+  CALL status_message(buffer)
+  WRITE(buffer,*)'         maximum number of i elements = ', imax
+  CALL status_message(buffer)
+  WRITE(buffer,*)'         maximum number of j elements = ', jmax
+  CALL status_message(buffer)
 
   ALLOCATE(hydro_interp(n)%uvel_fw(imin:imax,jmin:jmax))
   ALLOCATE(hydro_interp(n)%uvel_bk(imin:imax,jmin:jmax))
@@ -105,19 +108,9 @@ SUBROUTINE read_transport_only_dat(status_iounit, error_iounit)
   IMPLICIT NONE
   INTEGER :: iounit = 50, count, i, status_iounit, error_iounit, alloc_stat
   CHARACTER :: junk_char1(10), junk_char2(8), junk_char3(80)
-  LOGICAL :: file_exist
+  CHARACTER (LEN=1024) :: buffer
 
-  INQUIRE(FILE='transport_only.dat',EXIST=file_exist)
-  IF(file_exist)THEN
-     OPEN(iounit,file='transport_only.dat')
-     WRITE(status_iounit,*)'INTIALIZATION : read_transport_only_dat'
-     WRITE(status_iounit,*)'-- opened transport_only.dat'
-  ELSE
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : read_transport_only_dat'
-     WRITE(error_iounit,*)'-- could not open file transport_only.dat'
-     CALL EXIT(1)
-  ENDIF
+  CALL open_existing('transport_only.dat', iounit)
 
 ! count how many entries are in the transport_only.dat file
 !       and then allocate a date_time struct and filename array to hold these
@@ -133,23 +126,17 @@ SUBROUTINE read_transport_only_dat(status_iounit, error_iounit)
 
   ALLOCATE(hydro_datetime(max_files), STAT = alloc_stat)
   IF(alloc_stat /= 0)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : read_transport_only_dat'
-     WRITE(error_iounit,*)'-- allocation failed for the array of hydro_datetime'
-     CALL EXIT(1)
+     CALL error_message('read_transport_only_dat: allocation failed for hydro_datetime', &
+          &fatal=.TRUE.)
   ELSE
-     WRITE(status_iounit,*)'INITIALIZATION : read_transport_only_dat'
-     WRITE(status_iounit,*)'-- allocation successful for array of hydrodatetime'
+     CALL status_message('read_transport_only_dat: allocation successful for hydrodatetime')
   ENDIF
   ALLOCATE(hydro_filename(max_files), STAT = alloc_stat)
   IF(alloc_stat /= 0)THEN
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : read_transport_only_dat'
-     WRITE(error_iounit,*)'-- allocation failed for the array of hydro_filename'
-     CALL EXIT(1)
+     CALL error_message('read_transport_only_dat: allocation failed for the array of hydro_filename', &
+          &fatal=.TRUE.)
   ELSE
-     WRITE(status_iounit,*)'INITIALIZATION : read_transport_only_dat'
-     WRITE(status_iounit,*)'-- allocation successful for array of hydro_filename'
+     CALL status_message('read_transport_only_dat: allocation successful for array of hydro_filename')
   ENDIF
   
 !
@@ -166,10 +153,9 @@ SUBROUTINE read_transport_only_dat(status_iounit, error_iounit)
 
   RETURN
 
-999  WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : read_transport_only_dat'
-     WRITE(error_iounit,*)'-- a read error on unit=',iounit,' last entry number was i=',i
-     CALL EXIT(1)
+999 WRITE(buffer,*)'read_transport_only_dat: a read error on unit=', &
+         &iounit , ' last entry number was i=', i
+  CALL error_message(buffer, fatal=.TRUE.)
 
 END SUBROUTINE
 
@@ -185,19 +171,18 @@ IMPLICIT NONE
 INTEGER :: i,status_iounit, error_iounit
 DOUBLE PRECISION :: start_time, end_time
 LOGICAL :: file_exist
+CHARACTER (LEN=1024) :: buffer
 
 ! check to be sure all hydro_iterp files exist
 
 DO i=1, max_files
   INQUIRE(FILE=hydro_filename(i),EXIST=file_exist)
   IF(file_exist)THEN
-     WRITE(status_iounit,*)'INTIALIZATION : check_transport_only_dat'
-     WRITE(status_iounit,*)'-- hydro_filename exists: ',hydro_filename(i)
+     CALL status_message('check_transport_only_dat: hydro_filename exists: ' // &
+          & TRIM(hydro_filename(i)))
   ELSE
-     WRITE(*,*)'FATAL ERROR - see error_warning.out'
-     WRITE(error_iounit,*)'FATAL ERROR : check_transport_only_dat'
-     WRITE(error_iounit,*)'-- hydro_filename DOES NOT exist: ', hydro_filename(i)
-     CALL EXIT(1)
+     CALL error_message('check_transport_only_dat: ' // &
+          & hydro_filename(i) // ' hydro_filename DOES NOT exist', fatal=.TRUE.)
   ENDIF
 END DO
 
@@ -348,6 +333,7 @@ SUBROUTINE read_restart(plane_type, plane)
   
   USE misc_vars, ONLY : error_iounit, status_iounit
   USE scalars,   ONLY : max_species
+  USE utility
 
   IMPLICIT NONE
   INTEGER :: plane_type, plane, iblock, hotstart_iounit=50
@@ -360,8 +346,9 @@ SUBROUTINE read_restart(plane_type, plane)
 
   SELECT CASE(plane_type)
      CASE(1) ! read a back plane
-        OPEN(unit=hotstart_iounit,file=hydro_filename(plane),form='formatted')
-	WRITE(status_iounit,*)'-- reading transport only hotstart file: ',hydro_filename(plane)
+        CALL open_existing(hydro_filename(plane), hotstart_iounit)
+        CALL status_message('reading transport only hotstart file: ' // &
+             &TRIM(hydro_filename(plane)))
         READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
         DO iblock=1,max_blocks
            READ(hotstart_iounit,*) hydro_interp(iblock)%uvel_bk
@@ -401,8 +388,9 @@ SUBROUTINE read_restart(plane_type, plane)
 	WRITE(status_iounit,*)'done reading hotstart file for transport only case'
 
      CASE(2)
-                OPEN(unit=hotstart_iounit,file=hydro_filename(plane),form='formatted')
-	WRITE(status_iounit,*)'-- reading transport only hotstart file: ',hydro_filename(plane)
+        CALL open_existing(hydro_filename(plane), hotstart_iounit)
+        CALL status_message('reading transport only hotstart file: ' // &
+             &TRIM(hydro_filename(plane)))
         READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
         DO iblock=1,max_blocks
            READ(hotstart_iounit,*) hydro_interp(iblock)%uvel_fw

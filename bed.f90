@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: Tue Mar 19 09:16:01 2002 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Apr  4 21:46:49 2003 by William A. Perkins <perk@localhost.localdomain>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -18,6 +18,7 @@ MODULE bed_module
   USE scalars_source
   USE scalars
   USE globals
+  USE utility
 
   IMPLICIT NONE
 
@@ -130,12 +131,11 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE bed_sediment_exchange(deltat)
 
-    USE misc_vars, ONLY: error_iounit
-
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: deltat
     INTEGER :: iblk, ifract, i, j, sedidx
     DOUBLE PRECISION :: sconc, e, d
+    CHARACTER (LEN=1024) :: buffer
 
     DO iblk = 1, max_blocks
        DO i = 2, block(iblk)%xmax
@@ -155,12 +155,10 @@ CONTAINS
                    bed(iblk)%sediment(ifract,i,j) = &
                         &bed(iblk)%sediment(ifract,i,j) - e*deltat
                    IF (bed(iblk)%sediment(ifract,i,j) .LT. 0.0) THEN
-                      WRITE(*,*) 'WARNING: negative bed sediment mass ',&
+                      WRITE(buffer,*) 'negative bed sediment mass ',&
                            &bed(iblk)%sediment(ifract,i,j), ' set to zero: fract=',&
                            &ifract, ', block=', iblk, ', i=', i, ', j=', j
-                      WRITE(error_iounit,*) 'WARNING: negative bed sediment mass ',&
-                           &bed(iblk)%sediment(ifract,i,j), ' set to zero: fract=',&
-                           &ifract, ', block=', iblk, ', i=', i, ', j=', j
+                      CALL error_message(buffer)
                       bed(iblk)%sediment(ifract,i,j) = 0.0
                    END IF
                 END IF
@@ -208,13 +206,12 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE bed_particulate_exchange(deltat)
 
-    USE misc_vars, ONLY: error_iounit
-
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: deltat
     INTEGER :: ispecies, ifract, iblk, i, j, sphase, dphase
     DOUBLE PRECISION :: dconc, bconc, pconc, sconc
+    CHARACTER (LEN=1024) :: buffer
 
     INCLUDE 'bed_functions.inc'
 
@@ -256,12 +253,10 @@ CONTAINS
                       bed(iblk)%particulate(ispecies, i, j) = 0.0
                    END IF
                    IF (bed(iblk)%particulate(ispecies, i, j) .LT. 0.0) THEN
-                      WRITE(*,*) 'WARNING: negative particulate mass ',&
+                      WRITE(buffer,*) 'negative particulate mass ',&
                            &bed(iblk)%particulate(ispecies, i, j), ' set to zero: species=',&
                            &ispecies, ', block=', iblk, ', i=', i, ', j=', j
-                      WRITE(error_iounit,*) 'WARNING: negative particulate mass ',&
-                           &bed(iblk)%particulate(ispecies, i, j), ' set to zero: species=',&
-                           &ispecies, ', block=', iblk, ', i=', i, ', j=', j
+                      CALL error_message(buffer)
                       bed(iblk)%particulate(ispecies, i, j) = 0.0
                    END IF
                 END DO
@@ -296,8 +291,6 @@ CONTAINS
   ! SUBROUTINE bed_pore_exchange
   ! ----------------------------------------------------------------
   SUBROUTINE bed_pore_exchange(deltat)
-
-    USE misc_vars, ONLY: error_iounit
 
     IMPLICIT NONE
 
@@ -563,13 +556,12 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE bed_read_hotstart(hiounit)
 
-    USE misc_vars, ONLY: error_iounit
-
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: hiounit
     INTEGER :: hotstart_fractions, hotstart_parts
     INTEGER :: ifract, iblock, ispecies
+    CHARACTER (LEN=1024) :: buffer
 
                                 ! read the number of sediment
                                 ! fractions and particulates from the
@@ -583,21 +575,17 @@ CONTAINS
                                 ! (this may have to change)
 
     IF (hotstart_fractions .NE. sediment_fractions) THEN
-       WRITE(*,*) 'FATAL ERROR: specified number of sediment scalars, ',&
+       WRITE(buffer,*) 'specified number of sediment scalars, ',&
             &sediment_fractions, ', does not match those in hotstart, ',&
             &hotstart_fractions
-       WRITE(error_iounit,*) 'FATAL ERROR: specified number of sediment scalars, ',&
-            &sediment_fractions, ', does not match those in hotstart, ',&
-            &hotstart_fractions
+       CALL error_message(buffer, fatal=.TRUE.)
     END IF
 
     IF (hotstart_parts .NE. particulates) THEN
-       WRITE(*,*) 'FATAL ERROR: specified number of particulate scalars, ',&
+       WRITE(buffer,*) 'specified number of particulate scalars, ',&
             &particulates, ', does not match those in hotstart, ',&
             &hotstart_parts
-       WRITE(error_iounit,*) 'FATAL ERROR: specified number of particulate scalars, ',&
-            &particulates, ', does not match those in hotstart, ',&
-            &hotstart_parts
+       CALL error_message(buffer, fatal=.TRUE.)
     END IF
 
                                 ! if we're OK, read the bed part of
@@ -626,7 +614,7 @@ CONTAINS
   SUBROUTINE bed_read_init()
 
     USE globals, ONLY: max_blocks, block
-    USE misc_vars, ONLY: grid_iounit, restart_iounit, error_iounit, status_iounit
+    USE misc_vars, ONLY: grid_iounit, restart_iounit
 
     IMPLICIT NONE
 
@@ -635,39 +623,28 @@ CONTAINS
     INTEGER :: istat, ijunk, jjunk
     INTEGER :: iblk, i, j, ifract
 
-    CHARACTER (LEN=1024) :: filename
+    CHARACTER (LEN=1024) :: filename, buffer
 
     ALLOCATE(fract(sediment_fractions))
 
- 	OPEN(restart_iounit,FILE=bed_init_file, STATUS='old', IOSTAT=istat, FORM='formatted')
-    IF (ISTAT .NE. 0) THEN
-       WRITE(*, *) 'FATAL ERROR: unable to initial bed file ', TRIM(bed_init_file)
-       WRITE(error_iounit, *) 'FATAL ERROR: unable to initial bed file ', TRIM(bed_init_file)
-       CALL EXIT(8)
-    END IF
-
-    WRITE(status_iounit, *) 'reading initial bed data from ', TRIM(bed_init_file)
+    CALL open_existing(bed_init_file, restart_iounit)
+    CALL status_message('reading initial bed data from ' // TRIM(bed_init_file))
 
     DO iblk = 1, max_blocks
        READ(restart_iounit, *) filename
-       
-       OPEN(grid_iounit,FILE=filename, STATUS='old', IOSTAT=istat, FORM='formatted')
-       IF (istat .NE. 0) THEN
-          WRITE(*, *) 'FATAL ERROR: unable to open block ', i,  &
-               &' initial bed map file ', TRIM(filename)
-          WRITE(error_iounit, *) 'FATAL ERROR: unable to open block ', i,  &
-               &' initial bed map file ', TRIM(filename)
-          CALL EXIT(8)
-       END IF
+
+       CALL open_existing(filename, grid_iounit)
 
        READ(grid_iounit, *)  ijunk, jjunk ! skip first line
        IF (ijunk .NE. block(iblk)%xmax - 1 .OR. jjunk .NE. block(iblk)%ymax - 1) THEN
-          WRITE(*,*) 'WARNING: x and y max values on first line of ', &
+          WRITE(buffer,*) 'WARNING: x and y max values on first line of ', &
                &TRIM(filename), ' do not match that for block ', iblk
+          CALL error_message(buffer)
        END IF
-
-       WRITE(status_iounit, *) 'reading initial bed data for block ', iblk, &
+       
+       WRITE(buffer, *) 'reading initial bed data for block ', iblk, &
             &' from ', TRIM(bed_init_file)
+       CALL status_message(buffer)
 
        DO i = 2, block(iblk)%xmax
           DO j = 2, block(iblk)%ymax

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November 19, 1998 by William A. Perkins
-! Last Change: Thu May  2 08:31:23 2002 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Apr  4 15:40:12 2003 by William A. Perkins <perk@localhost.localdomain>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -87,6 +87,7 @@ SUBROUTINE profile_init(given_initial_wsel, manning, mann_con, status_iounit)
 
   USE globals
   USE misc_vars, ONLY: do_wetdry, dry_zero_depth
+  USE utility
 
   IMPLICIT NONE
 
@@ -109,10 +110,12 @@ SUBROUTINE profile_init(given_initial_wsel, manning, mann_con, status_iounit)
 
   ALLOCATE(z(imax,jmax))
 
-  OPEN(list_iounit,file=list_file_name)
+  CALL open_existing(list_file_name, list_iounit)
+
   DO iblock = 1, max_blocks
      READ(list_iounit, *) profile_file_name
-     OPEN(grid_iounit,file=profile_file_name)	
+
+     CALL open_existing(profile_file_name, grid_iounit)
 
                                 ! first line ignored
 

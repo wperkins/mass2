@@ -1,5 +1,20 @@
 2003-04-04  William A. Perkins  <william.perkins@pnl.gov>
 
+	* transport_only_module.f90: CALL open_existing instead of
+	directly OPENing file; CALL error_message and status_message
+
+	* tdg_source.f90 (tdg_read_param): CALL open_existing instead of
+	directly OPENing file; CALL status_message instead of WRITEing
+
+	* bed.f90: CALL open_existing instead of directly OPENing
+	files; CALL error_message and status_message instead of WRITEing 
+
+	* bed_source.f90: CALL open_existing instead of directly OPENing
+	files; CALL error_message and status_message instead of WRITEing
+
+	* profile_init.f90 (profile_init): CALL open_existing instead of
+	directly OPENing a the file
+
 	* plot_cgns.f90: CALL error_message instead of writing to
 	error_iounit. 
 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 24, 2000 by William A. Perkins
-! Last Change: Wed Jul 26 13:01:41 2000 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Fri Apr  4 21:56:41 2003 by William A. Perkins <perk@localhost.localdomain>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -89,7 +89,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE tdg_read_param(tdg_rec, filename)
     USE misc_vars, ONLY: grid_iounit, status_iounit
-
+    USE utility
     IMPLICIT NONE
 
     TYPE(tdg_source_rec) :: tdg_rec
@@ -97,10 +97,11 @@ CONTAINS
 
     INTEGER :: istat
 
-	OPEN(grid_iounit,FILE=filename, STATUS='old', IOSTAT=istat)
+    CALL open_existing(filename, grid_iounit)
 	READ(grid_iounit,*)tdg_rec%gasx_a, tdg_rec%gasx_b, tdg_rec%gasx_c, tdg_rec%gasx_d
 	CLOSE(grid_iounit)
-	WRITE(status_iounit,*)'completed reading surface gas exchange coefficients'
+    CALL status_message('completed reading surface gas exchange coefficients from ' // &
+         &TRIM(filename))
 
   END SUBROUTINE tdg_read_param
 
