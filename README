@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Apr 17 11:52:38 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Apr 25 12:45:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -148,6 +148,20 @@ The options specific to the compilation of MASS2 are as follows:
     --enable-profile
 
         Turn on profiling.
+
+    --with-extra-fflags=flags
+
+        Use the specified flags in addition to the flags added by the
+        above options.  This is mostly used to add CPU specific
+        optimization options.  For example, with the Intel ia32
+        compiler, these flags are used to compile two different
+        executables specialized for the Pentium 3 and Pentium 4:
+
+            P3: -tpp6 -xK
+            P4: -tpp7 -xW
+
+        The same thing can be accomplished by setting F90FLAGS or
+        FFLAGS in the environment before running configure.
 
     --with-netcdf=dir
 

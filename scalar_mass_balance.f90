@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created April 17, 2003 by William A. Perkins
-! Last Change: Wed Apr 23 09:15:48 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Apr 24 14:55:03 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -339,7 +339,14 @@ CONTAINS
     INTEGER :: iblock, ispecies, phases, iphase
     INTEGER, PARAMETER :: iounit = 15
     CHARACTER (LEN=1024) :: buffer, timestr
+
+                                ! these variables hold the sum of all
+                                ! phases in a single block
     DOUBLE PRECISION :: tmass, tbedmass, tflux, terr, merr
+
+                                ! these variables hold the sum of
+                                ! masses for all blocks
+    DOUBLE PRECISION, DIMENSION(max_species) :: allmass, allbedmass, allflux, allerr
 
                                 ! compute only block masses,
                                 ! additional fluxes are zero
@@ -347,11 +354,24 @@ CONTAINS
     
     CALL date_format(now%time, timestr)
 
+    allmass = 0.0
+    allbedmass = 0.0
+    allflux = 0.0
+    allerr = 0.0
+
     DO ispecies = 1, max_species
+
+                                ! open a file for each generic or
+                                ! sediment scalar
+       SELECT CASE (scalar_source(ispecies)%srctype)
+       CASE (GEN, SED)
+          OPEN(unit=iounit, FILE=filename(ispecies), ACTION='WRITE', POSITION='APPEND')
+       CASE DEFAULT
+       END SELECT
+
        DO iblock = 1, max_blocks
           SELECT CASE (scalar_source(ispecies)%srctype)
           CASE (GEN, SED)
-             OPEN(unit=iounit, FILE=filename(ispecies), ACTION='WRITE', POSITION='APPEND')
              WRITE(iounit, 120, ADVANCE='NO') timestr, &
                   &scalar_source(ispecies)%name, iblock
              merr = species(ispecies)%scalar(iblock)%netflux - &
@@ -363,11 +383,22 @@ CONTAINS
                   &species(ispecies)%scalar(iblock)%mass, &
                   &species(ispecies)%scalar(iblock)%bedmass, &
                   &species(ispecies)%scalar(iblock)%netflux, merr
+
+                                ! add to sum of all phases in block
              tmass = species(ispecies)%scalar(iblock)%mass
              tbedmass = species(ispecies)%scalar(iblock)%bedmass
              tflux = species(ispecies)%scalar(iblock)%netflux
              terr = merr
 
+                                 ! increment sum of all blocks
+             allmass(ispecies) = allmass(ispecies) + &
+                  &species(ispecies)%scalar(iblock)%mass
+             allbedmass(ispecies) = allbedmass(ispecies) + &
+                  &species(ispecies)%scalar(iblock)%bedmass
+             allflux(ispecies) = allflux(ispecies) + &
+                  &species(ispecies)%scalar(iblock)%netflux
+             allerr(ispecies) = allerr(ispecies) + merr
+                  
                                 ! reset the flux accumulator
              species(ispecies)%scalar(iblock)%netflux = 0.0
        CASE DEFAULT
@@ -394,6 +425,15 @@ CONTAINS
                    tbedmass = tbedmass + species(iphase)%scalar(iblock)%bedmass
                    tflux = tflux + species(iphase)%scalar(iblock)%netflux
                    terr = terr + merr
+                                 ! increment sum of all blocks
+                   allmass(iphase) = allmass(iphase) + &
+                        &species(iphase)%scalar(iblock)%mass
+                   allbedmass(iphase) = allbedmass(iphase) + &
+                        &species(iphase)%scalar(iblock)%bedmass
+                   allflux(iphase) = allflux(iphase) + &
+                        &species(iphase)%scalar(iblock)%netflux
+                   allerr(iphase) = allerr(iphase) + merr
+
                                 ! reset the flux accumulator
                    species(iphase)%scalar(iblock)%netflux = 0.0
                 END IF
@@ -406,12 +446,50 @@ CONTAINS
        END SELECT
        WRITE(iounit, *)
     END DO
+
+                                ! write a summary for all blocks
+    SELECT CASE (scalar_source(ispecies)%srctype)
+    CASE (GEN, SED)
+       WRITE (iounit, 121, ADVANCE='NO') timestr, scalar_source(ispecies)%name, '_ALL_'
+       WRITE (iounit, 130, ADVANCE='NO') allmass(ispecies), &
+            &allbedmass(ispecies), allflux(ispecies), allerr(ispecies)
+       tmass = allmass(ispecies)
+       tbedmass = allbedmass(ispecies)
+       tflux = allflux(ispecies)
+       terr = allerr(ispecies)
+    CASE DEFAULT
+    END SELECT
+       
+    SELECT CASE (scalar_source(ispecies)%srctype)
+    CASE (GEN)
+       phases = 1
+       DO iphase = ispecies + 1, max_species
+          SELECT CASE (scalar_source(iphase)%srctype)
+          CASE (PART)
+             phases = phases + 1
+             IF (scalar_source(iphase)%part_param%disidx .EQ. ispecies) THEN
+                WRITE (iounit, 130, ADVANCE='NO') allmass(iphase), &
+                     &allbedmass(iphase), allflux(iphase), allerr(iphase)
+                tmass = allmass(iphase)
+                tbedmass = allbedmass(iphase)
+                tflux = allflux(iphase)
+                terr = allerr(iphase)
+             END IF
+          END SELECT
+       END DO
+    END SELECT
+       
+    IF (phases .GT. 1) THEN
+       WRITE(iounit, 130, ADVANCE='NO') tmass, tbedmass, tflux, terr
+    END IF
+    WRITE(iounit, *)
     CLOSE(iounit)
  END DO
     
 
   
 120 FORMAT(A25, ' ', A10, ' ', I5)
+121 FORMAT(A25, ' ', A10, ' ', A5)
 130 FORMAT(4(' ', E10.4))
   END SUBROUTINE scalar_mass_print
 

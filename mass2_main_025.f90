@@ -42,6 +42,7 @@ USE misc_vars
 USE transport_only
 USE bed_module
 USE scalar_mass
+USE julian
 
 !-------------------------------------------------------------------------------------------------------
 
@@ -120,10 +121,10 @@ CALL allocate_coeff_components(imax, jmax, status_iounit)
 
 ! allocate scalar species stuff
 
-CALL allocate_species(error_iounit,status_iounit)
+CALL allocate_species()
 
 DO i = 1, max_species
-	CALL allocate_scalar(max_blocks, i, error_iounit,status_iounit)
+	CALL allocate_scalar(max_blocks, i)
 END DO
 
 DO i=1, max_species
@@ -173,6 +174,8 @@ READ(cfg_iounit,*)given_initial_wsel, read_initial_profile	! if TRUE then wsel_o
 
 READ(cfg_iounit,*)start_time%date_string, start_time%time_string	! model start date & time 
 READ(cfg_iounit,*)end_time%date_string, end_time%time_string			! model end date & time
+
+
 READ(cfg_iounit,*)delta_t 		! time step (seconds)
 
 
@@ -223,6 +226,8 @@ mann_con = mann_con**2
 
 start_time%time = date_to_decimal(start_time%date_string,start_time%time_string)
 end_time%time = date_to_decimal(end_time%date_string,end_time%time_string)
+i = year(end_time%time)
+IF (i .GT. 999) CALL date_time_flags(ydigits = INT(LOG10(REAL(i)) + 1))
 current_time = start_time
 
 !---------------------------------------------------------------------------------

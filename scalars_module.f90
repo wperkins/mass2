@@ -121,6 +121,13 @@ SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax)
   ELSE
      CALL status_message('allocation successful for cell type')
   ENDIF
+  species(i)%scalar(block)%cell(:,:)%type = SCALAR_NORMAL_TYPE
+
+  species(i)%scalar(block)%netflux = 0.0
+  species(i)%scalar(block)%mass = 0.0
+  species(i)%scalar(block)%bedmass = 0.0
+  species(i)%scalar(block)%massold = 0.0
+  species(i)%scalar(block)%bedmassold = 0.0
 
   WRITE(msg,*)'completed component allocation for scalars block number - ', block
   CALL status_message(msg)
@@ -129,46 +136,36 @@ END SUBROUTINE allocate_scalarblock_components
 
 !#####################################################################################################
 
-SUBROUTINE allocate_species(error_iounit,status_iounit)
+SUBROUTINE allocate_species()
 
 	IMPLICIT NONE
-	INTEGER :: alloc_stat,error_iounit,status_iounit
+	INTEGER :: alloc_stat
+    CHARACTER (LEN=1024) :: msg
 
 	ALLOCATE(species(max_species), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the array of species - max_species=', max_species
-		CALL EXIT(1)
+       WRITE(msg,*)'allocation failed for array of species - max_species=', max_species
+       CALL error_message(msg)
 	ELSE
-		WRITE(status_iounit,*)'allocation successful for array of species - max_species=', max_species
+       WRITE(msg,*)'allocation successful for array of species - max_species=', max_species
+       CALL status_message(msg)
 	ENDIF
 
 END SUBROUTINE allocate_species
 
 !####################################################################################################
 
-SUBROUTINE allocate_scalar(max_blocks, n, error_iounit,status_iounit)
+SUBROUTINE allocate_scalar(max_blocks, n)
 
 	IMPLICIT NONE
-	INTEGER :: alloc_stat,error_iounit,status_iounit, n, max_blocks, i
+	INTEGER :: alloc_stat, n, max_blocks, i
 
 	ALLOCATE(species(n)%scalar(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the array of scalars'
-		CALL EXIT(1)
+       CALL error_message('allocation failed for the array of scalars', fatal=.TRUE.)
 	ELSE
-		WRITE(status_iounit,*)'allocation successful for array of scalars'
+       CALL status_message('allocation successful for array of scalars')
 	ENDIF
-
-    DO i = 1, max_blocks
-       species(n)%scalar(i)%conc = 0.0
-       species(n)%scalar(i)%concold = 0.0
-       species(n)%scalar(i)%cell(:,:)%type = SCALAR_NORMAL_TYPE
-       species(n)%scalar(i)%netflux = 0.0
-       species(n)%scalar(i)%mass = 0.0
-       species(n)%scalar(i)%bedmass = 0.0
-       species(n)%scalar(i)%massold = 0.0
-       species(n)%scalar(i)%bedmassold = 0.0
-    END DO
 
 END SUBROUTINE allocate_scalar
 
