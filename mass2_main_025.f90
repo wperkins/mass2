@@ -142,9 +142,9 @@ qtemp = 0.0
 ! read, allocate, and set up block and table boundary conditions
 
 ! read hydrodynamics related stuff
-CALL allocate_block_bc(max_blocks, error_iounit, status_iounit)
+CALL allocate_block_bc(max_blocks)
 
-CALL read_bcspecs(bcspec_iounit, error_iounit, status_iounit, block%xmax, block%ymax)
+CALL read_bcspecs(bcspec_iounit, max_blocks, block%xmax, block%ymax)
 
 CALL read_bc_tables
 
@@ -228,10 +228,11 @@ current_time = start_time
 !---------------------------------------------------------------------------------
 IF(do_transport)THEN
 ! read species related stuff
-	CALL allocate_scalar_block_bc(max_blocks, error_iounit, status_iounit)
-	CALL read_scalar_bcspecs(bcspec_iounit, error_iounit, status_iounit, block%xmax, block%ymax)
-	CALL read_scalar_bc_tables
-	CALL set_scalar_block_connections(max_blocks, max_species, error_iounit, status_iounit)
+	CALL allocate_scalar_block_bc(max_blocks)
+	CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
+         &block%xmax, block%ymax)
+	CALL read_scalar_bc_tables()
+	CALL set_scalar_block_connections(max_blocks, max_species)
     CALL scalar_source_read()
     IF (source_doing_sed) CALL bed_initialize()
 

@@ -1,6 +1,6 @@
 #!MC 900
 $!VarSet |LFDSRN1| = 'CGNS Loader'
-$!VarSet |LFDSFN1| = '"plot000.cgns" "-AVE" "A" "-ZSET" "0,1,2,3,4,5,6," "-VSET" "0,1,2,3,4,5,6,7,8,9,10,"'
+$!VarSet |LFDSFN1| = '"plot000.cgns" "-AVE" "A" "-ZSET" "0,1,2,3,4,5,6," "-VSET" "0,1,2,3,4,5,6,7,8,9,10,11,"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE
@@ -57,16 +57,16 @@ $!FRAMELAYOUT
   HEADERCOLOR = RED
   XYPOS
     {
-    X = 0.5
-    Y = 0.5
+    X = 0.75
+    Y = 0.75
     }
-  WIDTH = 10
-  HEIGHT = 7.5
+  WIDTH = 9.5
+  HEIGHT = 7
 $!FRAMEMODE  = TWOD
 $!FRAMENAME  = 'Frame 001' 
 $!ACTIVEFIELDZONES  =  [7]
 $!GLOBALCONTOUR 
-  VAR = 9
+  VAR = 6
   LEGEND
     {
     SHOW = YES
@@ -93,15 +93,15 @@ $!GLOBALCONTOUR
     }
   COLORCUTOFF
     {
-    RANGEMIN = 28.7567517906
-    RANGEMAX = 85.9102553576
+    RANGEMIN = 28.694581762
+    RANGEMAX = 85.7237452716
     }
   COLORMAPFILTER
     {
     CONTINUOUSCOLOR
       {
       CMIN = 0.180000007153
-      CMAX = 114.487007141
+      CMAX = 114.238327026
       }
     }
 $!CONTOURLEVELS NEW
@@ -123,9 +123,9 @@ $!CONTOURLEVELS NEW
 71.9685673001
 100
 $!GLOBALTWODVECTOR 
-  UVAR = 7
-  VVAR = 8
-  RELATIVELENGTH = 82.9189381807
+  UVAR = 4
+  VVAR = 5
+  RELATIVELENGTH = 83.6411242199
 $!BLANKING 
   VALUE
     {
@@ -133,22 +133,30 @@ $!BLANKING
     BLANKENTIRECELL = NO
     CONSTRAINT 1
       {
+      RELOP = GREATERTHANOREQUAL
+      VALUECUTOFF = 0.5
+      VARA = 14
+      }
+    CONSTRAINT 2
+      {
       INCLUDE = YES
       RELOP = GREATERTHANOREQUAL
       VALUECUTOFF = 0.5
-      VARA = 17
+      VARA = 15
+      SHOW = YES
+      LINEPATTERN = DASHED
+      LINETHICKNESS = 0.02
       }
     }
 $!FIELD  [1]
   MESH
     {
-    COLOR = BLACK
+    COLOR = RED
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = RED
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -168,7 +176,7 @@ $!FIELD  [1]
     }
   BOUNDARY
     {
-    COLOR = RED
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -184,13 +192,12 @@ $!FIELD  [1]
 $!FIELD  [2]
   MESH
     {
-    COLOR = BLACK
+    COLOR = GREEN
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = GREEN
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -210,7 +217,7 @@ $!FIELD  [2]
     }
   BOUNDARY
     {
-    COLOR = GREEN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -226,13 +233,12 @@ $!FIELD  [2]
 $!FIELD  [3]
   MESH
     {
-    COLOR = BLACK
+    COLOR = BLUE
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = BLUE
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -252,7 +258,7 @@ $!FIELD  [3]
     }
   BOUNDARY
     {
-    COLOR = BLUE
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -268,13 +274,12 @@ $!FIELD  [3]
 $!FIELD  [4]
   MESH
     {
-    COLOR = BLACK
+    COLOR = CYAN
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = CYAN
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -294,7 +299,7 @@ $!FIELD  [4]
     }
   BOUNDARY
     {
-    COLOR = CYAN
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -310,13 +315,12 @@ $!FIELD  [4]
 $!FIELD  [5]
   MESH
     {
-    COLOR = BLACK
+    COLOR = YELLOW
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = YELLOW
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -336,7 +340,7 @@ $!FIELD  [5]
     }
   BOUNDARY
     {
-    COLOR = YELLOW
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -352,13 +356,12 @@ $!FIELD  [5]
 $!FIELD  [6]
   MESH
     {
-    COLOR = BLACK
+    COLOR = PURPLE
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = PURPLE
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -378,7 +381,7 @@ $!FIELD  [6]
     }
   BOUNDARY
     {
-    COLOR = PURPLE
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -394,13 +397,12 @@ $!FIELD  [6]
 $!FIELD  [7]
   MESH
     {
-    COLOR = BLACK
+    COLOR = RED
     }
   CONTOUR
     {
     CONTOURTYPE = FLOOD
-    COLOR = RED
-    USELIGHTINGEFFECT = YES
+    COLOR = BLACK
     }
   VECTOR
     {
@@ -420,7 +422,7 @@ $!FIELD  [7]
     }
   BOUNDARY
     {
-    COLOR = RED
+    COLOR = BLACK
     }
   VOLUMEMODE
     {
@@ -454,8 +456,8 @@ $!TWODAXIS
     SHOWAXIS = NO
     AXISPOSITION = 0
     RANGEMIN = 1943528.782
-    RANGEMAX = 1952238.53478
-    GRSPACING = 1000
+    RANGEMAX = 1952394.06608
+    GRSPACING = 2500
     }
   YDETAIL
     {
@@ -463,12 +465,12 @@ $!TWODAXIS
     AXISPOSITION = 0
     RANGEMIN = 742493.323029
     RANGEMAX = 749025.637611
-    GRSPACING = 500
+    GRSPACING = 1000
     }
 $!GLOBALISOSURFACE 
-  ISOVALUE1 = 28.7567517906
-  ISOVALUE2 = 57.3335035741
-  ISOVALUE3 = 85.9102553576
+  ISOVALUE1 = 28.694581762
+  ISOVALUE2 = 57.2091635168
+  ISOVALUE3 = 85.7237452716
 $!FIELDLAYERS 
   SHOWMESH = NO
   SHOWCONTOUR = YES

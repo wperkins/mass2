@@ -1,3 +1,20 @@
+2003-04-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90: adjust for changes to routines in
+	block_bc_module.f90 
+
+	* block_bc_module.f90: check the language of the bcspecs.dat and
+	scalar_bcspecs.dat files when read; eliminate the use of
+	error_iounit and status_iounit
+
+2003-04-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/jda/bcspecs.dat: use a DEAD zone
+
+	* test/benchmark/mcn-test/BCFiles/MCN_FBZ.prn: Had the wrong
+	period; found when time series code was replaced. Previous
+	simulation results from this case cannot be trusted.
+
 2003-04-08  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2.f90: close the error and status output files AFTER
