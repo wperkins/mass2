@@ -429,27 +429,43 @@ END SUBROUTINE set_block_connections
 ! ----------------------------------------------------------------
 LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
 
+  USE misc_vars, ONLY: debug
   IMPLICIT NONE
 
   TYPE (bc_spec_struct), INTENT(INOUT) :: bc
   TYPE (bc_spec_struct), INTENT(IN) :: conbc
   INTEGER :: i, coni, j, conj, n, cells, concells
   DOUBLE PRECISION :: x1, y1, x2, y2, rdist
+  CHARACTER (LEN=1024) :: msg
 
   DOUBLE PRECISION :: distance
   EXTERNAL distance
 
   check_hydro_block_connection = .FALSE.
 
+  IF (debug) THEN 
+     WRITE(msg, "('Checking connection between block ', I2, ' and ', I2)") bc%block, conbc%block
+     CALL status_message(msg)
+  END IF
+
                                 ! these two bc's match only if they
                                 ! refer to each other
 
   IF (bc%con_block .EQ. conbc%block .AND. conbc%con_block .EQ. bc%block)THEN
 
+     IF (debug) THEN 
+        CALL status_message('    GOOD: indices match')
+     END IF
+     
                                 ! in order to match, the two bc's
                                 ! should refer have the same number of
                                 ! cell groupings
      IF (bc%num_cell_pairs .NE. conbc%num_cell_pairs) RETURN
+
+     IF (debug) THEN 
+        CALL status_message('    GOOD: cell index pairs match')
+     END IF
+     
 
                                 ! some indices we'll need alot
      SELECT CASE (bc%bc_loc)
@@ -486,7 +502,13 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
         y2 = block(bc%block)%y_grid(i, j+1)
         rdist = rdist/distance(x1, y1, x2, y2)
 
-        IF (rdist .GT. 0.01) RETURN
+        IF (rdist .GT. 0.01) THEN
+           IF (debug) THEN 
+              WRITE (msg,*) '   REJECT: cell pair ', n, ' starting point different'
+              CALL status_message(msg)
+           END IF
+           RETURN
+        END IF
 
         j = bc%end_cell(n)
         x1 = block(bc%block)%x_grid(i, j+1)
@@ -501,7 +523,13 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
         y2 = block(bc%block)%y_grid(i, j)
         rdist = rdist/distance(x1, y1, x2, y2)
 
-        IF (rdist .GT. 0.01) RETURN
+        IF (rdist .GT. 0.01) THEN
+           IF (debug) THEN 
+              WRITE (msg,*) '   REJECT: cell pair ', n, ' ending point different'
+              CALL status_message(msg)
+           END IF
+           RETURN
+        END IF
 
                                 ! check to see if there is an integral
                                 ! ratio of fine to coarse cells on
@@ -511,9 +539,19 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
         concells = conbc%end_cell(n) - conbc%start_cell(n) + 1
 
         IF (cells .GE. concells) THEN
-           IF (MOD(cells, concells) .NE. 0) RETURN
+           IF (MOD(cells, concells) .NE. 0) THEN
+              WRITE (msg,*) 'Cell mismatch in connection between block ', &
+                   &bc%block, ' and ', conbc%block
+              CALL error_message(msg, fatal=.FALSE.)
+              RETURN
+           END IF
         ELSE
-           IF (MOD(concells, cells) .NE. 0) RETURN
+           IF (MOD(concells, cells) .NE. 0) THEN
+              WRITE (msg,*) 'Cell mismatch in connection between block ', &
+                   &bc%block, ' and ', conbc%block
+              CALL error_message(msg, fatal=.FALSE.)
+              RETURN
+           END IF
         END IF
 
         bc%con_start_cell(n) = conbc%start_cell(n)

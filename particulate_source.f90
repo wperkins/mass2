@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 28, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:14:26 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Jul 17 08:31:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -49,6 +49,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE(PART_SOURCE_REC) FUNCTION part_parse_options(options)
     
+    USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
     USE scalars, ONLY: max_species
     USE utility
     USE globals
@@ -149,7 +150,9 @@ CONTAINS
 
     ALLOCATE(part_parse_options%block(max_blocks))
     DO iblk = 1, max_blocks
-       ALLOCATE(part_parse_options%block(iblk)%bedexch(block(iblk)%xmax + 1, block(iblk)%ymax + 1))
+       ALLOCATE(part_parse_options%block(iblk)%bedexch(&
+            &i_index_min:block(iblk)%xmax + i_index_extra, &
+            &j_index_min:block(iblk)%ymax + i_index_extra))
        part_parse_options%block(iblk)%bedexch = 0.0
     END DO
 100 FORMAT('additional argument missing for ', A10, ' keyword')

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 23, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:36:31 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Jul 17 08:30:37 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE sediment_source
@@ -66,6 +66,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE (SEDIMENT_SOURCE_REC) FUNCTION sediment_parse_options(options)
 
+    USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
     USE utility
     USE globals
 
@@ -92,9 +93,13 @@ CONTAINS
 
     ALLOCATE(sediment_parse_options%block(max_blocks))
     DO iblk = 1, max_blocks
-       ALLOCATE(sediment_parse_options%block(iblk)%deposition(block(iblk)%xmax+1, block(iblk)%ymax+1))
+       ALLOCATE(sediment_parse_options%block(iblk)%deposition(&
+            &i_index_min:block(iblk)%xmax+i_index_extra, &
+            &j_index_min:block(iblk)%ymax+j_index_extra))
        sediment_parse_options%block(iblk)%deposition = 0.0
-       ALLOCATE(sediment_parse_options%block(iblk)%erosion(block(iblk)%xmax+1, block(iblk)%ymax+1))
+       ALLOCATE(sediment_parse_options%block(iblk)%erosion(&
+            &i_index_min:block(iblk)%xmax+i_index_extra, &
+            &j_index_min:block(iblk)%ymax+j_index_extra))
        sediment_parse_options%block(iblk)%erosion = 0.0
     END DO
     

@@ -1,3 +1,16 @@
+2003-07-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_bc_module.f90: more diagnostics on block connection errors
+
+	* scalar_mass_balance.f90: when only computing mass, delta is
+	zero, do not divide by zero
+
+	* sediment_source.f90 (sediment_parse_options): erosion and
+	deposition were allocated with the wrong lower bound indices
+
+	* particulate_source.f90 (part_parse_options): bedexch was
+	allocated with the wrong lower bound indices.
+
 2003-05-20  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/benchmark/jda/gage_control.dat: add some gages to compare

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created April 17, 2003 by William A. Perkins
-! Last Change: Tue May 20 08:48:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Jul 17 08:44:58 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -145,7 +145,7 @@ CONTAINS
 
           SELECT CASE (scalar_source(ispecies)%srctype)
           CASE (GEN)
-             IF (scalar_source(ispecies)%generic_param%hasbedsrc) THEN
+             IF (deltat .GT. 0.0 .AND. scalar_source(ispecies)%generic_param%hasbedsrc) THEN
                 flux = flux + scalar_bed_flux(iblock, block(iblock), &
                      &scalar_source(ispecies)%generic_param%bedsrc)/deltat
              END IF
