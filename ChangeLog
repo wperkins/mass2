@@ -1,3 +1,22 @@
+2000-04-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2gage.pl (Message): Gage data can be extracted as a
+	cumulative frequency distribution.
+
+2000-02-18  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2gage.pl: needed to decrement the gage id
+
+2000-02-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: 
+	* met_data_module.f90: 
+	* block_bc_module.f90: 
+	* table_bc_module.f90: 
+	* global_module_023.f90: 
+	* gage_output_module.f90: 
+	* scalars_module.f90: EXIT() reqires argument for Lahey compiler 
+
 1999-11-17  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* mass2_main_025.f90: added Marshall's code for handling

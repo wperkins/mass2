@@ -126,7 +126,7 @@ SUBROUTINE allocate_blocks(error_iounit,status_iounit)
 	ALLOCATE(block(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of blocks'
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of blocks'
 	ENDIF

@@ -66,7 +66,7 @@ SUBROUTINE allocate_table_bc(max_tables, error_iounit, status_iounit)
 	ALLOCATE(table_bc(max_tables), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of table bc '
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of table bc - maxtables =', max_tables
 		table_bc%max_entries = 0
@@ -81,7 +81,7 @@ SUBROUTINE allocate_scalar_table_bc(max_tables, error_iounit, status_iounit)
 	ALLOCATE(scalar_table_bc(max_tables), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of scalar table bc '
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of scalar table bc - maxtables =', max_tables
 		scalar_table_bc%max_entries = 0

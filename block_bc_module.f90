@@ -80,7 +80,7 @@ SUBROUTINE allocate_block_bc(max_blocks, error_iounit, status_iounit)
 	ALLOCATE(block_bc(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of block bc '
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of block bc'
 		block_bc%num_bc = 0
@@ -100,7 +100,7 @@ SUBROUTINE allocate_scalar_block_bc(max_blocks, error_iounit, status_iounit)
 	ALLOCATE(scalar_bc(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of scalar bc '
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of scalar bc'
 		scalar_bc%num_bc = 0

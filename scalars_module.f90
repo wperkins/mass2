@@ -60,7 +60,7 @@ WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
 ALLOCATE(species(i)%scalar(block)%conc(imax,jmax), STAT = alloc_stat)		! c depth-ave concentration
 IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the concentration'
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for concentration'
 ENDIF
@@ -68,7 +68,7 @@ ENDIF
 ALLOCATE(species(i)%scalar(block)%concold(imax,jmax), STAT = alloc_stat)	! c old depth-ave concentration
 IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the old concentration'
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for old concentration'
 ENDIF
@@ -87,7 +87,7 @@ SUBROUTINE allocate_species(error_iounit,status_iounit)
 	ALLOCATE(species(max_species), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of species - max_species=', max_species
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of species - max_species=', max_species
 	ENDIF
@@ -104,7 +104,7 @@ SUBROUTINE allocate_scalar(max_blocks, n, error_iounit,status_iounit)
 	ALLOCATE(species(n)%scalar(max_blocks), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
 		WRITE(error_iounit,*)'allocation failed for the array of scalars'
-		CALL EXIT
+		CALL EXIT(1)
 	ELSE
 		WRITE(status_iounit,*)'allocation successful for array of scalars'
 	ENDIF

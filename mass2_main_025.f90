@@ -1786,7 +1786,7 @@ IF(MINVAL(block(iblock)%depth) <= 0.0)THEN
 	WRITE(*,*)"     Block Number = ",iblock
 	WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
 
-	CALL EXIT  ! abort run if you hit a negative depth
+	CALL EXIT(1)  ! abort run if you hit a negative depth
 END IF
 
 !----------------------------------------------------------------------------------------------

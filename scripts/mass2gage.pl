@@ -10,7 +10,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 17, 1999 by William A. Perkins
-# Last Change: Tue Feb 22 09:49:35 2000 by William A. Perkins <perk@gehenna.pnl.gov>
+# Last Change: Fri Feb 25 09:43:24 2000 by William A. Perkins <perk@mack.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -25,7 +25,7 @@ mass2gage.pl - extract data from a MASS2 gage output file (NetCDF format).
 
 perl B<mass2gage.pl> B<-l> I<file>
 
-perl B<mass2gage.pl> B<-v> I<var> B<-g> I<gage> [B<-o> I<output>] I<file>
+perl B<mass2gage.pl> B<-v> I<var> B<-g> I<gage> [-C|-M] [-1] [B<-o> I<output>] I<file>
 
 =head1 DESCRIPTION
 
@@ -53,6 +53,12 @@ using B<-l>
 (required) extract data from the I<gage> location; I<gage> may be
 either an integer or a gage location name (as long as the name does
 not start with a number), either of which can be obtained using B<-l>
+
+=item B<-C>
+
+output a cumulative frequency distribution; normally, a time series is
+output, this option will cause the data from the specified gage to be
+sorted and assigned an exceedance probability 
 
 =item B<-o> I<output>
 
@@ -234,11 +240,11 @@ sub GageOK {
   my $ncid = shift;
   my $gageid = shift;
 
-  my $gageid = NetCDF::dimid($ncid, "gage");
+  my $gagedimid = NetCDF::dimid($ncid, "gage");
   my $gages;
   my $name;
 
-  NetCDF::diminq($ncid, $gageid, \$name, \$gages);
+  NetCDF::diminq($ncid, $gagedimid, \$name, \$gages);
 
   return ($gageid >= 0 && $gageid < $gages);
   
@@ -412,11 +418,12 @@ my $program;
 ($program = $0) =~ s/.*\///;
 my $usage = 
   "usage: $program [-l] file \n" .
-  "       $program -v var -g gage [-1] [-M] [-o output] file";
+  "       $program -v var -g gage [-1] [-C|-M] [-o output] file";
 
 my $dolist = undef;
 my $doline1 = undef;
 my $doasbc = undef;
+my $docdf = undef;
 my $var = undef;
 my $varisid = undef;
 my $gage = undef;
@@ -427,7 +434,7 @@ my $filename = undef;
 # handle command line
 # -------------------------------------------------------------
 my %opts = ();
-die "$usage\n" unless (getopts("lv:g:1Mo:", \%opts));
+die "$usage\n" unless (getopts("lv:g:1MCo:", \%opts));
 
 $dolist = 1 if ($opts{l});
 if ($opts{v}) {
@@ -444,6 +451,13 @@ $doline1 = 1 if ($opts{1});
 
 $doasbc = 1 if ($opts{M});
 $doline1 = 1 if ($doasbc);
+
+if ($opts{C} && $doasbc) {
+  printf(STDERR "$program: warning: -C option ignored in favor of -M option\n");
+} else {
+  $docdf = 1 if ($opts{C});
+}
+
 
 if ($opts{o}) {
   my $name = $opts{o};
@@ -592,20 +606,34 @@ my $end = "";
 
 $end = " /" if $doasbc;
 
-my $i;
-for ($i = 0; $i < $times; $i++) {
-  @coords = ($i, 0);
-  @length = (1, $tslen);
-  @values = ();
-  NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
-  my $tstamp = pack("C*", @values);
-  chop($tstamp);
+                                # extract data for the gage
 
-  my $value = 0;
-  @coords = ($i, $gageid);
-  NetCDF::varget1($ncid, $varid, \@coords, $value);
-  
-  printf(OUTPUT "%s %15.3f${end}\n", $tstamp, $value);
+my @gagevalues = ();
+my $value;
+
+@coords = (0, $gagenum);
+@length = ($times, 1);
+NetCDF::varget($ncid, $varid, \@coords, \@length, \@gagevalues);
+
+if ($docdf) {
+  $i = 0;
+  foreach $value (sort { $a <=> $b; } @gagevalues) {
+    my $p = ($times - $i++) / $times;
+    printf(OUTPUT "%15.5f %15.3f${end}\n", $p, $value);
+  }
+} else {
+  for ($i = 0; $i < $times; $i++) {
+    @coords = ($i, 0);
+    @length = (1, $tslen);
+    @values = ();
+    NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
+    my $tstamp = pack("C*", @values);
+    chop($tstamp);
+
+    printf(OUTPUT "%s %15.3f${end}\n", $tstamp, $gagevalues[$i]);
+  }
 }
 
+
 NetCDF::close($ncid);
+

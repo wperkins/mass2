@@ -99,7 +99,7 @@ CONTAINS
 	ALLOCATE(gage_specs(num_gages), STAT = alloc_stat)
 	IF(alloc_stat /= 0)THEN
        WRITE(error_iounit,*)'allocation failed for the array of gage specs '
-       CALL EXIT
+       CALL EXIT(1)
 	ENDIF
 
 	OPEN(50,file=gage_control)

@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Nov 17 09:55:15 1999 by William A. Perkins <perk@tophet.pnl.gov>
+# Last Change: Thu Mar 23 10:59:21 2000 by William A. Perkins <perk@gehenna.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -30,8 +30,8 @@ NETCDFLDFLAGS = -L$(NETCDFDIR)/lib
 NETCDFLIBS = -lnetcdf
 
 # Options that will work on erebus:
-DEBUG =  -O -fast
-FLAGS = $(NETCDFFLAGS) $(DEBUG) -fpe1
+DEBUG =  -O -fast 
+FLAGS = $(NETCDFFLAGS) $(DEBUG) -fpe1 -non_shared 
 
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
