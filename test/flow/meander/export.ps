@@ -1,0 +1,1318 @@
+%!PS-Adobe-2.0
+%%Creator: TECPLOT
+%%Pages:1
+%%BoundingBox: -1 -1 613 793
+%%DocumentFonts: Helvetica Helvetica-Bold Symbol Times-Roman Times-Bold Times-Italic Times-BoldItalic Courier Courier-Bold
+%%EndComments
+/tecplotdict 120 dict def
+tecplotdict begin
+/ed  {exch def} def
+/ftl {findfont exch scalefont setfont} def
+/ftr {/ISOLatin1-Times-Roman ftl} def
+/ftb {/ISOLatin1-Times-Bold ftl} def
+/fti {/ISOLatin1-Times-Italic ftl} def
+/ftib {/ISOLatin1-Times-BoldItalic ftl} def
+/fcr {/ISOLatin1-Courier ftl} def
+/fcb {/ISOLatin1-Courier-Bold ftl} def
+/fhn {/ISOLatin1-Helvetica ftl} def
+/fhb {/ISOLatin1-Helvetica-Bold ftl} def
+/fsy {/Symbol ftl} def
+/gs /gsave load def
+/gr /grestore load def
+/np /newpath load def
+/cp /closepath load def
+/g /setgray load def
+/lc {setlinecap} def
+/lj /setlinejoin load def
+/x /setrgbcolor load def
+/sd /setdash load def
+/sw {setlinewidth} def
+/cpt /currentpoint load def
+/m {moveto} def
+/rm /rmoveto load def
+/l /lineto load def
+/r /rlineto load def
+/sf /setflat load def
+/s /stroke load def
+/q {cpt s m} def
+/ro /rotate load def
+/sh /show load def
+/clp {cp gr gs np m l l l cp clip np cp} def
+/dorect
+{
+/height ed
+/width  ed
+m
+0 height r
+width 0 r
+0 height neg r
+cp
+} def
+/er {cp np dorect g fill 0 g cp} def
+/erc {cp np dorect x fill 0 g cp} def
+/br {cp np dorect g cp s} def
+/brc {cp np dorect x cp s} def
+/ii 0 def
+/n 0 def
+/CurA 0 def
+/Ry 0 def
+/Rx 0 def
+/CA 0 def
+/SA 0 def
+/SJ 0 def
+/SI 0 def
+/bi 0 def
+/i 0 def
+/ib 0 def
+/ig 0 def
+/ir 0 def
+/ishade 0 def
+/bshade 0 def
+/dcs
+{
+m
+dup dup dup
+-2 div dup
+rm
+0 r
+0 exch r
+neg 0 r
+cp
+} bind def
+/pg
+{
+/size ed
+/Ny ed
+/Nx ed
+/Y2 ed
+/X2 ed
+/Y1 ed
+/X1 ed
+Ny 1 gt
+{/Dy Y2 Y1 sub Ny 1 sub div def}
+{/Dy 0.0 def}
+ifelse
+Nx 1 gt
+{/Dx X2 X1 sub Nx 1 sub div def}
+{/Dx 0.0 def}
+ifelse
+Y1 Dy Y2 Dy 2 div add
+{
+X1 Dx X2 Dx 2 div add
+{
+1 index
+size 3 1 roll
+dcs fill
+Dx 0.0 eq
+{exit}
+if
+} for
+pop
+Dy 0.0 eq
+{exit}
+if
+} for
+} bind def
+/z
+{
+/ii ed
+rea ii get
+gra ii get
+bla ii get
+} def
+/lrgb
+{
+/ii ed
+/blue ed
+/green ed
+/red ed
+bla ii blue put
+gra ii green put
+rea ii red put
+} def
+/trace
+{
+cp np
+m
+1 1 n 
+{
+pop
+r
+} for
+cp
+} def
+/pf
+{
+/ishade ed
+/n ed 
+s
+trace
+ishade g fill
+} def
+/pb
+{
+/bshade ed
+/n ed 
+m
+1 1 n 
+{
+pop
+r
+} for
+bshade g s
+} def
+/pfb
+{
+/bshade ed
+/ishade ed
+/n ed 
+s 
+n 2 mul 2 add copy
+trace
+ishade g fill
+trace
+bshade g s
+} def
+/pfi
+{
+/i ed
+/n ed 
+s 
+trace
+i z x fill
+} def
+/pbi
+{
+/i ed
+/n ed 
+m
+1 1 n 
+{
+pop
+r
+} for
+i z x s
+} def
+/pfbi
+{
+/ii ed
+/bi ed
+/n ed 
+s 
+n 2 mul 2 add copy
+trace
+ii z x fill
+trace
+bi z x s
+} def
+/pfr
+{
+/ib ed
+/ig ed
+/ir ed
+/n ed 
+s 
+trace
+ir ig ib x fill
+} def
+/pbr
+{
+/ib ed
+/ig ed
+/ir ed
+/n ed 
+m
+1 1 n 
+{
+pop
+r
+} for
+ir ig ib x s
+} def
+/pfbr
+{
+/ib ed
+/ig ed
+/ir ed
+/ibb ed
+/ibg ed
+/ibr ed
+/n ed
+s
+n 2 mul 2 add copy
+trace
+ir ig ib x fill
+trace
+ibr ibg ibb x s
+} def
+/e
+{
+/Ry ed
+/Rx ed
+/CA ed
+/SA ed
+/SJ ed
+/SI ed
+/DelX SA cos Rx mul def
+/DelY SA sin Ry mul def
+/XI SI DelX add def
+/YI SJ DelY add def
+/OCX DelX def
+/OCY DelY def
+/N 0 def
+SA CA add
+CA
+SA 360 add
+{
+/CurA ed
+/CX CurA cos Rx mul def
+/CY CurA sin Ry mul def
+OCX CX sub 
+OCY CY sub 
+/OCX CX def
+/OCY CY def
+/N N 1 add def
+}
+for
+XI YI N
+} def
+%%EndProlog
+%%Page:? 1
+/getisofont
+{
+findfont
+dup length dict begin
+{
+1 index /FID ne {def}{pop pop} ifelse
+} forall
+/Encoding ISOLatin1Encoding def
+currentdict
+end
+} def
+/Helvetica             getisofont /ISOLatin1-Helvetica             exch definefont pop
+/Helvetica-Bold        getisofont /ISOLatin1-Helvetica-Bold        exch definefont pop
+/Helvetica-Oblique     getisofont /ISOLatin1-Helvetica-Oblique     exch definefont pop
+/Helvetica-BoldOblique getisofont /ISOLatin1-Helvetica-BoldOblique exch definefont pop
+/Times-Roman           getisofont /ISOLatin1-Times-Roman           exch definefont pop
+/Times-Bold            getisofont /ISOLatin1-Times-Bold            exch definefont pop
+/Times-BoldItalic      getisofont /ISOLatin1-Times-BoldItalic      exch definefont pop
+/Times-Italic          getisofont /ISOLatin1-Times-Italic          exch definefont pop
+/Courier               getisofont /ISOLatin1-Courier               exch definefont pop
+/Courier-Bold          getisofont /ISOLatin1-Courier-Bold          exch definefont pop
+/Courier-Oblique       getisofont /ISOLatin1-Courier-Oblique       exch definefont pop
+/Courier-BoldOblique   getisofont /ISOLatin1-Courier-BoldOblique   exch definefont pop
+/rea 468 array def
+/gra 468 array def
+/bla 468 array def
+0 0 0 0 lrgb
+0.824 0 0 1 lrgb
+0 0.824 0 2 lrgb
+0.176 0.176 1 3 lrgb
+0 1 1 4 lrgb
+1 1 0.176 5 lrgb
+1 0 1 6 lrgb
+1 1 1 7 lrgb
+0.333 0.333 0.333 8 lrgb
+0.831 0.831 0.831 9 lrgb
+1 0.498 0 10 lrgb
+0.498 1 0 11 lrgb
+0 1 0.498 12 lrgb
+0 0.498 1 13 lrgb
+0.498 0 1 14 lrgb
+1 0 0.498 15 lrgb
+0.333 0 0 16 lrgb
+1 0.667 0.667 17 lrgb
+1 0.667 0.333 18 lrgb
+0.333 1 0.333 19 lrgb
+0.333 1 0.667 20 lrgb
+0.333 0.333 1 21 lrgb
+0.667 0.333 1 22 lrgb
+1 0.333 0.333 23 lrgb
+0.333 0.333 0 24 lrgb
+1 1 0.667 25 lrgb
+1 1 0.333 26 lrgb
+0 1 0.333 27 lrgb
+0.333 1 1 28 lrgb
+0.333 0 1 29 lrgb
+1 0.333 1 30 lrgb
+1 0.333 0 31 lrgb
+0 0.333 0 32 lrgb
+0.667 1 0.667 33 lrgb
+0.667 1 0.333 34 lrgb
+0 0.667 0.333 35 lrgb
+0.333 0.667 1 36 lrgb
+0.333 0 0.667 37 lrgb
+1 0.333 0.667 38 lrgb
+0.667 0.333 0 39 lrgb
+0 0.333 0.333 40 lrgb
+0.667 1 1 41 lrgb
+0.667 1 0 42 lrgb
+0 0.667 0 43 lrgb
+0 0.667 1 44 lrgb
+0 0 0.667 45 lrgb
+1 0 0.667 46 lrgb
+0.667 0 0 47 lrgb
+0 0 0.333 48 lrgb
+0.667 0.667 1 49 lrgb
+0.667 0.667 0 50 lrgb
+0.333 0.667 0 51 lrgb
+0 0.667 0.667 52 lrgb
+0 0.333 0.667 53 lrgb
+0.667 0 0.667 54 lrgb
+0.667 0 0.333 55 lrgb
+0.333 0 0.333 56 lrgb
+1 0.667 1 57 lrgb
+0.667 0.667 0.333 58 lrgb
+0.333 0.667 0.333 59 lrgb
+0.333 0.667 0.667 60 lrgb
+0.333 0.333 0.667 61 lrgb
+0.667 0.333 0.667 62 lrgb
+0.667 0.333 0.333 63 lrgb
+0.588 0.588 0.588 64 lrgb
+0.412 0.412 0.412 65 lrgb
+0 0 0 66 lrgb
+0 0 1 67 lrgb
+0 0.0118 1 68 lrgb
+0 0.0196 1 69 lrgb
+0 0.0314 1 70 lrgb
+0 0.0392 1 71 lrgb
+0 0.051 1 72 lrgb
+0 0.0588 1 73 lrgb
+0 0.0706 1 74 lrgb
+0 0.0784 1 75 lrgb
+0 0.0902 1 76 lrgb
+0 0.098 1 77 lrgb
+0 0.11 1 78 lrgb
+0 0.122 1 79 lrgb
+0 0.129 1 80 lrgb
+0 0.141 1 81 lrgb
+0 0.149 1 82 lrgb
+0 0.161 1 83 lrgb
+0 0.169 1 84 lrgb
+0 0.18 1 85 lrgb
+0 0.188 1 86 lrgb
+0 0.2 1 87 lrgb
+0 0.212 1 88 lrgb
+0 0.22 1 89 lrgb
+0 0.231 1 90 lrgb
+0 0.239 1 91 lrgb
+0 0.251 1 92 lrgb
+0 0.259 1 93 lrgb
+0 0.271 1 94 lrgb
+0 0.278 1 95 lrgb
+0 0.29 1 96 lrgb
+0 0.298 1 97 lrgb
+0 0.31 1 98 lrgb
+0 0.322 1 99 lrgb
+0 0.329 1 100 lrgb
+0 0.341 1 101 lrgb
+0 0.349 1 102 lrgb
+0 0.361 1 103 lrgb
+0 0.369 1 104 lrgb
+0 0.38 1 105 lrgb
+0 0.388 1 106 lrgb
+0 0.4 1 107 lrgb
+0 0.412 1 108 lrgb
+0 0.42 1 109 lrgb
+0 0.431 1 110 lrgb
+0 0.439 1 111 lrgb
+0 0.451 1 112 lrgb
+0 0.459 1 113 lrgb
+0 0.471 1 114 lrgb
+0 0.478 1 115 lrgb
+0 0.49 1 116 lrgb
+0 0.498 1 117 lrgb
+0 0.51 1 118 lrgb
+0 0.522 1 119 lrgb
+0 0.529 1 120 lrgb
+0 0.541 1 121 lrgb
+0 0.549 1 122 lrgb
+0 0.561 1 123 lrgb
+0 0.569 1 124 lrgb
+0 0.58 1 125 lrgb
+0 0.588 1 126 lrgb
+0 0.6 1 127 lrgb
+0 0.612 1 128 lrgb
+0 0.62 1 129 lrgb
+0 0.631 1 130 lrgb
+0 0.639 1 131 lrgb
+0 0.651 1 132 lrgb
+0 0.659 1 133 lrgb
+0 0.671 1 134 lrgb
+0 0.678 1 135 lrgb
+0 0.69 1 136 lrgb
+0 0.698 1 137 lrgb
+0 0.71 1 138 lrgb
+0 0.722 1 139 lrgb
+0 0.729 1 140 lrgb
+0 0.741 1 141 lrgb
+0 0.749 1 142 lrgb
+0 0.761 1 143 lrgb
+0 0.769 1 144 lrgb
+0 0.78 1 145 lrgb
+0 0.788 1 146 lrgb
+0 0.8 1 147 lrgb
+0 0.812 1 148 lrgb
+0 0.82 1 149 lrgb
+0 0.831 1 150 lrgb
+0 0.839 1 151 lrgb
+0 0.851 1 152 lrgb
+0 0.859 1 153 lrgb
+0 0.871 1 154 lrgb
+0 0.878 1 155 lrgb
+0 0.89 1 156 lrgb
+0 0.898 1 157 lrgb
+0 0.91 1 158 lrgb
+0 0.922 1 159 lrgb
+0 0.929 1 160 lrgb
+0 0.941 1 161 lrgb
+0 0.949 1 162 lrgb
+0 0.961 1 163 lrgb
+0 0.969 1 164 lrgb
+0 0.98 1 165 lrgb
+0 0.988 1 166 lrgb
+0 1 1 167 lrgb
+0 1 0.988 168 lrgb
+0 1 0.98 169 lrgb
+0 1 0.969 170 lrgb
+0 1 0.961 171 lrgb
+0 1 0.949 172 lrgb
+0 1 0.941 173 lrgb
+0 1 0.929 174 lrgb
+0 1 0.922 175 lrgb
+0 1 0.91 176 lrgb
+0 1 0.898 177 lrgb
+0 1 0.89 178 lrgb
+0 1 0.878 179 lrgb
+0 1 0.871 180 lrgb
+0 1 0.859 181 lrgb
+0 1 0.851 182 lrgb
+0 1 0.839 183 lrgb
+0 1 0.831 184 lrgb
+0 1 0.82 185 lrgb
+0 1 0.812 186 lrgb
+0 1 0.8 187 lrgb
+0 1 0.788 188 lrgb
+0 1 0.78 189 lrgb
+0 1 0.769 190 lrgb
+0 1 0.761 191 lrgb
+0 1 0.749 192 lrgb
+0 1 0.741 193 lrgb
+0 1 0.729 194 lrgb
+0 1 0.722 195 lrgb
+0 1 0.71 196 lrgb
+0 1 0.698 197 lrgb
+0 1 0.69 198 lrgb
+0 1 0.678 199 lrgb
+0 1 0.671 200 lrgb
+0 1 0.659 201 lrgb
+0 1 0.651 202 lrgb
+0 1 0.639 203 lrgb
+0 1 0.631 204 lrgb
+0 1 0.62 205 lrgb
+0 1 0.612 206 lrgb
+0 1 0.6 207 lrgb
+0 1 0.588 208 lrgb
+0 1 0.58 209 lrgb
+0 1 0.569 210 lrgb
+0 1 0.561 211 lrgb
+0 1 0.549 212 lrgb
+0 1 0.541 213 lrgb
+0 1 0.529 214 lrgb
+0 1 0.522 215 lrgb
+0 1 0.51 216 lrgb
+0 1 0.498 217 lrgb
+0 1 0.49 218 lrgb
+0 1 0.478 219 lrgb
+0 1 0.471 220 lrgb
+0 1 0.459 221 lrgb
+0 1 0.451 222 lrgb
+0 1 0.439 223 lrgb
+0 1 0.431 224 lrgb
+0 1 0.42 225 lrgb
+0 1 0.412 226 lrgb
+0 1 0.4 227 lrgb
+0 1 0.388 228 lrgb
+0 1 0.38 229 lrgb
+0 1 0.369 230 lrgb
+0 1 0.361 231 lrgb
+0 1 0.349 232 lrgb
+0 1 0.341 233 lrgb
+0 1 0.329 234 lrgb
+0 1 0.322 235 lrgb
+0 1 0.31 236 lrgb
+0 1 0.298 237 lrgb
+0 1 0.29 238 lrgb
+0 1 0.278 239 lrgb
+0 1 0.271 240 lrgb
+0 1 0.259 241 lrgb
+0 1 0.251 242 lrgb
+0 1 0.239 243 lrgb
+0 1 0.231 244 lrgb
+0 1 0.22 245 lrgb
+0 1 0.212 246 lrgb
+0 1 0.2 247 lrgb
+0 1 0.188 248 lrgb
+0 1 0.18 249 lrgb
+0 1 0.169 250 lrgb
+0 1 0.161 251 lrgb
+0 1 0.149 252 lrgb
+0 1 0.141 253 lrgb
+0 1 0.129 254 lrgb
+0 1 0.122 255 lrgb
+0 1 0.11 256 lrgb
+0 1 0.098 257 lrgb
+0 1 0.0902 258 lrgb
+0 1 0.0784 259 lrgb
+0 1 0.0706 260 lrgb
+0 1 0.0588 261 lrgb
+0 1 0.051 262 lrgb
+0 1 0.0392 263 lrgb
+0 1 0.0314 264 lrgb
+0 1 0.0196 265 lrgb
+0 1 0.0118 266 lrgb
+0 1 0 267 lrgb
+0.0118 1 0 268 lrgb
+0.0196 1 0 269 lrgb
+0.0314 1 0 270 lrgb
+0.0392 1 0 271 lrgb
+0.051 1 0 272 lrgb
+0.0588 1 0 273 lrgb
+0.0706 1 0 274 lrgb
+0.0784 1 0 275 lrgb
+0.0902 1 0 276 lrgb
+0.098 1 0 277 lrgb
+0.11 1 0 278 lrgb
+0.122 1 0 279 lrgb
+0.129 1 0 280 lrgb
+0.141 1 0 281 lrgb
+0.149 1 0 282 lrgb
+0.161 1 0 283 lrgb
+0.169 1 0 284 lrgb
+0.18 1 0 285 lrgb
+0.188 1 0 286 lrgb
+0.2 1 0 287 lrgb
+0.212 1 0 288 lrgb
+0.22 1 0 289 lrgb
+0.231 1 0 290 lrgb
+0.239 1 0 291 lrgb
+0.251 1 0 292 lrgb
+0.259 1 0 293 lrgb
+0.271 1 0 294 lrgb
+0.278 1 0 295 lrgb
+0.29 1 0 296 lrgb
+0.298 1 0 297 lrgb
+0.31 1 0 298 lrgb
+0.322 1 0 299 lrgb
+0.329 1 0 300 lrgb
+0.341 1 0 301 lrgb
+0.349 1 0 302 lrgb
+0.361 1 0 303 lrgb
+0.369 1 0 304 lrgb
+0.38 1 0 305 lrgb
+0.388 1 0 306 lrgb
+0.4 1 0 307 lrgb
+0.412 1 0 308 lrgb
+0.42 1 0 309 lrgb
+0.431 1 0 310 lrgb
+0.439 1 0 311 lrgb
+0.451 1 0 312 lrgb
+0.459 1 0 313 lrgb
+0.471 1 0 314 lrgb
+0.478 1 0 315 lrgb
+0.49 1 0 316 lrgb
+0.498 1 0 317 lrgb
+0.51 1 0 318 lrgb
+0.522 1 0 319 lrgb
+0.529 1 0 320 lrgb
+0.541 1 0 321 lrgb
+0.549 1 0 322 lrgb
+0.561 1 0 323 lrgb
+0.569 1 0 324 lrgb
+0.58 1 0 325 lrgb
+0.588 1 0 326 lrgb
+0.6 1 0 327 lrgb
+0.612 1 0 328 lrgb
+0.62 1 0 329 lrgb
+0.631 1 0 330 lrgb
+0.639 1 0 331 lrgb
+0.651 1 0 332 lrgb
+0.659 1 0 333 lrgb
+0.671 1 0 334 lrgb
+0.678 1 0 335 lrgb
+0.69 1 0 336 lrgb
+0.698 1 0 337 lrgb
+0.71 1 0 338 lrgb
+0.722 1 0 339 lrgb
+0.729 1 0 340 lrgb
+0.741 1 0 341 lrgb
+0.749 1 0 342 lrgb
+0.761 1 0 343 lrgb
+0.769 1 0 344 lrgb
+0.78 1 0 345 lrgb
+0.788 1 0 346 lrgb
+0.8 1 0 347 lrgb
+0.812 1 0 348 lrgb
+0.82 1 0 349 lrgb
+0.831 1 0 350 lrgb
+0.839 1 0 351 lrgb
+0.851 1 0 352 lrgb
+0.859 1 0 353 lrgb
+0.871 1 0 354 lrgb
+0.878 1 0 355 lrgb
+0.89 1 0 356 lrgb
+0.898 1 0 357 lrgb
+0.91 1 0 358 lrgb
+0.922 1 0 359 lrgb
+0.929 1 0 360 lrgb
+0.941 1 0 361 lrgb
+0.949 1 0 362 lrgb
+0.961 1 0 363 lrgb
+0.969 1 0 364 lrgb
+0.98 1 0 365 lrgb
+0.988 1 0 366 lrgb
+1 1 0 367 lrgb
+1 0.988 0 368 lrgb
+1 0.98 0 369 lrgb
+1 0.969 0 370 lrgb
+1 0.961 0 371 lrgb
+1 0.949 0 372 lrgb
+1 0.941 0 373 lrgb
+1 0.929 0 374 lrgb
+1 0.922 0 375 lrgb
+1 0.91 0 376 lrgb
+1 0.898 0 377 lrgb
+1 0.89 0 378 lrgb
+1 0.878 0 379 lrgb
+1 0.871 0 380 lrgb
+1 0.859 0 381 lrgb
+1 0.851 0 382 lrgb
+1 0.839 0 383 lrgb
+1 0.831 0 384 lrgb
+1 0.82 0 385 lrgb
+1 0.812 0 386 lrgb
+1 0.8 0 387 lrgb
+1 0.788 0 388 lrgb
+1 0.78 0 389 lrgb
+1 0.769 0 390 lrgb
+1 0.761 0 391 lrgb
+1 0.749 0 392 lrgb
+1 0.741 0 393 lrgb
+1 0.729 0 394 lrgb
+1 0.722 0 395 lrgb
+1 0.71 0 396 lrgb
+1 0.698 0 397 lrgb
+1 0.69 0 398 lrgb
+1 0.678 0 399 lrgb
+1 0.671 0 400 lrgb
+1 0.659 0 401 lrgb
+1 0.651 0 402 lrgb
+1 0.639 0 403 lrgb
+1 0.631 0 404 lrgb
+1 0.62 0 405 lrgb
+1 0.612 0 406 lrgb
+1 0.6 0 407 lrgb
+1 0.588 0 408 lrgb
+1 0.58 0 409 lrgb
+1 0.569 0 410 lrgb
+1 0.561 0 411 lrgb
+1 0.549 0 412 lrgb
+1 0.541 0 413 lrgb
+1 0.529 0 414 lrgb
+1 0.522 0 415 lrgb
+1 0.51 0 416 lrgb
+1 0.498 0 417 lrgb
+1 0.49 0 418 lrgb
+1 0.478 0 419 lrgb
+1 0.471 0 420 lrgb
+1 0.459 0 421 lrgb
+1 0.451 0 422 lrgb
+1 0.439 0 423 lrgb
+1 0.431 0 424 lrgb
+1 0.42 0 425 lrgb
+1 0.412 0 426 lrgb
+1 0.4 0 427 lrgb
+1 0.388 0 428 lrgb
+1 0.38 0 429 lrgb
+1 0.369 0 430 lrgb
+1 0.361 0 431 lrgb
+1 0.349 0 432 lrgb
+1 0.341 0 433 lrgb
+1 0.329 0 434 lrgb
+1 0.322 0 435 lrgb
+1 0.31 0 436 lrgb
+1 0.298 0 437 lrgb
+1 0.29 0 438 lrgb
+1 0.278 0 439 lrgb
+1 0.271 0 440 lrgb
+1 0.259 0 441 lrgb
+1 0.251 0 442 lrgb
+1 0.239 0 443 lrgb
+1 0.231 0 444 lrgb
+1 0.22 0 445 lrgb
+1 0.212 0 446 lrgb
+1 0.2 0 447 lrgb
+1 0.188 0 448 lrgb
+1 0.18 0 449 lrgb
+1 0.169 0 450 lrgb
+1 0.161 0 451 lrgb
+1 0.149 0 452 lrgb
+1 0.141 0 453 lrgb
+1 0.129 0 454 lrgb
+1 0.122 0 455 lrgb
+1 0.11 0 456 lrgb
+1 0.098 0 457 lrgb
+1 0.0902 0 458 lrgb
+1 0.0784 0 459 lrgb
+1 0.0706 0 460 lrgb
+1 0.0588 0 461 lrgb
+1 0.051 0 462 lrgb
+1 0.0392 0 463 lrgb
+1 0.0314 0 464 lrgb
+1 0.0196 0 465 lrgb
+1 0.0118 0 466 lrgb
+1 0 0 467 lrgb
+initmatrix
+5 setmiterlimit
+0.025 0.025 scale np
+24480 0 translate 90 rotate
+gs
+1775 1797 1775 22683 29905 22683 29905 1797 clp
+7 z 2160 2160 27360 20160 erc
+2159 2159 2159 22321 29521 22321 29521 2159 clp
+1 z x 81 sw
+2 lc
+0 lj
+[] 0 sd
+4229 12151 m
+4288 12209 l
+4346 12268 l
+4405 12327 l
+4464 12385 l
+4523 12444 l
+4581 12503 l
+4640 12562 l
+4699 12620 l
+4758 12679 l
+4816 12738 l
+4875 12796 l
+4934 12855 l
+4992 12914 l
+5051 12973 l
+5110 13032 l
+5169 13090 l
+5227 13149 l
+5286 13208 l
+5345 13266 l
+5404 13325 l
+5462 13384 l
+5534 13454 l
+5606 13523 l
+5680 13591 l
+5755 13657 l
+5831 13722 l
+5909 13786 l
+5987 13848 l
+6067 13909 l
+6147 13969 l
+6229 14027 l
+6311 14084 l
+6395 14139 l
+6479 14193 l
+6565 14245 l
+6651 14296 l
+6738 14345 l
+6826 14393 l
+6915 14439 l
+7005 14484 l
+7095 14527 l
+7187 14569 l
+7279 14609 l
+7371 14647 l
+7464 14684 l
+7558 14719 l
+7652 14752 l
+7747 14784 l
+7843 14814 l
+7939 14843 l
+8036 14870 l
+8133 14895 l
+8230 14918 l
+8328 14940 l
+8426 14960 l
+8525 14978 l
+8623 14995 l
+8723 15009 l
+8822 15022 l
+8922 15034 l
+9022 15043 l
+9121 15051 l
+9221 15057 l
+9321 15062 l
+9421 15064 l
+9522 15065 l
+9622 15064 l
+9722 15062 l
+9822 15057 l
+9922 15051 l
+10022 15043 l
+10122 15034 l
+10222 15022 l
+10321 15009 l
+10420 14994 l
+10518 14978 l
+10617 14959 l
+10715 14939 l
+10813 14918 l
+10910 14894 l
+11007 14869 l
+11104 14843 l
+11200 14814 l
+11295 14784 l
+11390 14752 l
+11485 14719 l
+11578 14684 l
+11672 14647 l
+11764 14609 l
+11856 14569 l
+11947 14527 l
+12038 14484 l
+12127 14439 l
+12216 14393 l
+12304 14345 l
+12391 14296 l
+12478 14245 l
+12563 14193 l
+12647 14139 l
+12731 14084 l
+12814 14027 l
+12895 13969 l
+12976 13909 l
+13055 13848 l
+13134 13786 l
+13211 13722 l
+13287 13657 l
+13362 13591 l
+13436 13523 l
+13508 13454 l
+13580 13384 l
+13658 13305 l
+13737 13227 l
+13815 13148 l
+13894 13070 l
+13972 12991 l
+14051 12913 l
+14129 12834 l
+14208 12756 l
+14286 12677 l
+14365 12599 l
+14443 12520 l
+14522 12442 l
+14600 12364 l
+14679 12285 l
+14757 12206 l
+14836 12128 l
+14914 12050 l
+14993 11971 l
+15071 11892 l
+15150 11814 l
+15228 11736 l
+15307 11657 l
+15385 11579 l
+15464 11500 l
+15542 11422 l
+15621 11343 l
+15699 11265 l
+15778 11186 l
+15856 11108 l
+15935 11029 l
+16029 10937 l
+16125 10846 l
+16222 10756 l
+16321 10669 l
+16421 10583 l
+16523 10499 l
+16626 10417 l
+16731 10337 l
+16837 10258 l
+16945 10182 l
+17053 10107 l
+17163 10034 l
+17275 9963 l
+17388 9894 l
+17501 9827 l
+17616 9762 l
+17732 9699 l
+17849 9638 l
+17967 9579 l
+18087 9522 l
+18207 9467 l
+18328 9415 l
+18450 9364 l
+18573 9316 l
+18696 9270 l
+18821 9226 l
+18946 9184 l
+19072 9144 l
+19199 9106 l
+19326 9071 l
+19454 9038 l
+19583 9007 l
+19711 8979 l
+19841 8952 l
+19971 8928 l
+20101 8907 l
+20232 8887 l
+20363 8870 l
+20494 8855 l
+20625 8842 l
+20757 8832 l
+20889 8824 l
+21021 8818 l
+21153 8815 l
+21285 8813 l
+21417 8815 l
+21549 8818 l
+21681 8824 l
+21813 8832 l
+21944 8842 l
+22076 8855 l
+22207 8870 l
+22338 8887 l
+22468 8907 l
+22598 8928 l
+22728 8952 l
+22857 8979 l
+22986 9008 l
+23115 9038 l
+23243 9071 l
+23370 9107 l
+23496 9144 l
+23622 9184 l
+23747 9226 l
+23872 9270 l
+23995 9316 l
+24118 9364 l
+24240 9415 l
+24361 9468 l
+24481 9522 l
+24600 9579 l
+24718 9638 l
+24836 9699 l
+24952 9762 l
+25066 9827 l
+25180 9894 l
+25293 9963 l
+25404 10034 l
+25514 10107 l
+25623 10182 l
+25730 10258 l
+25837 10337 l
+25941 10417 l
+26045 10499 l
+26146 10583 l
+26247 10669 l
+26346 10756 l
+26443 10846 l
+26539 10937 l
+26633 11029 l
+26692 11088 l
+26750 11147 l
+26809 11205 l
+26868 11264 l
+26927 11323 l
+26985 11382 l
+27044 11440 l
+27103 11499 l
+27161 11558 l
+27220 11616 l
+27279 11675 l
+27338 11734 l
+27397 11793 l
+27455 11851 l
+27514 11910 l
+27573 11969 l
+27631 12027 l
+27690 12086 l
+27749 12145 l
+27808 12204 l
+27866 12263 l
+s
+2939 13441 m
+2997 13500 l
+3056 13558 l
+3115 13617 l
+3174 13676 l
+3232 13735 l
+3291 13793 l
+3350 13852 l
+3408 13911 l
+3467 13970 l
+3526 14028 l
+3585 14087 l
+3643 14146 l
+3702 14204 l
+3761 14263 l
+3820 14322 l
+3878 14381 l
+3937 14439 l
+3996 14498 l
+4054 14557 l
+4113 14616 l
+4172 14674 l
+4266 14767 l
+4362 14858 l
+4459 14947 l
+4558 15034 l
+4658 15120 l
+4760 15204 l
+4864 15286 l
+4968 15367 l
+5074 15445 l
+5182 15522 l
+5291 15596 l
+5401 15669 l
+5512 15740 l
+5625 15809 l
+5739 15876 l
+5853 15941 l
+5969 16004 l
+6087 16065 l
+6205 16124 l
+6324 16181 l
+6444 16236 l
+6565 16289 l
+6687 16339 l
+6810 16388 l
+6934 16434 l
+7058 16478 l
+7183 16520 l
+7309 16559 l
+7436 16597 l
+7564 16632 l
+7691 16665 l
+7820 16696 l
+7949 16725 l
+8078 16751 l
+8208 16775 l
+8338 16797 l
+8469 16816 l
+8600 16834 l
+8731 16849 l
+8863 16861 l
+8994 16872 l
+9126 16880 l
+9258 16885 l
+9390 16889 l
+9522 16890 l
+9654 16889 l
+9786 16885 l
+9918 16880 l
+10050 16871 l
+10182 16861 l
+10313 16848 l
+10444 16833 l
+10575 16816 l
+10706 16797 l
+10836 16775 l
+10965 16751 l
+11095 16725 l
+11224 16696 l
+11352 16665 l
+11480 16632 l
+11607 16597 l
+11734 16559 l
+11859 16519 l
+11985 16478 l
+12109 16434 l
+12233 16387 l
+12355 16339 l
+12477 16288 l
+12599 16236 l
+12719 16181 l
+12838 16124 l
+12956 16065 l
+13073 16004 l
+13189 15941 l
+13304 15876 l
+13418 15809 l
+13530 15740 l
+13642 15669 l
+13752 15596 l
+13860 15522 l
+13968 15445 l
+14074 15367 l
+14178 15286 l
+14282 15204 l
+14384 15120 l
+14484 15034 l
+14583 14947 l
+14680 14858 l
+14776 14767 l
+14870 14674 l
+14949 14596 l
+15027 14517 l
+15106 14439 l
+15184 14360 l
+15263 14282 l
+15341 14203 l
+15420 14125 l
+15498 14046 l
+15577 13968 l
+15655 13889 l
+15734 13811 l
+15812 13732 l
+15891 13654 l
+15969 13575 l
+16048 13497 l
+16126 13418 l
+16205 13340 l
+16283 13261 l
+16362 13183 l
+16440 13105 l
+16518 13026 l
+16597 12947 l
+16676 12869 l
+16754 12791 l
+16833 12712 l
+16911 12633 l
+16990 12555 l
+17068 12476 l
+17147 12398 l
+17225 12320 l
+17297 12249 l
+17369 12180 l
+17443 12113 l
+17518 12046 l
+17594 11981 l
+17671 11918 l
+17750 11855 l
+17829 11794 l
+17910 11735 l
+17991 11676 l
+18074 11620 l
+18157 11564 l
+18242 11511 l
+18327 11458 l
+18414 11407 l
+18501 11358 l
+18589 11310 l
+18678 11264 l
+18767 11219 l
+18858 11176 l
+18949 11135 l
+19041 11095 l
+19134 11056 l
+19227 11020 l
+19321 10984 l
+19415 10951 l
+19510 10919 l
+19606 10889 l
+19702 10861 l
+19799 10834 l
+19896 10809 l
+19993 10785 l
+20091 10764 l
+20189 10744 l
+20287 10726 l
+20386 10709 l
+20485 10694 l
+20585 10681 l
+20685 10670 l
+20784 10660 l
+20884 10652 l
+20984 10646 l
+21084 10642 l
+21184 10639 l
+21285 10638 l
+21385 10639 l
+21485 10642 l
+21585 10646 l
+21685 10652 l
+21785 10660 l
+21885 10670 l
+21984 10681 l
+22083 10694 l
+22182 10709 l
+22281 10726 l
+22380 10744 l
+22478 10764 l
+22576 10786 l
+22673 10809 l
+22770 10834 l
+22867 10861 l
+22963 10889 l
+23058 10920 l
+23153 10951 l
+23247 10985 l
+23341 11020 l
+23434 11056 l
+23527 11095 l
+23619 11135 l
+23710 11176 l
+23800 11219 l
+23890 11264 l
+23979 11310 l
+24067 11358 l
+24154 11408 l
+24240 11458 l
+24326 11511 l
+24410 11564 l
+24494 11620 l
+24576 11677 l
+24658 11735 l
+24738 11794 l
+24818 11855 l
+24896 11918 l
+24974 11981 l
+25050 12046 l
+25125 12113 l
+25198 12180 l
+25271 12249 l
+25342 12320 l
+25401 12378 l
+25460 12437 l
+25519 12496 l
+25578 12554 l
+25636 12613 l
+25695 12672 l
+25754 12731 l
+25812 12789 l
+25871 12848 l
+25930 12907 l
+25989 12965 l
+26047 13024 l
+26106 13083 l
+26165 13142 l
+26223 13201 l
+26282 13259 l
+26341 13318 l
+26400 13377 l
+26459 13435 l
+26517 13494 l
+26576 13553 l
+s
+-43.025 43.025 -43.025 43.025 -43.025 43.263 -43.025 43.025 -42.550 42.550 -43.263 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025
+-43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025
+-43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.263 -42.550 42.550 -43.025 43.025 -43.263 43.025 -43.025 43.025 -43.025 43.025
+4228.949 12150.594 30 1 pbi
+-43.025 43.025 -43.263 43.025 -42.550 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.027 43.025 -43.025 42.550 -43.025 43.025
+-43.025 43.263 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025
+-43.025 43.025 -43.025 43.025 -43.263 43.025 -42.550 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 43.025 -43.025 42.550
+27866.234 12262.793 30 1 pbi
+1291 -1291 4172 14674 1 20 sw
+0 lc
+[] 0 sd
+0 pbi
+-1291 1291 26633 11029 1 0 pbi
+-1290 -1291 17225 12320 1 0 pbi
+1290 1291 13580 13384 1 0 pbi
+2159 2159 2159 22321 29521 22321 29521 2159 clp
+1775 1797 1775 22683 29905 22683 29905 1797 clp
+20 sw
+2 lc
+0 lj
+[] 0 sd
+0 z 2171 2170 27339 20140 brc
+gr end
+showpage

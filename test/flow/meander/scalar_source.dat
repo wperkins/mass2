@@ -1,0 +1,6 @@
+1 GEN      lbstuff     "Tracer Released on the Left Bank" "units/ft3" 
+           BEDSOURCE "stuff-list.dat" "lstuff-map-list.dat" /
+2 GEN      rbstuff     "Tracer Released on the Bank" "units/ft3" 
+           BEDSOURCE "stuff-list.dat" "rstuff-map-list.dat" /
+3 GEN      clstuff     "Tracer Released on the Center Line" "units/ft3"
+           BEDSOURCE "stuff-list.dat" "cstuff-map-list.dat" /
