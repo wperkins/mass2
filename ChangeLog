@@ -1,0 +1,5 @@
+Thu Dec 17 20:16:07 1998  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: Initialize scalar arrays with 'conc_initial'
+		  if hotstart file does not have transport values.
+
