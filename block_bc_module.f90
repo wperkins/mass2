@@ -202,7 +202,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
                                 ! make sure we understand the BC kind
      
      SELECT CASE (bc_kind)
-     CASE ("FLUX", "VELO", "ELEV")
+     CASE ("FLUX", "VELO", "ELEV", "ZEROG")
      CASE ("UVEL", "VVEL")
      CASE ("CELL")
      CASE DEFAULT
@@ -246,6 +246,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
               WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                    &": ", TRIM(bc_extent), "?"
               CALL error_message(msg, fatal=.FALSE.)
+              READ (iounit, *)
            END SELECT
         
         CASE("TABLE")
@@ -271,6 +272,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
               WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                    &": ", TRIM(bc_extent), "?"
               CALL error_message(msg, fatal=.FALSE.)
+              READ (iounit, *)
            END SELECT
            
         CASE ("SOURCE","SINK")
@@ -296,6 +298,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
               WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                    &": ", TRIM(bc_extent), "?"
               CALL error_message(msg, fatal=.FALSE.)
+              READ (iounit, *)
            END SELECT
         
         CASE ("WALL")
@@ -352,12 +355,35 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
                 &xmax(block) - 1, ymax(block) - 1, line, lerr)
 
            do_rptdead = .TRUE.
+
+        CASE ("ZEROG")
+         
+           ! whatever is in bc_kind is ignored
            
+           SELECT CASE(bc_extent)
+           CASE("ALL")
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
+              block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+              block_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
+           CASE("PART")
+              cells = -999
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,cells(:)
+              CALL set_bc_part(iounit, block_bc(block)%bc_spec(num_bc), &
+                   &cells, maxidx, line, lerr)
+           CASE DEFAULT
+              lerr = lerr + 1
+              WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
+                   &": ", TRIM(bc_extent), "?"
+              CALL error_message(msg, fatal=.FALSE.)
+              READ (iounit, *)
+           END SELECT
         CASE DEFAULT
            lerr = lerr + 1
            WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                 &": ", TRIM(bc_type), "?"
            CALL error_message(msg, fatal=.FALSE.)
+           READ (iounit, *)
         END SELECT
      END IF
      ierr = ierr + lerr

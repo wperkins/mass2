@@ -1,3 +1,18 @@
+2003-12-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (apply_hydro_bc): handle ZEROG hydro BC type 
+
+	* global_module_023.f90 (globals): add ZEROG hydro BC type
+
+	* block_bc_module.f90 (read_bcspecs): add ZEROG BC type
+
+	* test/flow/normal-1blk/mass2_v027.base: make starting conditions
+	the same as other normal flow cases
+
+2003-11-21  William A. Perkins  <william.perkins@pnl.gov>
+
+	* gage_output_module.f90 (mass_print): more resolution in output.
+
 2003-11-14  William A. Perkins  <william.perkins@pnl.gov>
 
 	* util/cart_grid/cartgrid.f90: Increase resolution of output

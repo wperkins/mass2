@@ -1703,7 +1703,7 @@ SUBROUTINE hydro(status_flag)
                     ! adjust for upstream boundary conditions
 
                     SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_ELEV)
+                    CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
                        coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
                        coeff%aw(i,j) = 0.0
                     CASE DEFAULT
@@ -1727,7 +1727,7 @@ SUBROUTINE hydro(status_flag)
                        coeff%source(i,j) = coeff%source(i,j) + &
                             &bigfactor*block(iblock)%uvel(i+1,j)
                        coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-                    CASE (FLOWBC_ELEV)
+                    CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
                        coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
                        coeff%ae(i,j) = 0.0
                     END SELECT
@@ -1746,7 +1746,8 @@ SUBROUTINE hydro(status_flag)
                    &block(iblock)%isdead(i,j+1)%u) THEN 
                  coeff%ap(i,j) = coeff%ap(i,j) + coeff%an(i,j)
                  coeff%an(i,j) = 0.0
-              ELSE IF ((block(iblock)%isdead(i,j-1)%v .OR. &
+              END IF
+              IF ((block(iblock)%isdead(i,j-1)%v .OR. &
                    &block(iblock)%isdead(i+1,j-1)%v) .AND. .NOT. &
                    &block(iblock)%isdead(i,j-1)%u) THEN
                  coeff%ap(i,j) = coeff%ap(i,j) + coeff%as(i,j)
@@ -1949,7 +1950,7 @@ SUBROUTINE hydro(status_flag)
                     ! adjust for downstream boundary conditions
 
                     SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ELEV)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ELEV, FLOWBC_ZEROG)
                        coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
                        coeff%ae(i,j) = 0.0
                     END SELECT
@@ -1968,7 +1969,8 @@ SUBROUTINE hydro(status_flag)
                    &block(iblock)%isdead(i-1,j)%v) THEN
                  coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
                  coeff%aw(i,j) = 0.0
-              ELSE IF ((block(iblock)%isdead(i,j)%u .OR. &
+              END IF
+              IF ((block(iblock)%isdead(i,j)%u .OR. &
                    &block(iblock)%isdead(i,j+1)%u) .AND. .NOT. &
                    &block(iblock)%isdead(i+1,j)%v) THEN
                  coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
@@ -2077,7 +2079,7 @@ SUBROUTINE hydro(status_flag)
                     ! adjust for upstream boundary conditions (always zero)
 
                     SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ZEROG)
                        coeff%cp(i,j) = coeff%cp(i,j) - coeff%cw(i,j)
                        coeff%cw(i,j) = 0.0
                     CASE (FLOWBC_ELEV)
@@ -2096,7 +2098,7 @@ SUBROUTINE hydro(status_flag)
                     ! adjust for downstream boundary conditions
 
                     SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ZEROG)
                        coeff%cp(i,j) = coeff%cp(i,j) - coeff%ce(i,j)
                        coeff%ce(i,j) = 0.0
                     END SELECT
@@ -2106,6 +2108,33 @@ SUBROUTINE hydro(status_flag)
                     coeff%ce(i,j) = 0.0
                  END SELECT
               END IF
+
+              ! IF there is a wall blocking longitudinal flow, we need
+              ! to disconnect from the d cell on the other side
+              IF ((block(iblock)%isdead(i-1,j)%u) .AND. .NOT. &
+                   &block(iblock)%isdead(i-1,j)%p) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
+                 coeff%aw(i,j) = 0.0
+              END IF
+              IF ((block(iblock)%isdead(i,j)%u) .AND. .NOT. &
+                   &block(iblock)%isdead(i+1,j)%p) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
+                 coeff%ae(i,j) = 0.0
+              END IF
+
+              ! IF there is a wall blocking lateral flow, we need to
+              ! disconnect from the cell on the other side 
+              IF ((block(iblock)%isdead(i,j)%v) .AND. .NOT. &
+                   &block(iblock)%isdead(i,j+1)%p) THEN 
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%an(i,j)
+                 coeff%an(i,j) = 0.0
+              END IF
+              IF ((block(iblock)%isdead(i,j-1)%v) .AND. .NOT. &
+                   &block(iblock)%isdead(i,j-1)%p) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%as(i,j)
+                 coeff%as(i,j) = 0.0
+              END IF
+
            END DO
         END DO
 
@@ -2444,6 +2473,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_ELEV
            END DO
         END SELECT
+     CASE ("ZEROG")
+        CALL error_message("We really do not know what happens with a US ZEROG BC")
      END SELECT
      
   CASE("DS")
@@ -2523,7 +2554,17 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_ELEV
            END DO
         END SELECT
-        
+
+     CASE ("ZEROG")
+        DO j=1,bc%num_cell_pairs
+           j_beg = bc%start_cell(j)+1
+           j_end = bc%end_cell(j)+1
+           CALL extrapolate_depth(blk, i, j_beg, j_end, level = .FALSE.)
+           blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
+           blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
+           blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
+           blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_ZEROG
+        END DO
      END SELECT
      
      ! these are dummied in for later implementation

@@ -942,7 +942,7 @@ CONTAINS
     WRITE(mass_source_iounit,*)
 
 3013 FORMAT(a10,2x,a12,1x,I3,1X)
-3012 FORMAT((f12.2,1x))
+3012 FORMAT((g12.4,1x))
     
 
   END SUBROUTINE mass_print
