@@ -87,13 +87,13 @@ SOURCE=.\block_bc_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_BLOCK=\
+DEP_F90_BLOCK=\
 	".\Release\table_boundary_conditions.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BLOCK=\
+DEP_F90_BLOCK=\
 	".\Debug\table_boundary_conditions.mod"\
 	
 
@@ -106,13 +106,13 @@ SOURCE=.\date_time_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_DATE_=\
+DEP_F90_DATE_=\
 	".\Release\julian.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_DATE_=\
+DEP_F90_DATE_=\
 	".\Debug\julian.mod"\
 	
 
@@ -158,13 +158,13 @@ SOURCE=.\gas_functions_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_GAS_F=\
+DEP_F90_GAS_F=\
 	".\Release\gas_coeffs.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_GAS_F=\
+DEP_F90_GAS_F=\
 	".\Debug\gas_coeffs.mod"\
 	
 
@@ -210,7 +210,7 @@ SOURCE=.\mass2_main_025.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_MASS2=\
+DEP_F90_MASS2=\
 	".\Release\block_boundary_conditions.mod"\
 	".\Release\date_time.mod"\
 	".\Release\energy_flux.mod"\
@@ -225,7 +225,7 @@ NODEP_F90_MASS2=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MASS2=\
+DEP_F90_MASS2=\
 	".\Debug\block_boundary_conditions.mod"\
 	".\Debug\date_time.mod"\
 	".\Debug\energy_flux.mod"\
@@ -247,14 +247,14 @@ SOURCE=.\met_data_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_MET_D=\
+DEP_F90_MET_D=\
 	".\Release\date_time.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MET_D=\
+DEP_F90_MET_D=\
 	".\Debug\date_time.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	
@@ -268,13 +268,13 @@ SOURCE=.\profile_init.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_PROFI=\
+DEP_F90_PROFI=\
 	".\Release\globals.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_PROFI=\
+DEP_F90_PROFI=\
 	".\Debug\globals.mod"\
 	
 
@@ -298,13 +298,13 @@ SOURCE=.\table_bc_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-NODEP_F90_TABLE=\
+DEP_F90_TABLE=\
 	".\Release\date_time.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TABLE=\
+DEP_F90_TABLE=\
 	".\Debug\date_time.mod"\
 	
 

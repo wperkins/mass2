@@ -1,3 +1,20 @@
+1999-04-08  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile (DEBUG): removed -g3 and added -Ofast, as per
+	  Marshall's tests
+
+	* makefile.dec: Lower cased all module names
+	(FLAGS): used -fpe1, but this may not be the right choice 
+	(DEBUG): removed -g3 and added -fast, needs to be benchmarked
+
+1999-04-05  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile.dec: created
+
+1999-03-22  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile (tags): added tags target
+
 Thu Dec 17 20:16:07 1998  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* mass2_main_025.f90: Initialize scalar arrays with 'conc_initial'
