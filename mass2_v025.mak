@@ -28,9 +28,6 @@ NULL=
 NULL=nul
 !ENDIF 
 
-F90=df.exe
-RSC=rc.exe
-
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 OUTDIR=.\Release
@@ -71,6 +68,7 @@ CLEAN :
 	-@erase "$(INTDIR)\mass2_main_025.obj"
 	-@erase "$(INTDIR)\met_data_module.mod"
 	-@erase "$(INTDIR)\met_data_module.obj"
+	-@erase "$(INTDIR)\netcdferror.obj"
 	-@erase "$(INTDIR)\plot_output.mod"
 	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
@@ -83,16 +81,33 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /warn:nofileopt\
- /module:"Release/" /object:"Release/" 
+F90=df.exe
+F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
+ /compile_only /nologo /warn:nofileopt /module:"Release/" /object:"Release/" 
 F90_OBJS=.\Release/
+
+.for{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.f{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.f90{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.fpp{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:no\
- /pdb:"$(OUTDIR)\mass2_v025.pdb" /machine:I386 /out:"$(OUTDIR)\mass2_v025.exe" 
+LINK32_FLAGS=netcdfs.lib kernel32.lib /nologo /subsystem:console\
+ /incremental:no /pdb:"$(OUTDIR)\mass2_v025.pdb" /machine:I386\
+ /nodefaultlib:"libcmt.lib" /out:"$(OUTDIR)\mass2_v025.exe"\
+ /libpath:"E:\Software\NetCDF\lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\block_bc_module.obj" \
 	"$(INTDIR)\date_time_module.obj" \
@@ -105,6 +120,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\julian.obj" \
 	"$(INTDIR)\mass2_main_025.obj" \
 	"$(INTDIR)\met_data_module.obj" \
+	"$(INTDIR)\netcdferror.obj" \
 	"$(INTDIR)\plot_output.obj" \
 	"$(INTDIR)\profile_init.obj" \
 	"$(INTDIR)\scalars_module.obj" \
@@ -156,6 +172,7 @@ CLEAN :
 	-@erase "$(INTDIR)\mass2_main_025.obj"
 	-@erase "$(INTDIR)\met_data_module.mod"
 	-@erase "$(INTDIR)\met_data_module.obj"
+	-@erase "$(INTDIR)\netcdferror.obj"
 	-@erase "$(INTDIR)\plot_output.mod"
 	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
@@ -170,40 +187,11 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /debug:full /optimize:0\
- /warn:nofileopt /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
+F90=df.exe
+F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
+ /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt /module:"Debug/"\
+ /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
 F90_OBJS=.\Debug/
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:yes\
- /pdb:"$(OUTDIR)\mass2_v025.pdb" /debug /machine:I386\
- /out:"$(OUTDIR)\mass2_v025.exe" /pdbtype:sept 
-LINK32_OBJS= \
-	"$(INTDIR)\block_bc_module.obj" \
-	"$(INTDIR)\date_time_module.obj" \
-	"$(INTDIR)\energy_flux_module.obj" \
-	"$(INTDIR)\gage_output_module.obj" \
-	"$(INTDIR)\gas_coeffs_module.obj" \
-	"$(INTDIR)\gas_functions_module.obj" \
-	"$(INTDIR)\global_module_023.obj" \
-	"$(INTDIR)\io_routines_module.obj" \
-	"$(INTDIR)\julian.obj" \
-	"$(INTDIR)\mass2_main_025.obj" \
-	"$(INTDIR)\met_data_module.obj" \
-	"$(INTDIR)\plot_output.obj" \
-	"$(INTDIR)\profile_init.obj" \
-	"$(INTDIR)\scalars_module.obj" \
-	"$(INTDIR)\table_bc_module.obj"
-
-"$(OUTDIR)\mass2_v025.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-!ENDIF 
 
 .for{$(F90_OBJS)}.obj:
    $(F90) $(F90_PROJ) $<  
@@ -216,6 +204,41 @@ LINK32_OBJS= \
 
 .fpp{$(F90_OBJS)}.obj:
    $(F90) $(F90_PROJ) $<  
+
+RSC=rc.exe
+BSC32=bscmake.exe
+BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
+BSC32_SBRS= \
+	
+LINK32=link.exe
+LINK32_FLAGS=netcdfs.lib kernel32.lib /nologo /subsystem:console\
+ /incremental:yes /pdb:"$(OUTDIR)\mass2_v025.pdb" /debug /machine:I386\
+ /nodefaultlib:"libcmt.lib" /out:"$(OUTDIR)\mass2_v025.exe" /pdbtype:sept\
+ /libpath:"E:\Software\NetCDF\lib" 
+LINK32_OBJS= \
+	"$(INTDIR)\block_bc_module.obj" \
+	"$(INTDIR)\date_time_module.obj" \
+	"$(INTDIR)\energy_flux_module.obj" \
+	"$(INTDIR)\gage_output_module.obj" \
+	"$(INTDIR)\gas_coeffs_module.obj" \
+	"$(INTDIR)\gas_functions_module.obj" \
+	"$(INTDIR)\global_module_023.obj" \
+	"$(INTDIR)\io_routines_module.obj" \
+	"$(INTDIR)\julian.obj" \
+	"$(INTDIR)\mass2_main_025.obj" \
+	"$(INTDIR)\met_data_module.obj" \
+	"$(INTDIR)\netcdferror.obj" \
+	"$(INTDIR)\plot_output.obj" \
+	"$(INTDIR)\profile_init.obj" \
+	"$(INTDIR)\scalars_module.obj" \
+	"$(INTDIR)\table_bc_module.obj"
+
+"$(OUTDIR)\mass2_v025.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LINK32_FLAGS) $(LINK32_OBJS)
+<<
+
+!ENDIF 
 
 
 !IF "$(CFG)" == "mass2_v025 - Win32 Release" || "$(CFG)" ==\
@@ -316,23 +339,39 @@ SOURCE=.\gage_output_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
+DEP_F90_GAGE_=\
+	".\Release\date_time.mod"\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
 F90_MODOUT=\
 	"gage_output"
 
 
 "$(INTDIR)\gage_output_module.obj"	"$(INTDIR)\gage_output.mod" : $(SOURCE)\
- "$(INTDIR)"
+ $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gas_functions.mod" "$(INTDIR)\date_time.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
+DEP_F90_GAGE_=\
+	".\Debug\date_time.mod"\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
 F90_MODOUT=\
 	"gage_output"
 
 
 "$(INTDIR)\gage_output_module.obj"	"$(INTDIR)\gage_output.mod" : $(SOURCE)\
- "$(INTDIR)"
+ $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\gas_functions.mod" "$(INTDIR)\date_time.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -539,8 +578,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\met_data_module.obj"	"$(INTDIR)\met_data_module.mod" : $(SOURCE)\
- $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\table_boundary_conditions.mod"
+ $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
+ "$(INTDIR)\date_time.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -562,14 +601,24 @@ F90_MODOUT=\
 
 !ENDIF 
 
+SOURCE=.\netcdferror.f90
+DEP_F90_NETCD=\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+
+"$(INTDIR)\netcdferror.obj" : $(SOURCE) $(DEP_F90_NETCD) "$(INTDIR)"
+
+
 SOURCE=.\plot_output.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_PLOT_=\
+	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"plot_output"
@@ -577,16 +626,18 @@ F90_MODOUT=\
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
  $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod"
+ "$(INTDIR)\gas_functions.mod" "$(INTDIR)\date_time.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_PLOT_=\
+	".\Debug\date_time.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
 	".\Debug\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"plot_output"
@@ -594,7 +645,7 @@ F90_MODOUT=\
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
  $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod"
+ "$(INTDIR)\gas_functions.mod" "$(INTDIR)\date_time.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 

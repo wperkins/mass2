@@ -1,0 +1,489 @@
+#!MC 750
+$!VarSet |LFBD| = '.'
+$!VarSet |LFDSRN1| = 'MASS2 Loader'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vucart" "Vvcart" "Vdepth" "S0" "E0"'
+$!SETSTYLEBASE FACTORY
+$!PAPER 
+  BACKGROUNDCOLOR = WHITE
+  ISTRANSPARENT = YES
+  ORIENTPORTRAIT = YES
+  SHOWPAPER = YES
+  PAPERSIZE = LETTER
+  PAPERSIZEINFO
+    {
+    LETTER
+      {
+      WIDTH = 8.5
+      HEIGHT = 11
+      LEFTHARDCLIPOFFSET = 0.125
+      RIGHTHARDCLIPOFFSET = 0.125
+      TOPHARDCLIPOFFSET = 0.125
+      BOTTOMHARDCLIPOFFSET = 0.125
+      }
+    CUSTOM1
+      {
+      WIDTH = 9
+      HEIGHT = 11
+      }
+    }
+  PAPERGRIDSPACING = QUARTERINCH
+  REGIONINWORKAREA
+    {
+    X1 = -0.05
+    Y1 = -0.05
+    X2 = 8.55
+    Y2 = 11.05
+    }
+$!COLORSPECTRUM 
+  CONTOURCOLORMAP = LGRAINBOW
+  SURFACERGBMIN
+    {
+    R = 0
+    G = 0
+    B = 0
+    }
+  SURFACERGBMAX
+    {
+    R = 255
+    G = 255
+    B = 255
+    }
+$!COLORMAPCONTROL RESETTOFACTORY
+### Frame Number 1 ###
+$!READDATASET  '|LFDSFN1|' 
+  DATASETREADER = '|LFDSRN1|' 
+$!REMOVEVAR |LFDSRN1|
+$!FRAMELAYOUT 
+  SHOWHEADER = NO
+  HEADERCOLOR = RED
+  XYPOS
+    {
+    X = 0.75
+    Y = 0.75
+    }
+  WIDTH = 7
+  HEIGHT = 9.5
+$!FRAMEMODE  = TWOD
+$!FRAMENAME  = 'Frame 001' 
+$!ACTIVEFIELDZONES  =  [1-13]
+$!GLOBALCONTOUR 
+  VAR = 5
+  LEGEND
+    {
+    SHOW = YES
+    XYPOS
+      {
+      X = 7.1429
+      Y = 34.211
+      }
+    TEXTSHAPE
+      {
+      HEIGHT = 1.5
+      }
+    BOX
+      {
+      BOXTYPE = NONE
+      }
+    NUMFORMAT
+      {
+      FORMATTING = INTEGER
+      }
+    }
+$!CONTOURLEVELS NEW
+  RAWDATA
+15
+5
+6.44555886378
+8.30904581328
+10.7112887783
+13.8080484654
+17.8001178356
+22.9463414583
+29.5803989155
+38.1324404848
+49.1569779528
+63.368838992
+81.6895163704
+105.306917264
+135.752386797
+175
+$!GLOBALTWODVECTOR 
+  UVAR = 3
+  VVAR = 4
+  RELATIVELENGTH = 50
+$!FIELD  [1]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = RED
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = RED
+    }
+  SHADE
+    {
+    COLOR = RED
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [2]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = GREEN
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = GREEN
+    }
+  SHADE
+    {
+    COLOR = GREEN
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [3]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = BLUE
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = BLUE
+    }
+  SHADE
+    {
+    COLOR = BLUE
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [4]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = CYAN
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = CYAN
+    }
+  SHADE
+    {
+    COLOR = CYAN
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [5]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = YELLOW
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = YELLOW
+    }
+  SHADE
+    {
+    COLOR = YELLOW
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [6]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = PURPLE
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = PURPLE
+    }
+  SHADE
+    {
+    COLOR = PURPLE
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [7]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = RED
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = RED
+    }
+  SHADE
+    {
+    COLOR = RED
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [8]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = GREEN
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = GREEN
+    }
+  SHADE
+    {
+    COLOR = GREEN
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [9]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = BLUE
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = BLUE
+    }
+  SHADE
+    {
+    COLOR = BLUE
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [10]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = CYAN
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = CYAN
+    }
+  SHADE
+    {
+    COLOR = CYAN
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [11]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = YELLOW
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = YELLOW
+    }
+  SHADE
+    {
+    COLOR = YELLOW
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [12]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = PURPLE
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = PURPLE
+    }
+  SHADE
+    {
+    COLOR = PURPLE
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!FIELD  [13]
+  MESH
+    {
+    COLOR = CUSTOM1
+    }
+  CONTOUR
+    {
+    CONTOURTYPE = FLOOD
+    COLOR = RED
+    }
+  VECTOR
+    {
+    COLOR = BLACK
+    }
+  SCATTER
+    {
+    COLOR = RED
+    }
+  SHADE
+    {
+    COLOR = RED
+    }
+  BOUNDARY
+    {
+    COLOR = CUSTOM1
+    }
+$!TWODAXIS 
+  XVAR = 1
+  YVAR = 2
+$!VIEW FIT
+$!TWODAXIS 
+  GRIDAREA
+    {
+    EXTENTS
+      {
+      X1 = 0
+      Y1 = 0
+      X2 = 100
+      Y2 = 100
+      }
+    }
+  DEPXTOYRATIO = 1
+  XDETAIL
+    {
+    SHOWAXIS = NO
+    AXISPOSITION = 0
+    RANGEMIN = 2369717.09689
+    RANGEMAX = 2376051.32539
+    GRSPACING = 2000
+    }
+  YDETAIL
+    {
+    SHOWAXIS = NO
+    AXISPOSITION = 0
+    RANGEMIN = 311257.114398
+    RANGEMAX = 319853.567356
+    GRSPACING = 1000
+    }
+$!FIELDLAYERS 
+  SHOWCONTOUR = YES
+  SHOWVECTOR = YES
+$!REMOVEVAR |LFBD|
+$!REMOVEVAR |LFDSFN1|
+$!SETSTYLEBASE CONFIG

@@ -1,36 +1,32 @@
-# -------------------------------------------------------------
-# file: Makefile
-# Makefile for mass2
+# -*- makefile -*----------------------------------------------
+# file: makefile.linux
+# Makefile for MASS2 on Linux machines with Absoft F90 compiler
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Battelle Memorial Institute
 # Pacific Northwest Laboratory
 # -------------------------------------------------------------
 # -------------------------------------------------------------
-# Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Nov 17 09:54:55 1999 by William A. Perkins <perk@tophet.pnl.gov>
+# Created August 12, 1999 by William A. Perkins
+# Last Change: Wed Oct 20 10:24:18 1999 by William A. Perkins <perk@gehenna.pnl.gov>
 # -------------------------------------------------------------
-
+# $Id$
 
 F90 = f90
 COMPILE.f90 = $(F90) $(F90FLAGS) -c $(DEBUG)
 LINK.f90 = $(F90) $(LDFLAGS)
 MOD=mod
 
-# Options supplied by the SGI guy (require 512 MB of virtual memory)
-# DEBUG =  -O3
-# FLAGS = $(DEBUG) -r10000 -n32 -OPT:Olimit=0 -LNO:prefetch=2
-
 # stuff to include netcdf
 
-NETCDFDIR = /usr/unsupported/ucar
+NETCDFDIR = /usr
 NETCDFFLAGS = -I$(NETCDFDIR)/include
 NETCDFLDFLAGS = -L$(NETCDFDIR)/lib 
 NETCDFLIBS = -lnetcdf
 
 # Options that will work on erebus:
-DEBUG =  -Ofast
-FLAGS = $(NETCDFFLAGS) $(DEBUG) # -TARG:platform=IP30  -OPT:Olimit=0 
+DEBUG =  -O
+FLAGS = $(NETCDFFLAGS) $(DEBUG) # -YEXT_NAMES=LCS 
 
 # general compile/link flags
 
@@ -38,7 +34,7 @@ MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
 LIBLOC = 
 LDFLAGS = $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS)
-LIBS = $(NETCDFLIBS) -lfpe
+LIBS = $(NETCDFLIBS) -lU77
 
 TARGET = mass2_v025
 SRCS = \
@@ -125,7 +121,7 @@ mass2_main_025.o: mass2_main_025.f90 \
    GLOBALS.$(MOD) IO_ROUTINES_MODULE.$(MOD) BLOCK_BOUNDARY_CONDITIONS.$(MOD) \
    TABLE_BOUNDARY_CONDITIONS.$(MOD) DATE_TIME.$(MOD) SCALARS.$(MOD) \
    MET_DATA_MODULE.$(MOD) ENERGY_FLUX.$(MOD) GAS_FUNCTIONS.$(MOD) \
-   PLOT_OUTPUT.$(MOD) GAGE_OUTPUT.$(MOD)
+   PLOT_OUTPUT.$(MOD)
 	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_025.f90
 
 met_data_module.o: met_data_module.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
@@ -160,3 +156,4 @@ clean::
 tags: TAGS
 TAGS: $(SRCS)
 	etags $(SRCS)
+

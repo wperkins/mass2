@@ -48,7 +48,7 @@ INTEGER :: system_time(8)
 INTEGER :: iblock, con_block, num_bc, ispecies
 INTEGER :: cfg_iounit=10, output_iounit=11, error_iounit=13, status_iounit=14
 INTEGER :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
-INTEGER :: mass_source_iounit=19
+! INTEGER :: mass_source_iounit=19
 
 INTEGER :: i_start_cell, i_end_cell, j_start_cell , j_end_cell
 INTEGER :: max_species_in_restart
@@ -168,7 +168,7 @@ OPEN(cfg_iounit,file='mass2_v025.cfg')
 OPEN(output_iounit,file='output.out', access='sequential', RECL=1024)
 OPEN(error_iounit,file='error-warning.out')
 OPEN(status_iounit,file='status.out')
-OPEN(mass_source_iounit,file='mass_source_monitor.out')
+! OPEN(mass_source_iounit,file='mass_source_monitor.out')
 !-----------------------------------------------------------------------------------
 ! write info to the console
 WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -327,7 +327,10 @@ END IF
 
 !------------------------------------------------------------------------------------
 ! set up the gage print files
-IF(do_gage_print) CALL gage_file_setup(error_iounit, status_iounit)
+IF(do_gage_print) THEN
+   CALL gage_file_setup(do_transport,error_iounit, status_iounit)
+   CALL mass_file_setup()
+END IF
 
 
 !---------------------------------------------------------------------------------------------------------
@@ -689,7 +692,7 @@ WRITE(output_iounit,2010)system_time(2),system_time(3),system_time(1),system_tim
 WRITE(output_iounit,*)"Total Number of Blocks = ",max_blocks
 WRITE(output_iounit,*)"Grids read from these files: "
 DO iblock=1,max_blocks
-	WRITE(output_iounit,2000)grid_file_name(iblock)
+   WRITE(output_iounit,2000)grid_file_name(iblock)
 END DO
 WRITE(output_iounit,*)
 
@@ -789,30 +792,37 @@ DO iblock=1,max_blocks
 END DO
 CLOSE(grid_iounit)
 
-OPEN(grid_iounit,file='gridplot-metrics.dat')
-WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid Metrics"""
-WRITE(grid_iounit,*)"variables=""x"" ""y"" ""hp1"" ""hp2"" ""gp12"""
-DO iblock=1,max_blocks
-	WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
-	WRITE(grid_iounit,*)block(iblock)%x
-	WRITE(grid_iounit,*)block(iblock)%y
-	WRITE(grid_iounit,*)block(iblock)%hp1
-	WRITE(grid_iounit,*)block(iblock)%hp2
-	WRITE(grid_iounit,*)block(iblock)%gp12
-END DO
-CLOSE(grid_iounit)
+IF ( plot_do_tecplot ) THEN
+   OPEN(grid_iounit,file='gridplot-metrics.dat')
+   WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid Metrics"""
+   WRITE(grid_iounit,*)"variables=""x"" ""y"" ""hp1"" ""hp2"" ""gp12"""
+   DO iblock=1,max_blocks
+      WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
+      WRITE(grid_iounit,*)block(iblock)%x
+      WRITE(grid_iounit,*)block(iblock)%y
+      WRITE(grid_iounit,*)block(iblock)%hp1
+      WRITE(grid_iounit,*)block(iblock)%hp2
+      WRITE(grid_iounit,*)block(iblock)%gp12
+   END DO
+   CLOSE(grid_iounit)
+END IF
 
 !-----------------------------------------------------------------------
 ! diagnostic plot; tecplot format
 
-CALL diag_plot_file_setup_tecplot()
+CALL diag_plot_file_setup()
 
 !-----------------------------------------------------------------------
 
-CALL plot_file_setup_tecplot()
-CALL plot_print_tecplot(start_time%date_string, start_time%time_string,&
+CALL plot_file_setup()
+CALL plot_print(start_time%date_string, start_time%time_string, &
      &salinity, baro_press)
 
+IF (do_gage_print) THEN
+   CALL gage_print(current_time%date_string, current_time%time_string,&
+        &(current_time%time - start_time%time)*24, &
+        &do_transport, salinity, baro_press)
+END IF
 
 !OPEN(55,file='ds_elev-file2.dat')
 !DO j=1,block(1)%ymax+1
@@ -2323,12 +2333,12 @@ END DO
 ! end of output to ascii file section
 !-------------------------------------------------------------------------------------------------------
 
-CALL diag_plot_print_tecplot(current_time%date_string, current_time%time_string, delta_t)
+CALL diag_plot_print(current_time%date_string, current_time%time_string, delta_t)
 
 !-------------------------------------------------------------------------------------------------------
 ! print out in tecplot block format
 !
-CALL plot_print_tecplot(current_time%date_string, current_time%time_string, &
+CALL plot_print(current_time%date_string, current_time%time_string, &
      &salinity, baro_press)
 
 END IF
@@ -2339,66 +2349,16 @@ END IF
 ! print out to gage output files
 IF(do_gage_print)THEN
 	IF(MOD(time_step_count,gage_print_freq) == 0)THEN
-		DO i=1,num_gages
-			OPEN(50,file=gage_specs(i)%filename, POSITION="APPEND")
-			iblock = gage_specs(i)%block
-			icell = gage_specs(i)%i_cell + 1 ! convert from cell to i,j
-			jcell = gage_specs(i)%j_cell + 1
-
-			IF(do_transport)THEN
-				DO ispecies=1,max_species
-					species_io_vec(ispecies) = species(ispecies)%scalar(iblock)%conc(icell,jcell)
-				END DO
-			END IF
-			conc_TDG = species(1)%scalar(iblock)%conc(icell,jcell)
-			t_water = species(2)%scalar(iblock)%conc(icell,jcell)
-			WRITE(50,2020)current_time%date_string,current_time%time_string, &
-				(current_time%time - start_time%time)*24, &
-				block(iblock)%wsel(icell,jcell),block(iblock)%depth(icell,jcell), &
-				SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2), &
-				block(iblock)%uvel(icell,jcell), block(iblock)%vvel(icell,jcell), &
-				SUM(ABS(block(iblock)%mass_source)), &
-				species_io_vec(1:max_species), &
-				TDGasPress(conc_TDG,  t_water,  salinity), &
-				TDGasDP(conc_TDG, t_water,  salinity,  baro_press), &
-				TDGasSaturation( conc_TDG, t_water,  salinity, baro_press)
-
-			CLOSE(50)
-		END DO
-
-		! print out mass source monitoring information
-		IF(time_step_count == 1)THEN
-			WRITE(mass_source_iounit,*)"# mass source history - summation of the mass source in each block "
-			WRITE(mass_source_iounit,*)"#      total mass imbalance for each block in ft3/sec"
-			WRITE(mass_source_iounit,3005,advance='no')
-			DO iblock = 1, max_blocks 
-				WRITE(mass_source_iounit,3011, advance='no')iblock
-			END DO
-			WRITE(mass_source_iounit,*)
-		END IF
-        j = 1
-        DO iblock = 1, max_blocks
-           IF (j == 1) &
-                &WRITE(mass_source_iounit,3013, advance='no')current_time%date_string,current_time%time_string
-           WRITE(mass_source_iounit,3012, advance='no')SUM(ABS(block(iblock)%mass_source))
-           IF (j >= 20) THEN
-              j = 1
-              IF (iblock .ne. max_blocks) WRITE(mass_source_iounit,*)
-           ELSE
-              j = j + 1
-           END IF
-        END DO
-        WRITE(mass_source_iounit,*)
-
-3013 FORMAT(a10,2x,a8,2x)
-3012 FORMAT((f12.2,1x))
-3011 FORMAT(i5,5x)
-3005 FORMAT('#date',8x,'time',5x)
+       CALL gage_print(current_time%date_string, current_time%time_string,&
+            &DBLE((current_time%time - start_time%time)*24), &
+            &do_transport, salinity, baro_press)
+       CALL mass_print(current_time%date_string, current_time%time_string)
+! 3011 FORMAT(i5,5x)
+! 3005 FORMAT('#date',8x,'time',5x)
 
 	END IF
 END IF
 
-2020 FORMAT(a10,2x,a8,2x,50(f12.2,2x))
 !---------------------------------------------------------------------------
 ! write a binary restart file
 IF(write_restart_file)THEN
@@ -2515,11 +2475,12 @@ END DO
 
 CLOSE(cfg_iounit)
 CLOSE(output_iounit)
-CLOSE(plot_iounit)
+CALL plot_file_close()
 CLOSE(error_iounit)
 CLOSE(status_iounit)
-CLOSE(mass_source_iounit)
-CLOSE(diag_plot_iounit)
+CALL gage_file_close()
+CALL mass_file_close()
+CALL diag_plot_file_close()
 
 ! WRITE(*,*)'*** ALL DONE - PRESS RETURN ***'
 ! READ(*,*)
@@ -2574,4 +2535,5 @@ END FUNCTION afunc
 !-----------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------
+
 END PROGRAM mass2_main

@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Tue Aug  3 12:09:52 1999 by William A. Perkins <perk@mack.pnl.gov>
+# Last Change: Wed Nov 17 09:55:15 1999 by William A. Perkins <perk@tophet.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -22,49 +22,58 @@ OBJ=o
 # DEBUG =  -O3
 # FLAGS = $(DEBUG) -r10000 -n32 -OPT:Olimit=0 -LNO:prefetch=2
 
+# stuff to include netcdf
+
+NETCDFDIR = /usr/unsupported/ucar
+NETCDFFLAGS = -I$(NETCDFDIR)/include
+NETCDFLDFLAGS = -L$(NETCDFDIR)/lib 
+NETCDFLIBS = -lnetcdf
+
 # Options that will work on erebus:
 DEBUG =  -O -fast
-FLAGS = $(DEBUG) -fpe1
+FLAGS = $(NETCDFFLAGS) $(DEBUG) -fpe1
 
 MAINDEBUG = $(DEBUG)
 F90FLAGS = $(FLAGS)
 LIBLOC = 
-LDFLAGS = ${LIBLOC} $(FLAGS) -non_shared
-LIBS = 
+LDFLAGS = $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) -non_shared
+LIBS = $(NETCDFLIBS) 
 
 TARGET = mass2_v025
-SRCS = \
-     julian.f90 \
-     date_time_module.f90 \
-     gas_coeffs_module.f90 \
-     gas_functions_module.f90 \
-     scalars_module.f90 \
-     energy_flux_module.f90 \
-     gage_output_module.f90 \
-     plot_output.f90 \
-     global_module_023.f90 \
-     io_routines_module.f90 \
-     table_bc_module.f90 \
-     block_bc_module.f90 \
-     met_data_module.f90 \
-     profile_init.f90 \
+SRCS =											\
+     julian.f90									\
+     date_time_module.f90						\
+     gas_coeffs_module.f90						\
+     gas_functions_module.f90					\
+     scalars_module.f90							\
+     energy_flux_module.f90						\
+     gage_output_module.f90						\
+     plot_output.f90							\
+     netcdferror.f90							\
+     global_module_023.f90						\
+     io_routines_module.f90						\
+     table_bc_module.f90						\
+     block_bc_module.f90						\
+     met_data_module.f90						\
+     profile_init.f90							\
      mass2_main_025.f90
 
 OBJS = $(SRCS:%.f90=%.o)
 
-MODULES = 					\
-    block_boundary_conditions.mod		\
-    date_time.mod				\
-    energy_flux.mod				\
-    f90_unix_proc.mod				\
-    gage_output.mod				\
-    gas_coeffs.mod				\
-    gas_functions.mod				\
-    globals.mod					\
-    io_routines_module.mod			\
-    julian.mod					\
-    met_data_module.mod				\
-    scalars.mod					\
+MODULES =										\
+    block_boundary_conditions.mod				\
+    date_time.mod								\
+    energy_flux.mod								\
+    f90_unix_proc.mod							\
+    gage_output.mod								\
+    gas_coeffs.mod								\
+    gas_functions.mod							\
+    globals.mod									\
+    io_routines_module.mod						\
+    julian.mod									\
+    met_data_module.mod							\
+	plot_output.mod								\
+    scalars.mod									\
     table_boundary_conditions.mod
 
 ${TARGET}: ${OBJS}
@@ -92,7 +101,7 @@ date_time.$(MOD): date_time_module.o
 energy_flux_module.o: energy_flux_module.f90
 energy_flux.$(MOD): energy_flux_module.o
 
-gage_output_module.o: gage_output_module.f90 $(STUPIDMOD)
+gage_output_module.o: gage_output_module.f90 globals.$(MOD) $(STUPIDMOD)
 gage_output.$(MOD): gage_output_module.o
 
 gas_coeffs_module.o: gas_coeffs_module.f90
@@ -120,6 +129,8 @@ mass2_main_025.o: mass2_main_025.f90 \
 met_data_module.o: met_data_module.f90 table_boundary_conditions.$(MOD) \
    date_time.$(MOD)
 met_data_module.$(MOD): met_data_module.o
+
+netcdferror.o: netcdferror.f90
 
 plot_output.o: plot_output.f90 globals.$(MOD) scalars.$(MOD) gas_functions.$(MOD)
 plot_output.$(MOD): plot_output.o

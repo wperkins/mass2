@@ -2,6 +2,140 @@
 
 	* mass2_main_025.f90: added Marshall's code for handling
 	  downstream velocity boundary conditions
+	  The call to gage_print required a "cast" to double precision for
+	  the "elapsed" arguement 
+
+1999-10-20  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile.linux (FLAGS): needed to generate lower case symbol
+		  names in order to link to NetCDF
+
+1999-09-09  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* tecplot/env.csh: check to see if TEC75HOME is set before we set
+	  it
+
+	* makefile.dec (MODULES): plot_output.mod was added
+
+1999-08-29  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_print_netcdf): All output needed to
+	  be assigned to a REAL temporary variable before writing to the
+	  file 
+
+1999-08-24  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90: changed the output type for all NetCDF
+	  variables (except time) from double to real
+
+	* plot_output.f90: changed the output type for all NetCDF
+	  variables (except time) from double to real
+
+1999-08-16  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* plot_output.f90 (diag_plot_print): added -- this does the froude
+	  and courant number calculations.
+
+1999-08-11  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: output to gridplot-metrics.dat is not made
+		  if plot_do_tecplot is true
+
+	* plot_output.f90 (plot_file_setup_netcdf): added grid metrics
+		  hp1, hp2, gp12 to plot output file
+	  plot_do_netcdf and plot_do_tecplot are now PUBLIC
+
+	* scripts/mass2tecplot.pl: created
+
+	* plot_output.f90: added longitudinal and lateral velocity to the
+		  plot output file
+
+	* gage_output_module.f90 (gage_make_ident): added
+	  (gage_read_control): modified to optionally read an identifier
+		  after block, i, j
+	  (gage_file_setup_netcdf): output gage names from the identifier 
+
+1999-08-10  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile.dec (gage_output_module.o): depends on globals.$(MOD)
+	  now
+	  (netcdferror.o): added as target and to object list
+
+1999-08-08  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_file_close): added
+
+1999-08-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_print_netcdf): added
+	  (gage_file_setup): modified to use gage_print_netcdf
+
+	* mass2_main_025.f90: passed do_transport to gage_file_setup
+
+1999-08-03  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: most output to "output.out" is now only made
+	  if the debug flag is set -- exceptions are the initial
+	  simulation information and mass source information
+
+	* makefile.dec (mass2_main_025.o): as with makefile
+	(plot_output.$(MOD)): depends on plot_output.o not print_output.o 
+
+	* makefile (mass2_main_025.o): was still mass2_main_024.o --
+		  changed to 025.
+
+1999-08-03  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* makefile (mass2_main_025.o): 024 ->> 025
+	(PLOT_OUTPUT.$(MOD)): depends on plot_output.o not print_output.o
+
+1999-08-02  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90(read_bc_tables): skip first line of BC files 
+	  (read_scalar_bc_tables): skip first line of BC files 
+
+1999-07-28  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90: had to increase the size of table_entry
+	  again to 40000 and reduce max_cell_values to 10 (was 1000 by
+	  mistake) 
+
+1999-07-27  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90: increased the size of table_entry in
+	  table_bc_struct to 10000
+
+1999-06-02  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_file_setup_netcdf): added
+
+	* plot_output.f90: moved netcdferror to its own file
+
+	* makefile (netcdferror.o): added rule
+
+	* netcdferror.f90: created
+
+	* gage_output_module.f90 (mass_file_setup): added
+	  (mass_print): added
+	  (mass_file_close): added
+
+	* mass2_main_025.f90: moved the mass source output to
+	  gage_output_module.f90  
+
+	* gage_output_module.f90 (gage_print): added
+
+	* mass2_main_025.f90: moved the gage output to gage_output_module.f90
+
+	* gage_output_module.f90 (gage_read_control): added routine
+
+	* plot_output.f90 (plot_file_setup_netcdf): added
+	  (plot_print_netcdf): added
+	  (netcdferror): added but may be moved
+	  (plot_zone_name): added
+	  (plot_fix_velocity): added
+
+	* makefile (NETCDFDIR): added various macros to allow inclusion of
+	  NetCDF library 
 
 1999-08-03  William A. Perkins  <wa_perkins@pnl.gov>
 

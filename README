@@ -1,0 +1,39 @@
+-*- text -*--------------------------------------------------
+file: README
+General info and compilation instructions for MASS2
+-------------------------------------------------------------
+-------------------------------------------------------------
+Battelle Memorial Institute
+Pacific Northwest Laboratory
+-------------------------------------------------------------
+-------------------------------------------------------------
+Created November 17, 1999 by William A. Perkins
+Last Change: Wed Nov 17 10:36:59 1999 by William A. Perkins <perk@tophet.pnl.gov>
+-------------------------------------------------------------
+
+    -------------------------------------------------------------
+                             compilation
+    -------------------------------------------------------------
+
+IRIX:           make -f makefile [DEBUG=-g [-O]]
+
+      Compile on mack or erebus
+
+DEC OSF/1:      make -f makefile.dec [DEBUG=-g [-O]]
+
+      Compile on tophet.  Can run on both OSF/1 and Linux alpha.
+
+Linux i386:     make -f makefile.linux [DEBUG=-g]
+
+      This is for the Absoft Pro Fortran 90 compiler.  This is
+      installed on minos.
+
+Linux alpha:    make -f makefile.dec NETCDFDIR=/usr F90=fort [DEBUG=-g [-O]]
+
+      This uses the DEC Fortran 90 compiler for Linux.  This is
+      installed only on gehenna.
+
+Windows:        nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Release"
+                nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Debug"
+
+      Compile on r101243.

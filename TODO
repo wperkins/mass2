@@ -1,0 +1,34 @@
+-------------------------------------------------------------
+file: TODO
+List of things to do to MASS2, timer permitting
+-------------------------------------------------------------
+-------------------------------------------------------------
+Battelle Memorial Institute
+Pacific Northwest Laboratory
+-------------------------------------------------------------
+-------------------------------------------------------------
+Created November 17, 1999 by William A. Perkins
+Last Change: Thu Nov 18 10:51:16 1999 by William A. Perkins <perk@mack.pnl.gov>
+-------------------------------------------------------------
+
+$Id$
+
+
+High Priority:
+
+    * check for file existance for all files opened
+
+    * BC and other tables: either (1) make sure that the beginning and
+      ending dates are within the simulation, and crash if not, or (2)
+      just use the first/last values before/after table start/end.
+
+Low Priority:
+
+    * split up the main module
+
+    * utility to plot gage.nc directly -- perhaps some combination of
+      perl script and gnuplot, maybe even with a GUI like pTk.
+
+    * utility to extract data at a single location in the plot.nc file
+
+    * utility to integrate flows along a line of cells 

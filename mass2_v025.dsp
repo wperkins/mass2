@@ -40,9 +40,10 @@ RSC=rc.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
-# ADD F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
+# ADD F90 /include:"Release/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /warn:nofileopt
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -50,7 +51,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib /nologo /subsystem:console /machine:I386
+# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /machine:I386 /nodefaultlib:"libcmt.lib" /libpath:"E:\Software\NetCDF\lib"
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
@@ -63,9 +64,10 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
-# ADD F90 /include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
+# ADD F90 /include:"Debug/" /include:"E:\Software\NetCDF\include" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -73,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 netcdfs.lib kernel32.lib /nologo /subsystem:console /debug /machine:I386 /nodefaultlib:"libcmt.lib" /pdbtype:sept /libpath:"E:\Software\NetCDF\lib"
 
 !ENDIF 
 
@@ -93,7 +95,7 @@ DEP_F90_BLOCK=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_BLOCK=\
+DEP_F90_BLOCK=\
 	".\Debug\table_boundary_conditions.mod"\
 	
 
@@ -112,7 +114,7 @@ DEP_F90_DATE_=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_DATE_=\
+DEP_F90_DATE_=\
 	".\Debug\julian.mod"\
 	
 
@@ -136,7 +138,23 @@ SOURCE=.\gage_output_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
+DEP_F90_GAGE_=\
+	".\Release\date_time.mod"\
+	".\Release\gas_functions.mod"\
+	".\Release\globals.mod"\
+	".\Release\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_GAGE_=\
+	".\Debug\date_time.mod"\
+	".\Debug\gas_functions.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
 
 !ENDIF 
 
@@ -164,7 +182,7 @@ DEP_F90_GAS_F=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_GAS_F=\
+DEP_F90_GAS_F=\
 	".\Debug\gas_coeffs.mod"\
 	
 
@@ -226,7 +244,7 @@ DEP_F90_MASS2=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MASS2=\
+DEP_F90_MASS2=\
 	".\Debug\block_boundary_conditions.mod"\
 	".\Debug\date_time.mod"\
 	".\Debug\energy_flux.mod"\
@@ -256,7 +274,7 @@ DEP_F90_MET_D=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_MET_D=\
+DEP_F90_MET_D=\
 	".\Debug\date_time.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	
@@ -266,22 +284,33 @@ NODEP_F90_MET_D=\
 # End Source File
 # Begin Source File
 
+SOURCE=.\netcdferror.f90
+DEP_F90_NETCD=\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+# End Source File
+# Begin Source File
+
 SOURCE=.\plot_output.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_PLOT_=\
+	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_PLOT_=\
+DEP_F90_PLOT_=\
+	".\Debug\date_time.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
 	".\Debug\scalars.mod"\
+	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ENDIF 
@@ -299,7 +328,7 @@ DEP_F90_PROFI=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_PROFI=\
+DEP_F90_PROFI=\
 	".\Debug\globals.mod"\
 	
 
@@ -329,7 +358,7 @@ DEP_F90_TABLE=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-NODEP_F90_TABLE=\
+DEP_F90_TABLE=\
 	".\Debug\date_time.mod"\
 	
 

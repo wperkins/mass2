@@ -1,0 +1,4 @@
+#!MC 750
+# $Id$
+$!LoadAddon "|TECHOME|/lib/libguibld"
+$!LoadAddon "|$TECADDONDIR|/libmass2ld"
