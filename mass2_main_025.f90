@@ -2350,7 +2350,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      CASE("BLOCK")
         IF (dsonly) RETURN
         con_block = bc%con_block
-        CALL fillghost_hydro(block(iblock), block(con_block), bc)
+        CALL fillghost_hydro(blk, block(con_block), bc)
         
      CASE("TABLE")
         CALL table_interp(current_time%time, bc%table_num, table_input, &
@@ -2422,7 +2422,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      CASE("BLOCK")
         IF (dsonly) RETURN
         con_block = bc%con_block
-        CALL fillghost_hydro(block(iblock), block(con_block), bc)
+        CALL fillghost_hydro(blk, block(con_block), bc)
         
      CASE("TABLE")
         CALL table_interp(current_time%time, bc%table_num, table_input, &

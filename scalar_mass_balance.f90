@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created April 17, 2003 by William A. Perkins
-! Last Change: Thu Apr 24 14:55:03 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue May 20 08:48:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -147,7 +147,7 @@ CONTAINS
           CASE (GEN)
              IF (scalar_source(ispecies)%generic_param%hasbedsrc) THEN
                 flux = flux + scalar_bed_flux(iblock, block(iblock), &
-                     &scalar_source(ispecies)%generic_param%bedsrc)
+                     &scalar_source(ispecies)%generic_param%bedsrc)/deltat
              END IF
           END SELECT
           species(ispecies)%scalar(iblock)%netflux = &
@@ -247,7 +247,7 @@ CONTAINS
 
     DO i = x_beg, x_end
        DO j = y_beg, y_end
-          scalar_bed_flux = scalar_bed_flux + bedsrc%map(iblock)%cellrate(i,j)
+          scalar_bed_flux = scalar_bed_flux + bedsrc%map(iblock)%srcmass(i,j)
        END DO
     END DO
     

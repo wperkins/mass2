@@ -62,7 +62,7 @@ TYPE scalar_struct
                                 ! a place to record the accumulated
                                 ! flux of the species into the box
                                 ! (negative means outflow)
-    DOUBLE PRECISION :: netflux
+    DOUBLE PRECISION :: influx, outflux, netflux
 END TYPE scalar_struct
 
 TYPE species_struct
