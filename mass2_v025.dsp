@@ -89,7 +89,7 @@ SOURCE=.\block_bc_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_BLOCK=\
+NODEP_F90_BLOCK=\
 	".\Release\table_boundary_conditions.mod"\
 	
 
@@ -108,7 +108,7 @@ SOURCE=.\date_time_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_DATE_=\
+NODEP_F90_DATE_=\
 	".\Release\julian.mod"\
 	
 
@@ -139,11 +139,13 @@ SOURCE=.\gage_output_module.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_GAGE_=\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+NODEP_F90_GAGE_=\
 	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\scalars.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
@@ -176,7 +178,7 @@ SOURCE=.\gas_functions_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_GAS_F=\
+NODEP_F90_GAS_F=\
 	".\Release\gas_coeffs.mod"\
 	
 
@@ -228,7 +230,7 @@ SOURCE=.\mass2_main_025.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_MASS2=\
+NODEP_F90_MASS2=\
 	".\Release\block_boundary_conditions.mod"\
 	".\Release\date_time.mod"\
 	".\Release\energy_flux.mod"\
@@ -267,7 +269,7 @@ SOURCE=.\met_data_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_MET_D=\
+NODEP_F90_MET_D=\
 	".\Release\date_time.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	
@@ -296,11 +298,13 @@ SOURCE=.\plot_output.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_PLOT_=\
+	"E:\Software\NetCDF\include\netcdf.inc"\
+	
+NODEP_F90_PLOT_=\
 	".\Release\date_time.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
 	".\Release\scalars.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
@@ -322,7 +326,7 @@ SOURCE=.\profile_init.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_PROFI=\
+NODEP_F90_PROFI=\
 	".\Release\globals.mod"\
 	
 
@@ -352,7 +356,7 @@ SOURCE=.\table_bc_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_TABLE=\
+NODEP_F90_TABLE=\
 	".\Release\date_time.mod"\
 	
 

@@ -8,32 +8,47 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Nov 17 10:36:59 1999 by William A. Perkins <perk@tophet.pnl.gov>
+Last Change: Tue Nov 23 07:36:10 1999 by William A. Perkins <perk@tophet.pnl.gov>
 -------------------------------------------------------------
 
-    -------------------------------------------------------------
-                             compilation
-    -------------------------------------------------------------
+-------------------------------------------------------------
+compilation
+-------------------------------------------------------------
 
-IRIX:           make -f makefile [DEBUG=-g [-O]]
+By default all of the makefiles will produce an executable called
+`mass2_v025'.  This can be changed by setting the `TARGET' macro on
+the command line.  Some suggested `TARGET's are shown below. Currently
+the following platforms are supported
 
-      Compile on mack or erebus
+    IRIX:   
 
-DEC OSF/1:      make -f makefile.dec [DEBUG=-g [-O]]
+        make -f makefile [DEBUG=-g [-O]] 
+      
+        Compile on mack or erebus
 
-      Compile on tophet.  Can run on both OSF/1 and Linux alpha.
+    DEC OSF/1:      
 
-Linux i386:     make -f makefile.linux [DEBUG=-g]
+        make -f makefile.dec [DEBUG=-g [-O]] [TARGET=mass2_v025.dec]
 
-      This is for the Absoft Pro Fortran 90 compiler.  This is
-      installed on minos.
+        Compile on tophet.  Can run on both OSF/1 and Linux alpha.
 
-Linux alpha:    make -f makefile.dec NETCDFDIR=/usr F90=fort [DEBUG=-g [-O]]
+    Linux i386:     
 
-      This uses the DEC Fortran 90 compiler for Linux.  This is
-      installed only on gehenna.
+        make -f makefile.linux [DEBUG=-g] [TARGET=mass2_v025.linux]
 
-Windows:        nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Release"
-                nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Debug"
+        This is for the Absoft Pro Fortran 90 compiler.  This is
+        installed on minos. 
 
-      Compile on r101243.
+    Linux alpha:    
+
+        make -f makefile.dec NETCDFDIR=/usr F90=fort [DEBUG=-g [-O]] [TARGET=mass2_v025.axplinux]
+
+        This uses the DEC Fortran 90 compiler for Linux.  This is
+        installed only on gehenna. 
+
+    Windows:        
+
+        nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Release"
+        nmake /f mass2_v025.mak  "CFG=mass2_v025 - Win32 Debug"
+
+        Compile on r101243.

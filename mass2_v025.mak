@@ -28,6 +28,9 @@ NULL=
 NULL=nul
 !ENDIF 
 
+F90=df.exe
+RSC=rc.exe
+
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 OUTDIR=.\Release
@@ -81,24 +84,9 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90=df.exe
 F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
  /compile_only /nologo /warn:nofileopt /module:"Release/" /object:"Release/" 
 F90_OBJS=.\Release/
-
-.for{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.f{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.f90{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.fpp{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
 BSC32_SBRS= \
@@ -187,25 +175,10 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90=df.exe
 F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
  /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt /module:"Debug/"\
  /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
 F90_OBJS=.\Debug/
-
-.for{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.f{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.f90{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-.fpp{$(F90_OBJS)}.obj:
-   $(F90) $(F90_PROJ) $<  
-
-RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2_v025.bsc" 
 BSC32_SBRS= \
@@ -239,6 +212,18 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
+
+.for{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.f{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.f90{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
+
+.fpp{$(F90_OBJS)}.obj:
+   $(F90) $(F90_PROJ) $<  
 
 
 !IF "$(CFG)" == "mass2_v025 - Win32 Release" || "$(CFG)" ==\
