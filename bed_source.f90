@@ -275,6 +275,7 @@ CONTAINS
                                 ! all indices should start at 2
 
     DO iblk = 1, max_blocks
+       rec%map(iblk)%cellrate = 0.0
        rec%map(iblk)%srcmass = 0.0
        DO i = 2, block(iblk)%xmax
           DO j = 2, block(iblk)%ymax
