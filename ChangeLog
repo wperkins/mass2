@@ -1,3 +1,8 @@
+1999-07-27  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* table_bc_module.f90: increased the size of table_entry in
+	  table_bc_struct to 10000
+
 1999-05-26  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* mass2_v025.mak: regenerated
