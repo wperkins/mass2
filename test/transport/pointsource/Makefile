@@ -7,18 +7,19 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Mar 19 07:44:53 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Apr  5 09:26:43 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
 	plot-lat.eps \
 	plot-long.eps \
 	plot-mass.eps \
-	plan.eps
+	plan.eps \
+	plan-metric.eps
 
 MODELFILES = \
 	background.dat \
@@ -44,8 +45,12 @@ plot.nc: $(MODELFILES) $(MODEL)
 plot-lat.eps: plot-lat.gp solution.pl plot.nc
 plot-long.eps: plot-long.gp solution.pl plot.nc
 plot-mass.eps: plot-mass.gp plot.nc
+
 plan.eps: plan.lay plot.nc
 	$(TECPLOT) -b -y $@ plan.lay -p ../../../tecplot/macros/export_eps.mcr
+
+plan-metric.eps: plan.lay plot.nc ../mixing/metric.mcr
+	$(TECPLOT) -b -y $@ plan.lay -p ../mixing/metric.mcr
 
 
 %.eps: %.gp
