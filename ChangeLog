@@ -1,3 +1,20 @@
+2003-04-01  William A. Perkins  <william.perkins@pnl.gov>
+
+	* util/Makefile.am: created
+
+	* util/cart_grid/Makefile.am: created
+
+	* configure.in: include util in build
+
+2003-03-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* scalars_source.f90: use open_existing
+
+	* met_data_module.f90: use time series module to read and
+	interpolate weather data
+
+	* mass2.f90: initialize and shutdown time series module
+
 2003-03-26  William A. Perkins  <william.perkins@pnl.gov>
 
 	* makefile.sgi: was makefile

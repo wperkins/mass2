@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Fri Mar 28 13:45:43 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Apr  1 15:25:52 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -21,7 +21,7 @@ AC_CANONICAL_HOST()
 # -------------------------------------------------------------
 # Stuff to include subdirectories
 # -------------------------------------------------------------
-SUBDIRS="time_series"
+SUBDIRS="time_series util"
 AC_SUBST(SUBDIRS)
 
 # -------------------------------------------------------------
@@ -104,4 +104,5 @@ LIBS="$LIBS $F90LIBS"
 AC_PROG_F77_WORKS
 
 AC_CONFIG_SUBDIRS(time_series)
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile util/Makefile util/cart_grid/Makefile)
+

@@ -16,6 +16,7 @@ INTEGER :: status_flag = 1
 
 WRITE(*,*)'calling mass2_main' 
 
+CALL time_series_module_init()
 CALL date_time_flags()
 
 CALL start_up(status_flag)
@@ -84,7 +85,7 @@ CLOSE(status_iounit)
 CALL gage_file_close()
 CALL diag_plot_file_close()
 CALL mass_file_close()
-
+CALL time_series_module_done()
 
 
 

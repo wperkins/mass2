@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Thu Nov 29 08:31:38 2001 by William A. Perkins <perk@gehenna.pnl.gov>
+! Last Change: Mon Mar 31 15:33:33 2003 by William A. Perkins <perk@leechong.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -103,6 +103,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE scalar_source_read()
 
+    USE utility
     USE globals, ONLY: max_blocks
     USE misc_vars, ONLY: error_iounit, status_iounit
     USE scalars, ONLY: max_species
@@ -113,18 +114,11 @@ CONTAINS
 
     CHARACTER (LEN=20) :: type_name, short_name, units
     CHARACTER (LEN=256) :: long_name, options(source_max_option), &
-         &alloptions(source_max_option)
-
-    OPEN(FILE=source_filename, UNIT=source_iounit, &
-         &ACTION='READ', STATUS='OLD', IOSTAT=istat)
-    IF (ISTAT .NE. 0) THEN
-       WRITE(*, 100) source_filename, istat
-       WRITE(error_iounit, 100) source_filename, istat
-       CALL EXIT(8)
-    END IF
-
-    WRITE(status_iounit, *) "Reading scalar source information from ", &
-         &TRIM(source_filename)
+         &alloptions(source_max_option), buffer
+    
+    CALL open_existing(source_filename, source_iounit)
+    CALL status_message("Reading scalar source information from " // &
+         &TRIM(source_filename))
 
     ALLOCATE(scalar_source(max_species))
        
@@ -134,9 +128,9 @@ CONTAINS
        READ(source_iounit, *, END=1000) &
             &id, type_name, short_name, long_name, units, alloptions
        IF (id .GT. max_species) THEN
-          WRITE(*, 200) short_name, max_species
-          WRITE(error_iounit, 200) short_name, max_species
-          CALL EXIT(8)
+          WRITE(buffer, *) 'scalar species ', TRIM(short_name), &
+               &" has ID greater than max (", max_species, ")"
+          CALL error_message(buffer, fatal=.TRUE.)
        END IF
        scalar_source(id)%id = id
        scalar_source(id)%srctype = scalar_source_type(type_name)
@@ -262,8 +256,8 @@ CONTAINS
 
     RETURN
 
-100 FORMAT('FATAL ERROR: unable to open file "', A, '" (', I2.1,')')
-200 FORMAT('FATAL ERROR: scalar species "', A, '" has ID greater than max (', I6.1,')')
+! 100 FORMAT('FATAL ERROR: unable to open file "', A, '" (', I2.1,')')
+! 200 FORMAT('FATAL ERROR: scalar species "', A, '" has ID greater than max (', I6.1,')')
 300 FORMAT('FATAL ERROR: scalar type "', A, '" for "', A, '" not known')
 400 FORMAT('FATAL ERROR: TEMP species must be included for TDG to be simulated')
   END SUBROUTINE scalar_source_read
