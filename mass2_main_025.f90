@@ -1738,6 +1738,21 @@ SUBROUTINE hydro(status_flag)
                  END SELECT
               END IF
 
+              ! IF there is a wall blocking lateral flow, we need to
+              ! disconnect from the u cell on the other side (with a
+              ! no-slip condition)
+              IF ((block(iblock)%isdead(i,j)%v .OR. &
+                   &block(iblock)%isdead(i+1,j)%v) .AND. .NOT. &
+                   &block(iblock)%isdead(i,j+1)%u) THEN 
+                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%an(i,j)
+                 coeff%an(i,j) = 0.0
+              ELSE IF ((block(iblock)%isdead(i,j-1)%v .OR. &
+                   &block(iblock)%isdead(i+1,j-1)%v) .AND. .NOT. &
+                   &block(iblock)%isdead(i,j-1)%u) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%as(i,j)
+                 coeff%as(i,j) = 0.0
+              END IF
+
               coeff%bp(i,j) = coeff%source(i,j) + apo*block(iblock)%uold(i,j) &
                    - 0.5*grav*hp2*(depth_e**2 - depth_w**2) &
                    - grav*hp2*depth_p*(block(iblock)%zbot(i+1,j) - block(iblock)%zbot(i,j))
@@ -1943,6 +1958,21 @@ SUBROUTINE hydro(status_flag)
                          &coeff%ae(i,j)*block(iblock)%vvel(i+1,j)
                     coeff%ae(i,j) = 0.0
                  END IF
+              END IF
+
+              ! IF there is a wall blocking longitudinal flow, we need
+              ! to disconnect from the v cell on the other side (with
+              ! a no-slip condition)
+              IF ((block(iblock)%isdead(i-1,j)%u .OR. &
+                   &block(iblock)%isdead(i-1,j+1)%u) .AND. .NOT. &
+                   &block(iblock)%isdead(i-1,j)%v) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
+                 coeff%aw(i,j) = 0.0
+              ELSE IF ((block(iblock)%isdead(i,j)%u .OR. &
+                   &block(iblock)%isdead(i,j+1)%u) .AND. .NOT. &
+                   &block(iblock)%isdead(i+1,j)%v) THEN
+                 coeff%ap(i,j) = coeff%ap(i,j) + coeff%ae(i,j)
+                 coeff%ae(i,j) = 0.0
               END IF
 
               coeff%bp(i,j) = coeff%source(i,j) + apo*block(iblock)%vold(i,j) &

@@ -86,7 +86,7 @@ END IF
 
 ! write in grid x,y
 1001 FORMAT(i5,2x,i5)
-1000 FORMAT(i5,2x,i5,2x,f12.4,2x,f12.4,2x,f12.4)
+1000 FORMAT(i5,2x,i5,2x,g12.6,2x,g12.6,2x,g12.6)
 !write(6,*)"did format "
 OPEN(gridfile,file='grid.out')
 !OPEN(10)

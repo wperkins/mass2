@@ -1,3 +1,11 @@
+2003-11-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* util/cart_grid/cartgrid.f90: Increase resolution of output
+	format  
+
+	* mass2_main_025.f90 (hydro): Make walls a non-slip internal
+	boundary. 
+
 2003-10-24  William A. Perkins  <william.perkins@pnl.gov>
 
 	* util/cart_grid/cartgrid.f90: needed more significant figures in
