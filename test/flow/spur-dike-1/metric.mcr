@@ -1,0 +1,7 @@
+#!MC 900
+$!ALTERDATA 
+  EQUATION = '{xm} = {x}*0.3048' 
+$!ALTERDATA 
+  EQUATION = '{ym} = {y}*0.3048' 
+$!TWODAXIS XVAR = 18
+$!TWODAXIS YVAR = 19
