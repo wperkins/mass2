@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 25, 2000 by William A. Perkins
-! Last Change: Mon Jul 23 11:19:37 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Fri Apr  5 08:54:13 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -19,7 +19,8 @@ MODULE accumulator
   USE scalars
   USE scalars_source
   USE bed_module
-  USE misc_vars, ONLY: do_flow, do_flow_output, do_transport, salinity, delta_t
+  USE misc_vars, ONLY: do_flow, do_flow_output, do_transport, salinity, delta_t, &
+       &i_index_min, i_index_extra, j_index_min, j_index_extra
   USE date_time
 
   IMPLICIT NONE
@@ -89,15 +90,19 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE accum_init_var
   ! ----------------------------------------------------------------
-  SUBROUTINE accum_init_var(nx, ny, accum)
+  SUBROUTINE accum_init_var(mx, my, accum)
 
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: nx, ny
+    INTEGER, INTENT(IN) :: mx, my
     TYPE (accum_var_rec) :: accum
+    INTEGER :: nx, ny
 
-    ALLOCATE(accum%max(nx, ny))
-    ALLOCATE(accum%min(nx, ny))
-    ALLOCATE(accum%sum(nx, ny))
+    nx = mx + i_index_extra
+    ny = my + j_index_extra
+
+    ALLOCATE(accum%max(i_index_min:nx, j_index_min:ny))
+    ALLOCATE(accum%min(i_index_min:nx, j_index_min:ny))
+    ALLOCATE(accum%sum(i_index_min:nx, j_index_min:ny))
 
   END SUBROUTINE accum_init_var
 
@@ -148,29 +153,29 @@ CONTAINS
     DO iblk = 1, max_blocks
 
        IF (do_flow .OR. do_flow_output) THEN
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%uvelp)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%vvelp)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%ucart)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%vcart)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%vmag)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%depth)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%wsel)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%shear)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%froude)
-          CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%hydro%courant)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%uvelp)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vvelp)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%ucart)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vcart)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vmag)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%depth)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%wsel)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%shear)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%froude)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%courant)
        END IF
        IF (do_transport) THEN
           ALLOCATE(accum_block(iblk)%conc(max_species))
           DO ispec = 1, max_species
-             CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%conc(ispec))
+             CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%conc(ispec))
              SELECT CASE (scalar_source(ispec)%srctype)
              CASE (TDG)
-                CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%tdg%press)
-                CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%tdg%deltap)
-                CALL accum_init_var(block(iblk)%xmax + 1, block(iblk)%ymax + 1, accum_block(iblk)%tdg%sat)
+                CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%tdg%press)
+                CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%tdg%deltap)
+                CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%tdg%sat)
              END SELECT
              IF (source_doing_sed) THEN
-                CALL accum_init_bed(accum_block(iblk)%bed, block(iblk)%xmax + 1, block(iblk)%ymax + 1)
+                CALL accum_init_bed(accum_block(iblk)%bed, block(iblk)%xmax, block(iblk)%ymax)
              END IF
           END DO
        END IF
@@ -178,10 +183,10 @@ CONTAINS
 
                                 ! allocate some temporary work space
 
-    mx = MAXVAL(block(:)%xmax) + 1
-    my = MAXVAL(block(:)%ymax) + 1
+    mx = MAXVAL(block(:)%xmax) + i_index_extra
+    my = MAXVAL(block(:)%ymax) + j_index_extra
 
-    ALLOCATE(accum_tmp(mx, my))
+    ALLOCATE(accum_tmp(i_index_min:mx, j_index_min:my))
 
                                 ! zero out the accumulators
 
@@ -279,7 +284,7 @@ CONTAINS
   SUBROUTINE accum_var(var, accum)
 
     IMPLICIT NONE
-    DOUBLE PRECISION, INTENT(IN) :: var(:,:)
+    DOUBLE PRECISION, INTENT(IN) :: var(i_index_min:,j_index_min:)
     TYPE (accum_var_rec) :: accum
 
     SELECT CASE (accum_mode)
@@ -306,34 +311,40 @@ CONTAINS
     INTEGER :: i, j
 
     accum_tmp = 0.0
-    DO i = 1, block(iblk)%xmax + 1
-       DO j = 1, block(iblk)%ymax + 1
+    DO i = i_index_min, block(iblk)%xmax + i_index_extra
+       DO j = j_index_min, block(iblk)%ymax + j_index_extra
           accum_tmp(i, j) = &
                &TDGasPress(species(ispec)%scalar(iblk)%conc(i,j), &
                &species(source_temp_idx)%scalar(iblk)%conc(i,j), salinity)
        END DO
     END DO
-    CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+    CALL accum_var(accum_tmp(&
+         &i_index_min:block(iblk)%xmax + i_index_extra,&
+         &j_index_min:block(iblk)%ymax + j_index_extra), &
          &accum_block(iblk)%tdg%press)
 
     accum_tmp = 0.0
-    DO i = 1, block(iblk)%xmax + 1
-       DO j = 1, block(iblk)%ymax + 1
+    DO i = i_index_min, block(iblk)%xmax + i_index_extra
+       DO j = j_index_min, block(iblk)%ymax + j_index_extra
           accum_tmp(i, j) = TDGasDP(species(ispec)%scalar(iblk)%conc(i,j), &
                &species(source_temp_idx)%scalar(iblk)%conc(i,j), salinity, baro_press)
        END DO
     END DO
-    CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+    CALL accum_var(accum_tmp(&
+         &i_index_min:block(iblk)%xmax + i_index_extra,&
+         &j_index_min:block(iblk)%ymax + j_index_extra), &
          &accum_block(iblk)%tdg%deltap)
 
     accum_tmp = 0.0
-    DO i = 1, block(iblk)%xmax + 1
-       DO j = 1, block(iblk)%ymax + 1
+    DO i = i_index_min, block(iblk)%xmax + i_index_extra
+       DO j = j_index_min, block(iblk)%ymax + j_index_extra
           accum_tmp(i, j) = TDGasSaturation(species(ispec)%scalar(iblk)%conc(i,j), &
                &species(source_temp_idx)%scalar(iblk)%conc(i,j), salinity, baro_press)
        END DO
     END DO
-    CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+    CALL accum_var(accum_tmp(&
+         &i_index_min:block(iblk)%xmax + i_index_extra,&
+         &j_index_min:block(iblk)%ymax + j_index_extra), &
          &accum_block(iblk)%tdg%sat)
 
   END SUBROUTINE accumulate_tdg
@@ -355,10 +366,14 @@ CONTAINS
           CALL accum_var(bed(iblk)%sediment(ifract, :, :), &
                &accum_block(iblk)%bed%conc(ispec))
           accum_tmp = 0.0
-          accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1) = &
+          accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra) = &
                &bed(iblk)%sediment(ifract, :, :)*&
                &block(iblk)%hp1*block(iblk)%hp2
-          CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+          CALL accum_var(accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra), &
                &accum_block(iblk)%bed%mass(ispec))
           CALL accum_var(scalar_source(ispec)%sediment_param%block(iblk)%deposition,&
                &accum_block(iblk)%bed%deposit(ispec))
@@ -368,10 +383,14 @@ CONTAINS
           CALL accum_var(bed(iblk)%particulate(ispec, :, :), &
                &accum_block(iblk)%bed%conc(ispec))
           accum_tmp = 0.0
-          accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1) = &
+          accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra) = &
                &bed(iblk)%particulate(ispec, :, :)* &
                &block(iblk)%hp1*block(iblk)%hp2
-          CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+          CALL accum_var(accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra), &
                &accum_block(iblk)%bed%mass(ispec))
           CALL accum_var(scalar_source(ispec)%part_param%block(iblk)%bedexch,&
                &accum_block(iblk)%bed%deposit(ispec))
@@ -379,21 +398,27 @@ CONTAINS
           CALL accum_var(bed(iblk)%pore(ispec, :, :), &
                &accum_block(iblk)%bed%conc(ispec))
           accum_tmp = 0.0
-          accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1) = &
+          accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra) = &
                &bed(iblk)%pore(ispec, :, :)* &
                &block(iblk)%hp1*block(iblk)%hp2
-          CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+          CALL accum_var(accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra), &
                &accum_block(iblk)%bed%mass(ispec))
           accum_tmp = 0.0
-          DO i = 1, block(iblk)%xmax + 1
-             DO j = 1, block(iblk)%ymax + 1
+          DO i = 1, block(iblk)%xmax + i_index_extra
+             DO j = 1, block(iblk)%ymax + j_index_extra
                 IF (REAL(bed(iblk)%depth(i,j)) .GT. 1e-8) &
                      &accum_tmp(i,j) = &
                      &bed(iblk)%pore(ispec, i, j)/ &
                      &(bed(iblk)%depth(i,j)* bed(iblk)%porosity(i,j))
              END DO
           END DO
-          CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1,1:block(iblk)%ymax + 1), &
+          CALL accum_var(accum_tmp(&
+               &i_index_min:block(iblk)%xmax + i_index_extra,&
+               &j_index_min:block(iblk)%ymax + j_index_extra), &
                &accum_block(iblk)%bed%pore(ispec))
        END SELECT       
     END DO
@@ -430,16 +455,17 @@ CONTAINS
                                 ! velocity magnitudes
 
           accum_tmp = 0.0
-          DO i = 1, block(iblk)%xmax + 1
-             DO j = 1, block(iblk)%ymax + 1
-                ! FORALL (i = 1:block(iblk)%xmax + 1, j = 1:block(iblk)%ymax + 1)
+          DO i = i_index_min, block(iblk)%xmax + i_index_extra
+             DO j = j_index_min, block(iblk)%ymax + j_index_extra
+                ! FORALL (i = i_index_min:block(iblk)%xmax + i_index_extra, j = j_index_min:block(iblk)%ymax + j_index_extra)
                 accum_tmp(i, j) = &
                      &SQRT(block(iblk)%vvel_p(i,j)*block(iblk)%vvel_p(i,j) + &
                      &block(iblk)%uvel_p(i,j)*block(iblk)%uvel_p(i,j))
                 ! END FORALL
              END DO
           END DO
-          CALL accum_var(accum_tmp(1:block(iblk)%xmax + 1, 1:block(iblk)%ymax + 1), &
+          CALL accum_var(accum_tmp(i_index_min:block(iblk)%xmax + i_index_extra, &
+               &j_index_min:block(iblk)%ymax + j_index_extra), &
                &accum_block(iblk)%hydro%vmag)
 
                                 ! remaining hydrodynamics variables

@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Nov 29 08:29:36 2001 by William A. Perkins <perk@gehenna.pnl.gov>
+# Last Change: Thu Mar 21 09:04:25 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -159,7 +159,7 @@ gas_functions.$(MOD): gas_functions_module.o
 generic_source.o: generic_source.f90 misc_vars.$(MOD) bed_source.$(MOD)
 generic_source.$(MOD): generic_source.o
 
-global_module_023.o: global_module_023.f90 $(STUPIDMOD) 
+global_module_023.o: global_module_023.f90 misc_vars.$(MOD) $(STUPIDMOD) 
 globals.$(MOD): global_module_023.o
 
 io_routines_module.o: io_routines_module.f90
@@ -197,7 +197,7 @@ plot_output.o: plot_output.f90 globals.$(MOD) scalars.$(MOD) scalars_source.$(MO
 	gas_functions.$(MOD) bed_module.$(MOD) misc_vars.$(MOD) accumulator.$(MOD)
 plot_output.$(MOD): plot_output.o
 
-scalars_module.o: scalars_module.f90
+scalars_module.o: scalars_module.f90 misc_vars.$(MOD) 
 scalars.$(MOD): scalars_module.o
 
 scalars_source.o: scalars_source.f90 temperature_source.$(MOD) tdg_source.$(MOD) \
@@ -221,7 +221,8 @@ temperature_source.$(MOD): temperature_source.o
 
 total_conc.o: total_conc.f90 scalars_source.$(MOD)
 
-transport_only_module.o: transport_only_module.f90 date_time.$(MOD) globals.$(MOD)
+transport_only_module.o: transport_only_module.f90 date_time.$(MOD) \
+	globals.$(MOD) misc_vars.$(MOD)
 transport_only.$(MOD): transport_only_module.o
 
 

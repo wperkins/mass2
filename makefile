@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Feb 28 14:59:04 2001 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Thu Mar 21 09:12:56 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -66,8 +66,6 @@ SRCS =											\
 	 tdg_source.f90								\
 	 generic_source.f90							\
 	 bed_source.f90								\
-	 biota_source.f90							\
-	 biota.f90									\
 	 sediment_source.f90						\
 	 particulate_source.f90						\
 	 bed.f90									\
@@ -100,12 +98,6 @@ MODULES =										\
 	TDG_SOURCE.$(MOD)							\
 	GENERIC_SOURCE.$(MOD)						\
 	BED_SOURCE.$(MOD)							\
-	BIOTA_CALL_MOD.$(MOD)						\
-	BIOTA_ERRORS_MOD.$(MOD)						\
-	BIOTA_IDEN_MOD.$(MOD)						\
-	BIOTA_MOD.$(MOD)							\
-	BIOTA_QA_MOD.$(MOD)							\
-	BIOTA_SOURCE_MODULE.$(MOD)					\
 	RDBLK_MOD.$(MOD)							\
 	SEDIMENT_SOURCE.$(MOD)  					\
 	PARTICULATE_SOURCE.$(MOD)					\
@@ -141,14 +133,6 @@ bed_source.o: bed_source.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
 	GLOBALS.$(MOD) MISC_VARS.$(MOD)
 BED_SOURCE.$(MOD): bed_source.o
 
-biota.o: biota.f90
-BIOTA_CALL_MOD.$(MOD) BIOTA_ERRORS_MOD.$(MOD) BIOTA_IDEN_MOD.$(MOD) \
-    BIOTA_MOD.$(MOD) BIOTA_QA_MOD.$(MOD) RDBLK_MOD.$(MOD): biota.o
-
-biota_source.o: biota_source.f90 BIOTA_MOD.$(MOD) \
-	MISC_VARS.$(MOD) GLOBALS.$(MOD) JULIAN.$(MOD)
-BIOTA_SOURCE_MODULE.$(MOD): biota_source.o
-
 block_bc_module.o: block_bc_module.f90 \
 		TABLE_BOUNDARY_CONDITIONS.$(MOD)
 BLOCK_BOUNDARY_CONDITIONS.$(MOD): block_bc_module.o
@@ -173,7 +157,7 @@ GAS_FUNCTIONS.$(MOD): gas_functions_module.o
 generic_source.o: generic_source.f90 MISC_VARS.$(MOD) BED_SOURCE.$(MOD)
 GENERIC_SOURCE.$(MOD): generic_source.o
 
-global_module_023.o: global_module_023.f90 $(STUPIDMOD) 
+global_module_023.o: global_module_023.f90 MISC_VARS.$(MOD) $(STUPIDMOD) 
 GLOBALS.$(MOD): global_module_023.o
 
 io_routines_module.o: io_routines_module.f90
@@ -199,7 +183,7 @@ met_data_module.o: met_data_module.f90 TABLE_BOUNDARY_CONDITIONS.$(MOD) \
    DATE_TIME.$(MOD)
 MET_DATA_MODULE.$(MOD): met_data_module.o
 
-misc_vars_module.o: misc_vars_module.f90
+misc_vars_module.o: misc_vars_module.f90 DATE_TIME.$(MOD)
 MISC_VARS.$(MOD): misc_vars_module.o
 
 netcdferror.o: netcdferror.f90
@@ -212,12 +196,12 @@ plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MO
 	GAS_FUNCTIONS.$(MOD) BED_MODULE.$(MOD) MISC_VARS.$(MOD) ACCUMULATOR.$(MOD)
 PLOT_OUTPUT.$(MOD): plot_output.o
 
-scalars_module.o: scalars_module.f90
+scalars_module.o: scalars_module.f90 MISC_VARS.$(MOD)
 SCALARS.$(MOD): scalars_module.o
 
 scalars_source.o: scalars_source.f90 TEMPERATURE_SOURCE.$(MOD) TDG_SOURCE.$(MOD) \
-	GENERIC_SOURCE.$(MOD) SCALARS.$(MOD) MET_DATA_MODULE.$(MOD) BIOTA_SOURCE_MODULE.$(MOD) \
-	BIOTA_MOD.$(MOD) SEDIMENT_SOURCE.$(MOD) PARTICULATE_SOURCE.$(MOD)
+	GENERIC_SOURCE.$(MOD) SCALARS.$(MOD) MET_DATA_MODULE.$(MOD) \
+	SEDIMENT_SOURCE.$(MOD) PARTICULATE_SOURCE.$(MOD)
 SCALARS_SOURCE.$(MOD): scalars_source.o
 
 sediment_source.o: sediment_source.f90 GLOBALS.$(MOD) SCALARS.$(MOD) MISC_VARS.$(MOD)
@@ -234,7 +218,10 @@ temperature_source.o: temperature_source.f90 MET_DATA_MODULE.$(MOD) \
 	MISC_VARS.$(MOD) ENERGY_FLUX.$(MOD)
 TEMPERATURE_SOURCE.$(MOD): temperature_source.o
 
-transport_only_module.o: transport_only_module.f90 DATE_TIME.$(MOD) GLOBALS.$(MOD)
+total_conc.o: total_conc.f90 SCALARS_SOURCE.$(MOD)
+
+transport_only_module.o: transport_only_module.f90 DATE_TIME.$(MOD) \
+	GLOBALS.$(MOD) MISC_VARS.$(MOD)
 TRANSPORT_ONLY.$(MOD): transport_only_module.o
 
 profile_init.o: profile_init.f90 GLOBALS.$(MOD)

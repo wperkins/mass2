@@ -10,7 +10,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 17, 1999 by William A. Perkins
-# Last Change: Thu Aug  3 13:24:53 2000 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Mon Sep 30 07:21:05 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -25,7 +25,8 @@ mass2gage.pl - extract data from a MASS2 gage output file (NetCDF format).
 
 perl B<mass2gage.pl> B<-l> I<file>
 
-perl B<mass2gage.pl> B<-v> I<var> B<-g> I<gage> [-C|-M] [-1] [B<-o> I<output>] I<file>
+perl B<mass2gage.pl> B<-v> I<var> B<-g> I<gage> [B<-C>|B<-M>] [B<-1>]
+[B<-D>] B<-X> I<n>] [B<-o> I<output>] I<file>
 
 =head1 DESCRIPTION
 
@@ -60,6 +61,12 @@ output a cumulative frequency distribution; normally, a time series is
 output, this option will cause the data from the specified gage to be
 sorted and assigned an exceedance probability 
 
+=item B<-D>
+
+if the I<file> contains the variable C<isdry>, extract records for
+I<var> only when C<isdry> is zero; applies only to the extraction of a
+time series, a CFD extraction will still contain all values
+
 =item B<-o> I<output>
 
 send extracted data to I<output> (does not work with B<-l>)
@@ -72,6 +79,11 @@ information about the extracted data
 =item B<-M> 
 
 format as a MASS1/MASS2 boundary condition file (implies -1)
+
+=item B<-X> I<n>
+
+skip the first I<n> time records in the gage file, to avoid a warm up
+period, for example
 
 =back
 
@@ -418,23 +430,26 @@ my $program;
 ($program = $0) =~ s/.*\///;
 my $usage = 
   "usage: $program [-l] file \n" .
-  "       $program -v var -g gage [-1] [-C|-M] [-o output] file";
+  "       $program -v var -g gage [-1] [-X n] [-C|-M] [-o output] file";
 
 my $dolist = undef;
 my $doline1 = undef;
 my $doasbc = undef;
 my $docdf = undef;
+my $doelapsed = undef;
+my $skipdry = 0;
 my $var = undef;
 my $varisid = undef;
 my $gage = undef;
 my $gageisid = undef;
 my $filename = undef;
+my $skip = 0;
 
 # -------------------------------------------------------------
 # handle command line
 # -------------------------------------------------------------
 my %opts = ();
-die "$usage\n" unless (getopts("lv:g:1MCo:", \%opts));
+die "$usage\n" unless (getopts("lv:g:1MCo:EX:D", \%opts));
 
 $dolist = 1 if ($opts{l});
 if ($opts{v}) {
@@ -458,6 +473,18 @@ if ($opts{C} && $doasbc) {
   $docdf = 1 if ($opts{C});
 }
 
+if ($opts{E} && $doasbc) {
+  printf(STDERR "$program: warning: -E option ignored in favor of -M option\n");
+} else {
+  $doelapsed = 1 if ($opts{E});
+}
+
+$skipdry = 1 if ($opts{D});
+
+if ($opts{X}) {
+  $skip = $opts{X};
+  $skip = 0 unless ($skip > 0);
+}
 
 if ($opts{o}) {
   my $name = $opts{o};
@@ -518,13 +545,17 @@ my $tslen = undef;
                                 # variables
 
 my $timvarid = NetCDF::varid($ncid, "time");
+my $elapsedvarid = NetCDF::varid($ncid, "elapsed");
 my $tsvarid = NetCDF::varid($ncid, "timestamp");
+my $dryvarid;
 my $varid;
+my $isdryid;
 my $gagenum;
 
 my @coords;
 my @length;
 my @values;
+my @isdry;
 my $name;
 
 NetCDF::diminq($ncid, $gageid, \$junk, \$gages);
@@ -580,6 +611,15 @@ if ($varisid) {
   }
 }
 
+                                # check to see if wetting and drying
+                                # is active, if requested
+
+if ($skipdry) {
+  unless (($isdryid = GetVarId($ncid, "isdry")) >= 0) {
+    $skipdry = undef;
+  }
+}
+
                                 # check to see if the requested gage exists
 
 if ($gageisid) {
@@ -609,28 +649,49 @@ $end = " /" if $doasbc;
                                 # extract data for the gage
 
 my @gagevalues = ();
+my @isdryvalues = ();
 my $value;
 
-@coords = (0, $gagenum);
-@length = ($times, 1);
+exit(0) if ($skip >= $times);
+
+@coords = ($skip, $gagenum);
+@length = ($times - $skip, 1);
+@values = ();
 NetCDF::varget($ncid, $varid, \@coords, \@length, \@gagevalues);
 
+if ($doelapsed) {
+  NetCDF::varget($ncid, $elapsedvarid, \@coords, \@length, \@values);
+}
+if ($skipdry) {
+  NetCDF::varget($ncid, $isdryid, \@coords, \@length, \@isdryvalues);
+}
+
 if ($docdf) {
-  $i = 0;
   foreach $value (sort { $a <=> $b; } @gagevalues) {
     my $p = ($times - $i++) / $times;
     printf(OUTPUT "%15.5f %15.5g${end}\n", $p, $value);
   }
 } else {
-  for ($i = 0; $i < $times; $i++) {
-    @coords = ($i, 0);
-    @length = (1, $tslen);
-    @values = ();
-    NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
-    my $tstamp = pack("C*", @values);
-    chop($tstamp);
+  my $lastdry = undef;
+  for ($i = 0; $i < scalar(@gagevalues); $i++) {
+    if ($skipdry && $isdryvalues[$i]) {
+      printf(OUTPUT "\n") if (! $lastdry);
+      $lastdry = 1;
+      next;
+    }
+    if ($doelapsed) {
+      printf(OUTPUT "%15.8g %15.5g${end}\n", $values[$i], $gagevalues[$i]);
+    } else {
+      @coords = ($i + $skip, 0);
+      @length = (1, $tslen);
+      @values = ();
 
-    printf(OUTPUT "%s %15.5g${end}\n", $tstamp, $gagevalues[$i]);
+      NetCDF::varget($ncid, $tsvarid, \@coords, \@length, \@values);
+      my $tstamp = pack("C*", @values);
+      chop($tstamp);
+      printf(OUTPUT "%s %15.5g${end}\n", $tstamp, $gagevalues[$i]);
+    }
+    $lastdry = undef;
   }
 }
 

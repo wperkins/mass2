@@ -1,6 +1,6 @@
 -*- text -*--------------------------------------------------
 file: TODO
-List of things to do to MASS2, timer permitting
+List of things to do to MASS2, time permitting
 -------------------------------------------------------------
 -------------------------------------------------------------
 Battelle Memorial Institute
@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Mon Feb 12 10:24:49 2001 by William A. Perkins <perk@dora.pnl.gov>
+Last Change: Thu Oct  3 07:00:06 2002 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -17,7 +17,7 @@ High Priority:
 
     * faster, Faster, FASTER
 
-    * documentation? (yea right)
+    * documentation: theory and user manual
 
     * check the id of a scalar source specification to make sure it
       has not already been specified
@@ -31,21 +31,26 @@ High Priority:
       ending dates are within the simulation, and crash if not, or (2)
       just use the first/last values before/after table start/end.
 
+    * Open boundary condition for scalars that somehow understands
+      flow reversal
+
     * utility to extract and integrate flows, velocities, temperature,
       and concentration along the border of a group of cells,
       e.g. the average concentration along the spillway at the
       downstream end of the grid. (partially done with mass2flux.pl)
+
+    * Cartesian wind shear.
+
+    * Supply a concentration with a volume source.
+
+    * Limit the time frame for which output is produced
 
 Low Priority:
 
     * utility to plot gage.nc directly -- perhaps some combination of
       perl script and gnuplot, maybe even with a GUI like pTk.
 
-    * check through the source terms, and be sure we're consistent
-      about using the previous time step, or previous iteration,
-      concentrations  
-
-    * internal mass balance check for contaminants
+    * internal mass balance check for contaminants (SAC request)
 
     * add the capability to specify a non-point contaminant source
       that avoids the bed; this could be implemented by just using a
@@ -55,3 +60,15 @@ Low Priority:
       be to eliminate the module files as intermediate targets; then a
       series of special targets could be used to set the target,
       compiler, and flags; condor compilation may also be included.
+
+    * Read all time series through a single module.
+
+    * Open or radiant boundary condition.
+
+Wetting/Drying Issues:
+
+    * Check for "dry" cells when applying a scalar boundary condition.
+
+    * Test scalars and wetting and drying, particularly TDG and
+      temperature. 
+

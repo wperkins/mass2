@@ -15,7 +15,7 @@ set terminal postscript eps color dashed "Helvetica" 14
 
 set samples 2000
 set ylabel 'Depth, feet'
-set yrange [3:6]
+set yrange [2:6]
 set xlabel 'Longitudinal Distance, feet'
 set grid y
 set grid x

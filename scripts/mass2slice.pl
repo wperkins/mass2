@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 26, 2000 by William A. Perkins
-# Last Change: Mon Nov 13 10:43:26 2000 by William A. Perkins <perk@gehenna.pnl.gov>
+# Last Change: Tue Jan 29 07:31:59 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -29,7 +29,7 @@ output files.
 
 =head1 SYNOPSIS
 
-perl B<mass2slice.pl> [B<-d>] [B<-i>|B<-j>] [B<-t> I<indices>|B<-l>] [B<-o> I<output>]
+perl B<mass2slice.pl> [B<-d>] [-a] [B<-i>|B<-j>] [B<-t> I<indices>|B<-l>] [B<-o> I<output>]
 I<file> I<variable> I<block> I<index> [I<block> I<index> ...]
 
 perl B<mass2slice.pl> B<-p> [B<-t> I<indices>|B<-l>] [B<-o> I<output>]
@@ -43,6 +43,11 @@ output file.
 =head1 OPTIONS
 
 =over
+
+=item B<-a>
+
+Average the variable across the profile or cross section to produce
+one value.
 
 =item B<-d>
 
@@ -114,13 +119,13 @@ sub CheckPlotFile {
 # -------------------------------------------------------------
 my $program;
 ($program = $0) =~ s/.*\///;
-my $usage = "usage: $program [-i|-j] [-t index] file variable block index [block index]";
+my $usage = "usage: $program [-i|-j] [-d] [-a] [-t index] file variable block index [block index]";
 
 # -------------------------------------------------------------
 # handle command line
 # -------------------------------------------------------------
 my %opts = ();
-die "$usage\n" unless (getopts("ijo:t:ldp", \%opts));
+die "$usage\n" unless (getopts("ijo:t:ldpa", \%opts));
 
 my $dotime = undef;
 my @timelist = ();
@@ -128,6 +133,7 @@ my $dolong = 1;
 my $dolast = undef;
 my $dodate = undef;
 my $dopoint = undef;
+my $doavg = undef;
 
 $dolong = 0 if ($opts{'j'});
 $dolong = 1 if ($opts{'i'});
@@ -135,6 +141,7 @@ $dotime = $opts{'t'} if ($opts{'t'});
 $dolast = $opts{'l'} if ($opts{'l'});
 $dodate = $opts{'d'} if ($opts{'d'});
 $dopoint = $opts{'p'} if ($opts{'p'});
+$doavg = 1 if ($opts{'a'});
 
 if ($opts{o}) {
   my $name = $opts{o};

@@ -138,8 +138,10 @@ IMPLICIT NONE
 	DO WHILE(.TRUE.)
 
 		READ(iounit,*,END=100)junk1,junk_char1,junk_char2
-		IF(junk_char2 == "TABLE") max_tables = max_tables + 1
-
+        SELECT CASE (junk_char2)
+        CASE ("TABLE", "SOURCE", "SINK")
+           max_tables = max_tables + 1
+        END SELECT
 	END DO
 	
 	! now allocate the number of table bc structs that we need
@@ -163,57 +165,117 @@ IMPLICIT NONE
 
 		SELECT CASE(bc_type)
 
-			CASE("BLOCK")
+        CASE("BLOCK")
+           
+           SELECT CASE(bc_extent)
+           CASE("ALL")
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block
+              block_bc(block)%bc_spec(num_bc)%con_block = con_block
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
+              block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+              block_bc(block)%bc_spec(num_bc)%end_cell(1) = ymax(block) - 1
+           CASE("PART")
+              cells = -999
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block,cells(:)
+              block_bc(block)%bc_spec(num_bc)%con_block = con_block
+              num_cells = COUNT(cells /= -999)
+              num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
+              block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
+           END SELECT
+           
+        CASE("TABLE")
+           SELECT CASE(bc_extent)
+           CASE("ALL")
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name
+              table_count = table_count + 1 ! keep a running count of the number of tables
+              block_bc(block)%bc_spec(num_bc)%table_num = table_count
+              table_bc(table_count)%file_name = file_name ! associate file and table number
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
+              block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+              block_bc(block)%bc_spec(num_bc)%end_cell(1) = ymax(block) - 1
+           CASE("PART")
+              cells = -999
+              READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name,cells(:)
+              table_count = table_count + 1 ! keep a running count of the number of tables
+              block_bc(block)%bc_spec(num_bc)%table_num = table_count
+              table_bc(table_count)%file_name = file_name ! associate file and table number
+              num_cells = COUNT(cells /= -999)
+              num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
+              block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
+              
+           END SELECT
+           
+        CASE ("SOURCE","SINK")
 
-			SELECT CASE(bc_extent)
-				CASE("ALL")
-					READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block
-					block_bc(block)%bc_spec(num_bc)%con_block = con_block
-					block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
-					block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
-					block_bc(block)%bc_spec(num_bc)%end_cell(1) = ymax(block) - 1
-				CASE("PART")
-					cells = -999
-					READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block,cells(:)
-					block_bc(block)%bc_spec(num_bc)%con_block = con_block
-					num_cells = COUNT(cells /= -999)
-					num_cell_pairs = num_cells/2
-					block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
-					block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
-					block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
-			END SELECT
+           cells = -999
 
-			CASE("TABLE")
-				SELECT CASE(bc_extent)
-					CASE("ALL")
-						READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name
-						table_count = table_count + 1 ! keep a running count of the number of tables
-						block_bc(block)%bc_spec(num_bc)%table_num = table_count
-						table_bc(table_count)%file_name = file_name ! associate file and table number
-						block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
-						block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
-						block_bc(block)%bc_spec(num_bc)%end_cell(1) = ymax(block) - 1
-					CASE("PART")
-						cells = -999
-						READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name,cells(:)
-						table_count = table_count + 1 ! keep a running count of the number of tables
-						block_bc(block)%bc_spec(num_bc)%table_num = table_count
-						table_bc(table_count)%file_name = file_name ! associate file and table number
-						num_cells = COUNT(cells /= -999)
-						num_cell_pairs = num_cells/2
-						block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
-						block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
-						block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
+           READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name, cells
+           table_count = table_count + 1 ! keep a running count of the number of tables
+           block_bc(block)%bc_spec(num_bc)%table_num = table_count
+           table_bc(table_count)%file_name = file_name ! associate file and table number
+           
+           SELECT CASE(bc_extent)
+           CASE ("PART")
 
-				END SELECT
+              num_cells = COUNT(cells /= -999)
+              num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
+              block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = &
+                   &cells(1:num_cells:2)
+              block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = &
+                   &cells(2:num_cells:2)
+              
+           END SELECT
 
-		END SELECT
+        CASE ("WALL")
+           cells = -999
+           READ(iounit,*)block,bc_loc,bc_type,bc_kind,junk1,cells(:)
+           
+                                ! the first number indicates the row
+                                ! (uvel) or column (vvel) cell 
 
+           block_bc(block)%bc_spec(num_bc)%con_block = junk1
 
-	END DO
-	
-200	CLOSE(iounit)
+                                ! the remaining numbers indicate the
+                                ! range of cells over which the wall
+                                ! is to be placed.
 
+           num_cells = COUNT(cells /= -999)
+           num_cell_pairs = num_cells/2
+           block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
+           block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = &
+                &cells(1:num_cells:2)
+           block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = &
+                    &cells(2:num_cells:2)
+
+        CASE ("DEAD")
+
+                                ! whatever is in bc_kind is not used
+           
+           cells = -999
+           READ(iounit,*)block,bc_loc,bc_type,bc_kind,cells(:)
+           
+                                ! the dead zone is specified as a
+                                ! rectangle of cells: imin, jmin,
+                                ! imax, jmax
+
+           num_cells = COUNT(cells /= -999)
+           num_cell_pairs = num_cells/2
+           block_bc(block)%bc_spec(num_bc)%num_cell_pairs = num_cells/2
+           block_bc(block)%bc_spec(num_bc)%start_cell(1:num_cell_pairs) = &
+                &cells(1:num_cells:2)
+           block_bc(block)%bc_spec(num_bc)%end_cell(1:num_cell_pairs) = &
+                &cells(2:num_cells:2)
+           
+        END SELECT
+     END DO
+     
+200  CLOSE(iounit)
+     
 END SUBROUTINE read_bcspecs
 
 !###############################################################################
@@ -401,6 +463,50 @@ IMPLICIT NONE
 	CLOSE(iounit)
 
 END SUBROUTINE read_scalar_bcspecs
+
+! ----------------------------------------------------------------
+! SUBROUTINE bcspec_error
+! ----------------------------------------------------------------
+SUBROUTINE bcspec_error(error_iounit, spec)
+
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: error_iounit
+  TYPE (bc_spec_struct) :: spec
+
+  WRITE(*,*) 'FATAL: Hydrodynamic boundary condition not understood: '
+  WRITE(*,100) TRIM(spec%bc_loc), TRIM(spec%bc_type), &
+       &TRIM(spec%bc_kind), TRIM(spec%bc_extent)
+  WRITE(error_iounit,*) 'Hydrodynamic boundary condition not understood: '
+  WRITE(error_iounit,100) TRIM(spec%bc_loc), TRIM(spec%bc_type), &
+       &TRIM(spec%bc_kind), TRIM(spec%bc_extent)
+
+  CALL exit(1)
+
+100 FORMAT (5X, '"', 2A, 3(1X, 10A), '"')
+END SUBROUTINE bcspec_error
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE scalar_bcspec_error
+! ----------------------------------------------------------------
+SUBROUTINE scalar_bcspec_error(error_iounit, spec)
+
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: error_iounit
+  TYPE (scalar_bc_spec_struct) :: spec
+
+  WRITE(*,*) 'FATAL: Scalar boundary condition not understood: '
+  WRITE(*,100) spec%species, TRIM(spec%bc_loc), TRIM(spec%bc_type), &
+       &TRIM(spec%bc_kind), TRIM(spec%bc_extent)
+  WRITE(error_iounit,*) 'FATAL: Scalar boundary condition not understood: '
+  WRITE(error_iounit,100) spec%species, TRIM(spec%bc_loc), TRIM(spec%bc_type), &
+       &TRIM(spec%bc_kind), TRIM(spec%bc_extent)
+
+  CALL exit(1)
+
+100 FORMAT (5X, '(species ', I2, ') "', 2A, 3(1X, 10A), '"')
+END SUBROUTINE scalar_bcspec_error
+
 
 !###############################################################################
 

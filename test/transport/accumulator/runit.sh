@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  5, 2000 by William A. Perkins
-# Last Change: Wed Nov  8 11:33:01 2000 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Thu Feb 21 08:46:06 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -32,7 +32,7 @@ mv plot.nc plot.inst.nc
 
 sed -e '15s/05:/06:/' \
     -e '12s/F/T/' \
-    -e '37s/F/T/' \
+    -e '38s/F/T/' \
     mass2_v027.base > mass2_v027.cfg
 $model
 mv plot.nc plot.avg.nc

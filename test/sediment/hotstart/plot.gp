@@ -7,9 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created September 12, 2000 by William A. Perkins
-# Last Change: Tue Jul 24 12:15:58 2001 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: Tue Mar 19 11:00:03 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
+
+
+set term post eps color dashed "Helvetica" 14
 
 set xdata time
 set timefmt '%m-%d-%Y %H:%M:%S'

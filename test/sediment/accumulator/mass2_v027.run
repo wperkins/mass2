@@ -14,7 +14,7 @@ T			do gage print
 T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial water elv.; depth if FALSE
 04-01-1996 00:00:00	start date & time
 04-01-1996 23:59:59	end date & time
-60.0			delta_t 	! time step (seconds)
+15.0			delta_t 	! time step (seconds)
 6 10.0		number_hydro_iterations, max_mass_source_sum	! number of internal iterations at a fixed time level
 2			number_scalar_iterations
 2			scalar_sweep	! internal iterations
@@ -33,6 +33,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 5.0			wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
 0.0			uvel_wind	! uniform value of u wind velocity
 0.0			vvel_wind	! uniform value of v wind velocity
+F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0 F   bed porosity, initial bed depth, read from initial_bed.dat
-90	F		print_freq  	! printout frequency
+60	F		print_freq  	! printout frequency
 1			gage_print_freq

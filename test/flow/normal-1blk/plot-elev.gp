@@ -26,3 +26,4 @@ set key below
 plot '<perl ../../../scripts/mass2slice.pl -t 1 -i plot.nc wsel 1 5' using 3:4 title 'Initial Conditions' with linespoints 1, \
      '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc wsel 1 5' using 3:4 title 'Steady State' with linespoints 3, \
      '<perl ../../../scripts/mass2slice.pl -i plot.nc zbot 1 5' using 3:4 title 'Bottom' with linespoints 7
+

@@ -33,6 +33,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 5.0			wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
 0.0			uvel_wind	! uniform value of u wind velocity
 0.0			vvel_wind	! uniform value of v wind velocity
+F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0 F   bed porosity, initial bed depth, read from initial_bed.dat
 10000 F		print_freq  	! printout frequency
 5			gage_print_freq

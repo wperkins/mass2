@@ -20,7 +20,7 @@ CHARACTER (LEN=80), SAVE :: code_date = "release: $Date$"
 INTEGER, SAVE :: n, i, j, jj, junk, icell, jcell
 INTEGER, SAVE :: imax,jmax,ivec(4),jvec(4),ivec2(4),jvec2(4)
 INTEGER, SAVE :: system_time(8)
-INTEGER, SAVE :: iblock, con_block, num_bc, ispecies
+INTEGER, SAVE :: iblock, con_block, num_bc, ispecies, con_j, con_i
 INTEGER, SAVE :: cfg_iounit=10, output_iounit=11, error_iounit=13, status_iounit=14
 INTEGER, SAVE :: grid_iounit=15, hotstart_iounit=16, restart_iounit=17, bcspec_iounit=18
 ! INTEGER :: mass_source_iounit=19
@@ -98,6 +98,7 @@ LOGICAL, SAVE :: ds_flux_given, given_initial_wsel, read_initial_profile
 LOGICAL, SAVE :: update_depth = .TRUE.
 LOGICAL, SAVE :: do_flow = .TRUE. , do_transport = .FALSE. , do_gage_print = .FALSE.
 LOGICAL, SAVE :: do_flow_output = .FALSE.
+LOGICAL, SAVE :: do_flow_diag = .TRUE. !.FALSE.
 LOGICAL, SAVE :: do_transport_restart = .FALSE.
 LOGICAL, SAVE :: do_spatial_eddy, do_spatial_kx, do_spatial_ky, do_spatial_chezy
 LOGICAL, SAVE :: do_surface_heatx = .FALSE. , do_surface_gasx = .FALSE.
@@ -127,6 +128,45 @@ CHARACTER*26, SAVE :: zone_name
 INTEGER, SAVE :: dum_start, dum_end
 DOUBLE PRECISION, SAVE :: dum_vel(100), dum_depth(100), dum_val
 CHARACTER (LEN=80), SAVE :: dum_char
+
+
+! ----------------------------------------------------------------
+! global parameters for wetting and drying
+! ----------------------------------------------------------------
+
+                                ! flag to turn wetting and drying on
+
+LOGICAL, SAVE :: do_wetdry = .TRUE.
+
+                                ! flag to do wet/dry checking every
+                                ! hydro iteration, rather than every
+                                ! time step
+
+LOGICAL, SAVE :: iterate_wetdry = .TRUE.
+
+                                ! the depth that defines "dry"
+
+DOUBLE PRECISION, SAVE :: dry_depth = 0.1
+
+                                ! the minimum depth at which cells
+                                ! are initialized (in cold starts)
+
+DOUBLE PRECISION, SAVE :: dry_zero_depth = 0.05
+
+                                ! the indicator depth at which
+                                ! rewetting is allowed
+
+DOUBLE PRECISION, SAVE :: dry_rewet_depth = 0.12
+
+! ----------------------------------------------------------------
+! global parameters used to control cell overlap at block boundaries,
+! and ghost cells
+! ----------------------------------------------------------------
+
+INTEGER, PARAMETER :: i_ghost = 1, j_ghost = 0
+! INTEGER, PARAMETER :: i_index_min = 1, i_index_extra = 1
+INTEGER, PARAMETER :: i_index_min = 1-i_ghost, i_index_extra = 1+i_ghost
+INTEGER, PARAMETER :: j_index_min = 1-j_ghost, j_index_extra = 1+j_ghost
 
 
 

@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  5, 2000 by William A. Perkins
-# Last Change: Wed Nov 15 12:07:35 2000 by William A. Perkins <perk@gehenna.pnl.gov>
+# Last Change: Tue Mar 19 12:38:25 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 TRAP_FPE='INVALID=ABORT(1);UNDERFL=ZERO;OVERFL=ABORT(1);INT_OVERFL=ABORT(1);DIVZERO=ABORT(1);DEBUG'
@@ -32,7 +32,7 @@ gnuplot plot-mass.gp > plot-mass.inst.eps
 
                                 #  run w/ accumulator
 
-sed -e '37s/F/T/' mass2_v027.run > mass2_v027.cfg
+sed -e '38s/F/T/' mass2_v027.run > mass2_v027.cfg
 $model
 mv plot.nc plot.avg.nc
 mv gage.nc gage.avg.nc

@@ -35,12 +35,39 @@ DOUBLE PRECISION, SAVE :: grav = 32.2, tiny = 1.0D-100
 DOUBLE PRECISION, SAVE :: density = 1.94
 DOUBLE PRECISION, SAVE :: density_air = 0.00237  ! 60 degrees F
 
+                                ! a list of cell types
+
+INTEGER, PUBLIC, PARAMETER :: &
+     &CELL_NORMAL_TYPE = 1, &
+     &CELL_BOUNDARY_TYPE = 3
+
+                                ! a list of flow boundary condition
+                                ! types
+
+INTEGER, PUBLIC, PARAMETER :: &
+     &FLOWBC_VEL = 1, &
+     &FLOWBC_FLOW = 2, &
+     &FLOWBC_ELEV = 3
+
+TYPE cell_type_struct
+   INTEGER :: type
+   ! the rest applies only for BOUNDARY type cells
+   INTEGER :: bctype 
+END TYPE cell_type_struct
+
+
+TYPE isdead_struct
+   LOGICAL :: u, v, p, transient
+END TYPE isdead_struct
+
 TYPE block_struct
-	INTEGER :: xmax,ymax
-	DOUBLE PRECISION, POINTER :: x(:,:)		! x location at control volume nodes
-  DOUBLE PRECISION, POINTER :: y(:,:)		! y location at control volume nodes
-	DOUBLE PRECISION, POINTER :: x_grid(:,:)		! x location on grid (c.v. corner points)
+   INTEGER :: xmax,ymax
+   DOUBLE PRECISION, POINTER :: x(:,:)		! x location at control volume nodes
+   DOUBLE PRECISION, POINTER :: y(:,:)		! y location at control volume nodes
+  DOUBLE PRECISION, POINTER :: x_grid(:,:)		! x location on grid (c.v. corner points)
   DOUBLE PRECISION, POINTER :: y_grid(:,:)		! y location on grid (c.v. corner points)
+  DOUBLE PRECISION, POINTER :: x_out(:,:) ! x locations for output
+  DOUBLE PRECISION, POINTER :: y_out(:,:) ! y locations for output
   DOUBLE PRECISION, POINTER :: x_xsi(:,:)	! x derivative wrt xsi (wrt = with respect to)
   DOUBLE PRECISION, POINTER :: y_xsi(:,:)	! y derivative wrt xsi
   DOUBLE PRECISION, POINTER :: x_eta(:,:)	! x derivative wrt eta
@@ -70,6 +97,7 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: depthold(:,:)		! old time water depth (NOT WS ELEVATION)
   DOUBLE PRECISION, POINTER :: zbot(:,:)				! bottom elevation at control volume nodes
   DOUBLE PRECISION, POINTER :: zbot_grid(:,:)		! bottom elevation at grid points (c.v. corners)
+  DOUBLE PRECISION, POINTER :: zbot_out(:,:)
   DOUBLE PRECISION, POINTER :: ustar(:,:)   ! u* velocity field
   DOUBLE PRECISION, POINTER :: vstar(:,:) 	! v* velocity field
   DOUBLE PRECISION, POINTER :: dstar(:,:)		! d* depth field
@@ -100,6 +128,13 @@ TYPE block_struct
   DOUBLE PRECISION, POINTER :: pec_e(:,:), pec_w(:,:), pec_n(:,:), pec_s(:,:)
   DOUBLE PRECISION, POINTER :: apo(:,:)
   
+  TYPE (isdead_struct), POINTER :: isdead(:,:)
+  TYPE (cell_type_struct), POINTER :: cell(:,:)
+
+  LOGICAL, POINTER :: isdry(:,:)
+
+  DOUBLE PRECISION, POINTER :: xsource(:,:)
+
 END TYPE block_struct
 
 ! structure for disposable variables that can be overwritten for each block
@@ -124,7 +159,6 @@ TYPE coeff_struct
     DOUBLE PRECISION, POINTER :: lud(:,:)		! part of p' coeff that has U vel stuff
     DOUBLE PRECISION, POINTER :: lvd(:,:)		! part of p' coeff that has V vel stuff
     DOUBLE PRECISION, POINTER :: source(:,:)	! source term
-    
 
 END TYPE coeff_struct
 
@@ -151,77 +185,113 @@ END SUBROUTINE allocate_blocks
 
 
 !#########################################################################
-SUBROUTINE allocate_block_components(n, imax, jmax, status_iounit)
+SUBROUTINE allocate_block_components(n, status_iounit)
 
-! this routine allocates each component in the array of blocks
-! allows minimal memory use for each block
-IMPLICIT NONE
-INTEGER :: n, imax, jmax, status_iounit	! block number, max i elements, max j elements
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
 
-WRITE(status_iounit,*)'starting component allocation for block number - ',n
-WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  ! this routine allocates each component in the array of blocks
+  ! allows minimal memory use for each block
+  IMPLICIT NONE
+  INTEGER :: n, status_iounit	! block number
 
-	ALLOCATE(block(n)%x(imax,jmax))
-	ALLOCATE(block(n)%y(imax,jmax))
-	ALLOCATE(block(n)%x_grid(imax,jmax))
-	ALLOCATE(block(n)%y_grid(imax,jmax))
-  ALLOCATE(block(n)%x_xsi(imax,jmax))	! x derivative wrt xsi (wrt = with respect to)
-  ALLOCATE(block(n)%y_xsi(imax,jmax))	! y derivative wrt xsi
-  ALLOCATE(block(n)%x_eta(imax,jmax))	! x derivative wrt eta
-  ALLOCATE(block(n)%y_eta(imax,jmax))	! y derivative wrt eta
-  ALLOCATE(block(n)%hp1(imax,jmax))		! metric coeff. 1 in xsi direction : P loc
-  ALLOCATE(block(n)%hp2(imax,jmax))		! metric coeff. 2 in eta direction : P loc
-	ALLOCATE(block(n)%gp12(imax,jmax))	! nonorthogonal part of the metric tensor
-  ALLOCATE(block(n)%hv1(imax,jmax))		! metric coeff. 1 in xsi direction : v loc
-  ALLOCATE(block(n)%hv2(imax,jmax))		! metric coeff. 2 in eta direction : v loc
-  ALLOCATE(block(n)%hu1(imax,jmax))		! metric coeff. 1 in xsi direction : u loc
-  ALLOCATE(block(n)%hu2(imax,jmax))		! metric coeff. 2 in eta direction : u loc
-  ALLOCATE(block(n)%uvel_p(imax,jmax))		! u vel at c.v. node
-  ALLOCATE(block(n)%vvel_p(imax,jmax))		! v vel at c.v. node
-  ALLOCATE(block(n)%u_cart(imax,jmax))	! u cartesian velocity component x-dir
-  ALLOCATE(block(n)%v_cart(imax,jmax))	! v cartesian velocity component y-dir
-  ALLOCATE(block(n)%uvel(imax,jmax)) 		! u depth-ave velocity
-  ALLOCATE(block(n)%vvel(imax,jmax))		! v depth-ave velocity
+  INTEGER :: imin, imax, jmin, jmax ! index limits
+
+  imin = i_index_min
+  imax = block(n)%xmax + i_index_extra
+  jmin = j_index_min
+  jmax = block(n)%ymax + j_index_extra
+
+  WRITE(status_iounit,*)'starting component allocation for block number - ',n
+  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
+  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+
+  ALLOCATE(block(n)%x(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%y(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%x_grid(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%y_grid(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%x_out(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%y_out(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%x_xsi(imin:imax,jmin:jmax))	! x derivative wrt xsi (wrt = with respect to)
+  ALLOCATE(block(n)%y_xsi(imin:imax,jmin:jmax))	! y derivative wrt xsi
+  ALLOCATE(block(n)%x_eta(imin:imax,jmin:jmax))	! x derivative wrt eta
+  ALLOCATE(block(n)%y_eta(imin:imax,jmin:jmax))	! y derivative wrt eta
+  ALLOCATE(block(n)%hp1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : P loc
+  ALLOCATE(block(n)%hp2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : P loc
+  ALLOCATE(block(n)%gp12(imin:imax,jmin:jmax))	! nonorthogonal part of the metric tensor
+  ALLOCATE(block(n)%hv1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : v loc
+  ALLOCATE(block(n)%hv2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : v loc
+  ALLOCATE(block(n)%hu1(imin:imax,jmin:jmax))		! metric coeff. 1 in xsi direction : u loc
+  ALLOCATE(block(n)%hu2(imin:imax,jmin:jmax))		! metric coeff. 2 in eta direction : u loc
+  ALLOCATE(block(n)%uvel_p(imin:imax,jmin:jmax))		! u vel at c.v. node
+  ALLOCATE(block(n)%vvel_p(imin:imax,jmin:jmax))		! v vel at c.v. node
+  ALLOCATE(block(n)%u_cart(imin:imax,jmin:jmax))	! u cartesian velocity component x-dir
+  ALLOCATE(block(n)%v_cart(imin:imax,jmin:jmax))	! v cartesian velocity component y-dir
+  ALLOCATE(block(n)%uvel(imin:imax,jmin:jmax)) 		! u depth-ave velocity
+  ALLOCATE(block(n)%vvel(imin:imax,jmin:jmax))		! v depth-ave velocity
   
-  ALLOCATE(block(n)%depth(imax,jmax))		! water DEPTH (NOT WS ELEVATION)
-	ALLOCATE(block(n)%wsel(imax,jmax))		! Water Surface ELEVATION
-  ALLOCATE(block(n)%eddy(imax,jmax))		! eddy viscosity depth-ave
-	ALLOCATE(block(n)%kx_diff(imax,jmax))		! scalar turb diffusivity xsi direction
-	ALLOCATE(block(n)%ky_diff(imax,jmax))		! scalar turb diffusivity eta direction
-  ALLOCATE(block(n)%uold(imax,jmax)) 		! old time u depth-ave velocity
-  ALLOCATE(block(n)%vold(imax,jmax))		! old time v depth-ave velocity
+  ALLOCATE(block(n)%depth(imin:imax,jmin:jmax))		! water DEPTH (NOT WS ELEVATION)
+  ALLOCATE(block(n)%wsel(imin:imax,jmin:jmax))		! Water Surface ELEVATION
+  ALLOCATE(block(n)%eddy(imin:imax,jmin:jmax))		! eddy viscosity depth-ave
+  ALLOCATE(block(n)%kx_diff(imin:imax,jmin:jmax))		! scalar turb diffusivity xsi direction
+  ALLOCATE(block(n)%ky_diff(imin:imax,jmin:jmax))		! scalar turb diffusivity eta direction
+  ALLOCATE(block(n)%uold(imin:imax,jmin:jmax)) 		! old time u depth-ave velocity
+  ALLOCATE(block(n)%vold(imin:imax,jmin:jmax))		! old time v depth-ave velocity
   
-  ALLOCATE(block(n)%depthold(imax,jmax))	! old time water depth (NOT WS ELEVATION)
-  ALLOCATE(block(n)%zbot(imax,jmax))			! bottom elevation at control volume nodes
-  ALLOCATE(block(n)%zbot_grid(imax,jmax))	! bottom elevation at grid nodes
-  ALLOCATE(block(n)%ustar(imax,jmax))			! u* velocity field
-  ALLOCATE(block(n)%vstar(imax,jmax)) 		! v* velocity field
-  ALLOCATE(block(n)%dstar(imax,jmax))			! d* depth field
-  ALLOCATE(block(n)%dp(imax,jmax))				! d' depth correction field
-  ALLOCATE(block(n)%bedshear1(imax,jmax)) ! bed shear stress in xsi direction
-  ALLOCATE(block(n)%bedshear2(imax,jmax)) ! bed shear stress in eta direction
-  ALLOCATE(block(n)%shear(imax,jmax)) ! bed shear stress magnitude @ velocity locations
-  ALLOCATE(block(n)%windshear1(imax,jmax))	! wind shear stress in xsi direction
-  ALLOCATE(block(n)%windshear2(imax,jmax))	! wind shear stress in eta direction
-  ALLOCATE(block(n)%chezy(imax,jmax))				! chezy bed shear stress coefficient
-  ALLOCATE(block(n)%mass_source(imax,jmax))	! mass source
-  ALLOCATE(block(n)%TDG_stuff(imax,jmax))		! TDG work array
-  ALLOCATE(block(n)%work(imax,jmax))         ! general work array
-  ALLOCATE(block(n)%froude_num(imax,jmax))   ! froude number
-  ALLOCATE(block(n)%courant_num(imax,jmax))  ! courant number
+  ALLOCATE(block(n)%depthold(imin:imax,jmin:jmax))	! old time water depth (NOT WS ELEVATION)
+  ALLOCATE(block(n)%zbot(imin:imax,jmin:jmax))			! bottom elevation at control volume nodes
+  ALLOCATE(block(n)%zbot_grid(imin:imax,jmin:jmax))	! bottom elevation at grid nodes
+  ALLOCATE(block(n)%zbot_out(imin:imax,jmin:jmax))	! bottom elevation at grid nodes
+  ALLOCATE(block(n)%ustar(imin:imax,jmin:jmax))			! u* velocity field
+  ALLOCATE(block(n)%vstar(imin:imax,jmin:jmax)) 		! v* velocity field
+  ALLOCATE(block(n)%dstar(imin:imax,jmin:jmax))			! d* depth field
+  ALLOCATE(block(n)%dp(imin:imax,jmin:jmax))				! d' depth correction field
+  ALLOCATE(block(n)%bedshear1(imin:imax,jmin:jmax)) ! bed shear stress in xsi direction
+  ALLOCATE(block(n)%bedshear2(imin:imax,jmin:jmax)) ! bed shear stress in eta direction
+  ALLOCATE(block(n)%shear(imin:imax,jmin:jmax)) ! bed shear stress magnitude @ velocity locations
+  ALLOCATE(block(n)%windshear1(imin:imax,jmin:jmax))	! wind shear stress in xsi direction
+  ALLOCATE(block(n)%windshear2(imin:imax,jmin:jmax))	! wind shear stress in eta direction
+  ALLOCATE(block(n)%chezy(imin:imax,jmin:jmax))				! chezy bed shear stress coefficient
+  ALLOCATE(block(n)%mass_source(imin:imax,jmin:jmax))	! mass source
+  ALLOCATE(block(n)%TDG_stuff(imin:imax,jmin:jmax))		! TDG work array
+  ALLOCATE(block(n)%work(imin:imax,jmin:jmax))         ! general work array
+  ALLOCATE(block(n)%froude_num(imin:imax,jmin:jmax))   ! froude number
+  ALLOCATE(block(n)%courant_num(imin:imax,jmin:jmax))  ! courant number
 
                                 ! precalculated values for transport 
 
-  ALLOCATE(block(n)%inlet_area(jmax))
-  ALLOCATE(block(n)%k_e(imax,jmax),block(n)%k_w(imax,jmax),block(n)%k_n(imax,jmax),block(n)%k_s(imax,jmax))
-  ALLOCATE(block(n)%depth_e(imax,jmax),block(n)%depth_w(imax,jmax),block(n)%depth_n(imax,jmax),block(n)%depth_s(imax,jmax))
-  ALLOCATE(block(n)%flux_e(imax,jmax),block(n)%flux_w(imax,jmax),block(n)%flux_n(imax,jmax),block(n)%flux_s(imax,jmax))
-  ALLOCATE(block(n)%diffu_e(imax,jmax),block(n)%diffu_w(imax,jmax),block(n)%diffu_n(imax,jmax),block(n)%diffu_s(imax,jmax))
-  ALLOCATE(block(n)%pec_e(imax,jmax),block(n)%pec_w(imax,jmax),block(n)%pec_n(imax,jmax),block(n)%pec_s(imax,jmax))
-  ALLOCATE(block(n)%apo(imax,jmax))
+  ALLOCATE(block(n)%inlet_area(jmin:jmax))
+  ALLOCATE(block(n)%k_e(imin:imax,jmin:jmax),block(n)%k_w(imin:imax,jmin:jmax),&
+       &block(n)%k_n(imin:imax,jmin:jmax),block(n)%k_s(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%depth_e(imin:imax,jmin:jmax),block(n)%depth_w(imin:imax,jmin:jmax),&
+       &block(n)%depth_n(imin:imax,jmin:jmax),block(n)%depth_s(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%flux_e(imin:imax,jmin:jmax),block(n)%flux_w(imin:imax,jmin:jmax),&
+       &block(n)%flux_n(imin:imax,jmin:jmax),block(n)%flux_s(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%diffu_e(imin:imax,jmin:jmax),block(n)%diffu_w(imin:imax,jmin:jmax),&
+       &block(n)%diffu_n(imin:imax,jmin:jmax),block(n)%diffu_s(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%pec_e(imin:imax,jmin:jmax),block(n)%pec_w(imin:imax,jmin:jmax),&
+       &block(n)%pec_n(imin:imax,jmin:jmax),block(n)%pec_s(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%apo(imin:imax,jmin:jmax))
 
-WRITE(status_iounit,*)'completed component allocation for block number - ',n
+  ALLOCATE(block(n)%isdead(imin:imax, jmin:jmax))
+
+  block(n)%isdead(:,:)%u = .FALSE.
+  block(n)%isdead(:,:)%v = .FALSE.
+  block(n)%isdead(:,:)%p = .FALSE.
+  block(n)%isdead(:,:)%transient = .TRUE.
+
+  ALLOCATE(block(n)%cell(imin:imax, jmin:jmax))
+  block(n)%cell(:,:)%type = CELL_NORMAL_TYPE
+  block(n)%cell(:,:)%bctype = FLOWBC_VEL
+
+  ALLOCATE(block(n)%isdry(imin:imax, jmin:jmax))
+
+  block(n)%isdry = .FALSE.
+
+  ALLOCATE(block(n)%xsource(imin:imax, jmin:jmax))
+
+  block(n)%xsource = 0.0
+
+  WRITE(status_iounit,*)'completed component allocation for block number - ',n
 
 END SUBROUTINE allocate_block_components
 
@@ -257,8 +327,6 @@ ALLOCATE(coeff%lvd(imax,jmax))		! part of p' coeff that has V vel stuff
 ALLOCATE(coeff%source(imax,jmax))	! source term
 
 
-
-
 WRITE(status_iounit,*)'completed component allocation for coeff'
 
 END SUBROUTINE allocate_coeff_components
@@ -286,7 +354,7 @@ SUBROUTINE velocity_shift()
 
                                 ! cell center velocity components
 
-     DO i=2, block(iblk)%xmax
+     DO i= 1, block(iblk)%xmax + 2
         DO j=2, block(iblk)%ymax
            block(iblk)%uvel_p(i,j) = &
                 &0.5*(block(iblk)%uvel(i,j)+block(iblk)%uvel(i-1,j))
@@ -296,25 +364,29 @@ SUBROUTINE velocity_shift()
      END DO
      i = 1
      DO j=2, block(iblk)%ymax
-        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i,j)
-        block(iblk)%vvel_p(i,j) = &
-             &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i+1,j)
      END DO
-     i=block(iblk)%xmax+1
-     DO j=2, block(iblk)%ymax
-        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(block(iblk)%xmax,j)
-        block(iblk)%vvel_p(i,j) = &
-             &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
-     END DO
+!!$     i=block(iblk)%xmax+1
+!!$     DO j=2, block(iblk)%ymax
+!!$        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i-1,j)
+!!$        block(iblk)%vvel_p(i,j) = &
+!!$             &0.25*(block(iblk)%vvel(i-1,j)+block(iblk)%vvel(i-1,j-1) +&
+!!$             &block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+!!$     END DO
 
                                 ! eastward & northward velocity @ cell center
 
-     block(iblk)%u_cart = &
-          &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%x_xsi + &
-          &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%x_eta
-     block(iblk)%v_cart = &
-          &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%y_xsi + &
-          &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%y_eta
+     WHERE (block(iblk)%hp1 .NE. 0.0 .AND. block(iblk)%hp2 .NE. 0.0)
+        block(iblk)%u_cart = &
+             &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%x_xsi + &
+             &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%x_eta
+        block(iblk)%v_cart = &
+             &(block(iblk)%uvel_p/block(iblk)%hp1)*block(iblk)%y_xsi + &
+             &(block(iblk)%vvel_p/block(iblk)%hp2)*block(iblk)%y_eta
+     ELSEWHERE
+        block(iblk)%u_cart = 0.0
+        block(iblk)%v_cart = 0.0
+     END WHERE
   END DO
 END SUBROUTINE velocity_shift
 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: Thu Nov 29 08:32:40 2001 by William A. Perkins <perk@gehenna.pnl.gov>
+! Last Change: Tue Mar 19 09:16:01 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -60,18 +60,27 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE bed_initialize()
 
+    USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+
     IMPLICIT NONE
 
     INTEGER :: iblk, i, j, ifract
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: bdens
 
     ALLOCATE(bed(max_blocks))
     DO iblk = 1, max_blocks
-       ALLOCATE(bed(iblk)%pore(max_species, block(iblk)%xmax + 1, block(iblk)%ymax + 1))
-       ALLOCATE(bed(iblk)%particulate(max_species, block(iblk)%xmax + 1, block(iblk)%ymax + 1))
-       ALLOCATE(bed(iblk)%sediment(sediment_fractions, block(iblk)%xmax + 1, block(iblk)%ymax + 1))
-       ALLOCATE(bed(iblk)%depth(block(iblk)%xmax + 1, block(iblk)%ymax + 1))
-       ALLOCATE(bed(iblk)%porosity(block(iblk)%xmax + 1, block(iblk)%ymax + 1))
+
+       imin = i_index_min
+       imax = block(iblk)%xmax + i_index_extra
+       jmin = j_index_min
+       jmax = block(iblk)%ymax + j_index_extra
+
+       ALLOCATE(bed(iblk)%pore(max_species, imin:imax, jmin:jmax))
+       ALLOCATE(bed(iblk)%particulate(max_species, imin:imax, jmin:jmax))
+       ALLOCATE(bed(iblk)%sediment(sediment_fractions, imin:imax, jmin:jmax))
+       ALLOCATE(bed(iblk)%depth(imin:imax, jmin:jmax))
+       ALLOCATE(bed(iblk)%porosity(imin:imax, jmin:jmax))
 
                                 ! initialize with default values (from
                                 ! the configuration file?)

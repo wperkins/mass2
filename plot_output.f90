@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Fri Jul 27 13:41:06 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Thu Aug 15 12:20:37 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -17,7 +17,8 @@
 MODULE plot_output
 
   USE accumulator
-  USE misc_vars, ONLY: do_accumulate
+  USE misc_vars, ONLY: do_accumulate, &
+       &i_index_min, i_index_extra, j_index_min, j_index_extra
 
   IMPLICIT NONE
 
@@ -41,14 +42,14 @@ MODULE plot_output
   INTEGER, PRIVATE :: depth_varid, wsel_varid
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, dp_varid, sat_varid
-  INTEGER, PRIVATE :: courant_varid, froude_varid
+  INTEGER, PRIVATE :: courant_varid, froude_varid, isdry_varid
   INTEGER, PRIVATE, POINTER :: part_depos_varid(:), depos_varid(:), erode_varid(:)
   INTEGER, PRIVATE, POINTER :: bedsed_varid(:), bedmass_varid(:)
   INTEGER, PRIVATE, POINTER :: beddis_varid(:), bedpore_varid(:), bedporemass_varid(:)
   INTEGER, PRIVATE, POINTER :: bedpart_varid(:), bedpartmass_varid(:)
   INTEGER, PRIVATE :: beddepth_varid
   REAL, ALLOCATABLE, PRIVATE :: nctmp_real(:,:,:)
-  DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: nctmp_double(:,:,:)
+  DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: nctmp_double(:,:,:), blktmp_double(:,:)
 
   INTEGER, PARAMETER, PRIVATE :: diag_plot_iounit=20
   CHARACTER (LEN=80), PARAMETER :: diag_plot_ioname = 'diagnostic_plot.dat'
@@ -98,8 +99,8 @@ CONTAINS
     
     IMPLICIT NONE
 
-    CHARACTER (LEN=10) :: date_string
-    CHARACTER (LEN=8) :: time_string
+    CHARACTER (LEN=*) :: date_string
+    CHARACTER (LEN=*) :: time_string
     DOUBLE PRECISION :: salinity, baro_press, ccstar, conc_TDG, t_water
     CHARACTER*26 :: zone_name
     INTEGER :: i, j, iblock
@@ -273,7 +274,7 @@ CONTAINS
   SUBROUTINE plot_file_setup_netcdf()
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_transport
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry
     USE scalars, ONLY: max_species
     USE scalars_source
 
@@ -352,23 +353,29 @@ CONTAINS
 
     IF (do_flow .OR. do_flow_output) THEN
 
-       u_varid = plot_add_time_var("uvel", "Longitudinal Velocity", "feet/second")
-       v_varid = plot_add_time_var("vvel", "Lateral Velocity", "feet/second")
        ucart_varid = plot_add_time_var("ucart", "Eastward Velocity", "feet/second")
        vcart_varid = plot_add_time_var("vcart", "Northward Velocity", "feet/second")
-       vmag_varid = plot_add_time_var("vmag", "Velocity Magnitude", "feet/second")
        depth_varid = plot_add_time_var("depth", "Water Depth", "feet")
-       wsel_varid = plot_add_time_var("wsel", "Water Surface Elevation", "feet")
-    
+
+       
                                 ! diagnostic values
 
-       shear_varid = plot_add_time_var("shear", "Bed Shear Stress", "pound/foot^2")
-       courant_varid = plot_add_time_var("courant", "Courant Number", "none")
-       froude_varid = plot_add_time_var("froude", "Froude Number", "none")
+       IF (do_flow_diag) THEN
+          u_varid = plot_add_time_var("uvel", "Longitudinal Velocity", "feet/second")
+          v_varid = plot_add_time_var("vvel", "Lateral Velocity", "feet/second")
+          vmag_varid = plot_add_time_var("vmag", "Velocity Magnitude", "feet/second")
+          wsel_varid = plot_add_time_var("wsel", "Water Surface Elevation", "feet")
+          shear_varid = plot_add_time_var("shear", "Bed Shear Stress", "pound/foot^2")
+          courant_varid = plot_add_time_var("courant", "Courant Number", "none")
+          froude_varid = plot_add_time_var("froude", "Froude Number", "none")
+       END IF
+
+       IF (do_wetdry) THEN
+          isdry_varid = plot_add_time_var("isdry", "Dry Cell Flag", "none")
+       END IF
+    END IF
 
                                 ! water quality variables
-
-    END IF
 
     IF (do_transport) THEN
        ALLOCATE(scalar_varid(max_species))
@@ -530,6 +537,8 @@ CONTAINS
 
     ALLOCATE(nctmp_real(1, max_x, max_y))
     ALLOCATE(nctmp_double(1, max_x, max_y))
+    ALLOCATE(blktmp_double(i_index_min:(max_x - 1 + i_index_extra), &
+         &j_index_min:(max_y - 1 + j_index_extra)))
 
     DO iblock = 1, max_blocks
 
@@ -553,7 +562,7 @@ CONTAINS
 
        nctmp_double = nf_fill_double
        nctmp_double(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%x(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
+            &block(iblock)%x_out(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
        ncstat = nf_put_vara_double(plot_ncid, x_varid, index, len, nctmp_double)
        IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
 
@@ -561,7 +570,7 @@ CONTAINS
 
        nctmp_double = nf_fill_double
        nctmp_double(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%y(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
+            &block(iblock)%y_out(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
        ncstat = nf_put_vara_double(plot_ncid, y_varid, index, len, nctmp_double)
        IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
 
@@ -569,7 +578,7 @@ CONTAINS
 
        nctmp_real = nf_fill_real
        nctmp_real(1,1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1) = &
-            &block(iblock)%zbot(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
+            &block(iblock)%zbot_out(1:block(iblock)%xmax + 1,1:block(iblock)%ymax + 1)
        ncstat = nf_put_vara_real(plot_ncid, zbot_varid, index, len, nctmp_real)
        IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
 
@@ -607,7 +616,8 @@ CONTAINS
     INCLUDE 'netcdf.inc'
 
     INTEGER, INTENT(IN) :: varid, start(:), length(:), xmax, ymax
-    DOUBLE PRECISION, INTENT(IN) :: var(:,:)
+    DOUBLE PRECISION, INTENT(IN) :: &
+         &var(i_index_min:,j_index_min:)
     DOUBLE PRECISION, INTENT(IN), OPTIONAL :: convert
     INTEGER :: ncstat, i, j
     DOUBLE PRECISION :: conversion
@@ -619,8 +629,8 @@ CONTAINS
     END IF
 
     nctmp_real = nf_fill_real
-    DO i = 1, xmax
-       DO j = 1, ymax
+    DO i = 1, xmax + 1
+       DO j = 1, ymax + 1
           IF (DABS(var(i,j)) .LT. 1.0d-37) THEN
               nctmp_real(1, i, j) = 0.0
            ELSE
@@ -628,6 +638,13 @@ CONTAINS
            END IF
         END DO
      END DO
+     i = 1
+     nctmp_real(1, i, 1:ymax+1) = &
+          &0.5*SNGL((var(i,1:ymax+1) + var(i+1,1:ymax+1))/conversion)
+     i = xmax + 1
+     nctmp_real(1, i, 1:ymax+1) = &
+          &0.5*SNGL((var(i,1:ymax+1) + var(i-1,1:ymax+1))/conversion)
+
      ncstat = nf_put_vara_real(plot_ncid, varid, start, length, nctmp_real)
      IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)
 
@@ -640,7 +657,7 @@ CONTAINS
   SUBROUTINE plot_print_netcdf(date_string, time_string, salinity, baro_press)
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_transport
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry
     USE scalars
     USE scalars_source
     USE date_time
@@ -651,8 +668,8 @@ CONTAINS
 
     INCLUDE 'netcdf.inc'
 
-    CHARACTER (LEN=10) :: date_string
-    CHARACTER (LEN=8) :: time_string
+    CHARACTER (LEN=*) :: date_string
+    CHARACTER (LEN=*) :: time_string
     CHARACTER (LEN=tslen) :: timestamp
     DOUBLE PRECISION :: salinity, baro_press
     INTEGER :: ncstat
@@ -704,65 +721,85 @@ CONTAINS
 
        IF (do_flow .OR. do_flow_output) THEN
 
-                                ! average u
-
-          CALL plot_print_time_var(u_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%uvelp%sum)
-          
-                                ! average v
-
-          CALL plot_print_time_var(v_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%vvelp%sum)
-
                                 ! average u_cart
 
           CALL plot_print_time_var(ucart_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &block(iblock)%xmax, block(iblock)%ymax,&
                &accum_block(iblock)%hydro%ucart%sum)
           
                                 ! average v_cart
 
           CALL plot_print_time_var(vcart_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &block(iblock)%xmax, block(iblock)%ymax,&
                &accum_block(iblock)%hydro%vcart%sum)
 
                                 ! average depth
 
           CALL plot_print_time_var(depth_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+               &block(iblock)%xmax, block(iblock)%ymax,&
                &accum_block(iblock)%hydro%depth%sum)
+
+          IF (do_flow_diag) THEN
+
+                                ! average u
+
+             CALL plot_print_time_var(u_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%uvelp%sum)
+             
+                                ! average v
+
+             CALL plot_print_time_var(v_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%vvelp%sum)
 
                                 ! average wsel
 
-          CALL plot_print_time_var(wsel_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%wsel%sum)
+             CALL plot_print_time_var(wsel_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%wsel%sum)
 
                                 ! average vmag
 
-          CALL plot_print_time_var(vmag_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%vmag%sum)
+             CALL plot_print_time_var(vmag_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%vmag%sum)
 
                                 ! average bed shear
 
-          CALL plot_print_time_var(shear_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%shear%sum)
+             CALL plot_print_time_var(shear_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%shear%sum)
 
                                 ! Froude number
 
-          CALL plot_print_time_var(froude_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%froude%sum)
+             CALL plot_print_time_var(froude_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%froude%sum)
 
                                 ! Courant number
 
-          CALL plot_print_time_var(courant_varid, start, length, &
-               &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
-               &accum_block(iblock)%hydro%courant%sum)
+             CALL plot_print_time_var(courant_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%courant%sum)
+
+          END IF
+
+                                ! Dry Cell Flag
+
+          IF (do_wetdry) THEN
+!!$             blktmp_double = 0.0
+!!$             WHERE (block(iblock)%isdry) blktmp_double = 1.0
+             blktmp_double = 0.0
+             DO i = 1, block(iblock)%xmax + 1
+                DO j = 1, block(iblock)%ymax + 1
+                   IF (block(iblock)%isdry(i,j)) blktmp_double(i,j) = 1.0
+                END DO
+             END DO
+             CALL plot_print_time_var(isdry_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &blktmp_double)
+          END IF
 
        END IF
 
@@ -771,7 +808,7 @@ CONTAINS
        IF (do_transport) THEN
           DO ispecies = 1, max_species
              CALL plot_print_time_var(scalar_varid(ispecies), start, length, &
-                  &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                  &block(iblock)%xmax, block(iblock)%ymax,&
                   &accum_block(iblock)%conc(ispecies)%sum, &
                   &scalar_source(ispecies)%conversion)
 
@@ -785,19 +822,19 @@ CONTAINS
                                 ! computed: TDG pressure
 
                 CALL plot_print_time_var(press_varid, start, length, &
-                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &block(iblock)%xmax, block(iblock)%ymax,&
                      &accum_block(iblock)%tdg%press%sum)
 
                                 ! computed: TDG delta P
 
                 CALL plot_print_time_var(dp_varid, start, length, &
-                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &block(iblock)%xmax, block(iblock)%ymax,&
                      &accum_block(iblock)%tdg%deltap%sum)
 
                                 ! computed: TDG saturation
 
                 CALL plot_print_time_var(sat_varid, start, length, &
-                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &block(iblock)%xmax, block(iblock)%ymax,&
                      &accum_block(iblock)%tdg%sat%sum)
                    
                 CASE (GEN)
@@ -806,19 +843,19 @@ CONTAINS
                                 ! dissolved contaminant mass in bed pores
                    
                       CALL plot_print_time_var(bedporemass_varid(ispecies), start, length, &
-                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &block(iblock)%xmax, block(iblock)%ymax,&
                            &accum_block(iblock)%bed%mass(ispecies)%sum)
                       
                       ! dissolved contaminant mass per unit bed area
 
                       CALL plot_print_time_var(bedpore_varid(ispecies), start, length, &
-                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &block(iblock)%xmax, block(iblock)%ymax,&
                            &accum_block(iblock)%bed%conc(ispecies)%sum)
 
                                 ! dissolved contaminant mass per unit volume bed pore water
                    
                       CALL plot_print_time_var(beddis_varid(ispecies), start, length, &
-                           &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                           &block(iblock)%xmax, block(iblock)%ymax,&
                            &accum_block(iblock)%bed%pore(ispecies)%sum, &
                            &scalar_source(ispecies)%conversion)
 
@@ -835,26 +872,26 @@ CONTAINS
                                 ! deposition rate
 
                    CALL plot_print_time_var(depos_varid(ifract), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%deposit(ispecies)%sum)
 
                    
                                 ! erosion rate
 
                    CALL plot_print_time_var(erode_varid(ifract), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%erosion(ispecies)%sum)
 
                                 ! bed total mass
 
                    CALL plot_print_time_var(bedmass_varid(ifract), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%mass(ispecies)%sum)
                    
                                 ! bed mass per unit area
 
                    CALL plot_print_time_var(bedsed_varid(ifract), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%conc(ispecies)%sum)
 
                 CASE (PART)
@@ -862,26 +899,26 @@ CONTAINS
                                 ! particulate deposition rate
 
                    CALL plot_print_time_var(part_depos_varid(ispecies), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%deposit(ispecies)%sum)
 
                                 ! particulate bed mass
 
                    CALL plot_print_time_var(bedpartmass_varid(ispecies), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%mass(ispecies)%sum)
 
                                 ! particulate bed mass per unit area
 
                    CALL plot_print_time_var(bedpart_varid(ispecies), start, length, &
-                        &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                        &block(iblock)%xmax, block(iblock)%ymax,&
                         &accum_block(iblock)%bed%conc(ispecies)%sum)
 
                 END SELECT
              END DO
              IF (source_doing_sed) THEN
                 CALL plot_print_time_var(beddepth_varid, start, length, &
-                     &block(iblock)%xmax + 1, block(iblock)%ymax + 1,&
+                     &block(iblock)%xmax, block(iblock)%ymax,&
                      &accum_block(iblock)%bed%depth%sum)
              END IF
              
@@ -895,12 +932,84 @@ CONTAINS
   END SUBROUTINE plot_print_netcdf
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_geometry
+  ! This routine is used to compute the geometry of the output.  It is
+  ! intended to be the ONLY place where the coordinates of output data
+  ! are computed.  This routine exists so that output grids can remain
+  ! understandable even when the computation grid is complicated with
+  ! ghost cells, half cells, etc.
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_geometry()
+
+    USE globals
+
+    IMPLICIT NONE
+
+    INTEGER :: iblock, i, j
+
+    DO iblock = 1, max_blocks
+
+                                ! without ghost cells, the output
+                                ! locations are the same as the
+                                ! computation locations
+
+       block(iblock)%x_out = block(iblock)%x
+       block(iblock)%y_out = block(iblock)%y
+       block(iblock)%zbot_out = block(iblock)%zbot
+
+                                ! with ghost cells at the up/down
+                                ! stream end, the output locations
+                                ! need to be interpolated at the block
+                                ! ends
+
+       i = 1
+       block(iblock)%x_out(i,1) = block(iblock)%x_grid(i,1)
+       block(iblock)%y_out(i,1) = block(iblock)%y_grid(i,1)
+       block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i,1)
+       DO j = 2, block(iblock)%ymax
+          block(iblock)%x_out(i,j) = &
+               &0.5*(block(iblock)%x_grid(i,j-1) + block(iblock)%x_grid(i,j))
+          block(iblock)%y_out(i,j) = &
+               &0.5*(block(iblock)%y_grid(i,j-1) + block(iblock)%y_grid(i,j))
+          block(iblock)%zbot_out(i,j) = &
+               &0.5*(block(iblock)%zbot_grid(i,j-1) + block(iblock)%zbot_grid(i,j))
+       END DO
+       j = block(iblock)%ymax + 1
+       block(iblock)%x_out(i,j) = block(iblock)%x_grid(i,j-1)
+       block(iblock)%y_out(i,j) = block(iblock)%y_grid(i,j-1)
+       block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i,j-1)
+
+       i =  block(iblock)%xmax + 1
+       block(iblock)%x_out(i,1) = block(iblock)%x_grid(i-1,1)
+       block(iblock)%y_out(i,1) = block(iblock)%y_grid(i-1,1)
+       block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i-1,1)
+       DO j = 2, block(iblock)%ymax
+          block(iblock)%x_out(i,j) = &
+               &0.5*(block(iblock)%x_grid(i-1,j-1) + block(iblock)%x_grid(i-1,j))
+          block(iblock)%y_out(i,j) = &
+               &0.5*(block(iblock)%y_grid(i-1,j-1) + block(iblock)%y_grid(i-1,j))
+          block(iblock)%zbot_out(i,j) = &
+               &0.5*(block(iblock)%zbot_grid(i-1,j-1) + block(iblock)%zbot_grid(i-1,j))
+       END DO
+       j = block(iblock)%ymax + 1
+       block(iblock)%x_out(i,j) = block(iblock)%x_grid(i-1,j-1)
+       block(iblock)%y_out(i,j) = block(iblock)%y_grid(i-1,j-1)
+       block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i-1,j-1)
+       
+                                ! deal with the lateral ghost cells later
+
+    END DO
+  END SUBROUTINE plot_geometry
+
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE plot_file_setup
   ! ----------------------------------------------------------------
   SUBROUTINE plot_file_setup()
 
     IMPLICIT NONE
 
+    CALL plot_geometry()
     IF (plot_do_tecplot) &
          &CALL plot_file_setup_tecplot()
     IF (plot_do_netcdf) &
@@ -919,8 +1028,8 @@ CONTAINS
     
     IMPLICIT NONE
 
-    CHARACTER (LEN=10) :: date_string
-    CHARACTER (LEN=8) :: time_string
+    CHARACTER (LEN=*) :: date_string
+    CHARACTER (LEN=*) :: time_string
     DOUBLE PRECISION :: delta_t, salinity, baro_press
 
     CALL accum_calc()
@@ -1007,21 +1116,28 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER (LEN=10) :: date_string
-    CHARACTER (LEN=8) :: time_string
+    CHARACTER (LEN=*) :: date_string
+    CHARACTER (LEN=*) :: time_string
     DOUBLE PRECISION :: delta_t
     INTEGER :: i, iblock
 
     DO iblock = 1, max_blocks
 
-       block(iblock)%froude_num = &
-            &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
-            &SQRT(grav*block(iblock)%depth)
+       WHERE (block(iblock)%depth .GT. 0.0 .AND. &
+            &block(iblock)%hp1 .NE. 0.0 .AND. &
+            &block(iblock)%hp2 .NE. 0.0)
+          block(iblock)%froude_num = &
+               &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
+               &SQRT(grav*block(iblock)%depth)
+          block(iblock)%courant_num = &
+               &delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
+               &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
+               &SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
+       ELSEWHERE 
+          block(iblock)%froude_num = 0.0
+          block(iblock)%courant_num = 0.0
+       END WHERE
 
-       block(iblock)%courant_num = &
-            &delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
-            &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
-            &SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
 
     END DO
 
@@ -1040,8 +1156,8 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER (LEN=10) :: date_string
-    CHARACTER (LEN=8) :: time_string
+    CHARACTER (LEN=*) :: date_string
+    CHARACTER (LEN=*) :: time_string
     DOUBLE PRECISION :: delta_t
     CHARACTER*26 :: zone_name
     INTEGER :: i, iblock

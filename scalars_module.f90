@@ -23,14 +23,33 @@
 !
 MODULE scalars
 
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+
 IMPLICIT NONE
 
 INTEGER  :: max_species
 
+                                ! a list of cell types
+
+INTEGER, PUBLIC, PARAMETER :: &
+     &SCALAR_NORMAL_TYPE = 1, &
+     &SCALAR_BOUNDARY_TYPE = 2
+                                ! a list of scalar boundary conditions
+                                ! types
+INTEGER, PUBLIC, PARAMETER :: &
+     &SCALBC_ZG = 1, &
+     &SCALBC_CONC = 2
+
+TYPE scalar_cell_type_struct
+   INTEGER :: type
+   ! the rest applies only for BOUNDARY type cells
+   INTEGER :: bctype 
+END TYPE scalar_cell_type_struct
 
 TYPE scalar_struct
 	DOUBLE PRECISION, POINTER :: conc(:,:)				! c depth-ave concentration
 	DOUBLE PRECISION, POINTER :: concold(:,:)			! c old depth-ave concentration
+    TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
 END TYPE scalar_struct
 
 TYPE species_struct
@@ -47,33 +66,49 @@ TYPE(species_struct), ALLOCATABLE :: species(:)
 CONTAINS
 !#####################################################################################################
 
-SUBROUTINE allocate_scalarblock_components(i, block , imax, jmax, status_iounit, error_iounit)
-! this routine allocates each component in the array of blocks
-! allows minimal memory use for each block
-IMPLICIT NONE
-INTEGER :: block, i, imax, jmax, status_iounit, error_iounit, alloc_stat	! block number, max i elements, max j elements
+SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax, status_iounit, error_iounit)
+  ! this routine allocates each component in the array of blocks
+  ! allows minimal memory use for each block
+  IMPLICIT NONE
+  INTEGER :: block, i, status_iounit, error_iounit, alloc_stat	
+  INTEGER :: xmax, ymax, imin, imax, jmin, jmax
 
-WRITE(status_iounit,*)'starting component allocation for scalars block number - ', block
-WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  imin = i_index_min
+  imax = xmax + i_index_extra
+  jmin = j_index_min
+  jmax = ymax + j_index_extra
 
-ALLOCATE(species(i)%scalar(block)%conc(imax,jmax), STAT = alloc_stat)		! c depth-ave concentration
-IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the concentration'
-		CALL EXIT(1)
-	ELSE
-		WRITE(status_iounit,*)'allocation successful for concentration'
-ENDIF
+  WRITE(status_iounit,*)'starting component allocation for scalars block number - ', block
+  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
+  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
 
-ALLOCATE(species(i)%scalar(block)%concold(imax,jmax), STAT = alloc_stat)	! c old depth-ave concentration
-IF(alloc_stat /= 0)THEN
-		WRITE(error_iounit,*)'allocation failed for the old concentration'
-		CALL EXIT(1)
-	ELSE
-		WRITE(status_iounit,*)'allocation successful for old concentration'
-ENDIF
+  ALLOCATE(species(i)%scalar(block)%conc(imin:imax,jmin:jmax), STAT = alloc_stat)		! c depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     WRITE(error_iounit,*)'allocation failed for the concentration'
+     CALL EXIT(1)
+  ELSE
+     WRITE(status_iounit,*)'allocation successful for concentration'
+  ENDIF
+  species(i)%scalar(block)%conc = 0.0
+  
+  ALLOCATE(species(i)%scalar(block)%concold(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     WRITE(error_iounit,*)'allocation failed for the old concentration'
+     CALL EXIT(1)
+  ELSE
+     WRITE(status_iounit,*)'allocation successful for old concentration'
+  ENDIF
+  species(i)%scalar(block)%concold = 0.0
 
-WRITE(status_iounit,*)'completed component allocation for scalars block number - ', block
+  ALLOCATE(species(i)%scalar(block)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     WRITE(error_iounit,*)'allocation failed for cell type'
+     CALL EXIT(1)
+  ELSE
+     WRITE(status_iounit,*)'allocation successful for cell type'
+  ENDIF
+
+  WRITE(status_iounit,*)'completed component allocation for scalars block number - ', block
 
 END SUBROUTINE allocate_scalarblock_components
 

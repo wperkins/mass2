@@ -12,6 +12,12 @@
 # -------------------------------------------------------------
 # $Id$
 
+                                # stuff to run on SGI
+
+TRAP_FPE='INVALID=ABORT(1);UNDERFL=ZERO;OVERFL=ABORT(1);INT_OVERFL=ABORT(1);DIVZERO=ABORT(1);DEBUG'
+export TRAP_FPE
+
+
 model=${MODEL-../../../mass2_v027}
 
 cp mass2_v027.cfg.1 mass2_v027.cfg

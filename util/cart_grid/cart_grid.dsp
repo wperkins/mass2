@@ -84,21 +84,9 @@ LINK32=link.exe
 # Begin Source File
 
 SOURCE=.\cartgrid.f90
-
-!IF  "$(CFG)" == "cart_grid - Win32 Release"
-
-NODEP_F90_CARTG=\
-	".\Release\elevtbl.mod"\
+DEP_F90_CARTG=\
+	".\elevtbl.mod"\
 	
-
-!ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
-
-NODEP_F90_CARTG=\
-	".\Debug\elevtbl.mod"\
-	
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

@@ -1,0 +1,6 @@
+1 US TABLE FLUX PART "zero.dat"   1 10 / $Id$
+1 US TABLE FLUX PART "flow.dat"  11 40 /
+1 US TABLE FLUX PART "zero.dat"  41 50 /
+1 DS TABLE FLUX PART "zero.dat"   1 10 / 
+1 DS TABLE ELEV PART "stage.dat" 11 40 /
+1 DS TABLE FLUX PART "zero.dat"  41 50 /

@@ -51,7 +51,7 @@ MODULE gage_output
   INTEGER, PRIVATE :: block_varid, eta_varid, xi_varid, gname_varid
   INTEGER, PRIVATE :: time_varid,  ts_varid, id_varid, elapsed_varid
 
-  INTEGER, PRIVATE :: wselev_varid, depth_varid, vmag_varid, uvel_varid, vvel_varid
+  INTEGER, PRIVATE :: wselev_varid, depth_varid, vmag_varid, uvel_varid, vvel_varid, isdry_varid
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, deltap_varid, sat_varid
 
@@ -423,6 +423,7 @@ CONTAINS
     vmag_varid = gage_add_time_var("vmag", "Velocity Magnitude", "feet/second")
     uvel_varid = gage_add_time_var("uvel", "Longitudinal Velocity", "feet/second")
     vvel_varid = gage_add_time_var("vvel", "Lateral Velocity", "feet/second")
+    isdry_varid = gage_add_time_var("isdry", "Dry Cell Flag", "none")
 
 
 !!$    ncstat = nf_def_var (gage_ncid, "uvel", nf_real, 2, dimids, uvel_varid)
@@ -733,6 +734,12 @@ CONTAINS
             &SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2))
        CALL gage_print_time_var(uvel_varid, index, block(iblock)%uvel(icell,jcell))
        CALL gage_print_time_var(vvel_varid, index, block(iblock)%vvel(icell,jcell))
+       IF (block(iblock)%isdry(icell,jcell)) THEN
+          value = 1.0
+       ELSE
+          value = 0.0
+       END IF
+       CALL gage_print_time_var(isdry_varid, index, value)
 
        IF(do_transport)THEN
 

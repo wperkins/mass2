@@ -1,3 +1,183 @@
+2002-08-16  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* scripts/mass2gage.pl: Added -X option to skip initial time
+	slices, and added -D option to skip those times when the gage
+	location is dry
+
+
+2002-08-15  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: made negative depths a only a warning when
+	wetting and drying is in effect, negative depths are set to the
+	dry_zero_depth. 
+
+	* misc_vars_module.f90: Add do_flow_diag.
+
+	* plot_output.f90: Group some of the less used hydrodynamic output 
+	variables and print them only if the "do_flow_diag" flag is on
+
+2002-04-02  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/flow/normal-trap-1blk/bcspecs.dat: flow is now assigned
+	across the entire upstream boundary
+
+	* mass2_main_025.f90 (compute_uflow_area): added this routine to
+	compute boundary flow area.  For FLUX hydro BC's, velocities are
+	now computed using the flow area computed by this routine, rather
+	than just dividing the flow evenly amongst the cells
+
+2002-03-18  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* global_module_023.f90 (allocate_block_components): all block
+	array allocations use i/j_index_min and i/j_index_extra
+
+	* misc_vars_module.f90: added i/j_index_min and i/j_index_extra
+	parameters which (will eventually) define the lower array limit
+	and the padding on the upper limit.
+
+	* mass2_main_025.f90 (shallow_v_nudge): This routine is supposed
+	to help when depths become shallow, and is based on hints from
+	Ussellio-Polatera and Sauvaget (1988).  It does not seem to make
+	much difference, which means it does not hurt either.  It probably
+	needs to be removed, or possibly used to replace the source term
+	rather than supplement it. More work later.
+
+	* tecplot/mass2ld/vc4/mass2ld.mdp: updated to tecplot version 9.0
+
+	* scripts/mass2gage.pl: add -E option to spit out elapsed
+	simulation time rather than dates 
+
+2002-03-11  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* date_time_module.f90: lenthened the time_string of the
+	datetime_struct and allowed the *reading* of dates like
+	"01-01-2000 04:00:02.34"
+
+2002-03-04  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (linear_friction): As a temporarily permanent
+	hack, do not allow depths to go below the dry_depth when doing
+	wet/drying.  This was causing a problem near a block boundary,
+	although it could be imagined to happen elsewhere.  What really
+	needs to happen is to have u and v cells (p cell edges) go dry
+	independantly of the p cells.
+
+2002-02-28  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: Corrected a problem with dry or dead cells
+	at the upstream end of a block, when there is a connecting block:
+	switch the ds BC in the us block to zero velocity instead of
+	elevation. 
+
+2002-02-27  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (hydro): some minor rearrangement of boundary
+	condition application code
+
+	* mass2_main_025.f90 (wselev_block_neighbor): routine to peek into
+	the neighboring cell of a connected block and get w.s. and bottom
+	elevation. 
+
+	* misc_vars_module.f90: Added con_i for BC application
+
+2002-02-21  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/transport/mixing: Added some non-mixing cases using a zero
+	diffusivity and a wall
+
+2002-02-19  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: (transport_precalc): diffussity set to zero
+	in dead cells.
+
+2002-02-13  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (transport): use the hybrid scheme instead of
+	the power law scheme to allow for zero diffusivity.
+
+2002-02-05  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90 (transport_precalc): use a harmonic mean for
+	the diffusivity rather than the arithmatic mean
+
+	* test/transport/pointsource/Makefile: created
+
+	* test/transport/mixing/Makefile: created
+
+2002-01-30  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* block_bc_module.f90 (read_bcspecs): added language for
+	water mass source/sink time series
+
+	* global_module_023.f90: added xsource to the block structure
+
+	* test/Makefile: Began to put Makefiles in each of the test
+	cases.  Only in some of test/flow for now.
+
+	* mass2_main_025.f90 (linear_friction): collected the friction
+	term calculations into a single subroutine
+
+2002-01-29  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: implemented linearization of bed shear
+	source term in momentum equations using Taylor series expansion.
+
+2002-01-28  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/flow/wetdry1/mass2_v027_{warmup,case1,case2,case2}.cfg:
+	reduced the maximum mass source error, fixed the wet/dry line 
+
+	* test/flow/wetdry1/runit.sh: Save mass_source output in each case
+
+	* test/flow/normal-trap-1blk:  Added simple trapezoidal test
+
+	* mass2_main_025.f90: deal with array edges, mostly for output:
+	keep edge depths positive and extend the isdry flag out to the
+	edges. 
+
+2002-01-22  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/flow/wetdry1-blk: Added this test: just like wetdry1 but
+	with two blocks.
+
+	* test: Updated all of the configuration files in the test cases.
+
+	* plot_output.f90: computation of courant and froude numbers only
+	at positive depths, added output of isdry block variable when
+	wet/drying enbled
+
+	* misc_vars_module.f90: added global wet/drying parameters
+
+	* gage_output_module.f90: added output of the isdry cell variable
+	if wetting and drying is enabled.
+
+	* global_module_023.f90: added isdry variable to block structure
+
+	* julian.f90: changed a REAL conversion of an integer to a DBLE
+	conversion
+
+2002-01-11  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* test/flow: Added the following tests of internal boundary
+	conditions: wall-1, wall-2, dead-1, dead-2, and dead-quickon.
+	Added some equivalent tests using multiple blocks: dead-1-blk, and
+	wall-1-blk.  Also put the SGI runtime environment variables in
+	each of the runit.sh files.
+
+	* mass2_main_025.f90: Fixed the writing of 'gridplot.dat' so the
+	lines would not be so long.  Tecplot was choking on long lines.
+
+2002-01-09  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* mass2_main_025.f90: Use WALL and DEAD internal boundaries
+
+	* block_bc_module.f90: Read WALL and DEAD internal boundaries
+
+	* global_module_023.f90: added "isdead" structure to block data
+
+	* makefile.linux: changed default flags to -B108 -YEXT_NAMES=LCS
+	-YCFRL=1 which allows linking with g77 objects/libraries
+
 2001-11-29  William A. Perkins  <wa_perkins@pnl.gov>
 
 	* Merged SAC branch.

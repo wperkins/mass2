@@ -28,7 +28,7 @@ IMPLICIT NONE
 TYPE datetime_struct
 
 	CHARACTER (LEN=10) :: date_string
-	CHARACTER (LEN=8)	 :: time_string
+	CHARACTER (LEN=12)	 :: time_string
 	DOUBLE PRECISION :: time
 
 END TYPE datetime_struct
@@ -72,16 +72,17 @@ DOUBLE PRECISION FUNCTION date_to_decimal(date_string, time_string)
 USE JULIAN
 
 CHARACTER (LEN=10) :: date_string
-CHARACTER (LEN=8)	 :: time_string
+CHARACTER (LEN=12)	 :: time_string
 
-INTEGER :: mon,dd,yr,hh,mm,ss
+INTEGER :: mon,dd,yr,hh,mm
+DOUBLE PRECISION :: ss
 
 READ(date_string(1:2),'(i2)')mon
 READ(date_string(4:5),'(i2)')dd
 READ(date_string(7:10),'(i4)')yr
 READ(time_string(1:2),'(i2)')hh
 READ(time_string(4:5),'(i2)')mm
-READ(time_string(7:8),'(i2)')ss
+READ(time_string(7:),*)ss
 
 
 date_to_decimal = juldays(mon, dd, yr, hh, mm, DBLE(ss))
@@ -122,7 +123,7 @@ SUBROUTINE decimal_to_date(decimal_date, date_string, time_string)
 
   DOUBLE PRECISION :: decimal_date
   CHARACTER (LEN=10) :: date_string
-  CHARACTER (LEN=8) :: time_string
+  CHARACTER (LEN=12) :: time_string
 
   DOUBLE PRECISION :: sec
   INTEGER :: mon, day, yr, hr, min

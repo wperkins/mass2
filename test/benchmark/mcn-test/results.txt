@@ -13,7 +13,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created July 10, 2000 by William A. Perkins
-Last Change: Mon Jul 10 21:29:14 2000 by William A. Perkins <perk@localhost>
+Last Change: Wed Mar 20 11:40:40 2002 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 $Id$
 
@@ -30,4 +30,7 @@ jones   Redhat 6.1  PII 333MHz  20:59.84    1228.92 24.60   1253.52 99%
 
 sac     NT Server   PIII 500MHz 16:48.01
 perk    Redhat 6.2  PIII 500MHz 15:23.80    851.74  14.59   866.33  93%
+
+leechong Redhat 7.1 PIV 1.7GHz  06:36.44    304.21   5.91   310.12  78%
+deschutes Redhat 7.1 PIV 2GHz   05:40.00    244.7    4.30   249.00  73%
 ---------------------------------------------------------------------------

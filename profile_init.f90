@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November 19, 1998 by William A. Perkins
-! Last Change: Tue Oct 17 13:47:16 2000 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Thu May  2 08:31:23 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -22,7 +22,7 @@ DOUBLE PRECISION FUNCTION distance(x1, y1, x2, y2)
   IMPLICIT NONE
   DOUBLE PRECISION x1, y1, x2, y2
 
-  distance = (x1 - x2)**2.0 + (y1 - y2)**2.0
+  distance = ABS(x1 - x2)**2.0 + ABS(y1 - y2)**2.0
   distance = SQRT(distance)
 END FUNCTION distance
 
@@ -86,6 +86,7 @@ END FUNCTION u_slope_avg
 SUBROUTINE profile_init(given_initial_wsel, manning, mann_con, status_iounit)
 
   USE globals
+  USE misc_vars, ONLY: do_wetdry, dry_zero_depth
 
   IMPLICIT NONE
 
@@ -172,6 +173,12 @@ SUBROUTINE profile_init(given_initial_wsel, manning, mann_con, status_iounit)
 
      IF (given_initial_wsel)&
           & block(iblock)%depth = block(iblock)%depth - block(iblock)%zbot
+
+     IF (do_wetdry) THEN
+        WHERE (block(iblock)%depth .LT. dry_zero_depth)
+           block(iblock)%depth = dry_zero_depth
+        END WHERE
+     END IF
 
                                 ! initialize wsel
 

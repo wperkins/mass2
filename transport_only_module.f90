@@ -17,7 +17,7 @@
 MODULE transport_only
 
 USE date_time
-USE globals, ONLY : max_blocks
+USE globals
 
 IMPLICIT NONE
 
@@ -68,26 +68,32 @@ SUBROUTINE allocate_hydro_interp_blocks(error_iounit, status_iounit)
 END SUBROUTINE allocate_hydro_interp_blocks
 
 !##############################################################################
-SUBROUTINE allocate_hydro_interp_comp(n, imax, jmax, status_iounit)
+SUBROUTINE allocate_hydro_interp_comp(n, status_iounit)
 ! this routine allocates each component in the array of hydro_interp blocks
 ! allows minimal memory use for each block
-   IMPLICIT NONE
-   INTEGER :: n, imax, jmax, status_iounit	! block number, max i elements, max j elements
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+  IMPLICIT NONE
+  INTEGER :: n, imin, imax, jmin, jmax, status_iounit	! block number, max i elements, max j elements
 
-   WRITE(status_iounit,*)'INITIALIZATION : allocate_hydro_interp_comp'
-   WRITE(status_iounit,*)'    starting component allocation for block number - ',n
-   WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-   WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  imin = i_index_min
+  imax = block(n)%xmax + i_index_extra
+  jmin = j_index_min
+  jmax = block(n)%ymax + j_index_extra
 
-   ALLOCATE(hydro_interp(n)%uvel_fw(imax,jmax))
-   ALLOCATE(hydro_interp(n)%uvel_bk(imax,jmax))
-   ALLOCATE(hydro_interp(n)%vvel_fw(imax,jmax))
-   ALLOCATE(hydro_interp(n)%vvel_bk(imax,jmax))
-   ALLOCATE(hydro_interp(n)%depth_fw(imax,jmax))
-   ALLOCATE(hydro_interp(n)%depth_bk(imax,jmax))
-   ALLOCATE(hydro_interp(n)%work(imax,jmax))
-   WRITE(status_iounit,*)'   completed component allocation for block number - ',n
+  WRITE(status_iounit,*)'INITIALIZATION : allocate_hydro_interp_comp'
+  WRITE(status_iounit,*)'    starting component allocation for block number - ',n
+  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
+  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
 
+  ALLOCATE(hydro_interp(n)%uvel_fw(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%uvel_bk(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%vvel_fw(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%vvel_bk(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%depth_fw(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%depth_bk(imin:imax,jmin:jmax))
+  ALLOCATE(hydro_interp(n)%work(imin:imax,jmin:jmax))
+  WRITE(status_iounit,*)'   completed component allocation for block number - ',n
+  
 END SUBROUTINE allocate_hydro_interp_comp
 
 !##############################################################################

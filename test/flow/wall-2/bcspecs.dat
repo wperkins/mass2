@@ -1,0 +1,4 @@
+1 US TABLE  FLUX ALL "flow.dat" /
+1 IN WALL   UVEL 51  4   7 /
+1 IN WALL   VVEL  7  51 55 /
+1 DS TABLE  ELEV ALL "stage.dat" /

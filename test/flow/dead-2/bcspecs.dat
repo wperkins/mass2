@@ -1,0 +1,4 @@
+1 US TABLE  FLUX ALL "flow.dat" /
+1 IN DEAD   CELL 51 55 1  5 /
+1 IN DEAD   CELL 61 65 6 10 /
+1 DS TABLE  ELEV ALL "stage.dat" /

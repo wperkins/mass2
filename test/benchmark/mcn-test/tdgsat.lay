@@ -1,7 +1,7 @@
 #!MC 800
-$!VarSet |LFBD| = '/projects/sac/src/perk/mass2-sac/test/benchmark/mcn-test'
+$!VarSet |LFBD| = '.'
 $!VarSet |LFDSRN1| = 'MASS2 Loader'
-$!VarSet |LFDSFN1| = '"F/projects/sac/src/perk/mass2-sac/test/benchmark/mcn-test/plot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vcourant" "Vfroude" "Vtdgconc" "Vtdgpress" "Vtdgdeltap" "Vtdgsat" "Vtemperature" "S0" "E4"'
+$!VarSet |LFDSFN1| = '"Fplot.nc" "Vzbot" "Vhp1" "Vhp2" "Vgp12" "Vuvel" "Vvvel" "Vucart" "Vvcart" "Vvmag" "Vdepth" "Vwsel" "Vcourant" "Vfroude" "Vtdgconc" "Vtdgpress" "Vtdgdeltap" "Vtdgsat" "Vtemperature" "S0" "E4"'
 $!SETSTYLEBASE FACTORY
 $!PAPER 
   BACKGROUNDCOLOR = WHITE

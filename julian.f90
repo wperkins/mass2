@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created June  3, 1998 by William A. Perkins
-! Last Change: Sun Mar 11 12:27:34 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Wed Jan 16 06:53:04 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -67,7 +67,7 @@ DOUBLE PRECISION FUNCTION JULDAYS(month, day, year, hour, minute, second)
      s = s - 12.0 * 3600.0
   ENDIF
 
-  JULDAYS = (REAL(j) + (s / 3600.0)/24.0)
+  JULDAYS = (DBLE(j) + (s / 3600.0)/24.0)
 
 END FUNCTION JULDAYS
 

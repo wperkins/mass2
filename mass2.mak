@@ -327,10 +327,10 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\accumulator.obj"	"$(INTDIR)\accumulator.mod" : $(SOURCE)\
- $(DEP_F90_ACCUM) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\bed_module.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\met_data_module.mod"
+ $(DEP_F90_ACCUM) "$(INTDIR)" "$(INTDIR)\bed_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gas_functions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\met_data_module.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -351,10 +351,10 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\accumulator.obj"	"$(INTDIR)\accumulator.mod" : $(SOURCE)\
- $(DEP_F90_ACCUM) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\bed_module.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\met_data_module.mod"
+ $(DEP_F90_ACCUM) "$(INTDIR)" "$(INTDIR)\bed_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gas_functions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\met_data_module.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -376,8 +376,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\bed.obj"	"$(INTDIR)\bed_module.mod" : $(SOURCE) $(DEP_F90_BED_F)\
- "$(INTDIR)" "$(INTDIR)\scalars_source.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"
+ "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -395,8 +395,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\bed.obj"	"$(INTDIR)\bed_module.mod" : $(SOURCE) $(DEP_F90_BED_F)\
- "$(INTDIR)" "$(INTDIR)\scalars_source.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"
+ "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -442,8 +442,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\bed_source.obj"	"$(INTDIR)\bed_source.mod" : $(SOURCE)\
- $(DEP_F90_BED_S) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod"
+ $(DEP_F90_BED_S) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\table_boundary_conditions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -459,8 +459,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\bed_source.obj"	"$(INTDIR)\bed_source.mod" : $(SOURCE)\
- $(DEP_F90_BED_S) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod"
+ $(DEP_F90_BED_S) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\table_boundary_conditions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -576,9 +576,9 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\gage_output_module.obj"	"$(INTDIR)\gage_output.mod" : $(SOURCE)\
- $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\bed_module.mod" "$(INTDIR)\date_time.mod"
+ $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\bed_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gas_functions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -598,9 +598,9 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\gage_output_module.obj"	"$(INTDIR)\gage_output.mod" : $(SOURCE)\
- $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\bed_module.mod" "$(INTDIR)\date_time.mod"
+ $(DEP_F90_GAGE_) "$(INTDIR)" "$(INTDIR)\bed_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gas_functions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -832,12 +832,12 @@ F90_MODOUT=\
 "$(INTDIR)\mass2_main_025.obj"	"$(INTDIR)\mass2_main_025.mod" : $(SOURCE)\
  $(DEP_F90_MASS2_) "$(INTDIR)" "$(INTDIR)\globals.mod"\
  "$(INTDIR)\io_routines_module.mod" "$(INTDIR)\block_boundary_conditions.mod"\
- "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gage_output.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\met_data_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gage_output.mod"\
  "$(INTDIR)\energy_flux.mod" "$(INTDIR)\gas_functions.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\transport_only.mod"\
- "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\met_data_module.mod"\
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod" "$(INTDIR)\table_boundary_conditions.mod"\
+ "$(INTDIR)\transport_only.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -867,12 +867,12 @@ F90_MODOUT=\
 "$(INTDIR)\mass2_main_025.obj"	"$(INTDIR)\mass2_main_025.mod" : $(SOURCE)\
  $(DEP_F90_MASS2_) "$(INTDIR)" "$(INTDIR)\globals.mod"\
  "$(INTDIR)\io_routines_module.mod" "$(INTDIR)\block_boundary_conditions.mod"\
- "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\date_time.mod"\
- "$(INTDIR)\gage_output.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\met_data_module.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\gage_output.mod"\
  "$(INTDIR)\energy_flux.mod" "$(INTDIR)\gas_functions.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\transport_only.mod"\
- "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\met_data_module.mod"\
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\plot_output.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod" "$(INTDIR)\table_boundary_conditions.mod"\
+ "$(INTDIR)\transport_only.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -891,8 +891,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\met_data_module.obj"	"$(INTDIR)\met_data_module.mod" : $(SOURCE)\
- $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
- "$(INTDIR)\date_time.mod"
+ $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\date_time.mod"\
+ "$(INTDIR)\table_boundary_conditions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -907,8 +907,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\met_data_module.obj"	"$(INTDIR)\met_data_module.mod" : $(SOURCE)\
- $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\table_boundary_conditions.mod"\
- "$(INTDIR)\date_time.mod"
+ $(DEP_F90_MET_D) "$(INTDIR)" "$(INTDIR)\date_time.mod"\
+ "$(INTDIR)\table_boundary_conditions.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -970,9 +970,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\particulate_source.obj"	"$(INTDIR)\particulate_source.mod" : \
-$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod"\
- "$(INTDIR)\sediment_source.mod"
+$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod" "$(INTDIR)\sediment_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -990,9 +989,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\particulate_source.obj"	"$(INTDIR)\particulate_source.mod" : \
-$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod"\
- "$(INTDIR)\sediment_source.mod"
+$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod" "$(INTDIR)\sediment_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1019,9 +1017,9 @@ F90_MODOUT=\
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
  $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\accumulator.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\date_time.mod" "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\gas_functions.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\bed_module.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1044,9 +1042,9 @@ F90_MODOUT=\
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
  $(DEP_F90_PLOT_) "$(INTDIR)" "$(INTDIR)\accumulator.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\gas_functions.mod" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\date_time.mod" "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\gas_functions.mod"\
+ "$(INTDIR)\date_time.mod" "$(INTDIR)\bed_module.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1121,11 +1119,11 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_source.obj"	"$(INTDIR)\scalars_source.mod" : $(SOURCE)\
- $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
- "$(INTDIR)\tdg_source.mod" "$(INTDIR)\generic_source.mod"\
- "$(INTDIR)\sediment_source.mod" "$(INTDIR)\particulate_source.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\met_data_module.mod"
+ $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\generic_source.mod"\
+ "$(INTDIR)\particulate_source.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\met_data_module.mod" "$(INTDIR)\sediment_source.mod"\
+ "$(INTDIR)\tdg_source.mod" "$(INTDIR)\temperature_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1148,11 +1146,11 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_source.obj"	"$(INTDIR)\scalars_source.mod" : $(SOURCE)\
- $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
- "$(INTDIR)\tdg_source.mod" "$(INTDIR)\generic_source.mod"\
- "$(INTDIR)\sediment_source.mod" "$(INTDIR)\particulate_source.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\met_data_module.mod"
+ $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\generic_source.mod"\
+ "$(INTDIR)\particulate_source.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\met_data_module.mod" "$(INTDIR)\sediment_source.mod"\
+ "$(INTDIR)\tdg_source.mod" "$(INTDIR)\temperature_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 

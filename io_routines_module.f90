@@ -5,11 +5,12 @@ CONTAINS
 !####################################################################################
 SUBROUTINE output_2d_array(io_unit,local_title,istart,imax,jstart,jmax,array)
 
+USE misc_vars, ONLY: i_index_min, j_index_min
 IMPLICIT NONE
 
 INTEGER :: io_unit, imax, jmax, istart,jstart, i, j
 CHARACTER*75 :: local_title
-DOUBLE PRECISION :: array(:,:)
+DOUBLE PRECISION :: array(i_index_min:,j_index_min:)
 
 1000 FORMAT(i5,2x,60(f12.4,2x))
 1010 FORMAT(a75)

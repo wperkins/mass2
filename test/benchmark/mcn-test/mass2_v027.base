@@ -20,7 +20,7 @@ T					do_transport	! on/off switch for transport calculations
 T T "BCFiles/MCN_Weather.prn"			        do_surface_heatx, do_surface_gasx, weather_filename
 F					debug		! extra debug printing
 T					manning	! switch between manning or chezy bottom friction equation
-T	18				write_restart_file	! write out a binary restart file "restart.bin"
+F	18				write_restart_file	! write out a binary restart file "restart.bin"
 T					read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
 T					do gage print
 T F					given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial water elv.; depth if FALSE
@@ -45,6 +45,7 @@ T F					given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial w
 338.3					wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
 0.0					uvel_wind		! uniform value of u wind velocity
 0.0					vvel_wind		! uniform value of v wind velocity
+F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0 F           bed porosity, initial bed depth, read from initial_bed.dat
 72		F			print_freq  ! printout frequency
 18					gage_print_freq

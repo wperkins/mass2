@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August  2, 2000 by William A. Perkins
-! Last Change: Wed Apr 25 09:22:10 2001 by William A. Perkins <perk@dora.pnl.gov>
+! Last Change: Tue Mar 19 08:47:39 2002 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$
@@ -267,15 +267,16 @@ CONTAINS
   SUBROUTINE bedsrc_read_map(rec)
 
     USE globals, ONLY: max_blocks, block
-    USE misc_vars, ONLY: grid_iounit, restart_iounit, error_iounit, status_iounit
+    USE misc_vars, ONLY: grid_iounit, restart_iounit, error_iounit, status_iounit, &
+         &i_index_min, i_index_extra, j_index_min, j_index_extra
 
     IMPLICIT NONE
 
     TYPE(bedsrc_rec) :: rec
     INTEGER :: istat, iblk, i, j, ijunk, jjunk
     CHARACTER (LEN = 1024) :: filename
+    INTEGER :: imin, imax, jmin, jmax
 
-    
 	OPEN(restart_iounit,FILE=rec%map_file, STATUS='old', IOSTAT=istat, FORM='formatted')
     IF (ISTAT .NE. 0) THEN
        WRITE(*, *) 'FATAL ERROR: unable to open bed source map file list ',&
@@ -298,10 +299,15 @@ CONTAINS
           CALL EXIT(8)
        END IF
 
-       ALLOCATE(rec%map(iblk)%tsid(block(iblk)%xmax, block(iblk)%ymax))
-       ALLOCATE(rec%map(iblk)%tsidx(block(iblk)%xmax, block(iblk)%ymax))
-       ALLOCATE(rec%map(iblk)%fraction(block(iblk)%xmax, block(iblk)%ymax))
-       ALLOCATE(rec%map(iblk)%cellrate(block(iblk)%xmax, block(iblk)%ymax))
+       imin = i_index_min
+       imax = block(iblk)%xmax + i_index_extra
+       jmin = j_index_min
+       jmax = block(iblk)%ymax + j_index_extra
+    
+       ALLOCATE(rec%map(iblk)%tsid(imin:imax, jmin:jmax))
+       ALLOCATE(rec%map(iblk)%tsidx(imin:imax, jmin:jmax))
+       ALLOCATE(rec%map(iblk)%fraction(imin:imax, jmin:jmax))
+       ALLOCATE(rec%map(iblk)%cellrate(imin:imax, jmin:jmax))
 
        rec%map(iblk)%tsid = 0
        rec%map(iblk)%tsidx = 0
