@@ -35,7 +35,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 0.0			vvel_wind	! uniform value of v wind velocity
 F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0 F 1  bed porosity, initial bed depth, read from initial_bed.dat, bed iterations
-180 F			print_freq  	! printout frequency
+1 F			print_freq  	! printout frequency
 T T F               ! netcdf plot output, ouput flow diag, output flow (in transport only)
 F F T 999999        ! cgns plot output, cell centered, field descriptions, times per file
 5			gage_print_freq

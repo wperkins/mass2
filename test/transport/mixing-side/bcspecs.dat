@@ -1,0 +1,2 @@
+1 RB TABLE FLUX ALL "../mixing/flow.dat" /
+1 LB TABLE ELEV ALL "../mixing/stage.dat" /

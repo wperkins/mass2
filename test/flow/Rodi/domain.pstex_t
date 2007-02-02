@@ -1,0 +1,27 @@
+\begin{picture}(0,0)%
+\includegraphics{domain.pstex}%
+\end{picture}%
+\setlength{\unitlength}{2368sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(9303,3609)(310,-3958)
+\put(5401,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}4$B$}%
+}}}
+\put(4201,-3361){\makebox(0,0)[lb]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$b$ = 0.0225 m (0.0738 ft)}%
+}}}
+\put(526,-1561){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$B$ = 1.82 m (5.971 ft)}%
+}}}}
+\put(2101,-1111){\makebox(0,0)[lb]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\overline{U}$ = 0.1 m/s (0.328 ft/s)}%
+}}}
+\put(3751,-2311){\makebox(0,0)[lb]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\overline{V}$ = $4\overline{U}$ = 0.4 m/s (1.312 ft/s)}%
+}}}
+\put(9001,-961){\makebox(0,0)[rb]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$d_{o}$ = 0.06 m (0.197 ft)}%
+}}}
+\put(2401,-3211){\makebox(0,0)[b]{\smash{\SetFigFont{11}{13.2}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$B$}%
+}}}
+\end{picture}

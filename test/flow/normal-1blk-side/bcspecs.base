@@ -1,0 +1,2 @@
+1 RB TABLE FLUX ALL "flow.dat" /
+1 LB TABLE ELEV ALL "stage.dat" /

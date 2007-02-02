@@ -11,6 +11,8 @@
 # -------------------------------------------------------------
 # $Id$
 
+AM_FFLAGS = $(FCFLAGS)
+
 SUBDIRS = 
 bin_PROGRAMS = cartgrid
 

@@ -104,5 +104,7 @@ set bmargin -1
 set rmargin -1
 set tmargin -1
 set locale "C"
-plot '<perl ../../../scripts/mass2slice.pl -i -l plot.nc depth 1 3' using ($1*0.3048):($4*0.3048) title 'Simulated' with lines 1,'observed/streamline2d.obs.dat' title 'Observed' with points 7
+plot '<perl ../../../scripts/mass2slice.pl -i -l plot.nc depth 1 3' using ($1*0.3048):($4*0.3048) title 'Simulated (MASS2)' with lines 1,\
+     'observed/streamline2d.sim.dat' using 1:2 title 'Klondis and Soulis (2001)' with lines 2, \
+     'observed/streamline2d.obs.dat' title 'Observed' with points 7
 #    EOF

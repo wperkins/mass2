@@ -13,7 +13,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created July 10, 2000 by William A. Perkins
-Last Change: Mon Jul 10 21:29:14 2000 by William A. Perkins <perk@localhost>
+Last Change: Wed Oct 20 11:06:56 2004 by William A. Perkins <perk@McPerk.pnl.gov>
 -------------------------------------------------------------
 $Id$
 
@@ -34,4 +34,6 @@ perk    Redhat 6.2  PIII 500MHz 15:23.80    851.74  14.59   866.33  93%
 leechong Redhat 7.1 PIV 1.7GHz  06:36.44    304.21   5.91   310.12  78%
 deschutes Redhat 7.1 PIV 2GHz   05:40.00    244.7    4.30   249.00  73%
 talli    Redhat 7.3 PIV 2.4GHz  05:08.22    208.3    3.63   211.93  69%
+
+mcperk  MacOSX 10.3 G5 2.0Ghz   11:57.03s   560.2   45.46   605.66  82%
 ---------------------------------------------------------------------------

@@ -1,0 +1,39 @@
+\begin{picture}(0,0)%
+\includegraphics{klondis.pstex}%
+\end{picture}%
+\setlength{\unitlength}{2763sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(7737,3987)(1189,-4336)
+\put(7951,-886){\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Streamline 5}%
+}}}
+\put(7951,-2686){\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Streamline 2}%
+}}}
+\put(8926,-1861){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.25 m}%
+}}}}
+\put(1951,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.5 m}%
+}}}
+\put(5101,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.3 m}%
+}}}
+\put(6001,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.3 m}%
+}}}
+\put(7351,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.5 m}%
+}}}
+\put(6826,-4336){\makebox(0,0)[lb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.05 m}%
+}}}
+\put(3676,-3886){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.65 m}%
+}}}
+\put(4651,-4186){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}2.3 m}%
+}}}
+\put(8626,-2611){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.12 m}%
+}}}}
+\put(8476,-3811){\rotatebox{90.0}{\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.05 m}%
+}}}}
+\put(8626,-1111){\rotatebox{90.0}{\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.125 m}%
+}}}}
+\end{picture}

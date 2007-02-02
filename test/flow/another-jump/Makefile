@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 26, 2004 by William A. Perkins
-# Last Change: Mon Jan 26 15:11:40 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Fri Apr  2 08:13:28 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -26,6 +26,8 @@ MODELFILES = \
 	mkgrid.sh \
 	stage-vel.dat \
 	vel.dat
+
+all: $(EPSFILES)
 
 $(EPSFILES): plot.nc
 

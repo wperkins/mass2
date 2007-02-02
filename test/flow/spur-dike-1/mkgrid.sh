@@ -8,7 +8,6 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created October  8, 2003 by William A. Perkins
-# Last Change: Mon Jan 19 10:11:29 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # dimensions in meters

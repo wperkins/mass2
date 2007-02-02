@@ -1,0 +1,6 @@
+1 RB TABLE FLUX ALL "../1d-analytic-3blk/flow.dat" /
+1 LB BLOCK ELEV ALL 2 /
+2 RB BLOCK VELO ALL 1 /
+2 LB BLOCK ELEV ALL 3 /
+3 RB BLOCK VELO ALL 2 /
+3 LB TABLE ELEV ALL "../1d-analytic-3blk/stage.dat" /

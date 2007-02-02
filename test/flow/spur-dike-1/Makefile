@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Fri Apr  2 09:32:19 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Apr 22 07:40:36 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -47,7 +47,11 @@ vectors.eps: plot.nc vectors.lay
 vectors-metric.eps: plot.nc vectors-metric.lay
 	$(TECPLOT) -b -y $@ vectors-metric.lay -p ../../../tecplot/macros/export_eps.mcr
 
-$(filter long-%.eps, $(EPSFILES)): long-plot.gp plot.nc
+
+.PHONY : long-plot
+
+long-1.0.eps long-1.5.eps long-2.0.eps long-3.0.eps	long-4.0.eps: long-plot
+long-plot: long-plot.gp plot.nc
 	gnuplot long-plot.gp
 
 plot.nc: $(MODELFILES) $(MODEL)

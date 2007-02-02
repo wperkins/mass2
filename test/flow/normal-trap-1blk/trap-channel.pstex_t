@@ -1,0 +1,23 @@
+\begin{picture}(0,0)%
+\includegraphics{trap-channel.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(2649,1231)(1189,-1217)
+\put(2401,-811){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}13.4 m (44 ft)}%
+}}}
+\put(2401,-1186){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}30.5 m (100 ft)}%
+}}}
+\put(3226,-61){\makebox(0,0)[b]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}1}%
+}}}
+\put(3076,-211){\makebox(0,0)[rb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.08929}%
+}}}
+\put(3826,-286){\makebox(0,0)[lb]{\smash{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}1.52 m (5 ft)}%
+}}}
+\end{picture}

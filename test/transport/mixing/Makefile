@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Mar 24 10:59:48 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Feb  1 19:02:35 2007 by William A. Perkins <perk@mcperktop.local>
 # -------------------------------------------------------------
 # $Id$
 
@@ -53,7 +53,7 @@ clean::
 
 mixing.eps: plot.mix.nc mixing.base.lay
 	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay
-	$(TECPLOT) -b -y $@ mixing.lay -p ../../../tecplot/macros/export_eps.mcr
+	$(TECPLOT) -b -y $@ -p ../../../tecplot/macros/export_eps.mcr mixing.lay 
 
 mixing-metric.eps: plot.mix.nc mixing.base.lay metric.mcr
 	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay

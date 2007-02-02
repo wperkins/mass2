@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"Release/" /compile_only /nologo /warn:nofileopt
-# ADD F90 /include:"Release/" /include:"time_series/Release" /compile_only /nologo /warn:nofileopt /module:"Release"
+# ADD F90 /include:"Release/" /include:"time_series/Release" /compile_only /nologo /optimize:3 /warn:nofileopt /module:"Release"
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -88,7 +88,7 @@ SOURCE=.\cartgrid.f90
 
 !IF  "$(CFG)" == "cart_grid - Win32 Release"
 
-DEP_F90_CARTG=\
+NODEP_F90_CARTG=\
 	".\Release\elevtbl.mod"\
 	
 
@@ -110,6 +110,9 @@ SOURCE=.\elevtbl.f90
 !ELSEIF  "$(CFG)" == "cart_grid - Win32 Debug"
 
 !ENDIF 
+
+F90_MODOUT=\
+	"elevtbl"
 
 # End Source File
 # End Target

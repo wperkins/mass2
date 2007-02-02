@@ -21,6 +21,7 @@ model=${MODEL-../../../mass2_v027}
 
 $model
 
+gnuplot plot-depth-all.gp > plot-depth-all.eps
 gnuplot plot-depth.gp > plot-depth.eps
 gnuplot plot-elev.gp > plot-elev.eps
 gnuplot plot-vel.gp > plot-vel.eps

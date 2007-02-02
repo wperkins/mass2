@@ -58,7 +58,7 @@ CLEAN :
     if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
 
 F90_PROJ=/include:"$(INTDIR)\\" /include:"time_series/Release" /compile_only\
- /nologo /warn:nofileopt /module:"Release" /object:"Release/" 
+ /nologo /optimize:3 /warn:nofileopt /module:"Release" /object:"Release/" 
 F90_OBJS=.\Release/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\cart_grid.bsc" 
@@ -86,17 +86,16 @@ OutDir=.\Debug
 
 !IF "$(RECURSE)" == "0" 
 
-ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "$(OUTDIR)\cart_grid.exe"
 
 !ELSE 
 
-ALL : "$(OUTDIR)\cart_grid.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "$(OUTDIR)\cart_grid.exe"
 
 !ENDIF 
 
 CLEAN :
 	-@erase "$(INTDIR)\cartgrid.obj"
-	-@erase "$(INTDIR)\DF50.PDB"
 	-@erase "$(INTDIR)\elevtbl.mod"
 	-@erase "$(INTDIR)\elevtbl.obj"
 	-@erase "$(OUTDIR)\cart_grid.exe"
@@ -127,6 +126,8 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
+
+.SUFFIXES: .fpp
 
 .for{$(F90_OBJS)}.obj:
    $(F90) $(F90_PROJ) $<  

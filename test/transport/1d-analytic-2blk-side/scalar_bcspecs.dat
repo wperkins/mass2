@@ -1,0 +1,2 @@
+1 RB TABLE 1 CONC ALL "../1d-analytic-2blk/conc-bc.dat" 1 /
+2 LB ZEROG 1 CONC ALL /
