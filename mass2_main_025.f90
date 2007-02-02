@@ -43,14 +43,13 @@ USE transport_only
 USE bed_module
 USE scalar_mass
 USE julian
+USE solver_module
 
 !-------------------------------------------------------------------------------------------------------
 
 IMPLICIT NONE
 
 CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
-DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
 
 !---------------------------------------------------------------------------------
 ! derived type (structures) declarations
@@ -59,706 +58,681 @@ DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
 ! TYPE(datetime_struct), SAVE :: start_time, end_time, current_time
 
 
+!!$DOUBLE PRECISION, ALLOCATABLE :: ap(:,:), aw(:,:), ae(:,:), as(:,:), an(:,:), bp(:,:)
+!!$DOUBLE PRECISION, ALLOCATABLE :: cp(:,:), cw(:,:), ce(:,:), cs(:,:), cn(:,:), source(:,:)
 
 CONTAINS
 
 !----------------------------------------------------------------------------
 !----------------------------------------------------------------------------
 
-SUBROUTINE start_up(status_flag)
+SUBROUTINE start_up()
 
-IMPLICIT NONE
+  IMPLICIT NONE
 
-INTEGER :: status_flag, var
-CHARACTER (LEN=1024) :: msg
+  INTEGER :: var, imax, jmax
+  INTEGER :: i, j 
+  CHARACTER (LEN=1024) :: msg
 
-!-------------------------------------------------------------------------------------------------------
-! format definitions all placed here
+  baro_press = 760.0              ! in case weather is not read
+
+  CALL read_grid(max_blocks, grid_file_name, readpts=.FALSE.)
+
+  DO i=1,max_blocks
+     CALL allocate_block_components(i, status_iounit)
+  END DO
+
+  imax = MAXVAL(block(:)%xmax) + 1
+  jmax = MAXVAL(block(:)%ymax) + 1
+
+                                ! TEMPORARY: allocate space for hydro
+                                ! solution coefficients
+
+!!$  ALLOCATE(ap(imax,jmax),aw(imax,jmax),ae(imax,jmax),as(imax,jmax),an(imax,jmax),bp(imax,jmax))
+!!$  ALLOCATE(cp(imax,jmax),cw(imax,jmax),ce(imax,jmax),cs(imax,jmax),cn(imax,jmax),source(imax,jmax))
+
+
+  ! allocate scalar species stuff
+
+  IF (do_transport) THEN
+
+     CALL allocate_species()
+
+     DO i = 1, max_species
+        CALL allocate_scalar(max_blocks, i)
+     END DO
+
+     DO i=1, max_species
+        DO j =1, max_blocks
+           CALL allocate_scalarblock_components(i, j , block(j)%xmax, block(j)%ymax)
+        END DO
+     END DO
+  END IF
+
+  ! ALLOCATE(work(imax,jmax))
+  ALLOCATE(inlet_area(jmax), table_input(jmax))
+
+  !-------------------------------------------------------------------------------
+  ! read in the grid files for each block
+  CALL read_grid(max_blocks, grid_file_name, readpts=.TRUE.)
+
+  CALL bc_init()
+
+  CALL initialize()
+
+  CALL output_init()
+
+END SUBROUTINE start_up
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE initialize
+! ----------------------------------------------------------------
+SUBROUTINE initialize()
+
+  IMPLICIT NONE
+
+  INTEGER :: i, iblock, var
+
+  !-----------------------------------------------------------------------------------------------------------
+  ! assign initial conditions for each block
+  ! using uniform values from cfg file or a restart file
+
+  IF(read_hotstart_file)THEN
+     CALL read_hotstart()
+  ELSE
+     WRITE(status_iounit,*)'-- setting initial values for all blocks'
+     DO iblock=1,max_blocks
+        block(iblock)%uvel = uvel_initial
+        block(iblock)%uold = block(iblock)%uvel
+        block(iblock)%ustar = block(iblock)%uvel
+        block(iblock)%vvel = vvel_initial
+        block(iblock)%vold = block(iblock)%vvel
+        block(iblock)%vstar = block(iblock)%vvel
+        
+        IF (.NOT. read_initial_profile) THEN
+           IF(given_initial_wsel)THEN
+              block(iblock)%depth = wsel_or_depth_initial - block(iblock)%zbot
+           ELSE
+              block(iblock)%depth = wsel_or_depth_initial
+           ENDIF
+           IF (do_wetdry) THEN
+              WHERE (block(iblock)%depth .LE. dry_zero_depth) 
+                 block(iblock)%depth = dry_zero_depth
+              END WHERE
+           END IF
+           block(iblock)%depthold = block(iblock)%depth
+           block(iblock)%dstar = block(iblock)%depth
+        END IF
+     END DO
+     IF (do_transport) THEN
+        DO i = 1, max_species
+           DO iblock =1, max_blocks
+              species(i)%scalar(iblock)%conc = conc_initial
+              species(i)%scalar(iblock)%concold = conc_initial
+           END DO
+        END DO
+     END IF
+     
+     ! handle case if we are doing transport-only and not restarting
+     IF((.NOT. do_flow).AND.(do_transport))THEN
+        CALL hydro_restart_read(current_time%time)
+        DO iblock=1,max_blocks
+           var = 1
+           CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%uvel)
+           block(iblock)%uold = block(iblock)%uvel
+           block(iblock)%ustar = block(iblock)%uvel
+           
+           var = 2
+           CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%vvel)
+           block(iblock)%vold = block(iblock)%vvel
+           block(iblock)%vstar = block(iblock)%vvel
+           
+           var = 3
+           CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%depth)
+           block(iblock)%depthold = block(iblock)%depth
+           block(iblock)%dstar = block(iblock)%depth
+        END DO
+        WRITE(status_iounit,*)'done setting transport-only initial values for all blocks'
+     END IF
+     
+     WRITE(status_iounit,*)'done setting initial values for all blocks'
+  ENDIF
+
+  !--------------------------------------------------------------------------------
+  ! assign uniform parameter values and other derived stuff
+  DO iblock=1,max_blocks
+     block(iblock)%eddy = eddy_default
+     block(iblock)%kx_diff = kx_diff_default
+     block(iblock)%ky_diff = ky_diff_default
+     block(iblock)%chezy = chezy_con_default
+     block(iblock)%wsel = block(iblock)%depth + block(iblock)%zbot
+  END DO
+
+  ! overwrite the default assignments
+  IF(do_spatial_eddy)THEN
+     filename = "eddy_coeff.dat"
+     CALL open_existing(filename, 50)
+     DO WHILE(.TRUE.)
+		READ(50,*,END=101)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
+		block(iblock)%eddy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
+     END DO
+101  CLOSE(50)
+  ENDIF
+  IF(do_spatial_kx)THEN
+     filename = "kx_coeff.dat"
+     CALL open_existing(filename, 50)
+     DO WHILE(.TRUE.)
+		READ(50,*,END=102)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
+		block(iblock)%kx_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
+     END DO
+102  CLOSE(50)
+  ENDIF
+  IF(do_spatial_ky)THEN
+     filename = "ky_coeff.dat"
+     CALL open_existing(filename, 50)
+     DO WHILE(.TRUE.)
+		READ(50,*,END=103)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
+		block(iblock)%ky_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
+     END DO
+103  CLOSE(50)
+  ENDIF
+  
+  IF(do_spatial_chezy)THEN
+     filename = "roughness_coeff.dat"
+     CALL open_existing(filename, 50)
+     DO WHILE(.TRUE.)
+		READ(50,*,END=100)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
+		block(iblock)%chezy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
+     END DO
+100  CLOSE(50)
+  ENDIF
+  
+  IF (read_initial_profile) THEN
+     CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
+  END IF
+
+  IF (do_wetdry) THEN
+     DO iblock=1,max_blocks
+        CALL check_wetdry(block(iblock))
+     END DO
+  END IF
+END SUBROUTINE initialize
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE bc_init
+! ----------------------------------------------------------------
+SUBROUTINE bc_init()
+
+  IMPLICIT NONE
+
+  INTEGER :: iblock, i
+
+  !-------------------------------------------------------------------------------
+  ! read, allocate, and set up block and table boundary conditions
+
+  ! read hydrodynamics related stuff
+  CALL allocate_block_bc(max_blocks)
+
+  CALL read_bcspecs(bcspec_iounit, max_blocks, block%xmax, block%ymax)
+
+  CALL read_bc_tables
+
+  ! now decipher which cells talk to each other in the block connections
+  IF(max_blocks > 1)THEN
+     CALL set_block_connections(max_blocks, error_iounit, status_iounit)
+  END IF
+
+  !---------------------------------------------------------------------------------
+  IF(do_transport)THEN
+     ! read species related stuff
+     CALL allocate_scalar_block_bc(max_blocks)
+     CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
+          &block%xmax, block%ymax)
+     CALL read_scalar_bc_tables()
+     CALL set_scalar_block_connections(max_blocks, max_species)
+     CALL scalar_source_read()
+     IF (source_doing_sed) CALL bed_initialize()
+     CALL scalar_mass_init()
+
+     ! transport only mode
+     IF(.NOT. do_flow)THEN
+        CALL allocate_hydro_interp_blocks()
+        DO i=1,max_blocks
+           CALL allocate_hydro_interp_comp(i, status_iounit)
+        END DO
+        CALL read_transport_only_dat()
+        CALL check_transport_only_dat(start_time%time,end_time%time)
+     END IF
+
+  END IF
+
+  ! read in met data from a file
+  IF (source_need_met) THEN
+     CALL read_met_data(weather_filename)
+     CALL update_met_data(current_time%time)
+  END IF
+
+  DO iblock=1,max_blocks
+     CALL buildghost(iblock)
+     CALL interp_grid(block(iblock))
+     CALL metrics(block(iblock))
+  END DO
+
+END SUBROUTINE bc_init
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE output_init
+! ----------------------------------------------------------------
+SUBROUTINE output_init()
+
+  IMPLICIT NONE
+
+  INTEGER :: system_time(8)
+
+  !------------------------------------------------------------------------------------
+  ! set up the gage print files
+  IF(do_gage_print) THEN
+     CALL gage_file_setup(do_transport,error_iounit, status_iounit)
+     CALL mass_file_setup()
+  END IF
+
+
+  !-----------------------------------------------------------------------------------------------------------
+  ! print problem configuration information and initial variable values
+
+  WRITE(output_iounit,*)"2D Depth-Averaged Flow Solver "
+  WRITE(output_iounit,*)code_version
+  WRITE(output_iounit,*)code_date
+
+  CALL DATE_AND_TIME(VALUES = system_time)
+  WRITE(output_iounit,2010)system_time(2),system_time(3),system_time(1),system_time(5),system_time(6),system_time(7)
+  
+  WRITE(output_iounit,*)"Total Number of Blocks = ",max_blocks
+  WRITE(output_iounit,*)"Grids read from these files: "
+  DO iblock=1,max_blocks
+     WRITE(output_iounit,2000)grid_file_name(iblock)
+  END DO
+  WRITE(output_iounit,*)
+
+  block_title(1:11) = ' for block '
+
+  IF (debug) THEN
+     DO iblock=1,max_blocks
+
+        WRITE(block_title(12:15),'(i4)')iblock
+        WRITE(output_iounit,*)'initial values for block number - ',iblock
+        
+        title = 'X grid values - state plane coord' 
+        title(61:75) = block_title
+
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%x_grid)
+
+        title = 'Y grid values - state plane coord'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%y_grid)
+
+        title = 'Bottom Elevation grid values - mean sea level'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%zbot_grid)
+
+        title = 'Water Surface Elevation - mean sea level'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%wsel)
+
+        title = "U Velocity (located at U staggered node)"
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%uvel)
+
+        
+        title = "V Velocity (located at V staggered node)"
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%vvel)
+
+        title = 'Depth'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%depth)
+
+        title = 'X c.v. node values - state plane coord'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%x)
+
+        title = 'Y c.v. node values - state plane coord'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%y)
+
+        title = 'Bottom Elevation c.v node values - mean sea level'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%zbot)
+
+        title = 'h1 metric coeff at U location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hu1)
+
+        title = 'h2 metric coeff at U location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hu2)
+
+        title = 'h1 metric coeff at V location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hv1)
+
+        title = 'h2 metric coeff at V location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hv2)
+
+        title = 'h1 metric coeff at P location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hp1)
+
+        title = 'h2 metric coeff at P location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%hp2)
+
+        title = 'g12 nonorthogonal component of the metric tensor at P location'
+        title(61:75) = block_title
+        CALL output_2d_array(output_iounit,title,&
+             &i_index_min,block(iblock)%xmax + i_index_extra,&
+             &j_index_min,block(iblock)%ymax + j_index_extra,&
+             &block(iblock)%gp12)
+        
+     END DO
+  END IF
+
+  CALL gridplot('gridplot1.dat', DOGHOST=debug)
+
+!!$  IF ( plot_do_tecplot ) THEN
+!!$     OPEN(grid_iounit,file='gridplot-metrics.dat')
+!!$     WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid Metrics"""
+!!$     WRITE(grid_iounit,*)"variables=""x"" ""y"" ""hp1"" ""hp2"" ""gp12"""
+!!$     DO iblk=1,max_blocks
+!!$        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", block(iblk)%xmax+1, " j= ",block(iblk)%ymax+1
+!!$        WRITE(grid_iounit,*)block(iblk)%x
+!!$        WRITE(grid_iounit,*)block(iblk)%y
+!!$        WRITE(grid_iounit,*)block(iblk)%hp1
+!!$        WRITE(grid_iounit,*)block(iblk)%hp2
+!!$        WRITE(grid_iounit,*)block(iblk)%gp12
+!!$     END DO
+!!$     CLOSE(grid_iounit)
+!!$  END IF
+  
+  !-----------------------------------------------------------------------------------------------------------
+  ! write initial fields to the plot file
+
+  CALL diag_plot_file_setup()
+  CALL plot_file_setup()
+  CALL accumulate(start_time%time)
+  CALL plot_print(start_time%date_string, start_time%time_string, &
+       &salinity, baro_press)
+
+  IF (do_gage_print) THEN
+     CALL gage_print(start_time%date_string, start_time%time_string,&
+          &(start_time%time - start_time%time)*24, &
+          &do_transport, salinity, baro_press)
+  END IF
+
 2000 FORMAT(a80)
-1000 FORMAT(50(f12.4,2x))
-1020 FORMAT(2(f12.4,2x),50(f12.6,2x))
 2010 FORMAT('Simulation Run on Date - ',i2,'-',i2,'-',i4,' at time ',i2,':',i2,':',i2/)
 
-!-------------------------------------------------------------------------------------------------------
-! open io units
+END SUBROUTINE output_init
 
-CALL open_existing('mass2_v027.cfg', cfg_iounit)
-!-----------------------------------------------------------------------------------
-! write info to the console
-WRITE(*,*)'Pacific Northwest National Laboratory'
-WRITE(*,*)
-WRITE(*,*)code_version
-WRITE(*,*)code_date
+! ----------------------------------------------------------------
+! SUBROUTINE gridplot
+! ----------------------------------------------------------------
+SUBROUTINE gridplot(fname, doghost)
 
-!-------------------------------------------------------------------------------------------------------
-READ(cfg_iounit,2000)config_file_version
-READ(cfg_iounit,2000) !sim_title
+  IMPLICIT NONE
+  CHARACTER (LEN=*), INTENT(IN) :: fname
+  LOGICAL, INTENT(IN), OPTIONAL :: doghost
 
-!-------------------------------------------------------------------------------------------------------
-! allocation of dynamic arrays
-READ(cfg_iounit,*)max_blocks
-READ(cfg_iounit,*)max_species
+  LOGICAL :: mydoghost = .FALSE.
+  INTEGER :: imin, imax, jmin, jmax, ni, nj, iblk
 
-! allocate hydrodynamics stuff
+  IF (PRESENT(doghost)) mydoghost = doghost
 
-CALL allocate_blocks()
-ALLOCATE(grid_file_name(max_blocks))
+  CALL open_new(fname, grid_iounit)
 
-DO iblock=1,max_blocks
-	READ(cfg_iounit,*)grid_file_name(iblock)
-    CALL open_existing(grid_file_name(iblock), grid_iounit)
-	READ(grid_iounit,*)block(iblock)%xmax,block(iblock)%ymax
-	CLOSE(grid_iounit)
-END DO
+  WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid"""
+  WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
 
-DO i=1,max_blocks
-	CALL allocate_block_components(i, status_iounit)
-END DO
+  DO iblk=1,max_blocks
 
-imax = MAXVAL(block(:)%xmax) + 1
-jmax = MAXVAL(block(:)%ymax) + 1
-CALL allocate_coeff_components(imax, jmax, status_iounit)
+     IF (mydoghost) THEN
+        imin = 1 - i_ghost
+        imax = block(iblk)%xmax + i_ghost
+        jmin = 1 - j_ghost
+        jmax = block(iblk)%ymax + j_ghost
+     ELSE
+        imin = 1
+        imax = block(iblk)%xmax
+        jmin = 1
+        jmax = block(iblk)%ymax
+     END IF
 
-! allocate scalar species stuff
+     ni = imax - imin + 1
+     nj = jmax - jmin + 1
 
-CALL allocate_species()
+     WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
+     WRITE(grid_iounit,'(8G16.8)')block(iblk)%x_grid(imin:imax,jmin:jmax)
+     WRITE(grid_iounit,'(8G16.8)')block(iblk)%y_grid(imin:imax,jmin:jmax)
+     WRITE(grid_iounit,'(8G16.8)')block(iblk)%zbot_grid(imin:imax,jmin:jmax)
+  END DO
 
-DO i = 1, max_species
-	CALL allocate_scalar(max_blocks, i)
-END DO
+  CLOSE(grid_iounit)
 
-DO i=1, max_species
-	DO j =1, max_blocks
-		CALL allocate_scalarblock_components(i, j , block(j)%xmax, block(j)%ymax)
-	END DO
-END DO
-
-ALLOCATE(aa(jmax),bb(jmax),cc(jmax),dd(jmax),tt(jmax),ptemp(0:jmax),qtemp(0:jmax))
-ALLOCATE(work(imax,jmax),cos_ij(imax,jmax))
-ALLOCATE(inlet_area(jmax), table_input(jmax))
-ptemp = 0.0
-qtemp = 0.0
-
-!---------------------------------------------------------------------------------------------------------
-! read in the grid files for each block
-DO iblock=1,max_blocks
-   CALL open_existing(grid_file_name(iblock), grid_iounit)
-   READ(grid_iounit,*)junk
-   CALL status_message('reading in x,y,z from ' // grid_file_name(iblock))
-	 
-   ! read in grid x,y, and bottom elevation
-   DO i=1,block(iblock)%xmax
-      DO j=1,block(iblock)%ymax
-         READ(grid_iounit,*)junk,junk,block(iblock)%x_grid(i,j),block(iblock)%y_grid(i,j),block(iblock)%zbot_grid(i,j)
-      END DO
-   END DO
-   CLOSE(grid_iounit)
-   WRITE(status_iounit,*)'completed in x,y,z for block n = ',iblock
-END DO
-
-!-------------------------------------------------------------------------------
-! read, allocate, and set up block and table boundary conditions
-
-! read hydrodynamics related stuff
-CALL allocate_block_bc(max_blocks)
-
-CALL read_bcspecs(bcspec_iounit, max_blocks, block%xmax, block%ymax)
-
-CALL read_bc_tables
-
-! now decipher which cells talk to each other in the block connections
-IF(max_blocks > 1)THEN
-	CALL set_block_connections(max_blocks, error_iounit, status_iounit)
-END IF
+END SUBROUTINE gridplot
 
 
-!---------------------------------------------------------------------------------------------------------
-! finish reading cfg file
-READ(cfg_iounit,*)do_flow				! on/off switch for hydrodynamics
-READ(cfg_iounit,*)do_transport	! on/off switch for transport calculations
-baro_press = 760.0              ! in case weather is not read
-READ(cfg_iounit,*)do_surface_heatx, do_surface_gasx, weather_filename !*** on/off surface exhange, weather data file
-READ(cfg_iounit,*)debug					! extra debug printing
 
-READ(cfg_iounit,*)manning							! switch between manning or chezy bottom friction equation
-READ(cfg_iounit,*)write_restart_file, restart_print_freq	! write out a binary restart file "hotstart_date_time.bin"
-READ(cfg_iounit,*)read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
-READ(cfg_iounit,*)do_gage_print				! do gage print
-READ(cfg_iounit,*)given_initial_wsel, read_initial_profile	! if TRUE then wsel_or_depth_initial is the initial water elv.
+! ----------------------------------------------------------------
+! SUBROUTINE read_config
+! ----------------------------------------------------------------
+SUBROUTINE read_config()
+
+  IMPLICIT NONE
+
+  INTEGER :: iblock, i
+  INTEGER, PARAMETER :: cfg_iounit=10
+
+  CALL open_existing('mass2_v027.cfg', cfg_iounit)
+
+  !-------------------------------------------------------------------------------------------------------
+  READ(cfg_iounit,'(A80)')config_file_version
+  READ(cfg_iounit,'(A80)') !sim_title
+
+  !-------------------------------------------------------------------------------------------------------
+  ! allocation of dynamic arrays
+  READ(cfg_iounit,*)max_blocks
+  READ(cfg_iounit,*)max_species
+
+  ALLOCATE(grid_file_name(max_blocks))
+
+  DO iblock=1,max_blocks
+     READ(cfg_iounit,*)grid_file_name(iblock)
+  END DO
+
+
+  !---------------------------------------------------------------------------------------------------------
+  ! finish reading cfg file
+  READ(cfg_iounit,*)do_flow				! on/off switch for hydrodynamics
+  READ(cfg_iounit,*)do_transport	! on/off switch for transport calculations
+  READ(cfg_iounit,*)do_surface_heatx, do_surface_gasx, weather_filename !*** on/off surface exhange, weather data file
+  READ(cfg_iounit,*)debug					! extra debug printing
+  
+  READ(cfg_iounit,*)manning							! switch between manning or chezy bottom friction equation
+  READ(cfg_iounit,*)write_restart_file, restart_print_freq	! write out a binary restart file "hotstart_date_time.bin"
+  READ(cfg_iounit,*)read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
+  READ(cfg_iounit,*)do_gage_print				! do gage print
+  READ(cfg_iounit,*)given_initial_wsel, read_initial_profile	! if TRUE then wsel_or_depth_initial is the initial water elv.
 																						! IF FALSE then wsel_or_depth_initial is the initial depth
 
 
 
-READ(cfg_iounit,*)start_time%date_string, start_time%time_string	! model start date & time 
-READ(cfg_iounit,*)end_time%date_string, end_time%time_string			! model end date & time
+  READ(cfg_iounit,*)start_time%date_string, start_time%time_string	! model start date & time 
+  READ(cfg_iounit,*)end_time%date_string, end_time%time_string			! model end date & time
+  READ(cfg_iounit,*)delta_t 		! time step (seconds)
 
 
-READ(cfg_iounit,*)delta_t 		! time step (seconds)
-
-
-READ(cfg_iounit,*)number_hydro_iterations, max_mass_source_sum	!*** number of internal iterations at a fixed time level
+  READ(cfg_iounit,*)number_hydro_iterations, max_mass_source_sum	!*** number of internal iterations at a fixed time level
 																																! max summation of mass source at any iteration
-READ(cfg_iounit,*)number_scalar_iterations !*** number of internal iterations for scalar solutions	
-READ(cfg_iounit,*)scalar_sweep	! internal iterations
-READ(cfg_iounit,*)depth_sweep		! depth correction internal iterations
-READ(cfg_iounit,*)eddy_default, do_spatial_eddy  ! turb eddy viscosity
-
-! scalar diffusion coeff in xsi (ft^2/sec) ! scalar diffusion coeff in eta (ft^2/sec)
-READ(cfg_iounit,*)kx_diff_default,do_spatial_kx
-READ(cfg_iounit,*)ky_diff_default,do_spatial_ky 
+  READ(cfg_iounit,*)number_scalar_iterations !*** number of internal iterations for scalar solutions	
+  READ(cfg_iounit,*)scalar_sweep	! internal iterations
+  READ(cfg_iounit,*)depth_sweep		! depth correction internal iterations
+  READ(cfg_iounit,*)eddy_default, do_spatial_eddy  ! turb eddy viscosity
+  
+  ! scalar diffusion coeff in xsi (ft^2/sec) ! scalar diffusion coeff in eta (ft^2/sec)
+  READ(cfg_iounit,*)kx_diff_default,do_spatial_kx
+  READ(cfg_iounit,*)ky_diff_default,do_spatial_ky 
 									
 									! chezy constant if chezy-type relation is used (manning=FALSE)
-READ(cfg_iounit,*)chezy_con_default, do_spatial_chezy		! manning n value if manning=TRUE
-READ(cfg_iounit,*)mann_con		! constant in the bed shear stress  =1.0 if metric units
-READ(cfg_iounit,*)relax_dp		! relaxation factor for depth corrections
-READ(cfg_iounit,*)inlet_flow	! uniform inlet flow rate in non spill/non gen areas
-READ(cfg_iounit,*)ds_elev			! downstream water elevation bc (feet)
+  READ(cfg_iounit,*)chezy_con_default, do_spatial_chezy		! manning n value if manning=TRUE
+  READ(cfg_iounit,*)mann_con		! constant in the bed shear stress  =1.0 if metric units
+  READ(cfg_iounit,*)relax_dp		! relaxation factor for depth corrections
+  READ(cfg_iounit,*)inlet_flow	! uniform inlet flow rate in non spill/non gen areas
+  READ(cfg_iounit,*) ! ds_elev			! downstream water elevation bc (feet) (no longer used)
 
-READ(cfg_iounit,*)uvel_initial	! initial uniform value of u velocity
-READ(cfg_iounit,*)vvel_initial	! initial uniform value of v velocity
-READ(cfg_iounit,*)conc_initial	! initial uniform value of concentration
-READ(cfg_iounit,*)wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
+  READ(cfg_iounit,*)uvel_initial	! initial uniform value of u velocity
+  READ(cfg_iounit,*)vvel_initial	! initial uniform value of v velocity
+  READ(cfg_iounit,*)conc_initial	! initial uniform value of concentration
+  READ(cfg_iounit,*)wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
 
-READ(cfg_iounit,*)uvel_wind		! initial uniform value of u wind velocity
-READ(cfg_iounit,*)vvel_wind		! initial uniform value of v wind velocity
+  READ(cfg_iounit,*)uvel_wind		! initial uniform value of u wind velocity
+  READ(cfg_iounit,*)vvel_wind		! initial uniform value of v wind velocity
 
                                 ! wetting and drying parameters
 
-READ(cfg_iounit,*)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
+  READ(cfg_iounit,*)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
 
                                 ! initial bed information
 
-READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init, bed_iterations
+  READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init
 
-READ(cfg_iounit,*) print_freq, do_accumulate ! printout frequency every print_freq time steps
-READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
-READ(cfg_iounit,*) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
-READ(cfg_iounit,*) gage_print_freq
+  READ(cfg_iounit,*) print_freq, do_accumulate		! printout frequency every print_freq time steps
+  READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
+  READ(cfg_iounit,*) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
+  READ(cfg_iounit,*) gage_print_freq
 
-CLOSE (cfg_iounit)
-!--------------------------------------------------------------------------------------------------------
-! do some pre-processing of the config data
+  CLOSE(cfg_iounit)
 
-mann_con = mann_con**2
+  !--------------------------------------------------------------------------------------------------------
+  ! do some pre-processing of the config data
 
-start_time%time = date_to_decimal(start_time%date_string,start_time%time_string)
-end_time%time = date_to_decimal(end_time%date_string,end_time%time_string)
-i = year(end_time%time)
-IF (i .GT. 999) CALL date_time_flags(ydigits = INT(LOG10(REAL(i)) + 1))
-current_time = start_time
+  mann_con = mann_con**2
 
-!---------------------------------------------------------------------------------
-IF(do_transport)THEN
-! read species related stuff
-	CALL allocate_scalar_block_bc(max_blocks)
-	CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
-         &block%xmax, block%ymax)
-	CALL read_scalar_bc_tables()
-	CALL set_scalar_block_connections(max_blocks, max_species)
-    CALL scalar_source_read()
-    IF (source_doing_sed) CALL bed_initialize()
-    CALL scalar_mass_init()
+  start_time%time = date_to_decimal(start_time%date_string,start_time%time_string)
+  end_time%time = date_to_decimal(end_time%date_string,end_time%time_string)
 
-! transport only mode
-  IF(.NOT. do_flow)THEN
-     CALL allocate_hydro_interp_blocks()
-     DO i=1,max_blocks
-	CALL allocate_hydro_interp_comp(i, status_iounit)
-     END DO
-     CALL read_transport_only_dat()
-     CALL check_transport_only_dat(start_time%time,end_time%time)
-  END IF
-
-END IF
-
-! read in met data from a file
-IF (source_need_met) THEN
-	CALL read_met_data(weather_filename)
-	CALL update_met_data(current_time%time)
-END IF
-
-!------------------------------------------------------------------------------------
-! set up the gage print files
-IF(do_gage_print) THEN
-   CALL gage_file_setup(do_transport,error_iounit, status_iounit)
-   CALL mass_file_setup()
-END IF
+  i = year(end_time%time)
+  i = INT(LOG10(REAL(i)) + 1)
+  IF (i .GT. 999) CALL date_time_flags(ydigits = i)
 
 
-DO iblock=1,max_blocks
+END SUBROUTINE read_config
 
-   CALL buildghost(iblock)
+! ----------------------------------------------------------------
+! SUBROUTINE read_grid
+! ----------------------------------------------------------------
+SUBROUTINE read_grid(nblocks, grid_file_name, readpts)
 
+  IMPLICIT NONE
 
-                                ! interpolate x_grid,y_grid,zbot_grid
-                                ! onto the c.v. points by simple
-                                ! averaging
+  INTEGER, INTENT(IN) :: nblocks
+  CHARACTER (LEN=*), INTENT(IN) :: grid_file_name(:)
+  LOGICAL, INTENT(IN), OPTIONAL :: readpts
+  INTEGER, PARAMETER :: grid_iounit=15
+  LOGICAL :: dopts = .FALSE.
+  INTEGER :: i, j, iblock, nx, ny, junk
+  CHARACTER (LEN=1024) :: msg
 
+  IF (PRESENT(readpts)) dopts = readpts
 
-   DO i = i_index_min + 1, block(iblock)%xmax + i_index_extra - 1
-      DO j = j_index_min + 1, block(iblock)%ymax + j_index_extra - 1
-         block(iblock)%x(i,j) = 0.25*(block(iblock)%x_grid(i,j)+block(iblock)%x_grid(i-1,j)+&
-              & block(iblock)%x_grid(i,j-1)+block(iblock)%x_grid(i-1,j-1))
-         block(iblock)%y(i,j) = 0.25*(block(iblock)%y_grid(i,j)+block(iblock)%y_grid(i-1,j)+&
-              & block(iblock)%y_grid(i,j-1)+block(iblock)%y_grid(i-1,j-1))
-         block(iblock)%zbot(i,j) = 0.25*(block(iblock)%zbot_grid(i,j)+block(iblock)%zbot_grid(i-1,j)+&
-              & block(iblock)%zbot_grid(i,j-1)+block(iblock)%zbot_grid(i-1,j-1))
-      END DO
-   END DO
-   ! now take care of the edges of the grid
-   ! remember that the c.v.'s have an extra i,j line than the grid
-   i=i_index_min
-   DO j= j_index_min + 1, block(iblock)%ymax + j_index_extra - 1
-      block(iblock)%x(i,j) = 0.5*(block(iblock)%x_grid(i,j)+block(iblock)%x_grid(i,j-1))
-      block(iblock)%y(i,j) = 0.5*(block(iblock)%y_grid(i,j)+block(iblock)%y_grid(i,j-1))
-      block(iblock)%zbot(i,j) = 0.5*(block(iblock)%zbot_grid(i,j)+block(iblock)%zbot_grid(i,j-1))
-   END DO
+  DO iblock = 1, nblocks
 
-   i= block(iblock)%xmax+i_index_extra
-   DO j= j_index_min + 1, block(iblock)%ymax + j_index_extra - 1
-      block(iblock)%x(i,j) = 0.5*(block(iblock)%x_grid(i-1,j)+block(iblock)%x_grid(i-1,j-1))
-      block(iblock)%y(i,j) = 0.5*(block(iblock)%y_grid(i-1,j)+block(iblock)%y_grid(i-1,j-1))
-      block(iblock)%zbot(i,j) = 0.5*(block(iblock)%zbot_grid(i-1,j)+block(iblock)%zbot_grid(i-1,j-1))
-   END DO
+     CALL open_existing(grid_file_name(iblock), grid_iounit)
 
-   j=j_index_min
-   DO i = i_index_min + 1, block(iblock)%xmax + i_index_extra - 1
-      block(iblock)%x(i,j) = 0.5*(block(iblock)%x_grid(i,j)+block(iblock)%x_grid(i-1,j))
-      block(iblock)%y(i,j) = 0.5*(block(iblock)%y_grid(i,j)+block(iblock)%y_grid(i-1,j))
-      block(iblock)%zbot(i,j) = 0.5*(block(iblock)%zbot_grid(i,j)+block(iblock)%zbot_grid(i-1,j))
-   END DO
+     READ(grid_iounit,*) nx, ny
+     IF (dopts) THEN
 
-   j= block(iblock)%ymax+j_index_extra
-   DO i = i_index_min + 1, block(iblock)%xmax + i_index_extra - 1
-      block(iblock)%x(i,j) = 0.5*(block(iblock)%x_grid(i,j-1)+block(iblock)%x_grid(i-1,j-1))
-      block(iblock)%y(i,j) = 0.5*(block(iblock)%y_grid(i,j-1)+block(iblock)%y_grid(i-1,j-1))
-      block(iblock)%zbot(i,j) = 0.5*(block(iblock)%zbot_grid(i,j-1)+block(iblock)%zbot_grid(i-1,j-1))
-   END DO
+                                ! log what we are doing
 
-   ivec = (/i_index_min, i_index_min,&
-        &block(iblock)%xmax + i_index_extra, block(iblock)%xmax+i_index_extra/)
-   jvec = (/j_index_min, block(iblock)%ymax+j_index_extra,&
-        &j_index_min,block(iblock)%ymax+j_index_extra/)
-   ivec2 = (/i_index_min,i_index_min,&
-        &block(iblock)%xmax+i_index_extra-1,block(iblock)%xmax+i_index_extra-1/)
-   jvec2 = (/j_index_min,block(iblock)%ymax+j_index_extra-1,&
-        &j_index_min,block(iblock)%ymax+j_index_extra-1/)
-   block(iblock)%x(ivec,jvec) = block(iblock)%x_grid(ivec2,jvec2)
-   block(iblock)%y(ivec,jvec) = block(iblock)%y_grid(ivec2,jvec2)
-   block(iblock)%zbot(ivec,jvec) = block(iblock)%zbot_grid(ivec2,jvec2)
-END DO
+        WRITE(msg, 100) iblock
+        CALL status_message(msg)
 
-!-----------------------------------------------------------------------------------------------------------
-! assign initial conditions for each block
-! using uniform values from cfg file or a restart file
-
-IF(read_hotstart_file)THEN
-	! OPEN(unit=hotstart_iounit,file='hotstart.bin', form='binary')
-	! OPEN(unit=hotstart_iounit,file='hotstart.bin',form='unformatted')
-   CALL open_existing('hotstart.bin', hotstart_iounit)
-   CALL status_message('reading hotstart file')
-	READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
-	DO iblock=1,max_blocks
-    READ(hotstart_iounit,*) block(iblock)%uvel
-!WRITE(*,*)'done with uvel read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%uold
-!WRITE(*,*)'done with uold read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%ustar
-!WRITE(*,*)'done with ustar read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%vvel
-!WRITE(*,*)'done with vvel read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%vold
-!WRITE(*,*)'done with vold read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%vstar
-!WRITE(*,*)'done with vstar read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%depth
-!WRITE(*,*)'done with depth read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%depthold
-!WRITE(*,*)'done with depthold read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%dstar
-!WRITE(*,*)'done with dstar read for block -',iblock
-    READ(hotstart_iounit,*) block(iblock)%eddy 
-!WRITE(*,*)'done with eddy read for block -',iblock
-	END DO
-	IF( (do_transport).AND.(do_transport_restart) )THEN
-
-                                ! if a bed is expected in the
-                                ! hotstart, the number of scalars must
-                                ! be the same in the hotstart as was
-                                ! specified for the simulation
-
-       IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
-          WRITE (msg,*) 'specified number of scalar species, ', &
-               &max_species, ', does not match that in hotstart file (',&
-               &max_species_in_restart, ')'
-          CALL error_message(msg, fatal=.TRUE.)
-       END IF
-
-                                ! if we don't expect a bed, don't
-                                ! worry about the number of scalar
-                                ! species
-
-       IF(max_species_in_restart > max_species) max_species_in_restart = max_species
-       DO i=1,max_species_in_restart
-          DO iblock = 1, max_blocks
-             READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
-             WRITE(msg,*)'done with conc read for species -',i,'and block -',iblock
-             CALL status_message(msg)
-             READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
-             WRITE(msg,*)'done with concold read for species -',i,'and block -',iblock
-             CALL status_message(msg)
-          END DO
-       END DO
-
-                                ! if any sediment species were
-                                ! specified, we expect to find a bed
-                                ! in the hotstart file
-
-       IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
-
-    ELSE IF (do_transport) THEN
-           DO i = 1, max_species
-              DO iblock =1, max_blocks
-                 species(i)%scalar(iblock)%conc = conc_initial
-                 species(i)%scalar(iblock)%concold = conc_initial
-              END DO
+        DO i = 1, nx
+           DO j = 1, ny
+              READ(grid_iounit,*) junk, junk,&
+                   &block(iblock)%x_grid(i,j), block(iblock)%y_grid(i,j), &
+                   &block(iblock)%zbot_grid(i,j)
            END DO
-	END IF
+        END DO
+        
+        msg = ''
+        WRITE(msg, 200) iblock
+        CALL status_message(msg)
 
-	CLOSE(hotstart_iounit)
-	WRITE(status_iounit,*)'done reading hotstart file'
-ELSE
-	WRITE(status_iounit,*)'-- setting initial values for all blocks'
-	DO iblock=1,max_blocks
-    block(iblock)%uvel = uvel_initial
-    block(iblock)%uold = block(iblock)%uvel
-    block(iblock)%ustar = block(iblock)%uvel
-    block(iblock)%vvel = vvel_initial
-    block(iblock)%vold = block(iblock)%vvel
-    block(iblock)%vstar = block(iblock)%vvel
-    
-    IF (.NOT. read_initial_profile) THEN
-		IF(given_initial_wsel)THEN
-			block(iblock)%depth = wsel_or_depth_initial - block(iblock)%zbot
-		ELSE
-			block(iblock)%depth = wsel_or_depth_initial
-		ENDIF
-        IF (do_wetdry) THEN
-           WHERE (block(iblock)%depth .LE. dry_zero_depth) 
-              block(iblock)%depth = dry_zero_depth
-           END WHERE
-        END IF
-        block(iblock)%depthold = block(iblock)%depth
-        block(iblock)%dstar = block(iblock)%depth
-    END IF
-	END DO
-	DO i = 1, max_species
-		DO iblock =1, max_blocks
-			species(i)%scalar(iblock)%conc = conc_initial
-			species(i)%scalar(iblock)%concold = conc_initial
-		END DO
-	END DO
+     ELSE
+        block(iblock)%xmax = nx
+        block(iblock)%ymax = ny
+     END IF
 
-! handle case if we are doing transport-only and not restarting
-    IF((.NOT. do_flow).AND.(do_transport))THEN
-       CALL hydro_restart_read(current_time%time)
-       DO iblock=1,max_blocks
-          var = 1
-          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%uvel)
-          block(iblock)%uold = block(iblock)%uvel
-          block(iblock)%ustar = block(iblock)%uvel
-          
-          var = 2
-          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%vvel)
-          block(iblock)%vold = block(iblock)%vvel
-          block(iblock)%vstar = block(iblock)%vvel
-          
-          var = 3
-          CALL hydro_restart_interp(current_time%time, iblock, var, block(iblock)%depth)
-          block(iblock)%depthold = block(iblock)%depth
-          block(iblock)%dstar = block(iblock)%depth
-       END DO
-       WRITE(status_iounit,*)'done setting transport-only initial values for all blocks'
-    END IF
+     CLOSE(grid_iounit)
 
-    WRITE(status_iounit,*)'done setting initial values for all blocks'
- ENDIF
+  END DO
 
-!--------------------------------------------------------------------------------
- ! assign uniform parameter values and other derived stuff
- DO iblock=1,max_blocks
-	block(iblock)%eddy = eddy_default
-	block(iblock)%kx_diff = kx_diff_default
-	block(iblock)%ky_diff = ky_diff_default
-    block(iblock)%chezy = chezy_con_default
-	block(iblock)%wsel = block(iblock)%depth + block(iblock)%zbot
- END DO
+100 FORMAT('reading in x,y,z for block n = ', I3)
+200 FORMAT('completed reading x,y,z for block n = ', I3)
 
-! overwrite the default assignments
-IF(do_spatial_eddy)THEN
-	filename = "eddy_coeff.dat"
-    CALL open_existing(filename, 50)
-	DO WHILE(.TRUE.)
-		READ(50,*,END=101)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-		block(iblock)%eddy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-	END DO
-101	CLOSE(50)
-ENDIF
-IF(do_spatial_kx)THEN
-   filename = "kx_coeff.dat"
-   CALL open_existing(filename, 50)
-	DO WHILE(.TRUE.)
-		READ(50,*,END=102)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-		block(iblock)%kx_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-	END DO
-102	CLOSE(50)
-ENDIF
-IF(do_spatial_ky)THEN
-	filename = "ky_coeff.dat"
-    CALL open_existing(filename, 50)
-	DO WHILE(.TRUE.)
-		READ(50,*,END=103)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-		block(iblock)%ky_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-	END DO
-103	CLOSE(50)
-ENDIF
-
-IF(do_spatial_chezy)THEN
-	filename = "roughness_coeff.dat"
-    CALL open_existing(filename, 50)
-	DO WHILE(.TRUE.)
-		READ(50,*,END=100)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-		block(iblock)%chezy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-	END DO
-100	CLOSE(50)
-ENDIF
-
-
-!----------------------------------------------------------------------------------------------------------
-
-!-----------------------------------------------------------------------------------------------------------
-
-DO iblock=1,max_blocks
-   CALL metrics(block(iblock))
-END DO
-
-! profile_init requires metric coefficients
-
-IF (read_initial_profile) THEN
-   CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
-END IF
-
-IF (do_wetdry) THEN
-   DO iblock=1,max_blocks
-      CALL check_wetdry(iblock, block(iblock)%xmax, block(iblock)%ymax)
-   END DO
-END IF
-
-
-!-----------------------------------------------------------------------------------------------------------
-! print problem configuration information and initial variable values
-
-WRITE(output_iounit,*)"2D Depth-Averaged Flow Solver "
-WRITE(output_iounit,*)code_version
-WRITE(output_iounit,*)code_date
-
-CALL DATE_AND_TIME(VALUES = system_time)
-WRITE(output_iounit,2010)system_time(2),system_time(3),system_time(1),system_time(5),system_time(6),system_time(7)
-
-WRITE(output_iounit,*)"Total Number of Blocks = ",max_blocks
-WRITE(output_iounit,*)"Grids read from these files: "
-DO iblock=1,max_blocks
-   WRITE(output_iounit,2000)grid_file_name(iblock)
-END DO
-WRITE(output_iounit,*)
-
-block_title(1:11) = ' for block '
-
-IF (debug) THEN
-   DO iblock=1,max_blocks
-
-      WRITE(block_title(12:15),'(i4)')iblock
-      WRITE(output_iounit,*)'initial values for block number - ',iblock
-
-      title = 'X grid values - state plane coord' 
-      title(61:75) = block_title
-
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%x_grid)
-
-      title = 'Y grid values - state plane coord'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%y_grid)
-
-      title = 'Bottom Elevation grid values - mean sea level'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%zbot_grid)
-
-      title = 'Water Surface Elevation - mean sea level'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%wsel)
-
-      title = "U Velocity (located at U staggered node)"
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%uvel)
-
-
-      title = "V Velocity (located at V staggered node)"
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%vvel)
-
-      title = 'Depth'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%depth)
-
-      title = 'X c.v. node values - state plane coord'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%x)
-
-      title = 'Y c.v. node values - state plane coord'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%y)
-
-      title = 'Bottom Elevation c.v node values - mean sea level'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%zbot)
-
-      title = 'h1 metric coeff at U location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hu1)
-
-      title = 'h2 metric coeff at U location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hu2)
-
-      title = 'h1 metric coeff at V location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hv1)
-
-      title = 'h2 metric coeff at V location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hv2)
-
-      title = 'h1 metric coeff at P location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hp1)
-
-      title = 'h2 metric coeff at P location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%hp2)
-
-      title = 'g12 nonorthogonal component of the metric tensor at P location'
-      title(61:75) = block_title
-      CALL output_2d_array(output_iounit,title,&
-           &i_index_min,block(iblock)%xmax + i_index_extra,&
-           &j_index_min,block(iblock)%ymax + j_index_extra,&
-           &block(iblock)%gp12)
-
-   END DO
-END IF
-
-!-----------------------------------------------------------------------------------------------------------
-! write initial fields to the plot file
-
-OPEN(grid_iounit,file='gridplot1.dat')
-WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid"""
-	!WRITE(plot_iounit,*)"variables=""x"" ""y"" ""u vel"" ""v vel"" ""u cart"" ""v cart"" ""depth"" ""zbot"" ""wsel"" ""con"""
-WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
-DO iblock=1,max_blocks
-	WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblock,""""," i=", block(iblock)%xmax + 2, " j= ",block(iblock)%ymax
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%x_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%y_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
-	WRITE(grid_iounit,'(8G16.8)')block(iblock)%zbot_grid(1:block(iblock)%xmax,1:block(iblock)%ymax)
-END DO
-CLOSE(grid_iounit)
-
-IF ( plot_do_tecplot ) THEN
-   OPEN(grid_iounit,file='gridplot-metrics.dat')
-   WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid Metrics"""
-   WRITE(grid_iounit,*)"variables=""x"" ""y"" ""hp1"" ""hp2"" ""gp12"""
-   DO iblock=1,max_blocks
-      WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblock,""""," i=", block(iblock)%xmax+1, " j= ",block(iblock)%ymax+1
-      WRITE(grid_iounit,*)block(iblock)%x
-      WRITE(grid_iounit,*)block(iblock)%y
-      WRITE(grid_iounit,*)block(iblock)%hp1
-      WRITE(grid_iounit,*)block(iblock)%hp2
-      WRITE(grid_iounit,*)block(iblock)%gp12
-   END DO
-   CLOSE(grid_iounit)
-END IF
-
-!-----------------------------------------------------------------------
-! diagnostic plot; tecplot format
-
-CALL diag_plot_file_setup()
-
-!-----------------------------------------------------------------------
-
-CALL plot_file_setup()
-CALL accumulate(start_time%time)
-CALL plot_print(start_time%date_string, start_time%time_string, &
-     &salinity, baro_press)
-
-IF (do_gage_print) THEN
-   CALL gage_print(current_time%date_string, current_time%time_string,&
-        &(current_time%time - start_time%time)*24, &
-        &do_transport, salinity, baro_press)
-END IF
-
-!OPEN(55,file='ds_elev-file2.dat')
-!DO j=1,block(1)%ymax+1
-! READ(55,*)ds_elev_read(j)
-!END DO
-!CLOSE(55)
-
-END SUBROUTINE start_up
+END SUBROUTINE read_grid
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE buildghost
@@ -768,33 +742,13 @@ SUBROUTINE buildghost(iblock)
   IMPLICIT NONE
   
   INTEGER, INTENT(IN) :: iblock
-  INTEGER :: i, j, k, cells, con_cells, fcells
-  INTEGER :: jbeg, jend, coni, conj, conjbeg, conjend
+  INTEGER :: k, cells, con_cells, con_block, fcells
+  INTEGER :: i, ibeg, iend, ixtra, coni, conibeg, coniend, icoff
+  INTEGER :: j, jbeg, jend, jxtra, conj, conjbeg, conjend, jcoff
+  INTEGER :: num_bc
   DOUBLE PRECISION :: fract
 
-                                ! extrapolate ghost cells in the grid
-                                ! coordinates
-
-   i = 0
-   DO j = 1, block(iblock)%ymax
-      block(iblock)%x_grid(i,j) = block(iblock)%x_grid(i+1,j) - &
-           &(block(iblock)%x_grid(i+2,j) - block(iblock)%x_grid(i+1,j))
-      block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i+1,j) - &
-           &(block(iblock)%y_grid(i+2,j) - block(iblock)%y_grid(i+1,j))
-      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j)
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i+1,j) - &
-           &(block(iblock)%zbot_grid(i+2,j) - block(iblock)%zbot_grid(i+1,j))
-   END DO
-   i = block(iblock)%xmax + 1
-   DO j = 1, block(iblock)%ymax
-      block(iblock)%x_grid(i,j) = block(iblock)%x_grid(i-1,j) - &
-           &(block(iblock)%x_grid(i-2,j) - block(iblock)%x_grid(i-1,j))
-      block(iblock)%y_grid(i,j) = block(iblock)%y_grid(i-1,j) - &
-           &(block(iblock)%y_grid(i-2,j) - block(iblock)%y_grid(i-1,j))
-      block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) - &
-           &(block(iblock)%zbot_grid(i-2,j) - block(iblock)%zbot_grid(i-1,j))
-      ! block(iblock)%zbot_grid(i,j) = block(iblock)%zbot_grid(i-1,j) 
-   END DO
+  CALL extrapghost(block(iblock))
 
                                 ! copy ghost cell coordinates for those
                                 ! cells connecting with another block
@@ -802,31 +756,66 @@ SUBROUTINE buildghost(iblock)
    
    DO num_bc = 1, block_bc(iblock)%num_bc
 
-      SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type) 
-      CASE ("BLOCK")
+      IF (block_bc(iblock)%bc_spec(num_bc)%bc_type .EQ. "BLOCK") THEN
+
          con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
-         SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-         CASE("US")
-            i = 0
-            coni = block(con_block)%xmax - 1
-         CASE ("DS")
-            i = block(iblock)%xmax + 1
-            coni = 2
-         END SELECT
 
          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
 
-                                ! *user* *cell* index ranges on both
-                                ! sides of the block boundary
-            jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
-            jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)
-            conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
-            conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)
-
-                                ! cells in this block
-            cells = jend - jbeg + 1
-                                ! cells in connecting block
-            con_cells = conjend - conjbeg + 1
+            SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+            CASE("US")
+               ibeg = 0
+               iend = ibeg
+               conibeg = block(con_block)%xmax - 1
+               coniend = conibeg
+               jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
+               jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
+               conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
+               conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k) + 1
+               cells = jend - jbeg
+               con_cells = conjend - conjbeg
+               icoff = 0
+               jcoff = 1
+            CASE ("DS")
+               ibeg = block(iblock)%xmax + 1
+               iend = ibeg
+               conibeg = 2
+               coniend = conibeg
+               jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
+               jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
+               conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
+               conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k) + 1
+               cells = jend - jbeg
+               con_cells = conjend - conjbeg
+               icoff = 0
+               jcoff = 1
+            CASE ("RB") 
+               jbeg = 0
+               jend = jbeg
+               conjbeg = block(con_block)%ymax - 1
+               conjend = conjbeg
+               ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
+               iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
+               conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
+               coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k) + 1
+               cells = iend - ibeg
+               con_cells = coniend - conibeg
+               icoff = 1
+               jcoff = 0
+            CASE ("LB") 
+               jbeg = block(iblock)%ymax + 1
+               jend = jbeg
+               conjbeg = 2
+               conjend = conjbeg
+               ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
+               iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
+               conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
+               coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k) + 1
+               cells = iend - ibeg 
+               con_cells = coniend - conibeg
+               icoff = 1
+               jcoff = 0
+            END SELECT
 
             IF (cells .EQ. con_cells) THEN
 
@@ -834,15 +823,19 @@ SUBROUTINE buildghost(iblock)
                ! just copy the ghost cell corners from the connecting
                ! block
 
-               conj = conjbeg
-               DO j = jbeg, jend
-                  block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
-                  block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
-                  block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
-                  block(iblock)%x_grid(i,j+1) = block(con_block)%x_grid(coni,conj+1)
-                  block(iblock)%y_grid(i,j+1) = block(con_block)%y_grid(coni,conj+1)
-                  block(iblock)%zbot_grid(i,j+1) = block(con_block)%zbot_grid(coni,conj+1)
-                  conj = conj + 1
+               coni = conibeg
+               DO i = ibeg, iend
+                  conj = conjbeg
+                  DO j = jbeg, jend
+                     block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
+                     block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
+                     block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
+                     ! block(iblock)%x_grid(i,j+1) = block(con_block)%x_grid(coni,conj+1)
+                     ! block(iblock)%y_grid(i,j+1) = block(con_block)%y_grid(coni,conj+1)
+                     ! block(iblock)%zbot_grid(i,j+1) = block(con_block)%zbot_grid(coni,conj+1)
+                     conj = conj + 1
+                  END DO
+                  coni = coni + 1
                END DO
 
             ELSE IF (cells .GT. con_cells) THEN
@@ -853,24 +846,34 @@ SUBROUTINE buildghost(iblock)
                                 ! fine cells per coarse cell
                fcells = cells/con_cells
 
-               DO j = jbeg, jend+1
+               DO i = ibeg, iend
+                  coni = conibeg + (i - ibeg)/fcells
+                  DO j = jbeg, jend
+                     conj = conjbeg + (j - jbeg)/fcells
 
-                  conj = conjbeg + (j - jbeg)/fcells
+                     IF (ibeg .EQ. iend) THEN
+                        fract = DBLE(MOD(j - jbeg, fcells))
+                        icoff = 0
+                        jcoff = 1
+                     ELSE 
+                        fract = DBLE(MOD(i - ibeg, fcells))
+                        icoff = 1
+                        jcoff = 0
+                     END IF
+                     fract = fract/DBLE(fcells)
 
-                  fract = DBLE(MOD(j - jbeg, fcells))
-                  fract = fract/DBLE(fcells)
-
-                  CALL interpolate_point(fract,&
-                       &block(con_block)%x_grid(coni,conj),&
-                       &block(con_block)%y_grid(coni,conj),&
-                       &block(con_block)%zbot_grid(coni,conj),&
-                       &block(con_block)%x_grid(coni,conj+1),&
-                       &block(con_block)%y_grid(coni,conj+1),&
-                       &block(con_block)%zbot_grid(coni,conj+1),&
-                       &block(iblock)%x_grid(i,j), &
-                       &block(iblock)%y_grid(i,j), &
-                       &block(iblock)%zbot_grid(i,j))
+                     CALL interpolate_point(fract,&
+                          &block(con_block)%x_grid(coni,conj),&
+                          &block(con_block)%y_grid(coni,conj),&
+                          &block(con_block)%zbot_grid(coni,conj),&
+                          &block(con_block)%x_grid(coni+icoff,conj+jcoff),&
+                          &block(con_block)%y_grid(coni+icoff,conj+jcoff),&
+                          &block(con_block)%zbot_grid(coni+icoff,conj+jcoff),&
+                          &block(iblock)%x_grid(i,j), &
+                          &block(iblock)%y_grid(i,j), &
+                          &block(iblock)%zbot_grid(i,j))
                   
+                  END DO
                END DO
 
             ELSE IF (cells .LT. con_cells) THEN
@@ -880,20 +883,72 @@ SUBROUTINE buildghost(iblock)
 
                fcells = con_cells/cells ! fine cells per coarse cell
 
-               DO j = jbeg, jend+1
+               DO i = ibeg, iend
+                  coni = conibeg + (i - ibeg)*fcells
+                  DO j = jbeg, jend
 
-                  conj = conjbeg + (j - jbeg)*fcells
-                  block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
-                  block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
-                  block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
-                  
+                     conj = conjbeg + (j - jbeg)*fcells
+                     block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
+                     block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
+                     block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
+                     
+                  END DO
                END DO
             END IF
          END DO
-      END SELECT
+      END IF
    END DO
 
 END SUBROUTINE buildghost
+
+! ----------------------------------------------------------------
+! SUBROUTINE extrapghost
+! ----------------------------------------------------------------
+SUBROUTINE extrapghost(blk)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(INOUT) :: blk
+  INTEGER :: i, j, ibeg, iend, jbeg, jend, ig
+
+  DO ig = 1, nghost
+     i = 1 - ig
+     DO j = 1, blk%ymax
+        blk%x_grid(i,j) = blk%x_grid(i+1,j) - (blk%x_grid(i+2,j) - blk%x_grid(i+1,j))
+        blk%y_grid(i,j) = blk%y_grid(i+1,j) - (blk%y_grid(i+2,j) - blk%y_grid(i+1,j))
+        blk%zbot_grid(i,j) = blk%zbot_grid(i+1,j) - &
+             &(blk%zbot_grid(i+2,j) - blk%zbot_grid(i+1,j))
+        ! blk%zbot_grid(i,j) = blk%zbot_grid(i+1,j)
+     END DO
+     i = blk%xmax + ig
+     DO j = 1, blk%ymax
+        blk%x_grid(i,j) = blk%x_grid(i-1,j) - (blk%x_grid(i-2,j) - blk%x_grid(i-1,j))
+        blk%y_grid(i,j) = blk%y_grid(i-1,j) - (blk%y_grid(i-2,j) - blk%y_grid(i-1,j))
+        blk%zbot_grid(i,j) = blk%zbot_grid(i-1,j) - &
+             &(blk%zbot_grid(i-2,j) - blk%zbot_grid(i-1,j))
+        ! blk%zbot_grid(i,j) = blk%zbot_grid(i-1,j) 
+     END DO
+     j = 1 - ig
+     DO i = 1, blk%xmax
+        blk%x_grid(i,j) = blk%x_grid(i,j+1) - (blk%x_grid(i,j+2) - blk%x_grid(i,j+1))
+        blk%y_grid(i,j) = blk%y_grid(i,j+1) - (blk%y_grid(i,j+2) - blk%y_grid(i,j+1))
+        blk%zbot_grid(i,j) = blk%zbot_grid(i,j+1) - (blk%zbot_grid(i,j+2) - blk%zbot_grid(i,j+1))
+     END DO
+     j = blk%ymax + ig
+     DO i = 1, blk%xmax
+        blk%x_grid(i,j) = blk%x_grid(i,j-1) - (blk%x_grid(i,j-2) - blk%x_grid(i,j-1))
+        blk%y_grid(i,j) = blk%y_grid(i,j-1) - (blk%y_grid(i,j-2) - blk%y_grid(i,j-1))
+        blk%zbot_grid(i,j) = blk%zbot_grid(i,j-1) - &
+             &(blk%zbot_grid(i,j-2) - blk%zbot_grid(i,j-1))
+     END DO
+
+     ! The corners are handled in interp_grid so block connections can
+     ! be considered
+     
+  END DO
+
+END SUBROUTINE extrapghost
+
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE fillghost
@@ -903,8 +958,10 @@ SUBROUTINE fillghost(iblock)
   IMPLICIT NONE
 
   INTEGER, INTENT(IN) :: iblock
-  INTEGER :: i, j, k, coni, conj
-  INTEGER :: cells, concells, fcells, jbeg, jend, conjbeg, conjend
+  INTEGER :: i, ibeg, iend, coni, conibeg, coniend
+  INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
+  INTEGER :: k, con_block
+  INTEGER :: num_bc, cells, concells, fcells
 
                                 ! for extrapolated cells, use
                                 ! parameters from the neighboring real
@@ -928,69 +985,110 @@ SUBROUTINE fillghost(iblock)
       SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type) 
       CASE ("BLOCK")
          con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
-         SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-         CASE("US")
-            i = 1
-            coni = block(con_block)%xmax
-         CASE ("DS")
-            i = block(iblock)%xmax + 1
-            coni = 2
-         END SELECT
          
          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-            jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
-            jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-            cells = jend - jbeg + 1
+            SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+            CASE("US")
+               ibeg = 1
+               iend = ibeg
+               conibeg = block(con_block)%xmax
+               coniend = conibeg
+               jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+               jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+               cells = jend - jbeg + 1
+               conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+               conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+               concells = conjend - conjbeg + 1
+            CASE ("DS")
+               ibeg = block(iblock)%xmax + 1
+               iend = ibeg
+               conibeg = block(con_block)%xmax
+               coniend = conibeg
+               jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+               jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+               cells = jend - jbeg + 1
+               conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+               conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+               concells = conjend - conjbeg + 1
+            CASE ("RB")
+               ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+               iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+               cells = iend - ibeg + 1
+               conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+               coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+               concells = coniend - conibeg + 1
+               jbeg = 1
+               jend = jbeg
+               conjbeg = block(con_block)%ymax
+               conjend = conjbeg
+            CASE ("LB")
+               ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+               iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+               cells = iend - ibeg + 1
+               conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+               coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+               concells = coniend - conibeg + 1
+               jbeg = block(iblock)%ymax + 1
+               jend = jbeg
+               conjbeg = 2
+               conjend = conjbeg
+            END SELECT
          
-            conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-            conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
-            concells = conjend - conjbeg + 1
-
             IF (cells .EQ. concells) THEN
 
-               conj = conjbeg
-               DO j = jbeg, jend
+               coni = conibeg
+               DO i = ibeg, iend
+                  conj = conjbeg
+                  DO j = jbeg, jend
 
-                  block(iblock)%hp1(i,j) = block(con_block)%hp1(coni,conj)
-                  block(iblock)%hp2(i,j) = block(con_block)%hp2(coni,conj)
-                  block(iblock)%hv1(i,j-1) = block(con_block)%hv1(coni,conj-1)
-                  block(iblock)%hv2(i,j-1) = block(con_block)%hv2(coni,conj-1)
-                  block(iblock)%hv1(i,j) = block(con_block)%hv1(coni,conj)
-                  block(iblock)%hv2(i,j) = block(con_block)%hv2(coni,conj)
-
-                  ! do not copy hu1,hu2 - they are calculated
-
-                  block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
-                  block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
-               
-                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
-                  conj = conj + 1
+                     block(iblock)%hp1(i,j) = block(con_block)%hp1(coni,conj)
+                     block(iblock)%hp2(i,j) = block(con_block)%hp2(coni,conj)
+                     block(iblock)%hv1(i,j-1) = block(con_block)%hv1(coni,conj-1)
+                     block(iblock)%hv2(i,j-1) = block(con_block)%hv2(coni,conj-1)
+                     block(iblock)%hv1(i,j) = block(con_block)%hv1(coni,conj)
+                     block(iblock)%hv2(i,j) = block(con_block)%hv2(coni,conj)
+                     
+                     ! do not copy hu1,hu2 - they are calculated
+                     
+                     block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
+                     block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
+                     
+                     block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                     block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                     block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                     block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                     conj = conj + 1
+                  END DO
+                  coni = coni + 1
                END DO
 
             ELSE IF (cells .GT. concells) THEN
 
                fcells = cells/concells
 
-               DO j = jbeg, jend
-                  conj = conjbeg + (j - jbeg)/fcells
-                  ! do not copy metrics, they are calculated
-                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+               DO i = ibeg, iend
+                  coni = conibeg + (i - ibeg)/fcells
+                  DO j = jbeg, jend
+                     conj = conjbeg + (j - jbeg)/fcells
+                     ! do not copy metrics, they are calculated
+                     block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                     block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                     block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                     block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                  END DO
                END DO
 
             ELSE IF (cells .LT. concells) THEN
                fcells = concells/cells
-               DO j = jbeg, jend
-                  conj = conjbeg + (j - jbeg)*fcells
-                  block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-                  block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-                  block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-                  block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+               DO i = ibeg, iend
+                  coni = conibeg + (i - ibeg)*fcells
+                  DO j = jbeg, jend
+                     conj = conjbeg + (j - jbeg)*fcells
+                     block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+                     block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+                     block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+                     block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                  END DO
                END DO
             END IF
          END DO
@@ -998,6 +1096,104 @@ SUBROUTINE fillghost(iblock)
    END DO
 
 END SUBROUTINE fillghost
+
+! ----------------------------------------------------------------
+! SUBROUTINE interp_grid
+! interpolate x_grid,y_grid,zbot_grid onto the c.v. points by simple
+! averaging
+! ----------------------------------------------------------------
+SUBROUTINE interp_grid(blk)
+
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+
+  IMPLICIT NONE
+
+  TYPE(block_struct), INTENT(INOUT) :: blk
+  INTEGER :: i, j, ig, ivec(4),jvec(4),ivec2(4),jvec2(4)
+
+  ! This places the points at the (ghost) corners of the grids.  If
+  ! you don't do this it looks funny in gridplot1.dat.
+
+  DO ig = 1, nghost
+     i = 1 - ig
+     j = 1 - ig
+     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j+1) + blk%x_grid(i+1,j))
+     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j+1) + blk%y_grid(i+1,j))
+     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j+1) + blk%zbot_grid(i+1,j))
+  
+     i = 1 - ig
+     j = blk%ymax + ig
+     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j-1) + blk%x_grid(i+1,j))
+     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j-1) + blk%y_grid(i+1,j))
+     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i+1,j))
+     
+     i = blk%xmax + ig
+     j = 1 - ig
+     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j+1) + blk%x_grid(i-1,j))
+     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j+1) + blk%y_grid(i-1,j))
+     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j+1) + blk%zbot_grid(i-1,j))
+     
+     i = blk%xmax + ig
+     j = blk%ymax + ig
+     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j-1) + blk%x_grid(i-1,j))
+     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j-1) + blk%y_grid(i-1,j))
+     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i-1,j))
+  END DO
+
+
+  DO i = i_index_min + 1, blk%xmax + i_index_extra - 1
+     DO j = j_index_min + 1, blk%ymax + j_index_extra - 1
+        blk%x(i,j) = 0.25*(blk%x_grid(i,j)+blk%x_grid(i-1,j)+&
+             & blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
+        blk%y(i,j) = 0.25*(blk%y_grid(i,j)+blk%y_grid(i-1,j)+&
+             & blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
+        blk%zbot(i,j) = 0.25*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j)+&
+             & blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
+     END DO
+  END DO
+  ! now take care of the edges of the grid
+  ! remember that the c.v.'s have an extra i,j line than the grid
+  i=i_index_min
+  DO j= j_index_min + 1, blk%ymax + j_index_extra - 1
+     blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i,j-1))
+     blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i,j-1))
+     blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i,j-1))
+  END DO
+  
+  i= blk%xmax+i_index_extra
+  DO j= j_index_min + 1, blk%ymax + j_index_extra - 1
+     blk%x(i,j) = 0.5*(blk%x_grid(i-1,j)+blk%x_grid(i-1,j-1))
+     blk%y(i,j) = 0.5*(blk%y_grid(i-1,j)+blk%y_grid(i-1,j-1))
+     blk%zbot(i,j) = 0.5*(blk%zbot_grid(i-1,j)+blk%zbot_grid(i-1,j-1))
+  END DO
+  
+  j=j_index_min
+  DO i = i_index_min + 1, blk%xmax + i_index_extra - 1
+     blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i-1,j))
+     blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i-1,j))
+     blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j))
+  END DO
+  
+  j= blk%ymax+j_index_extra
+  DO i = i_index_min + 1, blk%xmax + i_index_extra - 1
+     blk%x(i,j) = 0.5*(blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
+     blk%y(i,j) = 0.5*(blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
+     blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
+  END DO
+  
+  ivec = (/i_index_min, i_index_min,&
+       &blk%xmax + i_index_extra, blk%xmax+i_index_extra/)
+  jvec = (/j_index_min, blk%ymax+j_index_extra,&
+       &j_index_min,blk%ymax+j_index_extra/)
+  ivec2 = (/i_index_min,i_index_min,&
+       &blk%xmax+i_index_extra-1,blk%xmax+i_index_extra-1/)
+  jvec2 = (/j_index_min,blk%ymax+j_index_extra-1,&
+       &j_index_min,blk%ymax+j_index_extra-1/)
+  blk%x(ivec,jvec) = blk%x_grid(ivec2,jvec2)
+  blk%y(ivec,jvec) = blk%y_grid(ivec2,jvec2)
+  blk%zbot(ivec,jvec) = blk%zbot_grid(ivec2,jvec2)
+
+END SUBROUTINE interp_grid
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE fillghost_hydro
@@ -1011,29 +1207,68 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   TYPE (bc_spec_struct), INTENT(IN) :: bc
 
   INTEGER :: n, cells, concells, fcells
-  INTEGER :: i, j, ju, jbeg, jend
-  INTEGER :: conjbeg, conjend, coni, conj
+  INTEGER :: i, j, iu, ju
+  INTEGER :: conjbeg, conjend, conj, jbeg, jend
+  INTEGER :: conibeg, coniend, coni, ibeg, iend
+  LOGICAL :: side
   DOUBLE PRECISION :: carea, cflux, farea
+  CHARACTER (LEN=1024) :: msg
   
-  SELECT CASE (bc%bc_loc)
-  CASE ("US")
-     i = 1
-     coni = cblk%xmax
-  CASE ("DS")
-     i = blk%xmax + 1
-     coni = 2
-  END SELECT
-
   DO n = 1, bc%num_cell_pairs
   
-     jbeg = bc%start_cell(n)+1
-     jend = bc%end_cell(n)+1
-     
-     conjbeg = bc%con_start_cell(n)+1
-     conjend = bc%con_end_cell(n)+1
-
-     cells = jend - jbeg + 1
-     concells = conjend - conjbeg + 1
+     SELECT CASE (bc%bc_loc)
+     CASE ("US")
+        ibeg = 1
+        iend = 1
+        conibeg = cblk%xmax
+        coniend = cblk%xmax
+        jbeg = bc%start_cell(n)+1
+        jend = bc%end_cell(n)+1
+        conjbeg = bc%con_start_cell(n)+1
+        conjend = bc%con_end_cell(n)+1
+        cells = jend - jbeg + 1
+        concells = conjend - conjbeg + 1
+        side = .FALSE.
+     CASE ("DS")
+        ibeg = blk%xmax + 1
+        iend = blk%xmax + 1
+        conibeg = 2
+        coniend = 2
+        jbeg = bc%start_cell(n)+1
+        jend = bc%end_cell(n)+1
+        conjbeg = bc%con_start_cell(n)+1
+        conjend = bc%con_end_cell(n)+1
+        cells = jend - jbeg + 1
+        concells = conjend - conjbeg + 1
+        side = .FALSE.
+     CASE ("RB")
+        ibeg = bc%start_cell(n)+1
+        iend = bc%end_cell(n)+1
+        conibeg = bc%con_start_cell(n)+1
+        coniend = bc%con_end_cell(n)+1
+        jbeg = 1
+        jend = 1
+        conjbeg = cblk%ymax
+        conjend = cblk%ymax
+        cells = iend - ibeg + 1
+        concells = coniend - conibeg + 1
+        side = .TRUE.
+     CASE ("LB")
+        ibeg = bc%start_cell(n)+1
+        iend = bc%end_cell(n)+1
+        conibeg = bc%con_start_cell(n)+1
+        coniend = bc%con_end_cell(n)+1
+        jbeg = blk%ymax+1
+        jend = blk%ymax+1
+        conjbeg = 2
+        conjend = 2
+        cells = iend - ibeg + 1
+        concells = coniend - conibeg + 1
+        side = .TRUE.
+     CASE DEFAULT
+        WRITE (msg, *) 'fillghost_hydro: invalid block side "', TRIM(bc%bc_loc), '"'
+        CALL error_message(msg)
+     END SELECT
 
      IF (cells .EQ. concells) THEN
 
@@ -1041,13 +1276,17 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         ! boundary, just copy the state variables from the connected
         ! cells
 
-        conj = conjbeg
-        DO j = jbeg, jend
-           blk%uvel(i,j) = cblk%uvel(coni, conj)
-           blk%vvel(i,j) = cblk%vvel(coni, conj)
-           blk%depth(i,j) = cblk%depth(coni, conj)
-           blk%isdry(i,j) = cblk%isdry(coni, conj)
-           conj = conj + 1
+        coni = conibeg
+        DO i = ibeg, iend
+           conj = conjbeg
+           DO j = jbeg, jend
+              blk%uvel(i,j) = cblk%uvel(coni, conj)
+              blk%vvel(i,j) = cblk%vvel(coni, conj)
+              blk%depth(i,j) = cblk%depth(coni, conj)
+              blk%isdry(i,j) = cblk%isdry(coni, conj)
+              conj = conj + 1
+           END DO
+           coni = coni + 1
         END DO
            
      ELSE IF (cells .GT. concells) THEN
@@ -1058,52 +1297,88 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
 
         fcells = cells/concells
 
-        ! The first lateral velocity is just copied.
-
-        blk%vvel(i,jbeg - 1) = cblk%vvel(coni,conjbeg - 1)
+        IF (ibeg .EQ. iend) THEN
+           blk%vvel(ibeg,jbeg-1) = cblk%vvel(conibeg,conjbeg-1)
+        ELSE 
+           blk%vvel(ibeg-1,jbeg) = cblk%vvel(conibeg-1,conjbeg)
+        END IF
 
                                 ! we need to do the depth first so
                                 ! that flow area calculations are
                                 ! accurate
-        
-        DO j = jbeg, jend
-           conj = conjbeg + (j - jbeg)/fcells
 
+        DO i = ibeg, iend
+           coni = conibeg + (i - ibeg)/fcells
+           DO j = jbeg, jend
+              conj = conjbeg + (j - jbeg)/fcells
+           
                                 ! all the fine ghost cells are dry if
                                 ! the neighboring coarse cell is dry
 
-           blk%isdry(i,j) = cblk%isdry(coni,conj)
+              blk%isdry(i,j) = cblk%isdry(coni,conj)
 
-           blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
-           blk%depth(i,j) = blk%wsel(i,j)  - blk%zbot(i,j)
+              blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
+              blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+              IF (do_wetdry) THEN
+                 blk%wsel(i,j) = MAX(blk%wsel(i,j), blk%zbot(i,j))
+                 blk%depth(i,j) = MAX(blk%depth(i,j), dry_zero_depth)
+                 blk%isdry(i,j) = blk%isdry(i,j) .OR. (blk%depth(i,j) .LE. dry_depth)
+              END IF
 
-                                ! linearly interpolate v within the
+
+                                ! linearly interpolate cross vel within the
                                 ! neighboring coarse cell
 
-           blk%vvel(i,j) = (cblk%vvel(coni, conj) - cblk%vvel(coni, conj-1))*&
-                &(DBLE(j - jbeg) + 1)/DBLE(fcells) + cblk%vvel(coni, conj-1)
-
+              IF (ibeg .EQ. iend) THEN
+                 blk%vvel(i,j) = (cblk%vvel(coni, conj) - cblk%vvel(coni, conj-1))*&
+                      &(DBLE(MOD(j - jbeg + 1, fcells)))/DBLE(fcells) + cblk%vvel(coni, conj-1)
+              ELSE 
+                 blk%uvel(i,j) = (cblk%uvel(coni, conj) - cblk%uvel(coni-1, conj))*&
+                      &(DBLE(MOD(i - ibeg + 1, fcells)))/DBLE(fcells) + cblk%uvel(coni-1, conj)
+              END IF
+           END DO
         END DO
 
                                 ! now we can calculate the total local
                                 ! flow area and u
-
-        DO conj = conjbeg, conjend
-
-           IF (i .GT. 2) THEN
-              cflux = uflux(cblk, coni-1, conj, conj)
-           ELSE
-              cflux = uflux(cblk, coni, conj, conj)
-           END IF
-           ju = jbeg + (conj - conjbeg)*fcells
-
-           carea = uarea(blk, i, ju, ju + fcells - 1)
-
-           DO j = ju, ju + fcells - 1
-              blk%uvel(i,j) = cflux/carea
+        
+        IF (ibeg .EQ. iend) THEN
+           coni = conibeg
+           DO conj = conjbeg, conjend
+              IF (ibeg .GT. 2) THEN
+                 cflux = uflux(cblk, coni, conj, conj)
+              ELSE
+                 cflux = uflux(cblk, coni, conj, conj)
+              END IF
+              ju = jbeg + (conj - conjbeg)*fcells
+              carea = uarea(blk, ibeg, ju, ju + fcells - 1)
+              DO j = ju, ju + fcells - 1
+                 IF (carea .GT. 0.0) THEN
+                    blk%uvel(ibeg,j) = cflux/carea
+                 ELSE 
+                    blk%uvel(ibeg,j) = 0.0
+                 END IF
+              END DO
            END DO
-
-        END DO
+        ELSE
+           conj = conjbeg
+           DO coni = conibeg, coniend
+              IF (jbeg .GT. 2) THEN
+                 cflux = vflux(cblk, coni, coni, conj-1)
+              ELSE
+                 cflux = vflux(cblk, coni, coni, conj)
+              END IF
+              iu = ibeg + (coni - conibeg)*fcells
+              carea = varea(blk, iu, iu  + fcells - 1, jbeg)
+              DO i = iu, iu + fcells - 1
+                 IF (carea .GT. 0.0) THEN
+                    blk%vvel(i,jbeg) = cflux/carea
+                 ELSE 
+                    blk%vvel(i,jbeg) = 0.0
+                 END IF
+              END DO
+           END DO
+        END IF
 
      ELSE IF (cells .LT. concells) THEN
 
@@ -1116,55 +1391,99 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! this ghost cell is dry if all
                                 ! neighboring cells are dry, so
                                 ! initialize all here
-        blk%isdry(i,jbeg:jend) = .FALSE.
+        blk%isdry(ibeg:iend,jbeg:jend) = .FALSE.
 
-                                ! copy the first v value
+                                ! copy the first cross vel value
 
-        blk%vvel(i,jbeg-1) = cblk%vvel(coni, conjbeg-1)
+        IF (ibeg .EQ. iend) THEN
+           blk%vvel(ibeg, jbeg-1) = cblk%vvel(conibeg, conjbeg-1)
+        ELSE
+           blk%uvel(ibeg-1, jbeg) = cblk%uvel(conibeg-1, conjbeg)
+        END IF
 
-        conj = conjbeg
-        DO j = jbeg, jend
-
-                                ! copy next v value
-
-           blk%vvel(i,j) = cblk%vvel(coni, conj + fcells - 1)
+        DO i = ibeg, iend
+           coni = conibeg + (i - ibeg)*fcells
+           DO j = jbeg, jend
+              conj = conjbeg + (j - jbeg)*fcells
 
                                 ! interpolate depth at the ghost cell
                                 ! centroid, using the closest
                                 ! neighboring cell as a hint
 
-           blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), &
-                &coni, conj + fcells/2)
-           blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+              blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), &
+                   &coni, conj + fcells/2)
+              blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+              IF (do_wetdry) THEN
+                 blk%wsel(i,j) = MAX(blk%wsel(i,j), blk%zbot(i,j))
+                 blk%depth(i,j) = MAX(blk%depth(i,j), dry_zero_depth)
+              END IF
+
+              IF (ibeg .EQ. iend) THEN
+
+                                ! copy next cross v value
+                 blk%vvel(i,j) = cblk%vvel(coni, conj + fcells - 1)
 
                                 ! compute u using fluxes
-           IF (i .GT. 2) THEN
-              carea = uarea(cblk, coni-1, conj, conj + fcells - 1)
-           ELSE 
-              carea = uarea(cblk, coni, conj, conj + fcells - 1)
-           END IF
-           IF (carea .GT. 0.0) THEN
-              cflux = uflux(cblk, coni, conj, conj + fcells - 1)
-              blk%uvel(i,j) = cflux/carea
-           ELSE 
-              blk%uvel(i,j) = 0.0
-           END IF
+                 IF (ibeg .GT. 2) THEN
+                    cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+                 ELSE 
+                    cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+                 END IF
+                 carea = uarea(blk, i, j, j)
+                 IF (carea .GT. 0.0) THEN
+                    blk%uvel(i,j) = cflux/carea
+                 ELSE 
+                    blk%uvel(i,j) = 0.0
+                 END IF
+                 
+              ELSE 
+                 blk%uvel(i,j) = cblk%uvel(coni + fcells - 1, conj)
+
+                 carea = varea(blk, i, i, j)
+                 IF (jbeg .GT. 2) THEN
+                    cflux = vflux(cblk, coni, coni + fcells - 1, conj-1)
+                 ELSE 
+                    cflux = vflux(cblk, coni, coni + fcells - 1, conj)
+                 END IF
+                 IF (carea .GT. 0.0) THEN
+                    blk%vvel(i,j) = cflux/carea
+                 ELSE 
+                    blk%vvel(i,j) = 0.0
+                 END IF
+              END IF
 
                                 ! check wetdry, all neighboring cells
                                 ! must be dry for this cell to be dry
-           blk%isdry(i,j) = (blk%isdry(i,j) .OR. cblk%isdry(coni, conj))
+              blk%isdry(i,j) = (blk%isdry(i,j) .OR. cblk%isdry(coni, conj))
 
-           conj = conj + fcells
+           END DO
         END DO
      END IF
 
-     blk%uold(i,jbeg:jend) = blk%uvel(i,jbeg:jend)
-     blk%ustar(i,jbeg:jend) = blk%uvel(i,jbeg:jend)
-     blk%vold(i,jbeg-1:jend) = blk%vvel(i,jbeg-1:jend)
-     blk%vstar(i,jbeg-1:jend) = blk%vvel(i,jbeg-1:jend)
-     blk%depthold(i,jbeg:jend) = blk%depth(i,jbeg:jend)
-     blk%dstar(i,jbeg:jend) = blk%depth(i,jbeg:jend)
-     blk%dp(i,jbeg:jend) = 0.0
+     IF (.NOT. side) THEN
+        blk%uold(ibeg:iend,jbeg:jend) = blk%uvel(ibeg:iend,jbeg:jend)
+        blk%ustar(ibeg:iend,jbeg:jend) = blk%uvel(ibeg:iend,jbeg:jend)
+        blk%vold(ibeg:iend,jbeg-1:jend) = blk%vvel(ibeg:iend,jbeg-1:jend)
+        blk%vstar(ibeg:iend,jbeg-1:jend) = blk%vvel(ibeg:iend,jbeg-1:jend)
+        IF (ibeg .EQ. 1) THEN
+           blk%cell(ibeg+1,jbeg:jend)%xtype = CELL_NORMAL_TYPE
+        ELSE
+           blk%cell(ibeg-1,jbeg:jend)%xtype = CELL_NORMAL_TYPE
+        END IF
+     ELSE 
+        blk%uold(ibeg-1:iend,jbeg:jend) = blk%uvel(ibeg-1:iend,jbeg:jend)
+        blk%ustar(ibeg-1:iend,jbeg:jend) = blk%uvel(ibeg-1:iend,jbeg:jend)
+        blk%vold(ibeg:iend,jbeg:jend) = blk%vvel(ibeg:iend,jbeg:jend)
+        blk%vstar(ibeg:iend,jbeg:jend) = blk%vvel(ibeg:iend,jbeg:jend)
+        IF (jbeg .EQ. 1) THEN
+           blk%cell(ibeg:iend,jbeg+1)%ytype = CELL_NORMAL_TYPE
+        ELSE
+           blk%cell(ibeg:iend,jbeg-1)%ytype = CELL_NORMAL_TYPE
+        END IF
+     END IF
+     blk%depthold(ibeg:iend,jbeg:jend) = blk%depth(ibeg:iend,jbeg:jend)
+     blk%dstar(ibeg:iend,jbeg:jend) = blk%depth(ibeg:iend,jbeg:jend)
+     blk%dp(ibeg:iend,jbeg:jend) = 0.0
   END DO
 
 
@@ -1183,29 +1502,63 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
   TYPE (scalar_bc_spec_struct), INTENT(IN) :: bc
 
   INTEGER :: n, cells, concells, fcells
-  INTEGER :: i, j, jbeg, jend
-  INTEGER :: conjbeg, conjend, coni, conj
+  INTEGER :: i, ibeg, iend, coni, conibeg, coniend
+  INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
   DOUBLE PRECISION :: carea, cflux, farea
+  LOGICAL :: side
   
-  SELECT CASE (bc%bc_loc)
-  CASE ("US")
-     i = 1
-     coni = cblk%xmax
-  CASE ("DS")
-     i = blk%xmax + 1
-     coni = 2
-  END SELECT
-
   DO n = 1, bc%num_cell_pairs
-  
-     jbeg = bc%start_cell(n)+1
-     jend = bc%end_cell(n)+1
-     
-     conjbeg = bc%con_start_cell(n)+1
-     conjend = bc%con_end_cell(n)+1
 
-     cells = jend - jbeg + 1
-     concells = conjend - conjbeg + 1
+     side = .FALSE.
+
+     SELECT CASE (bc%bc_loc)
+     CASE ("US")
+        ibeg = 1
+        iend = ibeg
+        conibeg = cblk%xmax
+        coniend = conibeg
+        jbeg = bc%start_cell(n)+1
+        jend = bc%end_cell(n)+1
+        conjbeg = bc%con_start_cell(n)+1
+        conjend = bc%con_end_cell(n)+1
+        cells = jend - jbeg + 1
+        concells = conjend - conjbeg + 1
+     CASE ("DS")
+        ibeg = blk%xmax + 1
+        iend = ibeg
+        conibeg = 2
+        coniend = conibeg
+        jbeg = bc%start_cell(n)+1
+        jend = bc%end_cell(n)+1
+        conjbeg = bc%con_start_cell(n)+1
+        conjend = bc%con_end_cell(n)+1
+        cells = jend - jbeg + 1
+        concells = conjend - conjbeg + 1
+     CASE ("RB")
+        ibeg = bc%start_cell(n)+1
+        iend = bc%end_cell(n)+1
+        conibeg = bc%con_start_cell(n)+1
+        coniend = bc%con_end_cell(n)+1
+        jbeg = 1
+        jend = jbeg
+        conjbeg = cblk%ymax
+        conjend = conjbeg
+        cells = iend - ibeg + 1
+        concells = coniend - conibeg + 1
+        side = .TRUE.
+     CASE ("LB")
+        ibeg = bc%start_cell(n)+1
+        iend = bc%end_cell(n)+1
+        conibeg = bc%con_start_cell(n)+1
+        coniend = bc%con_end_cell(n)+1
+        jbeg = blk%ymax + 1
+        jend = jbeg
+        conjbeg = 2
+        conjend = conjbeg
+        cells = iend - ibeg + 1
+        concells = coniend - conibeg + 1
+        side = .TRUE.
+     END SELECT
 
      IF (cells .EQ. concells) THEN
 
@@ -1213,10 +1566,14 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         ! boundary, just copy the state variables from the connected
         ! cells
 
-        conj = conjbeg
-        DO j = jbeg, jend
-           sclr%conc(i, j) = csclr%conc(coni, conj)
-           conj = conj + 1
+        coni = conibeg
+        DO i = ibeg, iend
+           conj = conjbeg
+           DO j = jbeg, jend
+              sclr%conc(i, j) = csclr%conc(coni, conj)
+              conj = conj + 1
+           END DO
+           coni = coni + 1
         END DO
            
      ELSE IF (cells .GT. concells) THEN
@@ -1226,12 +1583,15 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
 
         fcells = cells/concells
 
-        DO j = jbeg, jend
-           conj = conjbeg + (j - jbeg - 1)/fcells
+        DO i = ibeg, iend
+           coni = conibeg + (i - ibeg - 1)/fcells
+           DO j = jbeg, jend
+              conj = conjbeg + (j - jbeg - 1)/fcells
 
-           sclr%conc(i,j) = scalar_interp(cblk, csclr, &
-                &blk%x(i,j), blk%y(i,j), coni, conj)
+              sclr%conc(i,j) = scalar_interp(cblk, csclr, &
+                   &blk%x(i,j), blk%y(i,j), coni, conj)
 
+           END DO
         END DO
 
      ELSE IF (cells .LT. concells) THEN
@@ -1240,18 +1600,32 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
 
         fcells = concells/cells
 
+        DO i = ibeg, iend
+           coni = conibeg + (i - ibeg)*fcells
+           DO j = jbeg, jend
+              conj = conjbeg + (j - jbeg)*fcells
 
-        conj = conjbeg
-
-        DO j = jbeg, jend
-
-           sclr%conc(i,j) = scalar_interp(cblk, csclr, &
-                &blk%x(i,j), blk%y(i,j), coni, conj + fcells/2)
-
-           conj = conj + fcells
+              sclr%conc(i,j) = scalar_interp(cblk, csclr, &
+                   &blk%x(i,j), blk%y(i,j), coni, conj + fcells/2)
+           END DO
         END DO
      END IF
-     sclr%concold(i,jbeg:jend) = sclr%conc(i,jbeg:jend)
+
+
+     sclr%concold(ibeg:iend,jbeg:jend) = sclr%conc(ibeg:iend,jbeg:jend)
+     IF (side) THEN 
+        IF (jbeg .EQ. 1) THEN
+           sclr%cell(ibeg:iend,jbeg+1)%ytype = SCALAR_NORMAL_TYPE
+        ELSE 
+           sclr%cell(ibeg:iend,jend-1)%ytype = SCALAR_NORMAL_TYPE
+        END IF
+     ELSE 
+        IF (ibeg .EQ. 1) THEN
+           sclr%cell(ibeg+1,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
+        ELSE 
+           sclr%cell(ibeg-1,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
+        END IF
+     END IF
   END DO
 
 
@@ -1317,156 +1691,6 @@ DOUBLE PRECISION FUNCTION scalar_interp(blk, sclr, x, y, ihint, jhint)
 END FUNCTION scalar_interp
 
 
-! ----------------------------------------------------------------
-! SUBROUTINE metrics
-! Compute the metric coefficients for the block. Depending on the
-! metric coeff. and location use either the grid (x,y) or the node
-! (x,y)
-! ----------------------------------------------------------------
-SUBROUTINE metrics(blk)
-
-  IMPLICIT NONE
-
-  TYPE (block_struct) :: blk
-
-  INTEGER :: imin, imax, jmin, jmax, i, j
-
-  imin = i_index_min
-  imax = blk%xmax+i_index_extra
-  jmin = j_index_min
-  jmax = blk%ymax+j_index_extra
-
-   ! metric coeff. 2 on the u face of the c.v.
-
-   DO i=imin, imax-1
-      DO j=jmin+1, jmax-1
-         blk%hu2(i,j) = & 
-              SQRT((blk%x_grid(i,j) - blk%x_grid(i,j-1))**2 + &
-              (blk%y_grid(i,j) - blk%y_grid(i,j-1))**2)
-      END DO
-   END DO
-
-   ! metric coeff 1 on the u face of the c.v.
-
-   DO i=imin+1, imax-i_index_extra
-      DO j=jmin, jmax
-         blk%hu1(i,j) = &
-              SQRT((blk%x(i+1,j) - blk%x(i,j))**2 + &
-              (blk%y(i+1,j) - blk%y(i,j))**2)
-      END DO
-   END DO
-
-   ! on the edge it's only a half-distance
-
-   i=imin
-   DO j=jmin, jmax
-      blk%hu1(i,j) = &
-           SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
-           ((blk%y(i+1,j) - blk%y(i,j)))**2)
-   END DO
-   i=imax-1
-   DO j=jmin, jmax
-      blk%hu1(i,j) = &
-           SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
-           ((blk%y(i+1,j) - blk%y(i,j)))**2)
-   END DO
-   
-   ! metric coeff. 1 on the v face of the c.v.
-
-   DO i=imin+1, imax-1
-      DO j=jmin, jmax - 1
-         blk%hv1(i,j) = &
-              SQRT((blk%x_grid(i,j) - blk%x_grid(i-1,j))**2 + &
-              (blk%y_grid(i,j) - blk%y_grid(i-1,j))**2) 
-      END DO
-   END DO
-
-   ! metric coeff. 2 on the v face of the c.v.
-
-   DO i=imin, imax
-      DO j=jmin+1, jmax-j_index_extra-1
-         blk%hv2(i,j) = &
-              SQRT((blk%x(i,j+1) - blk%x(i,j))**2 + &
-              (blk%y(i,j+1) - blk%y(i,j))**2)
-      END DO
-   END DO
-
-   ! on the edge it's only a half-distance
-
-   j = jmin
-   DO i=imin+1, imax-1
-      blk%hv2(i,j) = &
-           SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
-           ((blk%y(i,j+1) - blk%y(i,j)))**2)
-   END DO
-   j = jmax - 1
-   DO i=imin+1, imax-1
-      blk%hv2(i,j) = &
-           SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
-           ((blk%y(i,j+1) - blk%y(i,j)))**2)
-   END DO
-
-   ! compute metric tensor and derivatives at the nodal points hp1, hp2
-
-   DO i = imin+1, imax-1
-      DO j=jmin+1, jmax-1
-         blk%x_eta(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i-1,j) & 
-              - blk%x_grid(i,j-1) - blk%x_grid(i-1,j-1))
-         blk%y_eta(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i-1,j) & 
-              - blk%y_grid(i,j-1) - blk%y_grid(i-1,j-1))
-         blk%x_xsi(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i,j-1) & 
-              - blk%x_grid(i-1,j) - blk%x_grid(i-1,j-1))
-         blk%y_xsi(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i,j-1) & 
-              - blk%y_grid(i-1,j) - blk%y_grid(i-1,j-1))
-      END DO
-   END DO
-   i=imin
-   DO j=jmin+1, jmax-1
-      blk%x_eta(i,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
-      blk%y_eta(i,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
-   END DO
-   i=imax-1
-   DO j=jmin+1, jmax-1
-      blk%x_eta(i+1,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
-      blk%y_eta(i+1,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
-   END DO
-   j = jmin
-   DO i=imin+1, imax-1
-      blk%x_xsi(i,j) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
-      blk%y_xsi(i,j) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
-   END DO
-   j=jmax-1
-   DO i=imin+1, imax-1
-      blk%x_xsi(i,j+1) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
-      blk%y_xsi(i,j+1) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
-   END DO
-
-   blk%x_xsi(imin,:) = blk%x_xsi(imin+1,:)
-   blk%x_xsi(imax,:) = blk%x_xsi(imax-1,:)
-
-   blk%y_xsi(imin,:) = blk%y_xsi(imin+1,:)
-   blk%y_xsi(imax,:) = blk%y_xsi(imax-1,:)
-
-   blk%x_eta(:,jmin) = blk%x_eta(:,jmin+1)
-   blk%x_eta(:,jmax) = blk%x_eta(:,jmax-1)
-
-   blk%y_eta(:,jmin) = blk%y_eta(:,jmin+1)
-   blk%y_eta(:,jmax) = blk%y_eta(:,jmax-1)
-
-
-   blk%hp1 = SQRT(blk%x_xsi**2 + blk%y_xsi**2)
-   blk%hp2 = SQRT(blk%x_eta**2 + blk%y_eta**2)
-  
-   ! compute nonorthogonal part of the metric tensor as a check on grid quality
-
-   blk%gp12 = blk%x_xsi*blk%x_eta + blk%y_xsi*blk%y_eta
-	
-
-
-END SUBROUTINE metrics
-
-
-
 !#################################################################################
 !---------------------------------------------------------------------------------
 !
@@ -1486,19 +1710,18 @@ SUBROUTINE hydro(status_flag)
   DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
   DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
-  
-  INTEGER :: k, status_flag, x_beg, y_beg
+
+  INTEGER :: k, status_flag, x_beg, y_beg, num_bc, i, j, junk
   LOGICAL :: alldry
 
   DOUBLE PRECISION :: barea, maxdrain, sc, sp
-
-  !-------------------------------------------------------------------------------------------------------
-  ! format definitions all placed here
-2000 FORMAT(a80)
-1000 FORMAT(50(f12.4,2x))
-1020 FORMAT(2(f12.4,2x),50(f12.6,2x))
-2010 FORMAT('Simulation Run on Date - ',i2,'-',i2,'-',i4,' at time ',i2,':',i2,':',i2/)
-
+  DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
+  DOUBLE PRECISION :: h1_eta_e, h1_eta_w, h1_eta_n, h1_eta_s	! e.g., h1_eta_p is the partial deriv
+  DOUBLE PRECISION :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
+  DOUBLE PRECISION :: curve_1,curve_2,curve_3,curve_4,curve_5,curve_6,curve_7	! curvature terms
+  DOUBLE PRECISION :: k_p,k_e,k_w,k_n,k_s 
+  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
+  DOUBLE PRECISION, EXTERNAL :: afunc
 
   ! Assign U,V,D BCs for this time
   ! set U boundary conditions for this time
@@ -1516,13 +1739,9 @@ SUBROUTINE hydro(status_flag)
         x_end = block(iblock)%xmax
         y_end = block(iblock)%ymax
 
-        block(iblock)%isdead(:,:)%u = .FALSE.
-        block(iblock)%isdead(:,:)%v = .FALSE.
-        block(iblock)%isdead(:,:)%p = .FALSE.
-        block(iblock)%xsource = 0.0
-
         ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
 
+        CALL default_hydro_bc(block(iblock))
 
         ! loop over the total number of bc specifications
         DO num_bc = 1, block_bc(iblock)%num_bc
@@ -1541,7 +1760,7 @@ SUBROUTINE hydro(status_flag)
         IF (do_wetdry) THEN
            alldry = .TRUE.
            DO i=1,x_end+1
-              DO j=2,y_end
+              DO j=1,y_end+1
                  IF (block(iblock)%isdry(i,j)) THEN
                     block(iblock)%isdead(i  , j  )%p = .TRUE.
                     block(iblock)%isdead(i-1, j  )%u = .TRUE.
@@ -1558,237 +1777,7 @@ SUBROUTINE hydro(status_flag)
         !----------------------------------------------------------------------------
         ! U momentum  solution
 
-        ! compute U momentum discretization equation coefficients
-        DO i=x_beg, x_end
-           DO j=y_beg,y_end
-              hp1 = block(iblock)%hu1(i,j) 
-              hp2 = block(iblock)%hu2(i,j)
-              he1 = block(iblock)%hp1(i+1,j)
-              he2 = block(iblock)%hp2(i+1,j)
-              hw1 = block(iblock)%hp1(i,j)
-              hw2 = block(iblock)%hp2(i,j)
-              hs1 = 0.50*(block(iblock)%hv1(i,j-1) + block(iblock)%hv1(i+1,j-1))
-              hs2 = 0.50*(block(iblock)%hv2(i,j-1) + block(iblock)%hv2(i+1,j-1))
-              hn1 = 0.50*(block(iblock)%hv1(i,j) + block(iblock)%hv1(i+1,j))
-              hn2 = 0.50*(block(iblock)%hv2(i,j) + block(iblock)%hv2(i+1,j))
-              
-              v_p = 0.25*(block(iblock)%vvel(i,j) + block(iblock)%vvel(i+1,j) &
-                   + block(iblock)%vvel(i,j-1) + block(iblock)%vvel(i+1,j-1))
-              k_e = block(iblock)%eddy(i,j)   ! replace with geometric weighted k's
-              k_w = block(iblock)%eddy(i,j)
-              k_n = block(iblock)%eddy(i,j)
-              k_s = block(iblock)%eddy(i,j)
-              k_p = block(iblock)%eddy(i,j)
-              
-              depth_e = block(iblock)%depth(i+1,j)
-              zbot_e = block(iblock)%zbot(i+1,j)
-              depth_w = block(iblock)%depth(i,j)
-              zbot_w = block(iblock)%zbot(i,j)
-              depth_p = 0.5*(depth_e + depth_w)
-              depth_n = 0.25*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1) &
-                   + block(iblock)%depth(i+1,j)+block(iblock)%depth(i+1,j+1))
-              depth_s = 0.25*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j-1) &
-                   + block(iblock)%depth(i+1,j)+block(iblock)%depth(i+1,j-1))
-              
-              IF(j == 2)	depth_s = 0.5*(block(iblock)%depth(i,j-1)+block(iblock)%depth(i+1,j-1))
-              IF(j == y_end) depth_n = 0.5*(block(iblock)%depth(i,j+1)+block(iblock)%depth(i+1,j+1))
-              
-              flux_e = he2*0.5*(block(iblock)%uvel(i,j)+ block(iblock)%uvel(i+1,j))*depth_e
-              flux_w = hw2*0.5*(block(iblock)%uvel(i,j)+ block(iblock)%uvel(i-1,j))*depth_w
-              flux_n = hn1*0.5*(block(iblock)%vvel(i,j)+ block(iblock)%vvel(i+1,j))*depth_n
-              flux_s = hs1*0.5*(block(iblock)%vvel(i,j)+ block(iblock)%vvel(i-1,j))*depth_s
-              diffu_e =  2.0*k_e*depth_e*he2/he1
-              diffu_w =  2.0*k_w*depth_w*hw2/hw1
-              diffu_n =  k_n*depth_n*hn1/hn2
-              diffu_s =  k_s*depth_s*hs1/hs2
-              pec_e = flux_e/diffu_e
-              pec_w = flux_w/diffu_w
-              pec_n = flux_n/diffu_n
-              pec_s = flux_s/diffu_s
-              coeff%ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
-              coeff%aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
-              coeff%an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
-              coeff%as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
-              apo = hp1*hp2*0.5*(block(iblock)%depthold(i,j)+block(iblock)%depthold(i+1,j))/delta_t
-
-              coeff%source(i,j) = 0.0
-
-              !** U source term wind stress ***
-              wind_speed = sqrt(uvel_wind**2 + vvel_wind**2)
-              wind_drag_coeff = (0.8 + 0.065*wind_speed)*0.001 ! Wu(1982)
-              block(iblock)%windshear1(i,j) = density_air*wind_drag_coeff*uvel_wind*wind_speed
-              coeff%source(i,j) = coeff%source(i,j) + hp1*hp2*block(iblock)%windshear1(i,j)/density
-              
-              ! compute the cross term from bousinesq eddy viscosity this term appears
-              !	even in cartesian grids
-              cross_term = (depth_n*k_n)*(block(iblock)%vvel(i+1,j) - block(iblock)%vvel(i,j)) &
-                   - (depth_s*k_s)*(block(iblock)%vvel(i+1,j-1) - block(iblock)%vvel(i,j-1))
-              
-              coeff%source(i,j) =  coeff%source(i,j) + cross_term
-              
-              ! compute all the stuff for the curvature terms in a cartesian grid all
-              !	these terms should be zero because the gradients of the metric coeff
-              !	will be zero
-              ! compute derivatives of metric coeff
-              h1_eta_p = 0.5*(block(iblock)%hu1(i,j+1) - block(iblock)%hu1(i,j-1))
-              
-              h2_xsi_p = block(iblock)%hp2(i+1,j) - block(iblock)%hp2(i,j) 
-              
-              h1_eta_e = (block(iblock)%hv1(i+1,j) - block(iblock)%hv1(i+1,j-1))
-              h1_eta_w = (block(iblock)%hv1(i,j) - block(iblock)%hv1(i,j-1))
-              
-              IF((j/=2).AND.(j/=y_end))THEN
-                 h1_eta_n = block(iblock)%hu1(i,j+1) - block(iblock)%hu1(i,j)
-                 h1_eta_s = block(iblock)%hu1(i,j) - block(iblock)%hu1(i,j-1)
-                 h2_xsi_n = block(iblock)%hv2(i+1,j) - block(iblock)%hv2(i,j)
-                 h2_xsi_s = block(iblock)%hv2(i+1,j-1) - block(iblock)%hv2(i,j-1)
-              ELSE IF(j==2)THEN
-                 
-                 h1_eta_s = 2.0*(block(iblock)%hu1(i,j) - block(iblock)%hu1(i,j-1))
-              ELSE IF(j == y_end)THEN
-                 h1_eta_n = 2.0*(block(iblock)%hu1(i,j+1) - block(iblock)%hu1(i,j))
-                 
-              END IF
-              
-              u_p = block(iblock)%uvel(i,j)
-              u_n = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i,j+1))
-              u_s = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i,j-1))
-              v_e = 0.5*(block(iblock)%vvel(i+1,j)+block(iblock)%vvel(i+1,j-1))
-              v_w = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-              v_n = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i+1,j))
-              v_s = 0.5*(block(iblock)%vvel(i,j-1)+block(iblock)%vvel(i+1,j-1))
-              
-              IF(j == y_end)THEN
-                 h2_xsi_p = 2.0*h2_xsi_p
-                 h1_eta_e = h1_eta_p
-              END IF
-              
-              ! compute each part of the U curvature terms
-              curve_1 = -depth_p * u_p * v_p * h1_eta_p
-              curve_2 = depth_p * v_p * v_p* h2_xsi_p
-              curve_3 = (2.0 * k_e * depth_e * v_e/he1) * h1_eta_e &
-                   - (2.0 * k_w * depth_w * v_w/hw1) * h1_eta_w
-              curve_4 = -(depth_n * k_n * v_n/hn2) * h2_xsi_n &
-                   + (depth_s * k_s * v_s/hs2) * h2_xsi_s
-              curve_5 = -(depth_n * k_n * u_n/hn2) * h1_eta_n &
-                   + (depth_s * k_s * u_s/hs2) * h1_eta_s
-              curve_6 = depth_p*k_p*h1_eta_p*((v_e - v_w)/hp1 - (v_p/(hp1*hp2))*(h2_xsi_p) &
-                   + (u_n - u_s)/hp2 - (u_p/(hp1*hp2))*(h1_eta_p))
-              curve_7 = -2.0*depth_p*k_p*h2_xsi_p*((v_n - v_s)/hp2 + (u_p/(hp1*hp2))*h2_xsi_p)
-              
-              coeff%source(i,j) =  coeff%source(i,j) + curve_1 + curve_2 + curve_3 &
-                   + curve_4 + curve_5 + curve_6 + curve_7
-              ! end of U curvature terms ---------------------------------------------
-              
-              
-              coeff%ap(i,j) = coeff%ae(i,j)+coeff%aw(i,j)+coeff%an(i,j)+coeff%as(i,j) + &
-                   &apo
-
-              !** Bed Shear Stress Linearization **
-
-              sc = 0.0
-              sp = 0.0
-              CALL linear_friction(block(iblock)%chezy(i,j), depth_p,&
-                   &block(iblock)%uvel(i,j), v_p, hp1*hp2, sc, sp)
-
-!!$              IF (do_wetdry .AND. depth_p .LE. dry_rewet_depth*2.0) THEN
-!!$                 dwsdx = ((depth_e + zbot_e) - (depth_w + zbot_w))/hp1
-!!$                 CALL shallow_v_nudge(block(iblock)%chezy(i,j), depth_p,&
-!!$                      &block(iblock)%uvel(i,j), v_p, dwsdx, sc, sp)
-!!$              END IF
-
-              coeff%source(i,j) = coeff%source(i,j) + sc
-              coeff%ap(i,j) = coeff%ap(i,j) + sp
-
-              IF (block(iblock)%isdead(i,j)%u) THEN
-
-                 ! force zero velocity when specified
-
-                 coeff%source(i,j) = coeff%source(i,j) + bigfactor*0.0
-                 coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg) THEN
-                 SELECT CASE (block(iblock)%cell(i,j)%type)
-                 CASE (CELL_BOUNDARY_TYPE)
-
-                    ! adjust for upstream boundary conditions
-
-                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
-                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
-                       coeff%aw(i,j) = 0.0
-                    CASE DEFAULT
-                       coeff%source(i,j) = coeff%source(i,j) + &
-                            &coeff%aw(i,j)*block(iblock)%uvel(i-1,j)
-                       coeff%aw(i,j) = 0.0
-                    END SELECT
-                 CASE DEFAULT
-                    coeff%source(i,j) = coeff%source(i,j) + &
-                         &coeff%aw(i,j)*block(iblock)%uvel(i-1,j)
-                    coeff%aw(i,j) = 0.0
-                 END SELECT
-              ELSE IF (i .EQ. x_end) THEN
-                 SELECT CASE (block(iblock)%cell(i,j)%type)
-                 CASE (CELL_BOUNDARY_TYPE)
-
-                    ! adjust for downstream boundary conditions
-                    
-                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL)
-                       coeff%source(i,j) = coeff%source(i,j) + &
-                            &bigfactor*block(iblock)%uvel(i+1,j)
-                       coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-                    CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
-                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
-                       coeff%ae(i,j) = 0.0
-                    END SELECT
-                 CASE DEFAULT
-                    coeff%source(i,j) = coeff%source(i,j) + &
-                         &coeff%ae(i,j)*block(iblock)%uvel(i+1,j)
-                    coeff%ae(i,j) = 0.0
-                 END SELECT
-              END IF
-
-              ! IF there is a wall blocking lateral flow, we need to
-              ! disconnect from the u cell on the other side (with a
-              ! slip condition)
-              IF ((block(iblock)%isdead(i,j)%v .OR. &
-                   &block(iblock)%isdead(i+1,j)%v) .AND. .NOT. &
-                   &block(iblock)%isdead(i,j+1)%u) THEN 
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%an(i,j)
-                 coeff%an(i,j) = 0.0
-              END IF
-              IF ((block(iblock)%isdead(i,j-1)%v .OR. &
-                   &block(iblock)%isdead(i+1,j-1)%v) .AND. .NOT. &
-                   &block(iblock)%isdead(i,j-1)%u) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%as(i,j)
-                 coeff%as(i,j) = 0.0
-              END IF
-
-              coeff%bp(i,j) = coeff%source(i,j) + apo*block(iblock)%uold(i,j) &
-                   - 0.5*grav*hp2*(depth_e**2 - depth_w**2) &
-                   - grav*hp2*depth_p*(block(iblock)%zbot(i+1,j) - block(iblock)%zbot(i,j))
-              
-              ! compute and store for use in pressure correction equation
-              
-              coeff%lud(i,j) = 0.5*grav*hp2*(depth_e+depth_w)/coeff%ap(i,j)
-
-           END DO
-        END DO
-
-        ! apply zero gradient condition on
-        ! left and right sides
-
-        coeff%ap(:,y_beg) = coeff%ap(:,y_beg) - coeff%as(:,y_beg)
-        coeff%as(:,y_beg) = 0.0
-  
-        coeff%ap(:,y_end) = coeff%ap(:,y_end) - coeff%an(:,y_end)
-        coeff%an(:,y_end) = 0.0
-
-        CALL solve_tdma(scalar_sweep, x_beg, x_end, y_beg, y_end, &
-             &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
-             &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
-             &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
-             &block(iblock)%ustar(x_beg:x_end,y_beg:y_end))
+        CALL uvel_solve(iblock, block(iblock), delta_t)
 
         ! end U momentum  solution
         !----------------------------------------------------------------------------
@@ -1796,383 +1785,25 @@ SUBROUTINE hydro(status_flag)
         
         !----------------------------------------------------------------------------
         ! V momentum  solution
-        
-        ! compute V Momentum discretization equation coefficients
-        DO i=x_beg,x_end
-           DO j=y_beg,y_end-1
-              hp1 = block(iblock)%hv1(i,j) 
-              hp2 = block(iblock)%hv2(i,j)
-              he1 = 0.50*(block(iblock)%hu1(i,j) + block(iblock)%hu1(i,j+1))
-              he2 = 0.50*(block(iblock)%hu2(i,j) + block(iblock)%hu2(i,j+1))
-              hw1 = 0.50*(block(iblock)%hu1(i-1,j) + block(iblock)%hu1(i-1,j+1))
-              hw2 = 0.50*(block(iblock)%hu2(i-1,j) + block(iblock)%hu2(i-1,j+1))
-              hs1 = block(iblock)%hp1(i,j)
-              hs2 = block(iblock)%hp2(i,j)
-              hn1 = block(iblock)%hp1(i,j+1)
-              hn2 = block(iblock)%hp2(i,j+1)
-              
-              u_p = 0.25*(block(iblock)%uvel(i,j) + block(iblock)%uvel(i-1,j) &
-                   + block(iblock)%uvel(i,j+1) + block(iblock)%uvel(i-1,j+1))
-              
-              k_e = block(iblock)%eddy(i,j)   ! replace with geometric weighted k's
-              k_w = block(iblock)%eddy(i,j)
-              k_n = block(iblock)%eddy(i,j)
-              k_s = block(iblock)%eddy(i,j)
-              k_p = block(iblock)%eddy(i,j)
-              
-              depth_n = block(iblock)%depth(i,j+1)
-              zbot_n = block(iblock)%zbot(i,j+1)
-              depth_s = block(iblock)%depth(i,j)
-              zbot_s = block(iblock)%zbot(i,j)
-              depth_p = 0.5*(depth_n + depth_s)
-              depth_e = 0.25*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1) &
-                   + block(iblock)%depth(i+1,j)+block(iblock)%depth(i+1,j+1))
-              depth_w = 0.25*(block(iblock)%depth(i,j)+block(iblock)%depth(i-1,j) &
-                   + block(iblock)%depth(i-1,j)+block(iblock)%depth(i-1,j+1))
-              
-              IF(i == 2) depth_w = 0.5*(block(iblock)%depth(i-1,j)+block(iblock)%depth(i-1,j+1))
-              IF(i == x_end) depth_e = 0.5*(block(iblock)%depth(i+1,j)+block(iblock)%depth(i+1,j+1))
-              
-              flux_e = he2*0.5*(block(iblock)%uvel(i,j)+ block(iblock)%uvel(i,j+1))*depth_e
-              flux_w = hw2*0.5*(block(iblock)%uvel(i-1,j)+ block(iblock)%uvel(i-1,j+1))*depth_w
-              flux_n = hn1*0.5*(block(iblock)%vvel(i,j)+ block(iblock)%vvel(i,j+1))*depth_n
-              flux_s = hs1*0.5*(block(iblock)%vvel(i,j)+ block(iblock)%vvel(i,j-1))*depth_s
-              diffu_e =  2.0*k_e*depth_e*he2/he1
-              diffu_w =  2.0*k_w*depth_w*hw2/hw1
-              diffu_n =  k_n*depth_n*hn1/hn2
-              diffu_s =  k_s*depth_s*hs1/hs2
-              pec_e = flux_e/diffu_e
-              pec_w = flux_w/diffu_w
-              pec_n = flux_n/diffu_n
-              pec_s = flux_s/diffu_s
-              coeff%ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
-              coeff%aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
-              coeff%an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
-              coeff%as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
-              apo = hp1*hp2*0.5*(block(iblock)%depthold(i,j)+block(iblock)%depthold(i,j+1))/delta_t
-              
-              coeff%source(i,j) = 0.0
-              
-              !** note V source term  wind stress ***
-              wind_speed = sqrt(uvel_wind**2 + vvel_wind**2)
-              wind_drag_coeff = (0.8 + 0.065*wind_speed)*0.001 ! Wu(1982)
-              block(iblock)%windshear2(i,j) = density_air*wind_drag_coeff*vvel_wind*wind_speed
-              coeff%source(i,j) = coeff%source(i,j) + hp1*hp2*block(iblock)%windshear2(i,j)/density
-              
-              
-              cross_term = (depth_e*k_e)*(block(iblock)%uvel(i,j+1) - block(iblock)%uvel(i,j)) &
-                   - (depth_w*k_w)*(block(iblock)%uvel(i-1,j+1) - block(iblock)%uvel(i-1,j))
-              
-              coeff%source(i,j) =  coeff%source(i,j) + cross_term
-              
-              ! compute all the stuff for the curvature terms; in a cartesian grid all
-              !	these terms should be zero because the gradients of the metric coeff
-              !	will be zero
-              ! compute derivatives of metric coeff
-              h1_eta_p = block(iblock)%hp1(i,j+1) - block(iblock)%hp1(i,j)
-              h2_xsi_p = 0.5*(block(iblock)%hv2(i+1,j) - block(iblock)%hv2(i-1,j))
-              
-              h2_xsi_n = block(iblock)%hu2(i,j+1) - block(iblock)%hu2(i-1,j+1)
-              h2_xsi_s = block(iblock)%hu2(i,j) - block(iblock)%hu2(i-1,j)
-!!$              IF((i /=2).AND.(i/=x_end))THEN
-                 h2_xsi_e = block(iblock)%hv2(i+1,j) - block(iblock)%hv2(i,j)
-                 h2_xsi_w = block(iblock)%hv2(i,j) - block(iblock)%hv2(i-1,j)
-                 h1_eta_e = block(iblock)%hu1(i,j+1) - block(iblock)%hu1(i,j)
-                 h1_eta_w = block(iblock)%hu1(i-1,j+1) - block(iblock)%hu1(i-1,j)
-!!$              ELSE IF(i==2)THEN
-!!$                 h2_xsi_w = 2.0*(block(iblock)%hv2(i,j) - block(iblock)%hv2(i-1,j))
-!!$              ELSE IF(i==x_end)THEN
-!!$                 h2_xsi_e = 2.0*(block(iblock)%hv2(i+1,j) - block(iblock)%hv2(i,j))
-!!$                 
-!!$              END IF
-              
-              v_p = block(iblock)%vvel(i,j)
-              u_n = 0.5*(block(iblock)%uvel(i-1,j+1)+block(iblock)%uvel(i,j+1))
-              u_s = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i-1,j))
-              u_e = 0.5*(block(iblock)%uvel(i,j)+block(iblock)%uvel(i,j+1))
-              u_w = 0.5*(block(iblock)%uvel(i-1,j)+block(iblock)%uvel(i-1,j+1))
-              v_e = 0.5*(block(iblock)%vvel(i+1,j)+block(iblock)%vvel(i,j))
-              v_w = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i-1,j))
-              v_n = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j+1))
-              v_s = 0.5*(block(iblock)%vvel(i,j)+block(iblock)%vvel(i,j-1))
-              
-              ! compute each part of the curvature terms
-              curve_1 = -depth_p * u_p * v_p * h2_xsi_p
-              curve_2 = depth_p * u_p * u_p* h1_eta_p
-              curve_3 = (2.0 * k_n * depth_n * u_n/hn2) * h2_xsi_n &
-                   - (2.0 * k_s * depth_s * u_s/hs1) * h2_xsi_s
-              curve_4 = -(depth_e * k_e * v_e/he1) * h2_xsi_e &
-                   + (depth_w * k_w * v_w/hw1) * h2_xsi_w
-              curve_5 = -(depth_e * k_e * u_e/he1) * h1_eta_e &
-                   + (depth_w * k_w * u_w/hw1) * h1_eta_w
-              curve_6 = depth_p*k_p*h2_xsi_p*((v_e - v_w)/hp1 - (v_p/(hp1*hp2))*(h2_xsi_p) &
-                   + (u_n - u_s)/hp2 - (u_p/(hp1*hp2))*(h1_eta_p))
-              curve_7 = -2.0*depth_p*k_p*h1_eta_p*((u_e - u_w)/hp1 + (v_p/(hp1*hp2))*h1_eta_p)
-              
-              coeff%source(i,j) =  coeff%source(i,j) + curve_1 + curve_2 + curve_3 &
-                   + curve_4 + curve_5 + curve_6 + curve_7
-              
-              ! end of V curvature terms ---------------------------------------------
 
-              
-              coeff%ap(i,j) = coeff%ae(i,j)+coeff%aw(i,j)+coeff%an(i,j)+coeff%as(i,j) &
-                   + apo
+        CALL vvel_solve(iblock, block(iblock), delta_t)
 
-
-              !** Bed Shear Stress Linearization **
-
-              sc = 0.0
-              sp = 0.0
-              CALL linear_friction(block(iblock)%chezy(i,j), depth_p, &
-                   &u_p, block(iblock)%vvel(i,j), hp1*hp2, sc, sp)
-
-!!$              IF (do_wetdry .AND. depth_p .LE. dry_rewet_depth*2.0) THEN
-!!$                 dwsdx = ABS(((depth_n + zbot_n) - (depth_s + zbot_s))/hp2)
-!!$                 CALL shallow_v_nudge(block(iblock)%chezy(i,j), depth_p,&
-!!$                      &block(iblock)%vvel(i,j), u_p, dwsdx, sc, sp)
-!!$              END IF
-
-              coeff%source(i,j) = coeff%source(i,j) + sc
-              coeff%ap(i,j) = coeff%ap(i,j) + sp
-
-                                ! force zero velocity when specified
-
-              IF (block(iblock)%isdead(i,j)%v) THEN
-                 coeff%source(i,j) = coeff%source(i,j) + bigfactor*0.0
-                 coeff%ap(i,j) = coeff%ap(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg) THEN
-                 IF (block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                      &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
-
-                    ! adjust for upstream boundary conditions (always zero)
-
-                    coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
-                    coeff%aw(i,j) = 0.0
-                 ELSE 
-                    coeff%source(i,j) = coeff%source(i,j) + &
-                         &coeff%aw(i,j)*block(iblock)%vvel(i-1,j)
-                    coeff%aw(i,j) = 0.0
-                 END IF
-              ELSE IF (i .EQ. x_end) THEN
-                 IF (block(iblock)%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                      &block(iblock)%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
-
-                    ! adjust for downstream boundary conditions
-
-                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ELEV, FLOWBC_ZEROG)
-                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
-                       coeff%ae(i,j) = 0.0
-                    END SELECT
-                 ELSE
-                    coeff%source(i,j) = coeff%source(i,j) + &
-                         &coeff%ae(i,j)*block(iblock)%vvel(i+1,j)
-                    coeff%ae(i,j) = 0.0
-                 END IF
-              END IF
-
-              ! IF there is a wall blocking longitudinal flow, we need
-              ! to disconnect from the v cell on the other side (with
-              ! a slip condition)
-              IF ((block(iblock)%isdead(i-1,j)%u .OR. &
-                   &block(iblock)%isdead(i-1,j+1)%u) .AND. .NOT. &
-                   &block(iblock)%isdead(i-1,j)%v) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
-                 coeff%aw(i,j) = 0.0
-              END IF
-              IF ((block(iblock)%isdead(i,j)%u .OR. &
-                   &block(iblock)%isdead(i,j+1)%u) .AND. .NOT. &
-                   &block(iblock)%isdead(i+1,j)%v) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
-                 coeff%ae(i,j) = 0.0
-              END IF
-
-              coeff%bp(i,j) = coeff%source(i,j) + apo*block(iblock)%vold(i,j) &
-                   - 0.5*grav*hp1*(depth_n**2 - depth_s**2) &
-                   - grav*hp1*depth_p*(block(iblock)%zbot(i,j+1) - block(iblock)%zbot(i,j))
-
-              ! compute and store for use in pressure correction equation
-              
-              coeff%lvd(i,j) = 0.5*grav*hp1*(depth_n+depth_s)/coeff%ap(i,j)
-           END DO
-        END DO
-        
-        ! apply zero flow conditions on sides
-
-        coeff%bp(:,y_beg) = coeff%bp(:,y_beg) + &
-             &coeff%as(:,y_beg)*0.0 ! block(iblock)%vvel(:,1)
-        coeff%as(:,y_beg) = 0
-
-        coeff%bp(:,y_end-1) = coeff%bp(:,y_end-1) + &
-             &coeff%an(:,y_end-1)*0.0 ! block(iblock)%vvel(:,y_end)
-        coeff%an(:,y_end) = 0.0
-
-        CALL solve_tdma(scalar_sweep, x_beg, x_end, y_beg, y_end-1, &
-             &coeff%ap(x_beg:x_end, y_beg:y_end), coeff%aw(x_beg:x_end, y_beg:y_end), &
-             &coeff%ae(x_beg:x_end, y_beg:y_end), coeff%as(x_beg:x_end, y_beg:y_end), &
-             &coeff%an(x_beg:x_end, y_beg:y_end), coeff%bp(x_beg:x_end, y_beg:y_end), &
-             &block(iblock)%vstar(x_beg:x_end,y_beg:y_end-1))
-        
         ! end V momentum  solution
         !----------------------------------------------------------------------------
         
         ! update ustar, vstar if we have given velocity/flux conditions
-        IF(ds_flux_given)THEN
-           ! loop over the total number of bc specifications
-           DO num_bc = 1, block_bc(iblock)%num_bc
-              CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
-                   &.TRUE., ds_flux_given)
-           END DO
-        END IF
+        ! IF(ds_flux_given)THEN
+        !    ! loop over the total number of bc specifications
+        !    DO num_bc = 1, block_bc(iblock)%num_bc
+        !       CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
+        !            &.TRUE., ds_flux_given)
+        !    END DO
+        ! END IF
         
         !----------------------------------------------------------------------------
         ! solve depth correction equation
         
-        ! compute coefficients in the depth correction equation
-        coeff%ce = 0.0
-        coeff%cw = 0.0
-        coeff%cn = 0.0
-        coeff%cs = 0.0
-        coeff%cp = 0.0
-        DO i=2,x_end
-           DO j=2,y_end
-              hp1 = block(iblock)%hp1(i,j)
-              hp2 = block(iblock)%hp2(i,j)
-              he1 = block(iblock)%hu1(i,j)
-              he2 = block(iblock)%hu2(i,j)
-              hw1 = block(iblock)%hu1(i-1,j)
-              hw2 = block(iblock)%hu2(i-1,j)
-              hs1 = block(iblock)%hv1(i,j-1)
-              hs2 = block(iblock)%hv2(i,j-1)
-              hn1 = block(iblock)%hv1(i,j)
-              hn2 = block(iblock)%hv2(i,j)
-              
-              depth_e = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
-              depth_w = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i-1,j))
-              depth_n = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1))
-              depth_s = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j-1))
-              
-!!$              IF(i == 2)			depth_w = block(iblock)%depth(i-1,j)
-!!$              IF(i == x_end)	depth_e = block(iblock)%depth(i+1,j)
-              IF(j == 2)			depth_s = block(iblock)%depth(i,j-1)
-              IF(j == y_end)	depth_n = block(iblock)%depth(i,j+1)
-              
-              flux_e = he2*block(iblock)%ustar(i,j)*depth_e
-              flux_w = hw2*block(iblock)%ustar(i-1,j)*depth_w
-              flux_n = hn1*block(iblock)%vstar(i,j)*depth_n
-              flux_s = hs1*block(iblock)%vstar(i,j-1)*depth_s
-              
-              cpo = hp1*hp2/delta_t
-              block(iblock)%mass_source(i,j) = &
-                   &cpo*(block(iblock)%depthold(i,j) - block(iblock)%depth(i,j)) + &
-                   &flux_w - flux_e + flux_s - flux_n 
-              
-              coeff%ce(i,j) = he2*depth_e*coeff%lud(i,j)
-              coeff%cw(i,j) = hw2*depth_w*coeff%lud(i-1,j)
-              coeff%cn(i,j) = hn1*depth_n*coeff%lvd(i,j)
-              coeff%cs(i,j) = hs1*depth_s*coeff%lvd(i,j-1)
-              coeff%cp(i,j) = coeff%ce(i,j) + coeff%cw(i,j) + coeff%cn(i,j) + coeff%cs(i,j) &
-                   + cpo
-
-              coeff%bp(i,j) = block(iblock)%mass_source(i,j) + &
-                   &block(iblock)%xsource(i,j)*hp1*hp2
-              ! block(iblock)%mass_source(i,j) = block(iblock)%mass_source(i,j) + &
-              !      &block(iblock)%xsource(i,j)*hp1*hp2
-
-              IF (block(iblock)%isdead(i,j)%p) THEN
-                 coeff%bp(i,j) = coeff%bp(i,j) + bigfactor*0.0
-                 coeff%cp(i,j) = coeff%cp(i,j) + bigfactor
-              ELSE IF (i .EQ. x_beg) THEN
-                 SELECT CASE (block(iblock)%cell(i,j)%type)
-                 CASE (CELL_BOUNDARY_TYPE)
-
-                    ! adjust for upstream boundary conditions (always zero)
-
-                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ZEROG)
-                       coeff%cp(i,j) = coeff%cp(i,j) - coeff%cw(i,j)
-                       coeff%cw(i,j) = 0.0
-                    CASE (FLOWBC_ELEV, FLOWBC_BOTH)
-                       coeff%cp(i,j) = coeff%cp(i,j) + coeff%cw(i,j)
-                       coeff%cw(i,j) = 0.0
-                    END SELECT
-                 CASE DEFAULT
-                    coeff%bp(i,j) = coeff%bp(i,j) +&
-                         &coeff%cw(i,j)*block(iblock)%dp(i-1,j)
-                    coeff%cw(i,j) = 0.0
-                 END SELECT
-              ELSE IF (i .EQ. x_end) THEN
-                 SELECT CASE (block(iblock)%cell(i,j)%type)
-                 CASE (CELL_BOUNDARY_TYPE)
-
-                    ! adjust for downstream boundary conditions
-
-                    SELECT CASE (block(iblock)%cell(i,j)%bctype)
-                    CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ZEROG)
-                       coeff%cp(i,j) = coeff%cp(i,j) - coeff%ce(i,j)
-                       coeff%ce(i,j) = 0.0
-                    END SELECT
-                 CASE DEFAULT
-                    coeff%bp(i,j) = coeff%bp(i,j) +&
-                         &coeff%ce(i,j)*block(iblock)%dp(i+1,j)
-                    coeff%ce(i,j) = 0.0
-                 END SELECT
-              END IF
-
-              ! IF there is a wall blocking longitudinal flow, we need
-              ! to disconnect from the d cell on the other side
-              IF ((block(iblock)%isdead(i-1,j)%u) .AND. .NOT. &
-                   &block(iblock)%isdead(i-1,j)%p) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
-                 coeff%aw(i,j) = 0.0
-              END IF
-              IF ((block(iblock)%isdead(i,j)%u) .AND. .NOT. &
-                   &block(iblock)%isdead(i+1,j)%p) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
-                 coeff%ae(i,j) = 0.0
-              END IF
-
-              ! IF there is a wall blocking lateral flow, we need to
-              ! disconnect from the cell on the other side 
-              IF ((block(iblock)%isdead(i,j)%v) .AND. .NOT. &
-                   &block(iblock)%isdead(i,j+1)%p) THEN 
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%an(i,j)
-                 coeff%an(i,j) = 0.0
-              END IF
-              IF ((block(iblock)%isdead(i,j-1)%v) .AND. .NOT. &
-                   &block(iblock)%isdead(i,j-1)%p) THEN
-                 coeff%ap(i,j) = coeff%ap(i,j) - coeff%as(i,j)
-                 coeff%as(i,j) = 0.0
-              END IF
-
-           END DO
-        END DO
-
-                                ! apply zero gradient on the sides
-  
-        coeff%cp(:,y_beg) = coeff%cp(:,y_beg) - coeff%cs(:,y_beg)
-        coeff%cs(:,y_beg) = 0.0
-        coeff%cp(:,y_end) = coeff%cp(:,y_end) - coeff%cn(:,y_end)
-        coeff%cn(:,y_end) = 0.0
-
-        CALL solve_tdma(depth_sweep, x_beg, x_end, y_beg, y_end, &
-             &coeff%cp(x_beg:x_end,y_beg:y_end), coeff%cw(x_beg:x_end,y_beg:y_end), &
-             &coeff%ce(x_beg:x_end,y_beg:y_end), coeff%cs(x_beg:x_end,y_beg:y_end), &
-             &coeff%cn(x_beg:x_end,y_beg:y_end), &
-             &coeff%bp(x_beg:x_end,y_beg:y_end), &
-             &block(iblock)%dp(x_beg:x_end,y_beg:y_end))
-
-        ! compute updated depth with some underrelaxation
-        ! depth = rel*depth_new + (1 - rel)*depth_old
-        IF(update_depth)THEN
-           DO i=2,x_end
-              DO j=2,y_end
-                 block(iblock)%depth(i,j) = block(iblock)%depth(i,j) + relax_dp*block(iblock)%dp(i,j)
-                 block(iblock)%wsel(i,j) = block(iblock)%depth(i,j) + block(iblock)%zbot(i,j)
-              END DO
-           END DO
-        ENDIF
-        
+        CALL depth_solve(iblock, block(iblock), delta_t)
 
         !end depth correction solution
         !----------------------------------------------------------------------------
@@ -2190,183 +1821,51 @@ SUBROUTINE hydro(status_flag)
               WRITE(output_iounit,*)
            END DO
         ENDIF
+1000    FORMAT(50(f12.4,2x))
         
         !----------------------------------------------------------------------------
         ! Apply velocity corrections using the depth correction field
-        DO i=2,x_end
-           DO j=2,y_end
-              block(iblock)%uvel(i,j) = block(iblock)%ustar(i,j) &
-                   + coeff%lud(i,j)*(block(iblock)%dp(i,j)-block(iblock)%dp(i+1,j))
-              
-              block(iblock)%ustar(i,j) = block(iblock)%uvel(i,j)
-           END DO
-        END DO
-        
-        DO i=2,x_end
-           DO j=2,y_end-1
-              block(iblock)%vvel(i,j) = block(iblock)%vstar(i,j) &
-                   + coeff%lvd(i,j)*(block(iblock)%dp(i,j)-block(iblock)%dp(i,j+1))
-              
-              block(iblock)%vstar(i,j) = block(iblock)%vvel(i,j)
-           END DO
-        END DO
+
+        CALL correct_velocity(block(iblock))
         
         ! end application of velocity correction
         !------------------------------------------------------------------------------------
         
-        !------------------------------------------------------------------------------------
-        ! update depth if we have given velocity/flux conditions
-!!$        IF(ds_flux_given)THEN
-!!$           ! loop over the total number of bc specifications
-!!$           DO num_bc = 1, block_bc(iblock)%num_bc
-!!$              
-!!$              
-!!$              IF (block_bc(iblock)%bc_spec(num_bc)%bc_loc=="DS") THEN
-!!$                 SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type)
-!!$                 CASE ("TABLE")
-!!$                 
-!!$                    CALL table_interp(current_time%time,&
-!!$                         & block_bc(iblock)%bc_spec(num_bc)%table_num,&
-!!$                         & table_input, block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs)
-!!$                    SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_kind)
-!!$                    CASE("VELO","FLUX") 
-!!$                       
-!!$                       DO j=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-!!$                          j_dsflux_start = block_bc(iblock)%bc_spec(num_bc)%start_cell(j)+1
-!!$                          j_dsflux_end	 = block_bc(iblock)%bc_spec(num_bc)%end_cell(j)+1
-!!$                          CALL extrapolate_depth(block(iblock), x_end+1, &
-!!$                               &j_dsflux_start, j_dsflux_end, level = .FALSE.)
-!!$                       END DO
-!!$                    END SELECT
-!!$                 END SELECT
-!!$              END IF
-!!$           END DO
-!!$        END IF
-        
-        !----------------------------------------------------------------------------
-        ! extrapolate water surface elevation to upstream *** NEED TO IMPLEMENT LINEAR EXTRAPOLATION ****
-        ! equal water surface elevation - better for bathymetry; not great for uniform slope channel
-        
-!!$        block(iblock)%depth(1,2:y_end) = (block(iblock)%depth(2,2:y_end) + block(iblock)%zbot(2,2:y_end)) &
-!!$             + 0.5*((block(iblock)%depth(2,2:y_end)+block(iblock)%zbot(2,2:y_end)) -&
-!!$             & (block(iblock)%depth(3,2:y_end)+block(iblock)%zbot(3,2:y_end))) - block(iblock)%zbot(1,2:y_end)
-
-!!$        i = 1
-!!$        DO j = 2, y_end
-!!$           CALL extrapolate_depth(block(iblock), i, j, j, level = .FALSE.)
-!!$           IF (do_wetdry) block(iblock)%depth(i,j) = MAX(dry_zero_depth, block(iblock)%depth(i,j))
-!!$        END DO
-        
         !-----------------------------------------------------------------------------
         ! apply zero gradient conditions
-        
-        !IF((iblock == 2).OR.(max_blocks == 1))THEN
-        !   block(iblock)%uvel(x_end+1,2:y_end) = block(iblock)%ustar(x_end,2:y_end)
-        !ELSE
-        !	block(iblock)%uvel(x_end+1,2:y_end) = block(iblock+1)%uvel(1,2:y_end)
-        !ENDIF
         
         ! zero gradient conditions on the sides of the block
         !		need to modify for side inflows/block connections
         
-        block(iblock)%uvel(1:x_end+1,1) = block(iblock)%ustar(1:x_end+1,2)
-        block(iblock)%uvel(1:x_end+1,y_end+1) = block(iblock)%ustar(1:x_end+1,y_end)
-        block(iblock)%depth(1:x_end+1,1) = (block(iblock)%depth(1:x_end+1,2) +&
-             &block(iblock)%zbot(1:x_end+1,2)) - block(iblock)%zbot(1:x_end+1,1)
-        block(iblock)%depth(1:x_end+1,y_end+1) = (block(iblock)%depth(1:x_end+1,y_end) +&
-             &block(iblock)%zbot(1:x_end+1,y_end)) - block(iblock)%zbot(1:x_end+1,y_end+1)
-        DO i=1,x_end+1
-           IF (do_wetdry) THEN
-              IF (block(iblock)%depth(i,1) .LT. dry_zero_depth) &
-                   &block(iblock)%depth(i,1)  = dry_zero_depth
-              IF (block(iblock)%depth(i,y_end+1) .LT. dry_zero_depth) &
-                   &block(iblock)%depth(i,y_end+1) = dry_zero_depth
-           END IF
-        END DO
+!!$        block(iblock)%uvel(1:x_end+1,1) = block(iblock)%ustar(1:x_end+1,2)
+!!$        block(iblock)%uvel(1:x_end+1,y_end+1) = block(iblock)%ustar(1:x_end+1,y_end)
+!!$        block(iblock)%vvel(1,1:y_end+1) = block(iblock)%vstar(2,1:y_end+1)
+!!$        block(iblock)%vvel(x_end+1,1:y_end+1) = block(iblock)%vstar(x_end,1:y_end+1)
+!!$        block(iblock)%depth(1:x_end+1,1) = (block(iblock)%depth(1:x_end+1,2) +&
+!!$             &block(iblock)%zbot(1:x_end+1,2)) - block(iblock)%zbot(1:x_end+1,1)
+!!$        block(iblock)%depth(1:x_end+1,y_end+1) = (block(iblock)%depth(1:x_end+1,y_end) +&
+!!$             &block(iblock)%zbot(1:x_end+1,y_end)) - block(iblock)%zbot(1:x_end+1,y_end+1)
+!!$        DO i=1,x_end+1
+!!$           IF (do_wetdry) THEN
+!!$              IF (block(iblock)%depth(i,1) .LT. dry_zero_depth) &
+!!$                   &block(iblock)%depth(i,1)  = dry_zero_depth
+!!$              IF (block(iblock)%depth(i,y_end+1) .LT. dry_zero_depth) &
+!!$                   &block(iblock)%depth(i,y_end+1) = dry_zero_depth
+!!$           END IF
+!!$        END DO
 
         
         !----------------------------------------------------------------------------------------------
         ! check for small and negative depth condition and report location
         
-        DO i = 1, x_end+1
-           DO j = 1, y_end+1
-              IF (.NOT. do_wetdry .AND. block(iblock)%depth(i,j) <= 0.20) THEN
-                 WRITE(error_iounit,*)" WARNING: Small Depth = ", block(iblock)%depth(i,j)
-                 WRITE(error_iounit,*)"     Block Number = ",iblock
-                 WRITE(error_iounit,*)"     I,J Location of small depth = ",i, j
-              ELSE IF (block(iblock)%depth(i,j) <= 0.0) THEN
-                 IF (do_wetdry) THEN
-                    WRITE(error_iounit,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-                    WRITE(error_iounit,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-                    WRITE(error_iounit,*)"     Block Number = ",iblock
-                    WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
-                    
-                    WRITE(*,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-                    WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-                    WRITE(*,*)"     Block Number = ",iblock
-                    WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
-                       
-                    block(iblock)%depth(i,j) = dry_zero_depth
-                 ELSE
+        CALL depth_check(iblock, block(iblock), current_time%date_string, current_time%time_string)
 
-                    WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
-                    WRITE(error_iounit,*)"     Block Number = ",iblock
-                    WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
-           
-                    WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
-                    WRITE(*,*)"     Block Number = ",iblock
-                    WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
-           
-                    CALL EXIT(1)  ! abort run if you hit a negative depth
-
-                 END IF
-              END IF
-           END DO
-        END DO
-!!$        IF(.NOT. do_wetdry .AND. MINVAL(block(iblock)%depth) <= 0.20)THEN
-!!$           WRITE(error_iounit,*)" WARNING: Small Depth = ",MINVAL(block(iblock)%depth)
-!!$           WRITE(error_iounit,*)"     Block Number = ",iblock
-!!$           WRITE(error_iounit,*)"     I,J Location of small depth = ",MINLOC(block(iblock)%depth)
-!!$        END IF
-!!$
-!!$        IF(MINVAL(block(iblock)%depth) <= 0.0)THEN
-!!$           IF (do_wetdry) THEN
-!!$              DO i = 1,x_end+1
-!!$                 DO j = 1,y_end+1
-!!$                    IF (block(iblock)%depth(i,j) .LT. 0.0) THEN
-!!$                       WRITE(error_iounit,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-!!$                       WRITE(error_iounit,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-!!$                       WRITE(error_iounit,*)"     Block Number = ",iblock
-!!$                       WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
-!!$           
-!!$                       WRITE(*,*)" ERROR: Negative Depth = ",block(iblock)%depth(i,j)
-!!$                       WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
-!!$                       WRITE(*,*)"     Block Number = ",iblock
-!!$                       WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
-!!$                       
-!!$                       block(iblock)%depth(i,j) = dry_zero_depth
-!!$                    END IF
-!!$                 END DO
-!!$              END DO
-!!$           ELSE
-!!$              WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
-!!$              WRITE(error_iounit,*)"     Block Number = ",iblock
-!!$              WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
-!!$           
-!!$              WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(block(iblock)%depth)
-!!$              WRITE(*,*)"     Block Number = ",iblock
-!!$              WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(block(iblock)%depth)
-!!$           
-!!$              CALL EXIT(1)  ! abort run if you hit a negative depth
-!!$           END IF
-!!$        END IF
-        
         !----------------------------------------------------------------------------------------------
         ! return to momentum equation solution step using updated depth and velocities
         !----------------------------------------------------------------------------------------------
 
         IF (do_wetdry .AND. iterate_wetdry)&
-             &CALL check_wetdry(iblock, block(iblock)%xmax, block(iblock)%ymax)
+             &CALL check_wetdry(block(iblock))
 
      END DO		! block loop end
      
@@ -2374,7 +1873,8 @@ SUBROUTINE hydro(status_flag)
      ! check to see if mass source has been reduced below tolerance and break out of loop
      maxx_mass = 0
      DO iblock=1,max_blocks
-        IF(SUM(ABS(block(iblock)%mass_source)) >= maxx_mass) maxx_mass = SUM(ABS(block(iblock)%mass_source))
+        apo = SUM(ABS(block(iblock)%mass_source(2:block(iblock)%xmax, 2:block(iblock)%ymax)))
+        IF(apo >= maxx_mass) maxx_mass = apo
      END DO
      IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
      
@@ -2384,13 +1884,60 @@ SUBROUTINE hydro(status_flag)
   
   IF (do_wetdry .AND. .NOT. iterate_wetdry) THEN
      DO iblock = 1, max_blocks
-        CALL check_wetdry(iblock, block(iblock)%xmax + 1, block(iblock)%ymax + 1)
+        CALL check_wetdry(block(iblock))
      END DO
   END IF
 
-  CALL bedshear()
-
 END SUBROUTINE hydro		
+
+! ----------------------------------------------------------------
+! SUBROUTINE default_hydro_bc
+! ----------------------------------------------------------------
+SUBROUTINE default_hydro_bc(blk)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct) :: blk
+  INTEGER :: x_end, y_end, i, j
+
+  x_end = blk%xmax
+  y_end = blk%ymax
+
+  i = 1
+  blk%uvel(i,:) = 0.0
+  blk%vvel(i,:) = blk%vvel(i+1,:)
+  blk%cell(i+1,:)%xtype = CELL_BOUNDARY_TYPE
+  blk%cell(i+1,:)%xbctype = FLOWBC_NONE
+  CALL extrapolate_udepth(blk, i, 2, y_end, level=.FALSE.)
+
+  i = blk%xmax + 1
+  blk%uvel(i,:) = 0.0
+  blk%vvel(i,:) = blk%vvel(i-1,:)
+  blk%cell(i-1,:)%xtype = CELL_BOUNDARY_TYPE
+  blk%cell(i-1,:)%xbctype = FLOWBC_NONE
+  CALL extrapolate_udepth(blk, i, 2, y_end, level=.FALSE.)
+
+  j = 1
+  blk%uvel(:,j) = blk%uvel(:,j+1)
+  blk%vvel(:,j) = 0.0
+  blk%cell(:,j+1)%ytype = CELL_BOUNDARY_TYPE
+  blk%cell(:,j+1)%ybctype = FLOWBC_NONE
+  CALL extrapolate_vdepth(blk, 2, x_end, j, level=.FALSE.)
+
+  j = blk%ymax + 1
+  blk%uvel(:,j) = blk%uvel(:,j-1)
+  blk%vvel(:,j) = 0.0
+  blk%cell(:,j-1)%ytype = CELL_BOUNDARY_TYPE
+  blk%cell(:,j-1)%ybctype = FLOWBC_NONE
+  CALL extrapolate_vdepth(blk, 2, x_end, j, level=.FALSE.)
+
+  blk%isdead(:,:)%u = .FALSE.
+  blk%isdead(:,:)%v = .FALSE.
+  blk%isdead(:,:)%p = .FALSE.
+  blk%xsource = 0.0
+
+END SUBROUTINE default_hydro_bc
+
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE apply_hydro_bc
@@ -2404,75 +1951,112 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
   LOGICAL, INTENT(IN) :: dsonly
   LOGICAL, INTENT(INOUT) :: ds_flux_given
 
-  INTEGER :: x_end, y_end, i, j, k, jj, con_i, con_j, j_beg, j_end
+  INTEGER :: x_end, y_end, i, j, k, jj, ii
+  INTEGER :: con_block, con_i, con_j
+  INTEGER :: i_beg, i_end, j_beg, j_end
   DOUBLE PRECISION :: input_total
+
+  CHARACTER (LEN=1024) :: buf
 
   x_end = blk%xmax
   y_end = blk%ymax
 
+  ! set default boundary conditions (zero flux)
+
   IF (.NOT. dsonly) ds_flux_given = .FALSE.
+
+
+  ! Get boundary condition values from the table. 
+
+  SELECT CASE(bc%bc_type)
+  CASE("TABLE")
+
+     SELECT CASE (bc%bc_kind)
+     CASE ("ELEVELO")
+        CALL table_interp(current_time%time, bc%table_num, table_input, &
+             &2*bc%num_cell_pairs)
+     CASE DEFAULT
+        CALL table_interp(current_time%time, bc%table_num, table_input, &
+             &bc%num_cell_pairs)
+     END SELECT
+  CASE ("SOURCE", "SINK")
+     CALL table_interp(current_time%time,&
+          & bc%table_num,&
+          & table_input, 1)
+
+  CASE ("BLOCK")
+
+     CALL fillghost_hydro(blk, block(bc%con_block), bc)
+     RETURN
+     
+  END SELECT
+
+  ! Assign values to specified boundary
 
   SELECT CASE(bc%bc_loc)
               
+  ! ----------------------------------------------------------------
+  ! UPSTREAM (US)
+  ! ----------------------------------------------------------------
   CASE("US")
      i=1
      SELECT CASE(bc%bc_type)
-     CASE("BLOCK")
-        IF (dsonly) RETURN
-        con_block = bc%con_block
-        CALL fillghost_hydro(blk, block(con_block), bc)
-        
      CASE("TABLE")
 
-        SELECT CASE (bc%bc_kind)
-        CASE ("ELEVELO")
-           CALL table_interp(current_time%time, bc%table_num, table_input, &
-                &2*bc%num_cell_pairs)
-        CASE DEFAULT
-           CALL table_interp(current_time%time, bc%table_num, table_input, &
-                &bc%num_cell_pairs)
-        END SELECT
-
-        CALL table_interp(current_time%time, bc%table_num, table_input, &
-             &bc%num_cell_pairs)
         SELECT CASE(bc%bc_kind)
         CASE("FLUX")
            DO j=1,bc%num_cell_pairs
               j_beg = bc%start_cell(j)+1
               j_end = bc%end_cell(j)+1
-              CALL extrapolate_depth(blk, i, j_beg, j_end, level=.FALSE.)
+              ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level=.FALSE.)
               CALL compute_uflow_area(blk, i, j_beg, j_end, inlet_area, input_total)
               DO jj = j_beg, j_end
                  IF (inlet_area(jj) .GT. 0.0) THEN
                     blk%uvel(i,jj) = table_input(j)/input_total
+                    IF (blk%uvel(i,jj) .GT. 0) THEN
+                       blk%vvel(i, jj-1) = 0.0
+                       blk%vvel(i, jj) = 0.0
+                    ELSE 
+                       blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                       blk%vvel(i, jj) = blk%vvel(i+1, jj)
+                    END IF
                  ELSE 
                     blk%uvel(i,jj) = 0.0
+                    blk%vvel(i,jj-1) = blk%vvel(i+1, jj-1)
+                    blk%vvel(i,jj) = blk%vvel(i+1, jj)
                  END IF
               END DO
               blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
               blk%uold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
-              blk%vvel(i, j_beg:j_end) = 0.0
-              blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
-              blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
-              blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_FLOW
-              IF (dsonly) coeff%lud(i+1,j) = 0.0
+              blk%vstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+              blk%vold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+              blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_FLOW
+              IF (dsonly) blk%lud(i+1,j) = 0.0
            END DO
            
         CASE("VELO")
            DO j=1,bc%num_cell_pairs
               j_beg = bc%start_cell(j)+1
               j_end = bc%end_cell(j)+1
-              CALL extrapolate_depth(blk, x_end+1, j_beg, j_end, level = .FALSE.)
-              blk%uvel(i,j_beg:j_end) = table_input(j)
-              blk%vvel(i, j_beg:j_end) = 0.0
+              ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level=.FALSE.)
+              DO jj = j_beg, j_end
+                 blk%uvel(i,jj) = table_input(j)
+                 IF (blk%uvel(i,jj) .GT. 0.0) THEN
+                    blk%vvel(i, jj-1) = 0.0
+                    blk%vvel(i, jj) = 0.0
+                 ELSE 
+                    blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                    blk%vvel(i, jj) = blk%vvel(i+1, jj)
+                 END IF
+              END DO
               blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
               blk%uold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
-              blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
-              blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
-              blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_VEL
-              IF (dsonly) coeff%lud(i+1,j) = 0.0
+              blk%vstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+              blk%vold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+              blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_VEL
+              IF (dsonly) blk%lud(i+1,j) = 0.0
            END DO
            
         CASE("ELEV")
@@ -2481,6 +2065,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               j_beg = bc%start_cell(j)+1
               j_end = bc%end_cell(j)+1
               DO jj = j_beg, j_end
+                 blk%dp(i,jj) = 0.0
                  blk%depth(i,jj) = 2*table_input(j) - &
                       &(blk%depth(i+1,jj) + blk%zbot(i+1,jj)) - blk%zbot(i,jj)
                  IF (do_wetdry) blk%depth(i,jj) =  &
@@ -2489,9 +2074,9 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%dstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
               blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
               blk%uvel(i,j_beg:j_end) = blk%uvel(i+1,j_beg:j_end)
-              blk%vvel(i,j_beg:j_end) = 0.0
-              blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_ELEV
+              blk%vvel(i,j_beg-1:j_end) = blk%vvel(i+1,j_beg-1:j_end)
+              blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_ELEV
            END DO
         CASE ("ELEVELO")
            IF (dsonly) RETURN
@@ -2502,33 +2087,40 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%depth(i,jj) = 2*table_input(j*2-1) - &
                       &(blk%depth(i+1,jj) + blk%zbot(i+1,jj)) - blk%zbot(i,jj)
                  blk%uvel(i,jj) = table_input(j*2)
+                 IF (blk%uvel(i,jj) .GT. 0.0) THEN
+                    blk%vvel(i, jj-1) = 0.0
+                    blk%vvel(i,jj) = 0.0
+                 ELSE
+                    blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                    blk%vvel(i,jj) = blk%vvel(i+1,jj)
+                 END IF
               END DO
               blk%dstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
               blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
               blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
               blk%uold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
-              blk%vvel(i,j_beg:j_end) = 0.0
-              blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
-              blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
-              blk%cell(i+1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i+1,j_beg:j_end)%bctype = FLOWBC_BOTH
+              blk%vstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+              blk%vold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+              blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_BOTH
            END DO
+        CASE DEFAULT
+           GOTO 100
         END SELECT
      CASE ("ZEROG")
-        CALL error_message("We really do not know what happens with a US ZEROG BC")
+        GOTO 100
+     CASE DEFAULT
+        GOTO 100
      END SELECT
      
+  ! ----------------------------------------------------------------
+  ! DOWNSTREAM (DS)
+  ! ----------------------------------------------------------------
   CASE("DS")
      i = x_end+1
      SELECT CASE(bc%bc_type)
-     CASE("BLOCK")
-        IF (dsonly) RETURN
-        con_block = bc%con_block
-        CALL fillghost_hydro(blk, block(con_block), bc)
-        
      CASE("TABLE")
-        CALL table_interp(current_time%time, bc%table_num, table_input, &
-             &bc%num_cell_pairs)
+
         SELECT CASE(bc%bc_kind)
            
            !--------------------------------------------------------------------------
@@ -2540,8 +2132,9 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               j_beg = bc%start_cell(j)+1
               j_end = bc%end_cell(j)+1
               
-              CALL extrapolate_depth(blk, i, j_beg, j_end, level = .FALSE.)
-              CALL compute_uflow_area(blk, x_end, j_beg, j_end, inlet_area, input_total)
+              ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
+              CALL compute_uflow_area(blk, i, j_beg, j_end, inlet_area, input_total)
+
               DO jj=j_beg, j_end
                  IF (inlet_area(jj) .GT. 0.0) THEN
                     blk%uvel(i,jj) =  table_input(j)/input_total
@@ -2551,12 +2144,12 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               END DO
               blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
               blk%uold(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
-              blk%vvel(i, j_beg:j_end) = 0.0
+              blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
               blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
               blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
-              blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_FLOW
-              IF (dsonly) coeff%lud(i-1,j) = 0.0
+              blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_FLOW
+              IF (dsonly) blk%lud(i-1,j_beg:j_end) = 0.0
            END DO
 
         CASE("VELO") ! can specifiy the velocity (e.g, zero flow)
@@ -2565,16 +2158,16 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
            DO j=1,bc%num_cell_pairs
               j_beg = bc%start_cell(j)+1
               j_end	 = bc%end_cell(j)+1
-              CALL extrapolate_depth(blk, i, j_beg, j_end, level = .FALSE.)
+              ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
               blk%uvel(i,j_beg:j_end) = table_input(j)
               blk%ustar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
               blk%uold(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
-              blk%vvel(i, j_beg:j_end) = 0.0
-              blk%vstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
-              blk%vold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
-              blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_VEL
-              IF (dsonly) coeff%lud(i-1,j) = 0.0
+              blk%vvel(i, j_beg-1:j_end) =  blk%vvel(i-1, j_beg-1:j_end)
+              blk%vstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+              blk%vold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+              blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_VEL
+              IF (dsonly) blk%lud(i-1,j_beg:j_end) = 0.0
            END DO
                     
         CASE("ELEV")
@@ -2583,69 +2176,236 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               j_beg = bc%start_cell(j)+1
               j_end	 = bc%end_cell(j)+1
               DO jj = j_beg, j_end
-                 blk%depth(i,jj) = table_input(j) - blk%zbot(i,jj)
+                 blk%dp(i,jj) = 0.0
+                 blk%depth(i,jj) = 2*table_input(j) - &
+                      &(blk%depth(i-1,jj) + blk%zbot(i-1,jj)) - blk%zbot(i,jj)
+                 ! blk%depth(i,jj) = table_input(j) - blk%zbot(i,jj)
                  IF (do_wetdry) blk%depth(i,jj) =  &
                       &MAX(blk%depth(i,jj), dry_zero_depth)
               END DO
-              blk%dstar(i,jj) = blk%depth(i,jj)
-              blk%depthold(i,jj) = blk%depth(i,jj)
+              blk%dstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+              blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
               blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
-              blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
-              blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-              blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_ELEV
+              blk%vvel(i, j_beg-1:j_end) = blk%vvel(i-1, j_beg-1:j_end)
+              blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+              blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_ELEV
            END DO
         CASE ("ELEVELO")
-           CALL error_message("We really do not know what happens with a DS TABLE ELEVELO BC")
+           GOTO 100
+        CASE DEFAULT
+           GOTO 100
         END SELECT
 
      CASE ("ZEROG")
         DO j=1,bc%num_cell_pairs
            j_beg = bc%start_cell(j)+1
            j_end = bc%end_cell(j)+1
-           CALL extrapolate_depth(blk, i, j_beg, j_end, level = .FALSE.)
+           ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
            blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
            blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
-           blk%cell(i-1,j_beg:j_end)%type = CELL_BOUNDARY_TYPE
-           blk%cell(i-1,j_beg:j_end)%bctype = FLOWBC_ZEROG
+           blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+           blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_ZEROG
         END DO
+     CASE DEFAULT
+        GOTO 100
      END SELECT
      
-     ! these are dummied in for later implementation
-  CASE("RIGHT")
-     IF (dsonly) RETURN
+  ! ----------------------------------------------------------------
+  ! RIGHT BANK (RB)
+  ! ----------------------------------------------------------------
+  CASE("RB")
+     j = 1
      SELECT CASE(bc%bc_type)
-     CASE("BLOCK")
-        SELECT CASE(bc%bc_kind)
-        CASE("MATCH")
-           
-        END SELECT
-        
      CASE("TABLE")
         SELECT CASE(bc%bc_kind)
         CASE("FLUX")
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end = bc%end_cell(k)+1
+              ! CALL extrapolate_vdepth(blk, i_beg, i_end, j, level=.FALSE.)
+              CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, input_total)
+              DO ii = i_beg, i_end
+                 IF (inlet_area(ii) .GT. 0.0) THEN
+                    blk%vvel(ii,j) = table_input(k)/input_total
+                    IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                       blk%uvel(ii,j) = 0.0
+                    ELSE
+                       blk%uvel(ii,j) =  blk%uvel(ii,j+1)
+                    END IF
+                 ELSE 
+                    blk%vvel(ii,j) = 0.0
+                    blk%uvel(ii,j) = blk%uvel(ii,j+1)
+                 END IF
+              END DO
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_FLOW
+           END DO
         CASE("VELO")
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end = bc%end_cell(k)+1
+              CALL extrapolate_vdepth(blk, i_beg, i_end, j, level = .FALSE.)
+              DO ii = i_beg, i_end
+                 blk%vvel(ii,j) = table_input(k)
+                 IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                    blk%uvel(ii,j) = 0.0
+                 ELSE 
+                    blk%uvel(ii,j) = blk%uvel(ii,j+1)
+                 END IF
+              END DO
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_VEL
+           END DO
         CASE("ELEV")
-           
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end = bc%end_cell(k)+1
+              DO ii = i_beg, i_end
+                 blk%dp(ii,j) = 0.0
+                 blk%depth(ii,j) = 2*table_input(k) - &
+                      &(blk%depth(ii,j+1) + blk%zbot(ii,j+1)) - blk%zbot(ii,j)
+                 IF (do_wetdry) blk%depth(ii,j) =  &
+                      &MAX(blk%depth(ii,j), dry_zero_depth)
+              END DO
+              blk%dstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j+1)
+              blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j+1)
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_ELEV
+           END DO
+          
+        CASE ("ELEVELO")
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end = bc%end_cell(k)+1
+              DO ii = i_beg, i_end
+                 blk%depth(ii,j) = 2*table_input(k*2-1) - &
+                      &(blk%depth(i,j+1) + blk%zbot(ii,j+1)) - blk%zbot(ii,j)
+                 blk%vvel(ii,j) = table_input(k*2)
+              END DO
+              blk%dstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j+1)
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_BOTH
+           END DO
+        CASE DEFAULT
+           GOTO 100
         END SELECT
-        
+
+     CASE DEFAULT
+        GOTO 100
      END SELECT
      
-  CASE("LEFT")
-     IF (dsonly) RETURN
+  ! ----------------------------------------------------------------
+  ! LEFT BANK (LB)
+  ! ----------------------------------------------------------------
+  CASE("LB")
+     j = y_end + 1
      SELECT CASE(bc%bc_type)
-     CASE("BLOCK")
-        SELECT CASE(bc%bc_kind)
-        CASE("MATCH")
-           
-        END SELECT
-        
      CASE("TABLE")
         SELECT CASE(bc%bc_kind)
+
         CASE("FLUX")
+
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end = bc%end_cell(k)+1
+              CALL extrapolate_vdepth(blk, i_beg, i_end, j, level=.FALSE.)
+              CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, input_total)
+              DO ii = i_beg, i_end
+                 IF (inlet_area(ii) .GT. 0.0) THEN
+                    blk%vvel(ii,j) = table_input(k)/input_total
+                    IF (blk%vvel(ii,j) .LT. 0.0) THEN
+                       blk%uvel(ii,j) = 0.0
+                    ELSE 
+                       blk%uvel(ii,j) = blk%uvel(ii,j-1)
+                    END IF
+                 ELSE 
+                    blk%vvel(ii,j) = 0.0
+                 END IF
+              END DO
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_FLOW
+           END DO
+
         CASE("VELO")
+           
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end	 = bc%end_cell(k)+1
+              CALL extrapolate_vdepth(blk, i_beg, j_end, j, level = .FALSE.)
+              DO ii = i_beg, i_end
+                 blk%vvel(ii, j) = table_input(k)
+                 IF (blk%vvel(ii, j) .LT. 0.0) THEN
+                    blk%uvel(ii, j) = 0.0
+                 ELSE 
+                    blk%uvel(ii, j) = blk%uvel(ii, j-1)
+                 END IF
+              END DO
+              blk%ustar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%uold(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+              blk%vstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+              blk%vold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+              blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_VEL
+           END DO
+
         CASE("ELEV")
+           DO k=1,bc%num_cell_pairs
+              i_beg = bc%start_cell(k)+1
+              i_end	 = bc%end_cell(k)+1
+              DO ii = i_beg, i_end
+                 blk%dp(ii,j) = 0.0
+                 blk%depth(ii,j) = 2*table_input(k) - &
+                      &(blk%depth(ii,j-1) + blk%zbot(ii,j-1)) - blk%zbot(ii,j)
+                 ! blk%depth(ii,j) = table_input(k) - blk%zbot(ii,j)
+                 IF (do_wetdry) blk%depth(ii,j) =  &
+                      &MAX(blk%depth(ii,j), dry_zero_depth)
+              END DO
+              blk%dstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+              blk%uvel(i_beg-1:i_end,j) = blk%uvel(i_beg-1:i_end,j-1)
+              blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j-1)
+              blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+              blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_ELEV
+           END DO
+        CASE DEFAULT
+           GOTO 100
         END SELECT
-        
+     CASE ("ZEROG")
+        DO k=1,bc%num_cell_pairs
+           i_beg = bc%start_cell(j)+1
+           i_end = bc%end_cell(j)+1
+           CALL extrapolate_vdepth(blk, i_beg, i_end, j, level = .FALSE.)
+           blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j-1)
+           blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j-1)
+           blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+           blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_ZEROG
+        END DO
+     CASE DEFAULT
+        GOTO 100
      END SELECT
               
   CASE ("IN") 
@@ -2653,10 +2413,6 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      SELECT CASE(bc%bc_type)
         
      CASE ("SOURCE", "SINK")
-        
-        CALL table_interp(current_time%time,&
-             & bc%table_num,&
-             & table_input, 1)
         
         ! if this is labeled as a "SINK"
         ! negate whatever is in the table
@@ -2695,6 +2451,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
            ! if a rate is specified, do not alter
            ! the table value
            input_total = 1.0
+        CASE DEFAULT
+           GOTO 100
         END SELECT
         
         DO i = bc%start_cell(1), bc%end_cell(1)
@@ -2728,6 +2486,8 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
                  blk%isdead(i+1,j)%v = .TRUE.
               END DO
            END DO
+        CASE DEFAULT
+           GOTO 100
         END SELECT
         
      CASE ("DEAD")
@@ -2741,10 +2501,21 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
               blk%isdead(i+1, j+1)%v = .TRUE.
            END DO
         END DO
-        
+     CASE DEFAULT
+        GOTO 100
      END SELECT
+  CASE DEFAULT
+     GOTO 100
   END SELECT
+
+  RETURN
+100 CONTINUE
+  WRITE(buf,*) " apply_hydro_bc: cannot handle: ", &
+       &TRIM(bc%bc_loc), " ", TRIM(bc%bc_type), " ", &
+       &TRIM(bc%bc_kind), " "
+  CALL error_message(buf, fatal=.TRUE.)
 END SUBROUTINE apply_hydro_bc
+
 ! ----------------------------------------------------------------
 ! SUBROUTINE compute_uflow_area
 ! ----------------------------------------------------------------
@@ -2763,19 +2534,50 @@ SUBROUTINE compute_uflow_area(blk, i, jmin, jmax, area, total)
 
   area = 0.0
   DO j = jmin, jmax
+     d = 0.5*(blk%depth(i,j) + blk%depth(i+ioff,j))
+     w = blk%hu2(i,j)
      IF (do_wetdry .AND. blk%depth(i,j) .LE. dry_depth) THEN
         area(j) = 0.0
      ELSE 
-        area(j) = 0.5*(blk%depth(i,j) + blk%depth(i+ioff,j))*blk%hu2(i,j)
+        area(j) = d*w
      END IF
   END DO
   total = SUM(area)
 END SUBROUTINE compute_uflow_area
 
 ! ----------------------------------------------------------------
-! SUBROUTINE extrapolate_depth
+! SUBROUTINE compute_vflow_area
 ! ----------------------------------------------------------------
-SUBROUTINE extrapolate_depth(blk, i, jmin, jmax, level)
+SUBROUTINE compute_vflow_area(blk, imin, imax, j, area, total)
+
+  IMPLICIT NONE
+  TYPE (block_struct) :: blk
+  INTEGER, INTENT(IN) :: imin, imax, j
+  DOUBLE PRECISION, INTENT(OUT) :: area(:), total
+
+  INTEGER :: joff, i
+  DOUBLE PRECISION :: d, w
+  
+  joff = 1                      ! by default, do the right bank
+  IF (j .GE. 2) joff = -1
+
+  area = 0.0
+  DO i = imin, imax
+     w = blk%hv1(i,j)
+     d = 0.5*(blk%depth(i,j) + blk%depth(i,j+joff))
+     IF (do_wetdry .AND. d .LE. dry_depth) THEN
+        area(i) = 0.0
+     ELSE 
+        area(i) = d*w
+     END IF
+  END DO
+  total = SUM(area)
+END SUBROUTINE compute_vflow_area
+
+! ----------------------------------------------------------------
+! SUBROUTINE extrapolate_udepth
+! ----------------------------------------------------------------
+SUBROUTINE extrapolate_udepth(blk, i, jmin, jmax, level)
 
   IMPLICIT NONE
 
@@ -2812,227 +2614,107 @@ SUBROUTINE extrapolate_depth(blk, i, jmin, jmax, level)
      WHERE (blk%depth(i,jmin:jmax) .LT. dry_zero_depth) &
           &blk%depth(i,jmin:jmax) = dry_zero_depth
   END IF
-END SUBROUTINE extrapolate_depth
+END SUBROUTINE extrapolate_udepth
 
 ! ----------------------------------------------------------------
-! SUBROUTINE linear_friction Linearization of the friction term.
-! ustar is the (previous) velocity in the direction we are interested
-! in; vstar is the (previous) velocity in the other direction 
-!
-! WARNING: values of sc and sp are intentionally incremented.
+! SUBROUTINE extrapolate_vdepth
 ! ----------------------------------------------------------------
-SUBROUTINE linear_friction(c, depth, ustar, vstar, harea, sc, sp)
+SUBROUTINE extrapolate_vdepth(blk, imin, imax, j, level)
 
   IMPLICIT NONE
 
-  DOUBLE PRECISION, INTENT(IN) :: c, depth, ustar, vstar, harea
-  DOUBLE PRECISION, INTENT(INOUT) :: sc, sp
+  TYPE (block_struct) :: blk
+  INTEGER, INTENT(IN) :: imin, imax, j
+  LOGICAL, INTENT(IN), OPTIONAL :: level
 
-  DOUBLE PRECISION :: roughness, vmagstar, cterm, pterm
+  INTEGER :: joff, i
+  LOGICAL :: dolvl
 
-  ! Also uses: grav, density
+  joff = 1                      ! by default, do the upstream end.
+  IF (j .GE. 2) joff = -1
 
-  IF(manning)THEN
-     IF (do_wetdry) THEN
-        roughness = (grav*c**2)/(mann_con*MAX(depth, dry_depth)**0.3333333)
-     ELSE
-        roughness = (grav*c**2)/(mann_con*depth**0.3333333)
-     END IF
-  ELSE
-     roughness = c
+  dolvl = .TRUE.
+  IF (PRESENT(level)) dolvl = level
+
+  IF (dolvl) THEN
+                                ! by level w.s. elevation
+  
+     blk%depth(imin:imax,j) = (blk%depth(imin:imax,j+joff) +&
+          & blk%zbot(imin:imax,j+joff)) - blk%zbot(imin:imax,j)
+  ELSE 
+                                ! true linear extrapolation of w.s. elevation
+
+     blk%depth(imin:imax,j) = (&
+          &(blk%depth(imin:imax,j+joff) + blk%zbot(imin:imax,j+joff)) - &
+          &(blk%depth(imin:imax,j+2*joff) + blk%zbot(imin:imax,j+2*joff)))*&
+          &blk%hv2(imin:imax,j)/blk%hv2(imin:imax,j+joff) + &
+          &(blk%depth(imin:imax,j+joff) + blk%zbot(imin:imax,j+joff)) - &
+          &blk%zbot(imin:imax,j)
   END IF
-  vmagstar = sqrt(ustar*ustar + vstar*vstar)
 
-  ! Alternative: linearize by making the source term all constant:
+  IF (do_wetdry) THEN
+     WHERE (blk%depth(imin:imax,j) .LT. dry_zero_depth) &
+          &blk%depth(imin:imax,j) = dry_zero_depth
+  END IF
+END SUBROUTINE extrapolate_vdepth
 
-  ! cterm = - harea*roughness*ustar*vmagstar
-  ! pterm = 0.0
-  
-  ! Alternative: linearize by using current ustar and previous
-  ! estimate of velocity magnitude
-  
-  cterm = 0.0
-  pterm = - harea*roughness*vmagstar
-  
-  ! Alternative: Taylor Series expansion -- only good for vmag > 0.0,
-  
-  ! IF (vmagstar > 1.0d-20) THEN
-  !    cterm = harea*roughness*(ustar**3.0)/vmagstar
-  !    pterm = - harea*roughness*(ustar*ustar/vmagstar + vmagstar)
-  ! ELSE 
-  !    cterm = 0.0
-  !    pterm = harea*roughness*vmagstar
-  ! END IF
+! ----------------------------------------------------------------
+! SUBROUTINE depth_check
+! ----------------------------------------------------------------
+SUBROUTINE depth_check(iblock, blk, date_str, time_str)
+
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: iblock
+  TYPE (block_struct), INTENT(INOUT) :: blk
+  CHARACTER (LEN=*), INTENT(IN) :: date_str, time_str
+
+  INTEGER :: x_beg, x_end, y_beg, y_end, i, j
+
+  x_beg = 2
+  x_end = blk%xmax
+  y_beg = 2
+  y_end = blk%ymax
+
+  DO i = x_beg, x_end
+     DO j = y_beg, y_end
+
+        IF (blk%depth(i,j) <= 0.0) THEN
+           IF (do_wetdry) THEN
+              WRITE(error_iounit,*)" ERROR: Negative Depth = ",blk%depth(i,j)
+              WRITE(error_iounit,*)"     Simulation Time: ", date_str, " ", time_str
+              WRITE(error_iounit,*)"     Block Number = ",iblock
+              WRITE(error_iounit,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
               
-  sc = sc + cterm
-  sp = sp - pterm
-
-END SUBROUTINE linear_friction
-
-! ----------------------------------------------------------------
-! SUBROUTINE shallow_v_nudge
-! ----------------------------------------------------------------
-SUBROUTINE shallow_v_nudge(c, depth, ustar, vstar, dwsdx, sc, sp)
-
-  IMPLICIT NONE
-
-  DOUBLE PRECISION, INTENT(IN) :: c, depth, ustar, vstar, dwsdx
-  DOUBLE PRECISION, INTENT(INOUT) :: sc, sp
-
-  DOUBLE PRECISION :: vmagstar, sf, utilde, cterm, pterm, sstar
-
-  DOUBLE PRECISION, PARAMETER :: mfactor = 2.0
-
-  sstar = sp*ustar + sc
-  vmagstar = sqrt(ustar*ustar + vstar*vstar)
-
-  IF (manning) THEN
-     sf = c**2.0/mann_con*(ustar*vmagstar/(depth**(4/3)))
-  ELSE
-     sf = (ustar*vmagstar)/depth/c**2.0
-  END IF
-
-  sf = ABS(sf)
-
-  IF (sf .GE. mfactor*ABS(dwsdx) .AND. sf .GT. 0.0) THEN
-     utilde = ustar/vmagstar*SQRT(ABS(dwsdx))
-     ! utilde = ustar/ABS(ustar)*SQRT(ABS(dwsdx))
-     IF (manning) THEN
-        utilde = utilde * c*depth**(2/3)/SQRT(mann_con)
-     ELSE
-        utilde = utilde * c*SQRT(depth)
-     END IF
-     
-     IF (ABS(utilde - ustar) .GT. 0.0) THEN 
-        cterm = (sstar*utilde)/(utilde - ustar)
-        pterm = sstar/(utilde - ustar)
-
-        sc = cterm
-        sp = -pterm
-     END IF
-  END IF
-
-END SUBROUTINE shallow_v_nudge
-
-
-! ----------------------------------------------------------------
-! SUBROUTINE transport_precalc
-! This routine precalculates various hydrodynamic values needed
-! ----------------------------------------------------------------
-SUBROUTINE transport_precalc()
-
-  IMPLICIT NONE
-
-  DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
-  DOUBLE PRECISION :: xdiffp, ydiffp
-
-  DO iblock = 1, max_blocks
-     x_end = block(iblock)%xmax
-     y_end = block(iblock)%ymax
-
-     i = 1
-     block(iblock)%inlet_area(2:y_end) = block(iblock)%depth(i,2:y_end)*block(iblock)%hu2(i,2:y_end)
-
-     
-
-     block(iblock)%k_e = 0.0
-     block(iblock)%k_w = 0.0
-     block(iblock)%k_n = 0.0
-     block(iblock)%k_s = 0.0
-     DO i= 2,x_end
-        DO j=2,y_end
-
-           hp1 = block(iblock)%hp1(i,j)
-           hp2 = block(iblock)%hp2(i,j)
-           he1 = block(iblock)%hu1(i,j)
-           he2 = block(iblock)%hu2(i,j)
-           hw1 = block(iblock)%hu1(i-1,j)
-           hw2 = block(iblock)%hu2(i-1,j)
-           hs1 = block(iblock)%hv1(i,j-1)
-           hs2 = block(iblock)%hv2(i,j-1)
-           hn1 = block(iblock)%hv1(i,j)
-           hn2 = block(iblock)%hv2(i,j)
-           
-                                ! do not allow diffusion in dead cells 
-
-           IF (block(iblock)%isdead(i,j)%p) THEN
-              xdiffp = 0.0
-              ydiffp = 0.0
-           ELSE 
-              xdiffp = block(iblock)%kx_diff(i,j)
-              ydiffp = block(iblock)%ky_diff(i,j)
+              WRITE(*,*)" ERROR: Negative Depth = ",blk%depth(i,j)
+              WRITE(*,*)"     Simulation Time: ", current_time%date_string, " ", current_time%time_string
+              WRITE(*,*)"     Block Number = ",iblock
+              WRITE(*,*)"     I,J Location of negative depth = (", i, ", ", j, ")"
+              
+              blk%depth(i,j) = dry_zero_depth
+           ELSE
+              
+              WRITE(error_iounit,*)" FATAL ERROR: Negative Depth = ",MINVAL(blk%depth)
+              WRITE(error_iounit,*)"     Block Number = ",iblock
+              WRITE(error_iounit,*)"     I,J Location of negative depth = ",MINLOC(blk%depth)
+              
+              WRITE(*,*)" FATAL ERROR: Negative Depth = ",MINVAL(blk%depth)
+              WRITE(*,*)"     Block Number = ",iblock
+              WRITE(*,*)"     I,J Location of negative depth = ",MINLOC(blk%depth)
+              
+              CALL EXIT(1)  ! abort run if you hit a negative depth
+              
            END IF
-
-                                ! use the harmonic, rather than
-                                ! arithmatic, mean of diffusivity
-
-           IF (xdiffp .GT. 0.0) THEN
-              IF (.NOT. block(iblock)%isdead(i,j)%u) THEN
-                 block(iblock)%k_e(i,j) = &
-                      &2.0*xdiffp*block(iblock)%kx_diff(i+1,j)/&
-                      &(xdiffp + block(iblock)%kx_diff(i+1,j))
-              END IF
-              IF (.NOT. block(iblock)%isdead(i-1,j)%u) THEN
-                 block(iblock)%k_w(i,j) = &
-                      &2.0*xdiffp*block(iblock)%kx_diff(i-1,j)/&
-                      &(xdiffp + block(iblock)%kx_diff(i-1,j))
-              END IF
-           END IF
-
-           IF (ydiffp .GT. 0.0) THEN
-              IF (.NOT. block(iblock)%isdead(i,j)%v) THEN
-                 block(iblock)%k_n(i,j) = &
-                      &2.0*ydiffp*block(iblock)%ky_diff(i,j+1)/&
-                      &(ydiffp + block(iblock)%ky_diff(i,j+1))
-              END IF
-              IF (.NOT. block(iblock)%isdead(i,j-1)%v) THEN
-                 block(iblock)%k_s(i,j) = &
-                      &2.0*ydiffp*block(iblock)%ky_diff(i,j-1)/&
-                      &(ydiffp + block(iblock)%ky_diff(i,j-1))
-              END IF
-           END IF
-
-           ! block(iblock)%k_e(i,j) = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i+1,j))
-           ! block(iblock)%k_w(i,j) = 0.5*(block(iblock)%kx_diff(i,j)+block(iblock)%kx_diff(i-1,j))
-           ! block(iblock)%k_n(i,j) = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j+1))
-           ! block(iblock)%k_s(i,j) = 0.5*(block(iblock)%ky_diff(i,j)+block(iblock)%ky_diff(i,j-1))
-
-           block(iblock)%depth_e(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i+1,j))
-           block(iblock)%depth_w(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i-1,j))
-           block(iblock)%depth_n(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j+1))
-           block(iblock)%depth_s(i,j) = 0.5*(block(iblock)%depth(i,j)+block(iblock)%depth(i,j-1))
-
-           IF(i == 2) block(iblock)%depth_w(i,j) = block(iblock)%depth(i-1,j)
-           IF(i == x_end) block(iblock)%depth_e(i,j) = block(iblock)%depth(i+1,j)
-           IF(j == 2) block(iblock)%depth_s(i,j) = block(iblock)%depth(i,j-1)
-           IF(j == y_end) block(iblock)%depth_n(i,j) = block(iblock)%depth(i,j+1)
-
-           block(iblock)%flux_e(i,j) = he2*block(iblock)%uvel(i,j)*block(iblock)%depth_e(i,j)
-           block(iblock)%flux_w(i,j) = hw2*block(iblock)%uvel(i-1,j)*block(iblock)%depth_w(i,j)
-           block(iblock)%flux_n(i,j) = hn1*block(iblock)%vvel(i,j)*block(iblock)%depth_n(i,j)
-           block(iblock)%flux_s(i,j) = hs1*block(iblock)%vvel(i,j-1)*block(iblock)%depth_s(i,j)
-           block(iblock)%diffu_e(i,j) = block(iblock)%k_e(i,j)*block(iblock)%depth_e(i,j)*he2/he1
-           block(iblock)%diffu_w(i,j) = block(iblock)%k_w(i,j)*block(iblock)%depth_w(i,j)*hw2/hw1
-           block(iblock)%diffu_n(i,j) = block(iblock)%k_n(i,j)*block(iblock)%depth_n(i,j)*hn1/hn2
-           block(iblock)%diffu_s(i,j) = block(iblock)%k_s(i,j)*block(iblock)%depth_s(i,j)*hs1/hs2
-
-!!$                                ! only needed when the power law scheme is used
-!!$           block(iblock)%pec_e(i,j) = block(iblock)%flux_e(i,j)/block(iblock)%diffu_e(i,j)
-!!$           block(iblock)%pec_w(i,j) = block(iblock)%flux_w(i,j)/block(iblock)%diffu_w(i,j)
-!!$           block(iblock)%pec_n(i,j) = block(iblock)%flux_n(i,j)/block(iblock)%diffu_n(i,j)
-!!$           block(iblock)%pec_s(i,j) = block(iblock)%flux_s(i,j)/block(iblock)%diffu_s(i,j)
-           
-        END DO
+        ELSE IF (.NOT. do_wetdry .AND. blk%depth(i,j) <= 0.20) THEN
+           WRITE(error_iounit,*)" WARNING: Small Depth = ", blk%depth(i,j)
+           WRITE(error_iounit,*)"     Simulation Time: ", date_str, " ", time_str
+           WRITE(error_iounit,*)"     Block Number = ",iblock
+           WRITE(error_iounit,*)"     I,J Location of small depth = ",i, j
+        END IF
      END DO
-
-     block(iblock)%apo(2:x_end,2:y_end) = &
-          &block(iblock)%hp1(2:x_end,2:y_end)*&
-          &block(iblock)%hp2(2:x_end,2:y_end)*&
-          &block(iblock)%depthold(2:x_end,2:y_end)/delta_t
-
   END DO
 
-END SUBROUTINE transport_precalc
+END SUBROUTINE depth_check
 
 
 !################################################################################
@@ -3041,11 +2723,18 @@ END SUBROUTINE transport_precalc
 !--------------------------------------------------------------------------------
 !
 
+
+!################################################################################
+!--------------------------------------------------------------------------------
+! scalar transport solution
+!--------------------------------------------------------------------------------
+!
 SUBROUTINE transport(status_flag)
 
   IMPLICIT NONE
 
   INTEGER :: status_flag, var, iter
+  INTEGER :: i, j, ispecies, num_bc, junk
 
   IF(.NOT. do_flow)THEN
      dum_val = current_time%time + delta_t/86400.0d0 ! velocity and depth are at the NEW time
@@ -3060,24 +2749,32 @@ SUBROUTINE transport(status_flag)
         var = 3
         CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%depth)
      END DO
-     CALL bedshear()
   END IF
   
   CALL scalar_source_timestep(current_time%time, delta_t)
   IF (source_doing_sed) CALL bed_dist_bedsrc(delta_t)
-  CALL transport_precalc()
+  DO iblock = 1,max_blocks
+     CALL bedshear(block(iblock))
+     CALL transport_precalc(block(iblock))
+  END DO
 
   ! INTERNAL ITERATION AT THIS TIME LEVEL LOOP
   DO iter = 1,number_scalar_iterations
      
      ! BLOCK LOOP
      DO iblock = 1,max_blocks
-        
+
+        x_start = 2
+        y_start = 2
         x_end = block(iblock)%xmax
         y_end = block(iblock)%ymax
         
         ! SPECIES LOOP - multiple numbers of scalar variables
         DO ispecies = 1, max_species
+
+           CALL default_scalar_bc(block(iblock), species(ispecies)%scalar(iblock))
+
+           ! WRITE(*,*) 'Transport: block = ', iblock, ', species = ', ispecies
            
            ! set boundary conditions for this time
            
@@ -3086,128 +2783,13 @@ SUBROUTINE transport(status_flag)
               IF(scalar_bc(iblock)%bc_spec(num_bc)%species .EQ. ispecies)&
                    &CALL apply_scalar_bc(block(iblock), &
                    &species(ispecies)%scalar(iblock), &
-                   &scalar_bc(iblock)%bc_spec(num_bc), x_start)
+                   &scalar_bc(iblock)%bc_spec(num_bc), x_start, y_start)
            END DO ! num bc loop
 
-           !-------------------------------------------------------------------------
-           ! compute scalar transport discretization equation coefficients
-           
-           ! block(iblock)%apo(x_start:x_end,2:y_end) = &
-           !      &block(iblock)%hp1(x_start:x_end,2:y_end)*&
-           !      &block(iblock)%hp2(x_start:x_end,2:y_end)*&
-           !      &block(iblock)%depthold(x_start:x_end,2:y_end)/delta_t
+           CALL apply_scalar_source(iblock, ispecies, x_start, y_start)
 
-           coeff%ae(x_start:x_end,2:y_end) = &
-                &max(0d+00, -block(iblock)%flux_e(x_start:x_end,2:y_end), &
-                &block(iblock)%diffu_e(x_start:x_end,2:y_end) - &
-                &block(iblock)%flux_e(x_start:x_end,2:y_end)/2.0)
-           coeff%aw(x_start:x_end,2:y_end) = &
-                &max(0d+00, block(iblock)%flux_w(x_start:x_end,2:y_end), &
-                &block(iblock)%diffu_w(x_start:x_end,2:y_end) + &
-                &block(iblock)%flux_w(x_start:x_end,2:y_end)/2.0)
-           coeff%an(x_start:x_end,2:y_end) = &
-                &max(0d+00, -block(iblock)%flux_n(x_start:x_end,2:y_end), &
-                &block(iblock)%diffu_n(x_start:x_end,2:y_end) - &
-                &block(iblock)%flux_n(x_start:x_end,2:y_end)/2.0)
-           coeff%as(x_start:x_end,2:y_end) = &
-                &max(0d+00, block(iblock)%flux_s(x_start:x_end,2:y_end), &
-                &block(iblock)%diffu_s(x_start:x_end,2:y_end) + &
-                &block(iblock)%flux_s(x_start:x_end,2:y_end)/2.0)
-           coeff%bp = 0.0
+           CALL scalar_solve(iblock, block(iblock), species(ispecies)%scalar(iblock), x_start, y_start)
 
-           DO i= x_start,x_end
-              DO j=2,y_end
-
-              IF (source_doing_temp) THEN
-                 t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
-              ELSE
-                 t_water = 0
-              END IF
-
-              IF (block(iblock)%isdead(i,j)%p) THEN
-                 coeff%bp(i,j) = 0.0
-              ELSE 
-                 coeff%bp(i,j) = &
-                      &scalar_source_term(iblock, i, j, ispecies, &
-                      &species(ispecies)%scalar(iblock)%concold(i,j),&
-                      &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
-                      &t_water, salinity)
-                 coeff%bp(i,j) = coeff%bp(i,j)*&
-                      &block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
-              END IF
-
-              coeff%ap(i,j) = &
-                   &coeff%ae(i,j) + coeff%aw(i,j) + coeff%an(i,j) + coeff%as(i,j) + &
-                   &block(iblock)%apo(i,j) 
-
-              coeff%bp(i,j) = coeff%bp(i,j) + &
-                   &block(iblock)%apo(i,j)*&
-                   &species(ispecies)%scalar(iblock)%concold(i,j)
-
-              SELECT CASE (species(ispecies)%scalar(iblock)%cell(i,j)%type)
-              CASE (SCALAR_BOUNDARY_TYPE)
-                 SELECT CASE (species(ispecies)%scalar(iblock)%cell(i,j)%bctype)
-                 CASE (SCALBC_CONC)
-                    IF (i .EQ. x_start) THEN
-                       coeff%bp(i,j) = coeff%bp(i,j) + 2.0*coeff%aw(i,j)*&
-                            &species(ispecies)%scalar(iblock)%conc(i-1,j)
-                       coeff%ap(i,j) = coeff%ap(i,j) + coeff%aw(i,j)
-                       coeff%aw(i,j) = 0.0
-                    END IF
-                 CASE (SCALBC_ZG)
-                    IF (i .EQ. x_start) THEN
-                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%aw(i,j)
-                       coeff%aw(i,j) = 0.0
-                    ELSE IF (i .EQ. x_end) THEN
-                       coeff%ap(i,j) = coeff%ap(i,j) - coeff%ae(i,j)
-                       coeff%ae(i,j) = 0.0
-                    END IF
-                 END SELECT
-              CASE DEFAULT
-                 IF (i .EQ. x_start) THEN
-                    coeff%bp(i,j) = coeff%bp(i,j) + coeff%aw(i,j)*&
-                         &species(ispecies)%scalar(iblock)%conc(i-1,j)
-                    coeff%aw(i,j) = 0.0
-                 ELSE IF (i .EQ. x_end) THEN
-                    coeff%bp(i,j) = coeff%bp(i,j) + coeff%ae(i,j)*&
-                         &species(ispecies)%scalar(iblock)%conc(i+1,j)
-                    coeff%ae(i,j) = 0.0
-                 END IF
-              END SELECT
-              END DO
-           END DO
-
-                                ! apply zero gradient to sides
-
-           coeff%ap(:,2) = coeff%ap(:,2) - coeff%as(:,2)
-           coeff%as(:,2) = 0.0
-
-           coeff%ap(:,y_end) = coeff%ap(:,y_end) - coeff%an(:,y_end)
-           coeff%an(:,y_end) = 0.0
-
-           CALL solve_tdma(scalar_sweep, x_start, x_end, 2, y_end,&
-                &coeff%ap(x_start:x_end,2:y_end), coeff%aw(x_start:x_end,2:y_end), &
-                &coeff%ae(x_start:x_end,2:y_end), coeff%as(x_start:x_end,2:y_end), &
-                &coeff%an(x_start:x_end,2:y_end), coeff%bp(x_start:x_end,2:y_end), &
-                &species(ispecies)%scalar(iblock)%conc(x_start:x_end,2:y_end))
-
-           ! set zero gradient at shoreline
-           species(ispecies)%scalar(iblock)%conc(:,1) = &
-                &species(ispecies)%scalar(iblock)%conc(:,2)
-           species(ispecies)%scalar(iblock)%conc(:,y_end+1) = &
-                &species(ispecies)%scalar(iblock)%conc(:,y_end)
-
-
-           ! fill in the unused corner nodes so that the plots look ok
-           species(ispecies)%scalar(iblock)%conc(x_start-1,1) = species(ispecies)%scalar(iblock)%conc(x_start-1,2)
-           species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax+1) =&
-                & species(ispecies)%scalar(iblock)%conc(x_start-1,block(iblock)%ymax)
-           species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,1) =&
-                & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,2)
-           species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax+1,block(iblock)%ymax+1) =&
-                & species(ispecies)%scalar(iblock)%conc(block(iblock)%xmax,block(iblock)%ymax)
-           
-           
         END DO ! species loop
         
      END DO ! block loop end
@@ -3218,28 +2800,45 @@ SUBROUTINE transport(status_flag)
 !----------------------------------------------------------------------------
 END SUBROUTINE transport 
 
+
 ! ----------------------------------------------------------------
 ! SUBROUTINE apply_scalar_bc
 ! ----------------------------------------------------------------
-SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
+SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
 
   IMPLICIT NONE
 
   TYPE (block_struct) :: blk
   TYPE (scalar_struct) :: sclr
   TYPE (scalar_bc_spec_struct) :: spec
-  INTEGER, INTENT(INOUT) :: xstart
+  INTEGER, INTENT(INOUT) :: xstart, ystart
 
-  INTEGER :: i, j, jj, con_i, con_j, j_beg, j_end, con_block, x_end
+  INTEGER :: con_block, k
+  INTEGER :: i, ii, con_i, i_beg, i_end, x_end
+  INTEGER :: j, jj, con_j, j_beg, j_end, y_end
   DOUBLE PRECISION :: tmp
 
+  CHARACTER (LEN=1024) :: buf
+  
+  SELECT CASE(spec%bc_type)
+  CASE("BLOCK")
+     con_block = spec%con_block
+     CALL fillghost_scalar(blk, sclr, block(con_block), &
+          &species(spec%species)%scalar(con_block), spec)
+     RETURN
+  CASE("TABLE")
+     CALL scalar_table_interp(current_time%time, spec%table_num,&
+          & table_input, spec%num_cell_pairs)
+  END SELECT
+
   x_end = blk%xmax
+  y_end = blk%ymax
 
   SELECT CASE(spec%bc_loc)
                     
   CASE("US")
      i=1
-     x_start = i + 1
+     xstart = i + 1
      SELECT CASE(spec%bc_type)
            
      CASE("ZEROG")
@@ -3247,18 +2846,11 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
            j_beg = spec%start_cell(j)+1
            j_end = spec%end_cell(j)+1
            sclr%conc(i,j_beg:j_end) = sclr%conc(i+1,j_beg:j_end)
-           sclr%cell(i+1,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-           sclr%cell(i+1,j_beg:j_end)%bctype = SCALBC_ZG
+           sclr%cell(i+1,j_beg:j_end)%xtype = SCALAR_BOUNDARY_TYPE
+           sclr%cell(i+1,j_beg:j_end)%xbctype = SCALBC_ZG
         END DO
                        
-     CASE("BLOCK")
-        con_block = spec%con_block
-        CALL fillghost_scalar(blk, sclr, block(con_block), &
-             &species(spec%species)%scalar(con_block), spec)
-           
      CASE("TABLE")
-        CALL scalar_table_interp(current_time%time, spec%table_num,&
-                & table_input, spec%num_cell_pairs)
         SELECT CASE(spec%bc_kind)
         CASE("FLUX")
            DO j=1,spec%num_cell_pairs
@@ -3279,25 +2871,28 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
                  sclr%conc(i,jj) =  table_input(j)/tmp
               END DO
               sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-              sclr%cell(x_start,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-              sclr%cell(x_start,j_beg:j_end)%bctype = SCALBC_CONC
+              sclr%cell(xstart,j_beg:j_end)%xtype = SCALAR_BOUNDARY_TYPE
+              sclr%cell(xstart,j_beg:j_end)%xbctype = SCALBC_CONC
            END DO
               
         CASE("CONC")
            i = spec%x_start
-           x_start = i + 1
+           xstart = i + 1
            DO j=1,spec%num_cell_pairs
               j_beg = spec%start_cell(j)+1
               j_end = spec%end_cell(j)+1
               sclr%conc(i,j_beg:j_end) = &
                    &table_input(j)*scalar_source(spec%species)%conversion
               sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-              sclr%cell(x_start,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-              sclr%cell(x_start,j_beg:j_end)%bctype = SCALBC_CONC
+              sclr%cell(xstart,j_beg:j_end)%xtype = SCALAR_BOUNDARY_TYPE
+              sclr%cell(xstart,j_beg:j_end)%xbctype = SCALBC_CONC
            END DO
-              
+
+        CASE DEFAULT
+           GOTO 100
         END SELECT
-           
+     CASE DEFAULT
+        GOTO 100
      END SELECT
         
   CASE("DS")
@@ -3310,19 +2905,148 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart)
            j_end = spec%end_cell(j)+1
            sclr%conc(i, j_beg:j_end) = sclr%conc(i-1, j_beg:j_end)
            sclr%concold(i,j_beg:j_end) = sclr%conc(i,j_beg:j_end)
-           sclr%cell(i-1,j_beg:j_end)%type = SCALAR_BOUNDARY_TYPE
-           sclr%cell(i-1,j_beg:j_end)%bctype = SCALBC_ZG
+           sclr%cell(i-1,j_beg:j_end)%xtype = SCALAR_BOUNDARY_TYPE
+           sclr%cell(i-1,j_beg:j_end)%xbctype = SCALBC_ZG
         END DO
 
-     CASE("BLOCK")
-        con_block = spec%con_block
-        CALL fillghost_scalar(blk, sclr, block(con_block), &
-             &species(spec%species)%scalar(con_block), spec)
-           
+     CASE DEFAULT
+        GOTO 100
      END SELECT
+
+  CASE ("RB")
+     j = 1
+     ystart = j + 1
+     SELECT CASE(spec%bc_type)
+
+     CASE ("ZEROG")
+        DO k = 1, spec%num_cell_pairs
+           i_beg = spec%start_cell(k)+1
+           i_end = spec%end_cell(k)+1
+           sclr%conc(i_beg:i_end,j) = sclr%conc(i_beg:i_end,j+1)
+           sclr%cell(i_beg:i_end,j+1)%ytype = SCALAR_BOUNDARY_TYPE
+           sclr%cell(i_beg:i_end,j+1)%ybctype = SCALBC_ZG
+        END DO
+
+     CASE("TABLE")
+
+        SELECT CASE(spec%bc_kind)
+
+        CASE("CONC")
+           j = spec%x_start
+           ystart = j + 1
+           DO k = 1, spec%num_cell_pairs
+              i_beg = spec%start_cell(k)+1
+              i_end = spec%end_cell(k)+1
+              sclr%conc(i_beg:i_end, j) = &
+                   &table_input(k)*scalar_source(spec%species)%conversion
+              sclr%concold(i_beg:i_end, j) = sclr%conc(i_beg:i_end, j)
+              sclr%cell(i_beg:i_end,ystart)%ytype = SCALAR_BOUNDARY_TYPE
+              sclr%cell(i_beg:i_end,ystart)%ybctype = SCALBC_CONC
+           END DO
+
+        CASE("FLUX")
+           DO k = 1, spec%num_cell_pairs
+              i_beg = spec%start_cell(k)+1
+              i_end = spec%end_cell(k)+1
+              CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, tmp)
+              WHERE (blk%vvel(i_beg:i_end, j) .GT. 0.0)
+                 inlet_area(i_beg:i_end) = &
+                      &inlet_area(i_beg:i_end)*blk%vvel(i_beg:i_end,j)
+              ELSEWHERE
+                 inlet_area(i_beg:i_end) = 0.0
+              END WHERE
+              tmp = SUM(inlet_area(i_beg:i_end))
+              DO ii = i_beg, i_end
+                 sclr%conc(ii,j) =  table_input(k)/tmp
+              END DO
+              sclr%concold(i_beg:i_end, j) = sclr%conc(i_beg:i_end, j)
+              sclr%cell(i_beg:i_end, j+1)%ytype = SCALAR_BOUNDARY_TYPE
+              sclr%cell(i_beg:i_end, j+1)%ybctype = SCALBC_CONC
+           END DO
+        CASE DEFAULT
+           GOTO 100
+        END SELECT
+     CASE DEFAULT
+        GOTO 100
+     END SELECT
+
+  CASE ("LB")
+     j = y_end+1
+
+     SELECT CASE(spec%bc_type)
+           
+     CASE("ZEROG")
+        DO k=1,spec%num_cell_pairs
+           i_beg = spec%start_cell(k)+1
+           i_end = spec%end_cell(k)+1
+           sclr%conc(i_beg:i_end,j) = sclr%conc(i_beg:i_end,j-1)
+           sclr%concold(i_beg:i_end,j) = sclr%conc(i_beg:i_end,j)
+           sclr%cell(i_beg:i_end,j-1)%ytype = SCALAR_BOUNDARY_TYPE
+           sclr%cell(i_beg:i_end,j-1)%ybctype = SCALBC_ZG
+        END DO
+
+     CASE DEFAULT
+        GOTO 100
+     END SELECT
+
+     CASE DEFAULT
+        GOTO 100
   END SELECT
+
+  RETURN
      
+100 CONTINUE
+  WRITE(buf,*) " apply_scalar_bc: cannot handle: ", &
+       &TRIM(spec%bc_loc), " ", TRIM(spec%bc_type), " ", &
+       &TRIM(spec%bc_kind), " for scalar "
 END SUBROUTINE apply_scalar_bc
+
+! ----------------------------------------------------------------
+! SUBROUTINE apply_scalar_source
+! This routine computes the scalar source term and stores it for later
+! use.  This can be precomputed because all of the scalar source terms
+! are explicit, depending only on the previous concentration
+! estimates.
+! ----------------------------------------------------------------
+SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
+
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: iblock, ispecies, xstart, ystart
+
+  INTEGER :: xend, yend
+  INTEGER :: i, j
+  DOUBLE PRECISION :: src
+
+  xend = block(iblock)%xmax
+  yend = block(iblock)%ymax
+
+  species(ispecies)%scalar(iblock)%srcterm = 0.0
+  
+  DO i = xstart, xend
+     DO j = ystart, yend
+
+        IF (source_doing_temp) THEN
+           t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
+        ELSE
+           t_water = 0
+        END IF
+
+        IF (.NOT. block(iblock)%isdead(i,j)%p) THEN
+           src = &
+                &scalar_source_term(iblock, i, j, ispecies, &
+                &species(ispecies)%scalar(iblock)%conc(i,j),&
+                &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
+                &t_water, salinity)
+           src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+        END IF
+
+        species(ispecies)%scalar(iblock)%srcterm(i,j) = src
+     END DO
+  END DO
+END SUBROUTINE apply_scalar_source
+
+
 
 
 !############################################################################
@@ -3333,10 +3057,17 @@ SUBROUTINE update(status_flag)
 
 IMPLICIT NONE
 
-INTEGER :: status_flag
+INTEGER :: status_flag, iblock, ispecies
 
 
 DO iblock=1,max_blocks
+
+  block(iblock)%uoldold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
+       & block(iblock)%uold(2:block(iblock)%xmax,2:block(iblock)%ymax) 
+  block(iblock)%voldold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
+       & block(iblock)%vold(2:block(iblock)%xmax,2:block(iblock)%ymax) 
+  block(iblock)%deptholdold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
+       & block(iblock)%depthold(2:block(iblock)%xmax,2:block(iblock)%ymax) 
 
   block(iblock)%uold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
        & block(iblock)%uvel(2:block(iblock)%xmax,2:block(iblock)%ymax) 
@@ -3344,13 +3075,17 @@ DO iblock=1,max_blocks
        & block(iblock)%vvel(2:block(iblock)%xmax,2:block(iblock)%ymax) 
   block(iblock)%depthold(2:block(iblock)%xmax,2:block(iblock)%ymax) =&
        & block(iblock)%depth(2:block(iblock)%xmax,2:block(iblock)%ymax) 
+
   block(iblock)%wsel = block(iblock)%depth + block(iblock)%zbot
+  block(iblock)%dp = 0.0
 
 END DO
 
 IF (do_transport) THEN
    DO ispecies = 1, max_species
       DO iblock = 1, max_blocks
+         species(ispecies)%scalar(iblock)%concoldold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
+              = species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax)
          species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
               = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
       END DO
@@ -3374,9 +3109,10 @@ SUBROUTINE output(status_flag)
 IMPLICIT NONE
 
 
-DOUBLE PRECISION :: depth_e, flux_e
+DOUBLE PRECISION :: depth_e, flux_e, conc_TDG
 
-INTEGER :: status_flag
+INTEGER :: iblock, ispecies, num_bc
+INTEGER :: i, j, status_flag
 
 !-----------------------------------------------------------------------------
 ! format definitions all placed here
@@ -3405,9 +3141,11 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,print_freq) =
                IF(scalar_bc(iblock)%bc_spec(num_bc)%species .EQ. ispecies)&
                     &CALL apply_scalar_bc(block(iblock), &
                     &species(ispecies)%scalar(iblock), &
-                    &scalar_bc(iblock)%bc_spec(num_bc), x_start)
+                    &scalar_bc(iblock)%bc_spec(num_bc), x_start, y_start)
             END DO
          END DO
+      ELSE
+         CALL bedshear(block(iblock))
       END IF
    END DO
 
@@ -3524,7 +3262,6 @@ IF(do_gage_print)THEN
             &DBLE((current_time%time - start_time%time)*24), &
             &do_transport, salinity, baro_press)
        CALL mass_print(current_time%date_string, current_time%time_string)
-       IF (do_transport) CALL scalar_mass_print(current_time)
 ! 3011 FORMAT(i5,5x)
 ! 3005 FORMAT('#date',8x,'time',5x)
 
@@ -3533,6 +3270,94 @@ END IF
 status_flag = 99
 
 END SUBROUTINE output
+
+! ----------------------------------------------------------------
+! SUBROUTINE read_hotstart
+! ----------------------------------------------------------------
+SUBROUTINE read_hotstart()
+
+  IMPLICIT NONE
+
+  INTEGER :: iblock, i
+  CHARACTER (LEN=1024) :: msg
+
+  ! OPEN(unit=hotstart_iounit,file='hotstart.bin', form='binary')
+  ! OPEN(unit=hotstart_iounit,file='hotstart.bin',form='unformatted')
+  CALL open_existing('hotstart.bin', hotstart_iounit)
+  CALL status_message('reading hotstart file')
+  READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
+  DO iblock=1,max_blocks
+     READ(hotstart_iounit,*) block(iblock)%uvel
+     !WRITE(*,*)'done with uvel read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%uold
+     !WRITE(*,*)'done with uold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%ustar
+     !WRITE(*,*)'done with ustar read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%vvel
+     !WRITE(*,*)'done with vvel read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%vold
+     !WRITE(*,*)'done with vold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%vstar
+     !WRITE(*,*)'done with vstar read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%depth
+     !WRITE(*,*)'done with depth read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%depthold
+     !WRITE(*,*)'done with depthold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%dstar
+     !WRITE(*,*)'done with dstar read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%eddy 
+     !WRITE(*,*)'done with eddy read for block -',iblock
+  END DO
+  IF( (do_transport).AND.(do_transport_restart) )THEN
+     
+     ! if a bed is expected in the
+     ! hotstart, the number of scalars must
+     ! be the same in the hotstart as was
+     ! specified for the simulation
+     
+     IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
+        WRITE (msg,*) 'specified number of scalar species, ', &
+             &max_species, ', does not match that in hotstart file (',&
+             &max_species_in_restart, ')'
+        CALL error_message(msg, fatal=.TRUE.)
+     END IF
+     
+     ! if we don't expect a bed, don't
+     ! worry about the number of scalar
+     ! species
+     
+     IF(max_species_in_restart > max_species) max_species_in_restart = max_species
+     DO i=1,max_species_in_restart
+        DO iblock = 1, max_blocks
+           READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
+           WRITE(msg,*)'done with conc read for species -',i,'and block -',iblock
+           CALL status_message(msg)
+           READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
+           WRITE(msg,*)'done with concold read for species -',i,'and block -',iblock
+           CALL status_message(msg)
+        END DO
+     END DO
+     
+     ! if any sediment species were
+     ! specified, we expect to find a bed
+     ! in the hotstart file
+     
+     IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
+     
+  ELSE IF (do_transport) THEN
+     DO i = 1, max_species
+        DO iblock =1, max_blocks
+           species(i)%scalar(iblock)%conc = conc_initial
+           species(i)%scalar(iblock)%concold = conc_initial
+        END DO
+     END DO
+  END IF
+  
+  CLOSE(hotstart_iounit)
+  WRITE(status_iounit,*)'done reading hotstart file'
+
+END SUBROUTINE read_hotstart
+
 
 
 !##########################################################################
@@ -3543,7 +3368,7 @@ END SUBROUTINE output
 SUBROUTINE write_restart(status_flag)
 IMPLICIT NONE
 
-INTEGER :: status_flag
+INTEGER :: i, j, status_flag, iblock
 
 
 IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print_freq) == 0) )THEN
@@ -3668,116 +3493,33 @@ END SUBROUTINE write_restart
 !----------------------------------------------------------------------------
 ! other internal routines
 !-----------------------------------------------------------------------------
-!
-! Tridiangonal Matrix Solution
-SUBROUTINE tridag(start, finish, a, b, c, d,sol, ptemp, qtemp)
-
-IMPLICIT NONE
-
-INTEGER :: i,last,ifp1,k,start,finish
-DOUBLE PRECISION, DIMENSION(:) :: a,b,c,d,sol
-DOUBLE PRECISION :: ptemp(0:), qtemp(0:)
-
-DO i=start,finish
-ptemp(i) = b(i)/(a(i) - c(i)*ptemp(i-1))
-qtemp(i) = (d(i) + c(i)*qtemp(i-1))/(a(i)-c(i)*ptemp(i-1))
-END DO
-!!$FORALL (i=start:finish)
-!!$   ptemp(i) = b(i)/(a(i) - c(i)*ptemp(i-1))
-!!$   qtemp(i) = (d(i) + c(i)*qtemp(i-1))/(a(i)-c(i)*ptemp(i-1))
-!!$END FORALL
-
-sol(finish) = qtemp(finish)
-
-DO i=finish-1,start,-1
-sol(i) = ptemp(i)*sol(i+1) + qtemp(i)
-END DO
-!!$FORALL (i=finish-1:start:-1)
-!!$   sol(i) = ptemp(i)*sol(i+1) + qtemp(i)
-!!$END FORALL
-
-
-END SUBROUTINE tridag
-!----------------------------------------------------------------------------
-
-
-!----------------------------------------------------------------------------
-! Advection scheme function for advection-diffusion equations
-!
-!
-
-DOUBLE PRECISION FUNCTION afunc(peclet_num)
-
-IMPLICIT NONE
-
-DOUBLE PRECISION :: peclet_num
-
-peclet_num = abs(peclet_num)
-
-afunc = max(0.0d0,(1.0-0.1*peclet_num)**5)  !power-law
-!afunc = 1.0                              !upwind-difference
-
-END FUNCTION afunc
-!-----------------------------------------------------------------------------
-
-! ----------------------------------------------------------------
-! SUBROUTINE bedshear
-! computes the shear used by biota/sediment scalars
-! ----------------------------------------------------------------
-SUBROUTINE bedshear()
-
-  IMPLICIT NONE
-
-  INTEGER :: iblk, i, j
-  DOUBLE PRECISION :: roughness, u, v
-
-  DO iblk = 1, max_blocks
-     block(iblk)%shear = 0 
-     DO i = 1, block(iblk)%xmax + 1
-        DO j = 2, block(iblk)%ymax
-           IF (i .EQ. 1) THEN
-              u = block(iblk)%uvel(i,j)
-              v = 0.0
-           ELSE IF (i .EQ. block(iblk)%xmax + 1) THEN
-              u = block(iblk)%uvel(i-1,j)
-              v = 0.0
-           ELSE 
-              u = 0.5*(block(iblk)%uvel(i-1,j) + block(iblk)%uvel(i,j))
-              v = 0.5*(block(iblk)%vvel(i-1,j) + block(iblk)%vvel(i,j))
-           END IF
-           IF(manning)THEN
-              roughness = (grav*block(iblk)%chezy(i,j)**2)/&
-                   &(mann_con*block(iblk)%depth(i,j)**0.3333333)
-           ELSE
-              roughness = block(iblk)%chezy(i,j)
-           ENDIF
-           block(iblk)%shear(i,j) = roughness*density*sqrt(u*u + v*v)
-        END DO
-     END DO
-  END DO
-END SUBROUTINE bedshear
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE check_wetdry
 ! ----------------------------------------------------------------
-SUBROUTINE check_wetdry(iblock, nx, ny)
+SUBROUTINE check_wetdry(blk)
 
   IMPLICIT NONE
 
-  INTEGER, INTENT(IN) :: iblock, nx, ny
+  TYPE(block_struct) :: blk
+  INTEGER :: i, j, nx, ny
   INTEGER :: i1, j1, n
   LOGICAL :: flag
   DOUBLE PRECISION :: wsavg, wscell, wsn
-  LOGICAL :: isdry(i_index_min:nx + i_index_extra, j_index_min:ny + j_index_extra)
+  LOGICAL :: isdry(i_index_min:blk%xmax + i_index_extra, &
+       &j_index_min:blk%ymax + j_index_extra)
 
-  isdry = block(iblock)%isdry
+  nx = blk%xmax
+  ny = blk%ymax
+
+  isdry = blk%isdry
 
   DO i = 2, nx + 1
      DO j = 2, ny + 1 
                  
         IF (isdry(i,j)) THEN
 
-           wscell = block(iblock)%depth(i, j) + block(iblock)%zbot(i, j)
+           wscell = blk%depth(i, j) + blk%zbot(i, j)
 
                                 ! Condition: all wet neighbors must
                                 ! have a higher w.s. elevation.
@@ -3787,19 +3529,23 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
 
            DO i1 = i - 1, i + 1, 2
               IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
-                 wsn = block(iblock)%depth(i1, j) + block(iblock)%zbot(i1, j)
+                 wsn = blk%depth(i1, j) + blk%zbot(i1, j)
                  IF (wsn .GE. wscell) flag = .TRUE.
                  n = n + 1
               ELSE IF (i1 .EQ. 1 .OR. i1 .EQ. nx + 1) THEN
-                 wsn = wselev_block_neighbor(iblock, i1, j)
-                 IF (wsn .GT. -9990.0) THEN
-                    IF (wsn .GE. wscell) flag = .TRUE. 
+                 SELECT CASE (blk%cell(i,j)%xtype)
+                 CASE (CELL_BOUNDARY_TYPE)
+                    ! ignore
+                 CASE DEFAULT
+                    ! should be a ghost cell, use it directly
+                    wsn = blk%depth(i1, j) + blk%zbot(i1, j)
+                    IF (wsn .GE. wscell) flag = .TRUE.
                     n = n + 1
-                 END IF
+                 END SELECT
               END IF
            END DO
            DO j1 = j - 1, j + 1, 2
-              wsn = block(iblock)%depth(i, j1) + block(iblock)%zbot(i, j1)
+              wsn = blk%depth(i, j1) + blk%zbot(i, j1)
               IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
                  IF (wsn .GE. wscell) flag = .TRUE.
                  n = n + 1
@@ -3818,19 +3564,23 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
 
               DO i1 = i - 1, i + 1, 2
                  IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
-                    wsn = block(iblock)%depth(i1, j) + block(iblock)%zbot(i1, j)
+                    wsn = blk%depth(i1, j) + blk%zbot(i1, j)
                     wsavg = wsavg + wsn
                     n = n + 1
                  ELSE IF (i1 .EQ. 1 .OR. i1 .EQ. nx + 1) THEN
-                    wsn = wselev_block_neighbor(iblock, i1, j)
-                    IF (wsn .GT. -9990.0) THEN
+                    SELECT CASE (blk%cell(i,j)%xtype)
+                    CASE (CELL_BOUNDARY_TYPE)
+                       ! ignore
+                    CASE DEFAULT
+                       ! should be a ghost cell, use it directly
+                       wsn = blk%depth(i1, j) + blk%zbot(i1, j)
                        wsavg = wsavg + wsn
                        n = n + 1
-                    END IF
+                    END SELECT
                  END IF
               END DO
               DO j1 = j - 1, j + 1, 2
-                 wsn = block(iblock)%depth(i, j1) + block(iblock)%zbot(i, j1)
+                 wsn = blk%depth(i, j1) + blk%zbot(i, j1)
                  IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
                     wsavg = wsavg + wsn
                     n = n + 1
@@ -3843,7 +3593,7 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
 !!$                                ! and all its wet neighbors is high
 !!$                                ! enough to exceed the dry depth
 !!$
-!!$           block(iblock)%isdry(i,j) = (.NOT. ((wsavg - block(iblock)%zbot(i, j)) .GT. dry_depth))
+!!$           blk%isdry(i,j) = (.NOT. ((wsavg - blk%zbot(i, j)) .GT. dry_depth))
 
                                 ! Alternative: A cell becomes wet if
                                 ! the cell and all its wet neighbors
@@ -3851,18 +3601,24 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
                                 ! depth *and* have all of the wet
                                 ! cells remain wet.
 
-              IF (N .GT. 1 .AND. wsavg .GT. block(iblock)%zbot(i, j) + dry_rewet_depth ) THEN
+              IF (N .GT. 1 .AND. wsavg .GT. blk%zbot(i, j) + dry_rewet_depth ) THEN
                  flag = .TRUE.
                  DO i1 = i - 1, i + 1, 2
                     IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
-                       flag = flag .AND. ((wsavg - block(iblock)%zbot(i1, j)) .GT. dry_depth) 
+                       flag = flag .AND. ((wsavg - blk%zbot(i1, j)) .GT. dry_depth) 
                     ELSEIF (i1 .EQ. 1 .OR. i1 .EQ. nx + 1) THEN
-                       flag = flag .AND. ((wsavg - zbot_block_neighbor(iblock, i1, j)) .GT. dry_depth)
+                       SELECT CASE (blk%cell(i,j)%xtype)
+                       CASE (CELL_BOUNDARY_TYPE)
+                          ! ignore
+                       CASE DEFAULT
+                          ! should be a ghost cell, use it directly
+                          flag = flag .AND. ((wsavg - blk%zbot(i1, j)) .GT. dry_depth) 
+                       END SELECT
                     END IF
                  END DO
                  DO j1 = j - 1, j + 1, 2
                     IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
-                       flag = flag .AND. ((wsavg - block(iblock)%zbot(i, j1)) .GT. dry_depth) 
+                       flag = flag .AND. ((wsavg - blk%zbot(i, j1)) .GT. dry_depth) 
                     END IF
                  END DO
 
@@ -3871,7 +3627,7 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
 
                                 ! we may need a volume check here
                  
-                 IF (flag) block(iblock)%isdry(i,j) = .FALSE.
+                 IF (flag) blk%isdry(i,j) = .FALSE.
 
               END IF
            END IF
@@ -3881,7 +3637,7 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
                                 ! check the wet cells to see if they
                                 ! should be dry
 
-           block(iblock)%isdry(i,j) = (block(iblock)%depth(i,j) .LE. dry_depth)
+           blk%isdry(i,j) = (blk%depth(i,j) .LE. dry_depth)
 
         END IF
      END DO
@@ -3889,100 +3645,13 @@ SUBROUTINE check_wetdry(iblock, nx, ny)
 
                                 ! fill out isdry array for plotting
 
-  block(iblock)%isdry(:,1) = block(iblock)%isdry(:,2)
-  block(iblock)%isdry(:,ny + 1) = block(iblock)%isdry(:,ny+1)
-  block(iblock)%isdry(1,:) = block(iblock)%isdry(2,:)
-  block(iblock)%isdry(nx + 1,:)  = block(iblock)%isdry(nx+1,:)
+  blk%isdry(:,1) = blk%isdry(:,2)
+  blk%isdry(:,ny + 1) = blk%isdry(:,ny+1)
+  blk%isdry(1,:) = blk%isdry(2,:)
+  blk%isdry(nx + 1,:)  = blk%isdry(nx+1,:)
 
 END SUBROUTINE check_wetdry
 
-! ----------------------------------------------------------------
-! DOUBLE PRECISION FUNCTION wselev_block_neighbor
-! Determines the water surface elevation of the cell neighboring the
-! specified cell if there is a block connected there.  A bogus value
-! of -9999.0 is returned if there is no neighboring block, or if the
-! neighboring cell is dry.
-! This is really a hack.  Ghost cells would be a better approach.
-! ----------------------------------------------------------------
-DOUBLE PRECISION FUNCTION wselev_block_neighbor(iblock, i, j) RESULT (z)
-
-  IMPLICIT NONE
-
-  INTEGER, INTENT(IN) :: iblock, i, j
-  INTEGER :: num_bc, icon, jcon, con_block, k
-  LOGICAL :: doelev = .FALSE.
-
-  doelev = .TRUE.
-
-  GOTO 100
-
-  ENTRY zbot_block_neighbor(iblock, i, j) RESULT (z)
-
-  doelev = .FALSE.
-
-100 CONTINUE
-
-  z = -9999.0
-
-  DO num_bc = 1, block_bc(iblock)%num_bc
-
-     con_block = 0
-     icon = 0
-     jcon = 0
-
-     IF (i .EQ. 1) THEN 
-        SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-        CASE("US")
-           SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_type)
-           CASE("BLOCK")
-              con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
-              icon = block(con_block)%xmax
-           END SELECT
-        END SELECT
-     ELSE
-        SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-        CASE("DS")
-           SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_type)
-           CASE("BLOCK")
-              con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
-              icon = 2
-           END SELECT
-        END SELECT
-     END IF
-     IF (con_block .NE. 0 .AND. icon .NE. 0) THEN
-        DO k=1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-           IF (j .GE. block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1 .AND. &
-                &j .LE. block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1) THEN
-              jcon = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+ j - &
-                   &(block_bc(iblock)%bc_spec(num_bc)%start_cell(k))
-              IF (active_cell(con_block, icon, jcon)) THEN
-                 z = block(con_block)%zbot(icon, jcon)
-                 IF (doelev) z = z + block(con_block)%depth(icon, jcon)
-              END IF
-              RETURN
-           END IF
-        END DO
-     END IF
-  END DO
-
-END FUNCTION wselev_block_neighbor
-
-
-! ----------------------------------------------------------------
-! LOGICAL FUNCTION active_cell
-! ----------------------------------------------------------------
-LOGICAL FUNCTION active_cell(iblock, i, j)
-
-  IMPLICIT NONE
-  INTEGER, INTENT(IN) :: iblock, i, j
-
-  active_cell = .NOT. &
-       &(block(iblock)%isdry(i,j) .OR. &
-       &block(iblock)%isdead(i,j)%p)
-  active_cell = .NOT. &
-       &(block(iblock)%isdry(i,j))
-
-END FUNCTION active_cell
 
 
 END MODULE mass2_main_025

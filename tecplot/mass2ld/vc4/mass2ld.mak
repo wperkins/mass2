@@ -56,11 +56,11 @@ ALL : "$(OUTDIR)\mass2ld.dll"
 
 CLEAN : 
 	-@erase ".\Release\mass2ld.dll"
-	-@erase ".\Release\guicb.obj"
-	-@erase ".\Release\mass2ld.obj"
-	-@erase ".\Release\dllmain.obj"
-	-@erase ".\Release\mass2file.obj"
 	-@erase ".\Release\guidefs.obj"
+	-@erase ".\Release\dllmain.obj"
+	-@erase ".\Release\mass2ld.obj"
+	-@erase ".\Release\guicb.obj"
+	-@erase ".\Release\mass2file.obj"
 	-@erase ".\Release\mass2ld.ilk"
 	-@erase ".\Release\mass2ld.lib"
 	-@erase ".\Release\mass2ld.exp"
@@ -69,9 +69,9 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "E:\Software\NetCDF\include" /I "E:\Software\TEC90\Include" /I ".." /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "E:\Software\NetCDF\include" /I\
- "E:\Software\TEC90\Include" /I ".." /D "WIN32" /D "NDEBUG" /D "_WINDOWS"\
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "D:\Software\netcdf-3.5\include" /I "D:\Software\TEC90\Include" /I ".." /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
+CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "D:\Software\netcdf-3.5\include" /I\
+ "D:\Software\TEC90\Include" /I ".." /D "WIN32" /D "NDEBUG" /D "_WINDOWS"\
  /Fp"$(INTDIR)/mass2ld.pch" /YX /Fo"$(INTDIR)/" /c 
 CPP_OBJS=.\Release/
 CPP_SBRS=
@@ -87,19 +87,19 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)/mass2ld.bsc"
 BSC32_SBRS=
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 E:\Software\NetCDF\lib\netcdfs.lib E:\Software\TEC90\Bin\libtec.lib E:\Software\TEC90\Bin\Wingui.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1 /subsystem:windows /dll /incremental:yes /machine:I386
-LINK32_FLAGS=E:\Software\NetCDF\lib\netcdfs.lib\
- E:\Software\TEC90\Bin\libtec.lib E:\Software\TEC90\Bin\Wingui.lib kernel32.lib\
+# ADD LINK32 D:\Software\netcdf-3.5\lib\netcdfs.lib D:\Software\TEC90\Bin\libtec.lib D:\Software\TEC90\Bin\Wingui.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1 /subsystem:windows /dll /incremental:yes /machine:I386
+LINK32_FLAGS=D:\Software\netcdf-3.5\lib\netcdfs.lib\
+ D:\Software\TEC90\Bin\libtec.lib D:\Software\TEC90\Bin\Wingui.lib kernel32.lib\
  user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib\
  ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1\
  /subsystem:windows /dll /incremental:yes /pdb:"$(OUTDIR)/mass2ld.pdb"\
  /machine:I386 /out:"$(OUTDIR)/mass2ld.dll" /implib:"$(OUTDIR)/mass2ld.lib" 
 LINK32_OBJS= \
-	"$(INTDIR)/guicb.obj" \
-	"$(INTDIR)/mass2ld.obj" \
+	"$(INTDIR)/guidefs.obj" \
 	"$(INTDIR)/dllmain.obj" \
-	"$(INTDIR)/mass2file.obj" \
-	"$(INTDIR)/guidefs.obj"
+	"$(INTDIR)/mass2ld.obj" \
+	"$(INTDIR)/guicb.obj" \
+	"$(INTDIR)/mass2file.obj"
 
 "$(OUTDIR)\mass2ld.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -127,11 +127,11 @@ CLEAN :
 	-@erase ".\Debug\vc40.pdb"
 	-@erase ".\Debug\vc40.idb"
 	-@erase ".\Debug\mass2ld.dll"
-	-@erase ".\Debug\guicb.obj"
-	-@erase ".\Debug\guidefs.obj"
-	-@erase ".\Debug\mass2ld.obj"
 	-@erase ".\Debug\dllmain.obj"
+	-@erase ".\Debug\mass2ld.obj"
+	-@erase ".\Debug\guicb.obj"
 	-@erase ".\Debug\mass2file.obj"
+	-@erase ".\Debug\guidefs.obj"
 	-@erase ".\Debug\mass2ld.ilk"
 	-@erase ".\Debug\mass2ld.lib"
 	-@erase ".\Debug\mass2ld.exp"
@@ -141,9 +141,9 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /I "E:\Software\NetCDF\include" /I "E:\Software\TEC90\Include" /I ".." /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
-CPP_PROJ=/nologo /MTd /W3 /Gm /GX /Zi /Od /I "E:\Software\NetCDF\include" /I\
- "E:\Software\TEC90\Include" /I ".." /D "WIN32" /D "_DEBUG" /D "_WINDOWS"\
+# ADD CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /I "D:\Software\netcdf-3.5\include" /I "D:\Software\TEC90\Include" /I ".." /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
+CPP_PROJ=/nologo /MTd /W3 /Gm /GX /Zi /Od /I "D:\Software\netcdf-3.5\include"\
+ /I "D:\Software\TEC90\Include" /I ".." /D "WIN32" /D "_DEBUG" /D "_WINDOWS"\
  /Fp"$(INTDIR)/mass2ld.pch" /YX /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
 CPP_OBJS=.\Debug/
 CPP_SBRS=
@@ -159,20 +159,20 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)/mass2ld.bsc"
 BSC32_SBRS=
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /debug /machine:I386
-# ADD LINK32 E:\Software\NetCDF\lib\netcdfs.lib E:\Software\TEC90\Bin\libtec.lib E:\Software\TEC90\Bin\Wingui.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1 /subsystem:windows /dll /debug /machine:I386 /nodefaultlib:"libcmt.lib"
-LINK32_FLAGS=E:\Software\NetCDF\lib\netcdfs.lib\
- E:\Software\TEC90\Bin\libtec.lib E:\Software\TEC90\Bin\Wingui.lib kernel32.lib\
+# ADD LINK32 D:\Software\netcdf-3.5\lib\netcdfs.lib D:\Software\TEC90\Bin\libtec.lib D:\Software\TEC90\Bin\Wingui.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1 /subsystem:windows /dll /debug /machine:I386 /nodefaultlib:"libcmt.lib"
+LINK32_FLAGS=D:\Software\netcdf-3.5\lib\netcdfs.lib\
+ D:\Software\TEC90\Bin\libtec.lib D:\Software\TEC90\Bin\Wingui.lib kernel32.lib\
  user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib\
  ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /version:0.1\
  /subsystem:windows /dll /incremental:yes /pdb:"$(OUTDIR)/mass2ld.pdb" /debug\
  /machine:I386 /nodefaultlib:"libcmt.lib" /out:"$(OUTDIR)/mass2ld.dll"\
  /implib:"$(OUTDIR)/mass2ld.lib" 
 LINK32_OBJS= \
-	"$(INTDIR)/guicb.obj" \
-	"$(INTDIR)/guidefs.obj" \
-	"$(INTDIR)/mass2ld.obj" \
 	"$(INTDIR)/dllmain.obj" \
-	"$(INTDIR)/mass2file.obj"
+	"$(INTDIR)/mass2ld.obj" \
+	"$(INTDIR)/guicb.obj" \
+	"$(INTDIR)/mass2file.obj" \
+	"$(INTDIR)/guidefs.obj"
 
 "$(OUTDIR)\mass2ld.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -223,46 +223,22 @@ SOURCE=.\dllmain.cpp
 ################################################################################
 # Begin Source File
 
-SOURCE="\Projects\GrantPUD\src\mass2-wetdry\tecplot\mass2ld\guidefs.c"
-
-!IF  "$(CFG)" == "mass2ld - Win32 Release"
-
+SOURCE="\tmp\mass2-parallel\tecplot\mass2ld\guidefs.c"
 DEP_CPP_GUIDE=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
+	"\Software\TEC90\Include\TECADDON.h"\
+	"\Software\TEC90\Include\GUI.h"\
 	".\..\GUIDEFS.h"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
-	
-
-"$(INTDIR)\guidefs.obj" : $(SOURCE) $(DEP_CPP_GUIDE) "$(INTDIR)"
-   $(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "mass2ld - Win32 Debug"
-
-DEP_CPP_GUIDE=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
-	".\..\GUIDEFS.h"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
+	"\Software\TEC90\Include\MASTER.h"\
+	"\Software\TEC90\Include\GLOBAL.h"\
+	"\Software\TEC90\Include\TECGLBL.h"\
+	"\Software\TEC90\Include\ADDON.h"\
+	"\Software\TEC90\Include\TECUTILO.h"\
+	"\Software\TEC90\Include\TASSERT.h"\
+	"\Software\TEC90\Include\TECUTILS.h"\
+	"\Software\TEC90\Include\TECUTILQ.h"\
+	"\Software\TEC90\Include\TECUTILM.h"\
+	"\Software\TEC90\Include\VERSION.h"\
+	"\Software\TEC90\Include\SV.h"\
 	{$(INCLUDE)}"\sys\TYPES.H"\
 	
 
@@ -270,15 +246,13 @@ DEP_CPP_GUIDE=\
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-!ENDIF 
-
 # End Source File
 ################################################################################
 # Begin Source File
 
-SOURCE="\Projects\GrantPUD\src\mass2-wetdry\tecplot\mass2ld\mass2file.c"
+SOURCE="\tmp\mass2-parallel\tecplot\mass2ld\mass2file.c"
 DEP_CPP_MASS2=\
-	"E:\Software\NetCDF\include\netcdf.h"\
+	"\Software\netcdf-3.5\include\netcdf.h"\
 	".\..\mass2file.h"\
 	
 
@@ -290,117 +264,60 @@ DEP_CPP_MASS2=\
 ################################################################################
 # Begin Source File
 
-SOURCE="\Projects\GrantPUD\src\mass2-wetdry\tecplot\mass2ld\guicb.c"
-
-!IF  "$(CFG)" == "mass2ld - Win32 Release"
-
+SOURCE="\tmp\mass2-parallel\tecplot\mass2ld\guicb.c"
 DEP_CPP_GUICB=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
+	"\Software\TEC90\Include\TECADDON.h"\
 	".\..\ADDGLBL.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
+	"\Software\TEC90\Include\GUI.h"\
 	".\..\GUIDEFS.h"\
 	".\..\mass2file.h"\
 	".\..\guibld.c"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
-	
-
-"$(INTDIR)\guicb.obj" : $(SOURCE) $(DEP_CPP_GUICB) "$(INTDIR)"
-   $(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "mass2ld - Win32 Debug"
-
-DEP_CPP_GUICB=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
-	".\..\ADDGLBL.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
-	".\..\GUIDEFS.h"\
-	".\..\mass2file.h"\
-	".\..\guibld.c"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
+	"\Software\TEC90\Include\MASTER.h"\
+	"\Software\TEC90\Include\GLOBAL.h"\
+	"\Software\TEC90\Include\TECGLBL.h"\
+	"\Software\TEC90\Include\ADDON.h"\
+	"\Software\TEC90\Include\TECUTILO.h"\
+	"\Software\TEC90\Include\TASSERT.h"\
+	"\Software\TEC90\Include\TECUTILS.h"\
+	"\Software\TEC90\Include\TECUTILQ.h"\
+	"\Software\TEC90\Include\TECUTILM.h"\
+	"\Software\TEC90\Include\VERSION.h"\
+	"\Software\TEC90\Include\SV.h"\
 	{$(INCLUDE)}"\sys\TYPES.H"\
 	
 
 "$(INTDIR)\guicb.obj" : $(SOURCE) $(DEP_CPP_GUICB) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
-
-!ENDIF 
 
 # End Source File
 ################################################################################
 # Begin Source File
 
-SOURCE="\Projects\GrantPUD\src\mass2-wetdry\tecplot\mass2ld\mass2ld.c"
-
-!IF  "$(CFG)" == "mass2ld - Win32 Release"
-
+SOURCE="\tmp\mass2-parallel\tecplot\mass2ld\mass2ld.c"
 DEP_CPP_MASS2L=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
+	"\Software\TEC90\Include\TECADDON.h"\
 	".\..\ADDGLBL.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
+	"\Software\TEC90\Include\GUI.h"\
 	".\..\GUIDEFS.h"\
 	".\..\mass2file.h"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
-	
-
-"$(INTDIR)\mass2ld.obj" : $(SOURCE) $(DEP_CPP_MASS2L) "$(INTDIR)"
-   $(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "mass2ld - Win32 Debug"
-
-DEP_CPP_MASS2L=\
-	"E:\Software\TEC90\Include\TECADDON.h"\
-	".\..\ADDGLBL.h"\
-	"E:\Software\TEC90\Include\GUI.h"\
-	".\..\GUIDEFS.h"\
-	".\..\mass2file.h"\
-	"E:\Software\TEC90\Include\MASTER.h"\
-	"E:\Software\TEC90\Include\GLOBAL.h"\
-	"E:\Software\TEC90\Include\TECGLBL.h"\
-	"E:\Software\TEC90\Include\ADDON.h"\
-	"E:\Software\TEC90\Include\TECUTILO.h"\
-	"E:\Software\TEC90\Include\TECUTILS.h"\
-	"E:\Software\TEC90\Include\TECUTILQ.h"\
-	"E:\Software\TEC90\Include\TECUTILM.h"\
-	"E:\Software\TEC90\Include\VERSION.h"\
-	"E:\Software\TEC90\Include\SV.h"\
+	"\Software\TEC90\Include\MASTER.h"\
+	"\Software\TEC90\Include\GLOBAL.h"\
+	"\Software\TEC90\Include\TECGLBL.h"\
+	"\Software\TEC90\Include\ADDON.h"\
+	"\Software\TEC90\Include\TECUTILO.h"\
+	"\Software\TEC90\Include\TASSERT.h"\
+	"\Software\TEC90\Include\TECUTILS.h"\
+	"\Software\TEC90\Include\TECUTILQ.h"\
+	"\Software\TEC90\Include\TECUTILM.h"\
+	"\Software\TEC90\Include\VERSION.h"\
+	"\Software\TEC90\Include\SV.h"\
 	{$(INCLUDE)}"\sys\TYPES.H"\
 	
 
 "$(INTDIR)\mass2ld.obj" : $(SOURCE) $(DEP_CPP_MASS2L) "$(INTDIR)"
    $(CPP) $(CPP_PROJ) $(SOURCE)
 
-
-!ENDIF 
 
 # End Source File
 # End Target

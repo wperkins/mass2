@@ -38,19 +38,22 @@ INTEGER, PUBLIC, PARAMETER :: &
                                 ! a list of scalar boundary conditions
                                 ! types
 INTEGER, PUBLIC, PARAMETER :: &
+     &SCALBC_NONE = 0, &
      &SCALBC_ZG = 1, &
      &SCALBC_CONC = 2, &
      &SCALBC_BLOCK = 3
 
 TYPE scalar_cell_type_struct
-   INTEGER :: type
+   INTEGER :: xtype, ytype
    ! the rest applies only for BOUNDARY type cells
-   INTEGER :: bctype 
+   INTEGER :: xbctype, ybctype
 END TYPE scalar_cell_type_struct
 
 TYPE scalar_struct
-	DOUBLE PRECISION, POINTER :: conc(:,:)				! c depth-ave concentration
-	DOUBLE PRECISION, POINTER :: concold(:,:)			! c old depth-ave concentration
+	DOUBLE PRECISION, POINTER :: conc(:,:) ! c depth-ave concentration
+	DOUBLE PRECISION, POINTER :: concold(:,:) ! c old depth-ave concentration
+	DOUBLE PRECISION, POINTER :: concoldold(:,:) ! c old depth-ave concentration
+    DOUBLE PRECISION, POINTER :: srcterm(:,:) ! precomputed source term
     TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
 
                                 ! keep track of the mass of the
@@ -115,13 +118,32 @@ SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax)
   ENDIF
   species(i)%scalar(block)%concold = 0.0
 
+  ALLOCATE(species(i)%scalar(block)%concoldold(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     CALL error_message('allocation failed for the old old concentration', fatal=.TRUE.)
+  ELSE
+     CALL status_message('allocation successful for old old concentration')
+  ENDIF
+  species(i)%scalar(block)%concoldold = 0.0
+
+  ALLOCATE(species(i)%scalar(block)%srcterm(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     CALL error_message('allocation failed for the source term', fatal=.TRUE.)
+  ELSE
+     CALL status_message('allocation successful for source term')
+  ENDIF
+  species(i)%scalar(block)%srcterm = 0.0
+
   ALLOCATE(species(i)%scalar(block)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
   IF(alloc_stat /= 0)THEN
      CALL error_message('allocation failed for cell type', fatal=.TRUE.)
   ELSE
      CALL status_message('allocation successful for cell type')
   ENDIF
-  species(i)%scalar(block)%cell(:,:)%type = SCALAR_NORMAL_TYPE
+  species(i)%scalar(block)%cell(:,:)%xtype = SCALAR_NORMAL_TYPE
+  species(i)%scalar(block)%cell(:,:)%xbctype = SCALBC_NONE
+  species(i)%scalar(block)%cell(:,:)%ytype = SCALAR_NORMAL_TYPE
+  species(i)%scalar(block)%cell(:,:)%ybctype = SCALBC_NONE
 
   species(i)%scalar(block)%netflux = 0.0
   species(i)%scalar(block)%mass = 0.0

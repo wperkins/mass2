@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 12, 1999 by William A. Perkins
-# Last Change: Thu Apr  3 08:06:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jun  5 08:13:04 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -52,10 +52,27 @@ PROFILE = -P
 FLAGS = $(NETCDFFLAGS) $(CGNSFFLAGS) $(DEBUG) $(PROFILE) \
 	-trap=INVALID,DIVBYZERO,OVERFLOW  -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
 
+# SOLVERSRC = solver_tdma.f90
+# SOLVERFLAGS =
+# SOLVERLDFLAGS = 
+# SOLVERLIB = 
+
+# SOLVERSRC = solver_aztec.f90
+# SOLVERFLAGS = 
+# SOLVERLDFLAGS = -L../aztec/lib
+# SOLVERLIB = -laztec -lm -lg2c
+
+SOLVERSRC = solver_sixpack.f90 
+SOLVERFLAGS =
+SOLVERLDFLAGS = -L../sixpack-2.3.7/lib
+SOLVERLIB = -lsixpack
+
+SOLVEROBJ = $(SOLVERSRC:%.f90=%.o) 
+
 # general compile/link flags
 
 MAINDEBUG = $(DEBUG)
-F90FLAGS = $(FLAGS)
+F90FLAGS = $(FLAGS) $(SOLVERFLAGS)
 LIBLOC = 
 LDFLAGS = $(CONDORLDFLAGS) $(NETCDFLDFLAGS) $(CGNSLDFLAGS) ${LIBLOC} $(FLAGS) 
 LIBS = $(NETCDFLIBS) $(CGNSLIBS) -lU77
@@ -94,7 +111,10 @@ SRCS =											\
 	 bed_functions.f90							\
 	 accumulator.f90							\
 	 total_conc.f90								\
-	 solver_tdma.f90
+	 utility.f90								\
+	 hydro_solve.f90							\
+	 $(SOLVERSRC)
+
 
 OBJS = $(SRCS:%.f90=%.o)
 
@@ -126,8 +146,10 @@ MODULES =										\
 	RDBLK_MOD.$(MOD)							\
 	SEDIMENT_SOURCE.$(MOD)  					\
 	PARTICULATE_SOURCE.$(MOD)					\
-	BED_MODULE.$(MOD) 							\
-	ACCUMULATOR.$(MOD)
+	BED_MODULE.$(MOD)							\
+	ACCUMULATOR.$(MOD)							\
+	SOLVER_MODULE.$(MOD)						\
+	UTILITY.$(MOD)
 
 ${TARGET}: ${OBJS}
 	${LINK.f90} ${OBJS} ${LIBS} -o ${TARGET}
@@ -141,6 +163,15 @@ date_time_test: ${DATE_TST_OBJ}
 
 clean::
 	rm -rf date_time_test
+
+SOLVER_TEST_OBJ = solver_test.o $(SOLVEROBJ)
+solver_test: $(SOLVER_TEST_OBJ)
+	${LINK.f90} ${SOLVER_TEST_OBJ} ${LIBS} -o $@
+
+solver_test.o: SOLVER_MODULE.$(MOD)
+
+clean:: 
+	rm -rf solver_test solver_test.o
 
 # dependancies for individual object files
 
@@ -185,6 +216,8 @@ GENERIC_SOURCE.$(MOD): generic_source.o
 global_module_023.o: global_module_023.f90 MISC_VARS.$(MOD) $(STUPIDMOD) 
 GLOBALS.$(MOD): global_module_023.o
 
+hydro_solve.o: hydro_solve.f90 GLOBALS.$(MOD) MISC_VARS.$(MOD) SOLVER_MODULE.$(MOD)
+
 io_routines_module.o: io_routines_module.f90 MISC_VARS.$(MOD)
 IO_ROUTINES_MODULE.$(MOD): io_routines_module.o
 
@@ -196,7 +229,8 @@ mass2_main_025.o: mass2_main_025.f90 \
    TABLE_BOUNDARY_CONDITIONS.$(MOD) DATE_TIME.$(MOD) SCALARS.$(MOD) \
    MET_DATA_MODULE.$(MOD) ENERGY_FLUX.$(MOD) GAS_FUNCTIONS.$(MOD) \
    PLOT_OUTPUT.$(MOD) GAGE_OUTPUT.$(MOD) MISC_VARS.$(MOD) TRANSPORT_ONLY.$(MOD) \
-   SCALARS_SOURCE.$(MOD)  BED_MODULE.$(MOD) ACCUMULATOR.$(MOD)
+   SCALARS_SOURCE.$(MOD)  BED_MODULE.$(MOD) ACCUMULATOR.$(MOD) SOLVER_MODULE.$(MOD) \
+   UTILITY.$(MOD)
 	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2_main_025.f90
 MASS2_MAIN_025.$(MOD): mass2_main_025.o
 
@@ -230,6 +264,8 @@ plot_output.o: plot_output.f90 GLOBALS.$(MOD) SCALARS.$(MOD) SCALARS_SOURCE.$(MO
 	PLOT_CGNS.$(MOD) PLOT_NETCDF.$(MOD)
 PLOT_OUTPUT.$(MOD): plot_output.o
 
+scalar_solve.o: scalar_solve.f90 GLOBALS.$(MOD) MISC_VARS.$(MOD)
+
 scalars_module.o: scalars_module.f90 MISC_VARS.$(MOD)
 SCALARS.$(MOD): scalars_module.o
 
@@ -241,7 +277,8 @@ SCALARS_SOURCE.$(MOD): scalars_source.o
 sediment_source.o: sediment_source.f90 GLOBALS.$(MOD) SCALARS.$(MOD) MISC_VARS.$(MOD)
 SEDIMENT_SOURCE.$(MOD): sediment_source.o
 
-solver_tdma.o: solver_tdma.f90
+$(SOLVERSRC:%.f90=%.o): $(SOLVERSRC) UTILITY.$(MOD)
+SOLVER_MODULE.$(MOD): $(SOLVERSRC:%.f90=%.o)
 
 table_bc_module.o: table_bc_module.f90 DATE_TIME.$(MOD)
 TABLE_BOUNDARY_CONDITIONS.$(MOD): table_bc_module.o
@@ -259,6 +296,9 @@ total_conc.o: total_conc.f90 SCALARS_SOURCE.$(MOD)
 transport_only_module.o: transport_only_module.f90 DATE_TIME.$(MOD) \
 	GLOBALS.$(MOD) MISC_VARS.$(MOD)
 TRANSPORT_ONLY.$(MOD): transport_only_module.o
+
+utility.o: utility.f90 MISC_VARS.$(MOD)
+UTILITY.$(MOD): utility.o
 
 profile_init.o: profile_init.f90 GLOBALS.$(MOD) MISC_VARS.$(MOD)
 

@@ -50,6 +50,11 @@ case "$PLATFORM" in
         LDFLAGS="$LDFLAGS -L/usr/unsupported/ucar/lib"
         NETCDFLIB="-lnetcdf"
         ;;
+    macx*)
+        CFLAGS="$CFLAGS -I/sw/include"
+        LDFLAGS="$LDFLAGS -L/sw/lib"
+        NETCDFLIB="-lnetcdf"
+        ;;
     *)
         CFLAGS="$CFLAGS -I/usr/unsupported/ucar/include"
         LDFLAGS="$LDFLAGS -L/usr/unsupported/ucar/lib"

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Tue May 20 07:08:54 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Aug 25 14:49:48 2005 by William A. Perkins <perk@McPerk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -20,9 +20,9 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
   USE globals, ONLY : block_struct, bigfactor, &
        &CELL_BOUNDARY_TYPE, &
        &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, &
-       &density_air, density, grav
+       &FLOWBC_ZEROG, FLOWBC_BOTH, density_air, density, grav
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &scalar_sweep, uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
+       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
   USE solver_module
 
   IMPLICIT NONE
@@ -30,7 +30,7 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
   INTEGER, INTENT(IN) :: blkidx
   TYPE(block_struct), INTENT(INOUT) :: blk
   DOUBLE PRECISION, INTENT(IN) :: delta_t
-  INTEGER :: x_beg, y_beg, x_end, y_end, i, j, junk
+
 
   DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
   DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
@@ -38,16 +38,24 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
   DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
   DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
   DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
+  DOUBLE PRECISION :: apo                       ! coefficients in discretization eqns
   DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
+
+  INTEGER :: k, x_beg, y_beg, i, j, junk
+
+  DOUBLE PRECISION :: sc, sp
   DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
   DOUBLE PRECISION :: h1_eta_e, h1_eta_w, h1_eta_n, h1_eta_s	! e.g., h1_eta_p is the partial deriv
   DOUBLE PRECISION :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
-  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
   DOUBLE PRECISION :: curve_1,curve_2,curve_3,curve_4,curve_5,curve_6,curve_7	! curvature terms
   DOUBLE PRECISION :: k_p,k_e,k_w,k_n,k_s 
-  DOUBLE PRECISION :: sc, sp, windshear
-  DOUBLE PRECISION :: apo								! coefficients in discretization eqns
+  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
+  DOUBLE PRECISION, EXTERNAL :: afunc
+
+  INTEGER :: x_end, y_end
+
+  LOGICAL :: slip
 
   DOUBLE PRECISION :: &
        &ap(1:blk%xmax + 1, 1:blk%ymax + 1), &
@@ -58,7 +66,6 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
        &bp(1:blk%xmax + 1, 1:blk%ymax + 1), &
        &source(1:blk%xmax + 1, 1:blk%ymax + 1)
 
-  DOUBLE PRECISION, EXTERNAL :: afunc
 
   x_beg = 2
   y_beg = 2
@@ -212,46 +219,102 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
            
            source(i,j) = source(i,j) + bigfactor*0.0
            ap(i,j) = ap(i,j) + bigfactor
-        ELSE IF (i .EQ. x_beg) THEN
-           SELECT CASE (blk%cell(i,j)%type)
-           CASE (CELL_BOUNDARY_TYPE)
-              
-              ! adjust for upstream boundary conditions
-              
-              SELECT CASE (blk%cell(i,j)%bctype)
-              CASE (FLOWBC_ELEV)
-                 ap(i,j) = ap(i,j) - aw(i,j)
-                 aw(i,j) = 0.0
+        ELSE 
+           IF (i .EQ. x_beg) THEN
+              ! upstream (west)
+              SELECT CASE (blk%cell(i,j)%xtype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                    ap(i,j) = ap(i,j) - aw(i,j)
+                    aw(i,j) = 0.0
+                 CASE DEFAULT
+                    source(i,j) = source(i,j) + aw(i,j)*blk%uvel(i-1,j)
+                    aw(i,j) = 0.0
+                 END SELECT
               CASE DEFAULT
-                 source(i,j) = source(i,j) + &
-                      &aw(i,j)*blk%uvel(i-1,j)
+                 source(i,j) = source(i,j) + aw(i,j)*blk%uvel(i-1,j)
                  aw(i,j) = 0.0
               END SELECT
-           CASE DEFAULT
-              source(i,j) = source(i,j) + &
-                   &aw(i,j)*blk%uvel(i-1,j)
-              aw(i,j) = 0.0
-           END SELECT
-        ELSE IF (i .EQ. x_end) THEN
-           SELECT CASE (blk%cell(i,j)%type)
-           CASE (CELL_BOUNDARY_TYPE)
-              
-              ! adjust for downstream boundary conditions
-              
-              SELECT CASE (blk%cell(i,j)%bctype)
-              CASE (FLOWBC_FLOW, FLOWBC_VEL)
-                 source(i,j) = source(i,j) + &
-                      &bigfactor*blk%uvel(i+1,j)
-                 ap(i,j) = ap(i,j) + bigfactor
-              CASE (FLOWBC_ELEV)
-                 ap(i,j) = ap(i,j) + ae(i,j)
+           ELSE IF (i .EQ. x_end) THEN
+              ! downstream (east)
+              SELECT CASE (blk%cell(i,j)%xtype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                    ap(i,j) = ap(i,j) - ae(i,j)
+                    ae(i,j) = 0.0
+                 CASE DEFAULT
+                    source(i,j) = source(i,j) + bigfactor*blk%uvel(i+1,j)
+                    ap(i,j) = ap(i,j) + bigfactor
+                 END SELECT
+              CASE DEFAULT
+                 source(i,j) = source(i,j) + ae(i,j)*blk%uvel(i+1,j)
                  ae(i,j) = 0.0
               END SELECT
-           CASE DEFAULT
-              source(i,j) = source(i,j) + &
-                   &ae(i,j)*blk%uvel(i+1,j)
-              ae(i,j) = 0.0
-           END SELECT
+           END IF
+
+           IF (j .EQ. y_beg) THEN 
+              ! right bank (south)
+              IF (blk%cell(i,j)%ytype .EQ. CELL_BOUNDARY_TYPE .OR.&
+                   &blk%cell(i+1,j)%ytype .EQ. CELL_BOUNDARY_TYPE) THEN
+                 slip = .TRUE.
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                 CASE DEFAULT
+                    slip = slip .AND. (blk%vvel(i,j-1) .LE. 0.0)
+                    slip = slip .AND. (blk%vvel(i+1,j-1) .LE. 0.0)
+                 END SELECT
+                 IF (slip) THEN
+                    ap(i,j) = ap(i,j) - as(i,j)
+                 ELSE 
+                    ap(i,j) = ap(i,j) + as(i,j)
+                    source(i,j) = source(i,j) + 2*as(i,j)*blk%uvel(i,j-1)
+                 END IF
+                 as(i,j) = 0.0
+              ELSE 
+                 source(i,j) = source(i,j) + as(i,j)*blk%uvel(i,j-1)
+                 as(i,j) = 0.0
+              END IF
+           ELSE IF (j .EQ. y_end) THEN
+              ! left bank (north)
+              IF (blk%cell(i,j)%ytype .EQ. CELL_BOUNDARY_TYPE .OR.&
+                   &blk%cell(i+1,j)%ytype .EQ. CELL_BOUNDARY_TYPE) THEN
+                 slip = .TRUE.
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                 CASE DEFAULT
+                    slip = slip .AND. (blk%vvel(i,j) .GE. 0.0)
+                    slip = slip .AND. (blk%vvel(i+1,j) .GE. 0.0)
+                 END SELECT
+                 IF (slip) THEN
+                    ap(i,j) = ap(i,j) - an(i,j)
+                 ELSE 
+                    ap(i,j) = ap(i,j) + an(i,j)
+                    source(i,j) = source(i,j) + 2*an(i,j)*blk%uvel(i,j+1)
+                 END IF
+                 an(i,j) = 0.0
+              ELSE
+                 source(i,j) = source(i,j) + an(i,j)*blk%uvel(i,j+1)
+                 an(i,j) = 0.0
+              END IF
+           END IF
+        END IF
+
+        ! IF there is a wall blocking lateral flow, we need to
+        ! disconnect from the u cell on the other side (with a
+        ! slip condition)
+        IF ((blk%isdead(i,j)%v .OR. &
+             &blk%isdead(i+1,j)%v) .AND. .NOT. &
+             &blk%isdead(i,j+1)%u) THEN 
+           ap(i,j) = ap(i,j) - an(i,j)
+           an(i,j) = 0.0
+        END IF
+        IF ((blk%isdead(i,j-1)%v .OR. &
+             &blk%isdead(i+1,j-1)%v) .AND. .NOT. &
+             &blk%isdead(i,j-1)%u) THEN
+           ap(i,j) = ap(i,j) - as(i,j)
+           as(i,j) = 0.0
         END IF
         
         bp(i,j) = source(i,j) + apo*blk%uold(i,j) &
@@ -265,16 +328,7 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
      END DO
   END DO
 
-  ! apply zero gradient condition on
-  ! left and right sides
-  
-  ap(:,y_beg) = ap(:,y_beg) - as(:,y_beg)
-  as(:,y_beg) = 0.0
-  
-  ap(:,y_end) = ap(:,y_end) - an(:,y_end)
-  an(:,y_end) = 0.0
-
-  junk =  solver(blkidx, x_beg, x_end, y_beg, y_end, scalar_sweep, &
+  junk =  solver(blkidx, SOLVE_U, x_beg, x_end, y_beg, y_end, scalar_sweep, &
        &ap(x_beg:x_end, y_beg:y_end), aw(x_beg:x_end, y_beg:y_end), &
        &ae(x_beg:x_end, y_beg:y_end), as(x_beg:x_end, y_beg:y_end), &
        &an(x_beg:x_end, y_beg:y_end), bp(x_beg:x_end, y_beg:y_end), &
@@ -290,9 +344,9 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
   USE globals, ONLY : block_struct, bigfactor, &
        &CELL_BOUNDARY_TYPE, &
        & FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, &
-       &density_air, density, grav
+       & FLOWBC_ZEROG, density_air, density, grav
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &scalar_sweep, uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
+       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
   USE solver_module
 
   IMPLICIT NONE
@@ -307,16 +361,20 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
   DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
   DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
   DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
+  DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
   DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
+
+  INTEGER :: k, x_beg, y_beg, num_bc, i, j, junk
+
+  DOUBLE PRECISION :: sc, sp
   DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
   DOUBLE PRECISION :: h1_eta_e, h1_eta_w, h1_eta_n, h1_eta_s	! e.g., h1_eta_p is the partial deriv
   DOUBLE PRECISION :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
-  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
   DOUBLE PRECISION :: curve_1,curve_2,curve_3,curve_4,curve_5,curve_6,curve_7	! curvature terms
   DOUBLE PRECISION :: k_p,k_e,k_w,k_n,k_s 
-  DOUBLE PRECISION :: sc, sp, windshear
-  DOUBLE PRECISION :: apo								! coefficients in discretization eqns
+  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
+  DOUBLE PRECISION, EXTERNAL :: afunc
 
   DOUBLE PRECISION :: &
        &ap(1:blk%xmax + 1, 1:blk%ymax + 1), &
@@ -326,22 +384,18 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
        &as(1:blk%xmax + 1, 1:blk%ymax + 1), &
        &bp(1:blk%xmax + 1, 1:blk%ymax + 1), &
        &source(1:blk%xmax + 1, 1:blk%ymax + 1)
-  INTEGER :: i, j, x_beg, x_end, y_beg, y_end, junk
-  DOUBLE PRECISION, EXTERNAL :: afunc
 
-  ap = 0.0
-  ae = 0.0
-  aw = 0.0
-  an = 0.0
-  as = 0.0
+  INTEGER :: x_end, y_end
+
+  LOGICAL :: slip
 
   x_beg = 2
   y_beg = 2
   x_end = blk%xmax
-  y_end = blk%ymax - 1
+  y_end = blk%ymax
 
   DO i=x_beg,x_end
-     DO j=y_beg,y_end-1
+     DO j=y_beg,y_end
         hp1 = blk%hv1(i,j) 
         hp2 = blk%hv2(i,j)
         he1 = 0.50*(blk%hu1(i,j) + blk%hu1(i,j+1))
@@ -481,35 +535,100 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
         IF (blk%isdead(i,j)%v) THEN
            source(i,j) = source(i,j) + bigfactor*0.0
            ap(i,j) = ap(i,j) + bigfactor
-        ELSE IF (i .EQ. x_beg) THEN
-           IF (blk%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                &blk%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
-              
-              ! adjust for upstream boundary conditions (always zero)
-
-              ap(i,j) = ap(i,j) + aw(i,j)
-              aw(i,j) = 0.0
-           ELSE 
-              source(i,j) = source(i,j) + &
-                   &aw(i,j)*blk%vvel(i-1,j)
-              aw(i,j) = 0.0
-           END IF
-        ELSE IF (i .EQ. x_end) THEN
-           IF (blk%cell(i,j)%type .EQ. CELL_BOUNDARY_TYPE .OR.&
-                &blk%cell(i,j+1)%type .EQ. CELL_BOUNDARY_TYPE) THEN
-              
-              ! adjust for downstream boundary conditions
-              
-              SELECT CASE (blk%cell(i,j)%bctype)
-              CASE (FLOWBC_FLOW, FLOWBC_VEL, FLOWBC_ELEV)
-                 ap(i,j) = ap(i,j) - ae(i,j)
+        ELSE 
+           IF (i .EQ. x_beg) THEN
+              ! upstream (west)
+              IF (blk%cell(i,j)%xtype .EQ. CELL_BOUNDARY_TYPE .OR.&
+                   &blk%cell(i,j+1)%xtype .EQ. CELL_BOUNDARY_TYPE) THEN
+                 slip = .TRUE.
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                 CASE DEFAULT
+                    slip = slip .AND. (blk%uvel(i,j) .LE. 0.0)
+                    slip = slip .AND. (blk%uvel(i,j+1) .LE. 0.0)
+                 END SELECT
+                 IF (slip) THEN
+                    ap(i,j) = ap(i,j) - aw(i,j)
+                 ELSE
+                    ap(i,j) = ap(i,j) + aw(i,j)
+                    source(i,j) = source(i,j) + 2.0*aw(i,j)*blk%vvel(i-1,j)
+                 END IF
+                 aw(i,j) = 0.0
+              ELSE 
+                 source(i,j) = source(i,j) + aw(i,j)*blk%vvel(i-1,j)
+                 aw(i,j) = 0.0
+              END IF
+           ELSE IF (i .EQ. x_end) THEN
+              ! downstream (east)
+              IF (blk%cell(i,j)%xtype .EQ. CELL_BOUNDARY_TYPE .OR.&
+                   &blk%cell(i,j+1)%xtype .EQ. CELL_BOUNDARY_TYPE) THEN
+                 slip = .TRUE.
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                 CASE DEFAULT
+                    slip = slip .AND. (blk%uvel(i,j) .GE. 0.0)
+                    slip = slip .AND. (blk%uvel(i,j+1) .GE. 0.0)
+                 END SELECT
+                 IF (slip) THEN
+                    ap(i,j) = ap(i,j) - ae(i,j)
+                 ELSE
+                    ap(i,j) = ap(i,j) + ae(i,j)
+                    source(i,j) = source(i,j) + 2.0*ae(i,j)*blk%vvel(i+1,j)
+                 END IF
                  ae(i,j) = 0.0
-              END SELECT
-           ELSE
-              source(i,j) = source(i,j) + &
-                   &ae(i,j)*blk%vvel(i+1,j)
-              ae(i,j) = 0.0
+              ELSE
+                 source(i,j) = source(i,j) + ae(i,j)*blk%vvel(i+1,j)
+                 ae(i,j) = 0.0
+              END IF
            END IF
+
+           IF (j .EQ. y_beg) THEN
+              SELECT CASE (blk%cell(i,j)%ytype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV)
+                    ap(i,j) = ap(i,j) - as(i,j)
+                    as(i,j) = 0.0
+                 CASE DEFAULT
+                    source(i,j) = source(i,j) + as(i,j)*blk%vvel(i,j-1)
+                    as(i,j) = 0.0
+                 END SELECT
+              CASE DEFAULT
+                 source(i,j) = source(i,j) + as(i,j)*blk%vvel(i,j-1)
+                 as(i,j) = 0.0
+              END SELECT
+           ELSE IF (j .EQ. y_end) THEN
+              SELECT CASE (blk%cell(i,j)%ytype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_ZEROG)
+                    ap(i,j) = ap(i,j) - an(i,j)
+                    an(i,j) = 0.0
+                 CASE DEFAULT
+                    source(i,j) = source(i,j) + bigfactor*blk%vvel(i,j+1)
+                    ap(i,j) = ap(i,j) + bigfactor
+                 END SELECT
+              CASE DEFAULT
+                 source(i,j) = source(i,j) + an(i,j)*blk%vvel(i,j+1)
+                 an(i,j) = 0.0
+              END SELECT
+           END IF
+        END IF
+
+        ! IF there is a wall blocking longitudinal flow, we need
+        ! to disconnect from the v cell on the other side (with
+        ! a slip condition)
+        IF ((blk%isdead(i-1,j)%u .OR. &
+             &blk%isdead(i-1,j+1)%u) .AND. .NOT. &
+             &blk%isdead(i-1,j)%v) THEN
+           ap(i,j) = ap(i,j) - aw(i,j)
+           aw(i,j) = 0.0
+        END IF
+        IF ((blk%isdead(i,j)%u .OR. &
+             &blk%isdead(i,j+1)%u) .AND. .NOT. &
+             &blk%isdead(i+1,j)%v) THEN
+           ap(i,j) = ap(i,j) - ae(i,j)
+           ae(i,j) = 0.0
         END IF
 
         bp(i,j) = source(i,j) + apo*blk%vold(i,j) &
@@ -524,19 +643,11 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
         
   ! apply zero flow conditions on sides
 
-  bp(:,y_beg) = bp(:,y_beg) + &
-       &as(:,y_beg)*0.0 ! blk%vvel(:,1)
-  as(:,y_beg) = 0
-  
-  bp(:,y_end-1) = bp(:,y_end-1) + &
-       &an(:,y_end-1)*0.0 ! blk%vvel(:,y_end)
-  an(:,y_end) = 0.0
-  
-  junk = solver(blkidx, x_beg, x_end, y_beg, y_end-1, scalar_sweep, &
+  junk = solver(blkidx, SOLVE_V, x_beg, x_end, y_beg, y_end, scalar_sweep, &
        &ap(x_beg:x_end, y_beg:y_end), aw(x_beg:x_end, y_beg:y_end), &
        &ae(x_beg:x_end, y_beg:y_end), as(x_beg:x_end, y_beg:y_end), &
        &an(x_beg:x_end, y_beg:y_end), bp(x_beg:x_end, y_beg:y_end), &
-       &blk%vstar(x_beg:x_end,y_beg:y_end-1))
+       &blk%vstar(x_beg:x_end,y_beg:y_end))
 
 END SUBROUTINE vvel_solve
 
@@ -670,9 +781,9 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
 
   USE globals, ONLY : block_struct, bigfactor, &
        &CELL_BOUNDARY_TYPE, &
-       &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV
+       &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, FLOWBC_BOTH, FLOWBC_ZEROG
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &update_depth, relax_dp, depth_sweep
+       &update_depth, relax_dp
   USE solver_module
 
   IMPLICIT NONE
@@ -700,11 +811,6 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
   y_beg = 2
   y_end = blk%ymax
 
-  ce = 0.0
-  cw = 0.0
-  cn = 0.0
-  cs = 0.0
-  cp = 0.0
   DO i=x_beg,x_end
      DO j=y_beg,y_end
         hp1 = blk%hp1(i,j)
@@ -725,8 +831,8 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
               
         ! IF(i == 2)			depth_w = blk%depth(i-1,j)
         ! IF(i == x_end)	depth_e = blk%depth(i+1,j)
-        IF(j == 2)			depth_s = blk%depth(i,j-1)
-        IF(j == y_end)	depth_n = blk%depth(i,j+1)
+        ! IF(j == 2)			depth_s = blk%depth(i,j-1)
+        ! IF(j == y_end)	depth_n = blk%depth(i,j+1)
               
         flux_e = he2*blk%ustar(i,j)*depth_e
         flux_w = hw2*blk%ustar(i-1,j)*depth_w
@@ -736,7 +842,8 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
         cpo = hp1*hp2/delta_t
         blk%mass_source(i,j) = &
              &cpo*(blk%depthold(i,j) - blk%depth(i,j)) + &
-             &flux_w - flux_e + flux_s - flux_n 
+             &flux_w - flux_e + flux_s - flux_n + &
+             &blk%xsource(i,j)*hp1*hp2
               
         ce(i,j) = he2*depth_e*blk%lud(i,j)
         cw(i,j) = hw2*depth_w*blk%lud(i-1,j)
@@ -745,61 +852,116 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
         cp(i,j) = ce(i,j) + cw(i,j) + cn(i,j) + cs(i,j) &
              + cpo
 
-        bp(i,j) = blk%mass_source(i,j) + &
-             &blk%xsource(i,j)*hp1*hp2
+        ! bp(i,j) = blk%mass_source(i,j) + &
+        !     &blk%xsource(i,j)*hp1*hp2
         ! blk%mass_source(i,j) = blk%mass_source(i,j) + &
         !      &blk%xsource(i,j)*hp1*hp2
+        bp(i,j) = blk%mass_source(i,j)
 
         IF (blk%isdead(i,j)%p) THEN
            bp(i,j) = bp(i,j) + bigfactor*0.0
            cp(i,j) = cp(i,j) + bigfactor
-        ELSE IF (i .EQ. x_beg) THEN
-           SELECT CASE (blk%cell(i,j)%type)
-           CASE (CELL_BOUNDARY_TYPE)
-              
-              ! adjust for upstream boundary conditions (always zero)
-              
-              SELECT CASE (blk%cell(i,j)%bctype)
-              CASE (FLOWBC_FLOW, FLOWBC_VEL)
-                 cp(i,j) = cp(i,j) - cw(i,j)
-                 cw(i,j) = 0.0
-              CASE (FLOWBC_ELEV)
-                 cp(i,j) = cp(i,j) + cw(i,j)
+        ELSE 
+           IF (i .EQ. x_beg) THEN
+
+              SELECT CASE (blk%cell(i,j)%xtype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_BOTH)
+                    cp(i,j) = cp(i,j) + cw(i,j)
+                    cw(i,j) = 0.0
+                 CASE DEFAULT
+                    cp(i,j) = cp(i,j) - cw(i,j)
+                    cw(i,j) = 0.0
+                 END SELECT
+              CASE DEFAULT
+                 bp(i,j) = bp(i,j) + cw(i,j)*blk%dp(i-1,j)
                  cw(i,j) = 0.0
               END SELECT
-           CASE DEFAULT
-              bp(i,j) = bp(i,j) +&
-                   &cw(i,j)*blk%dp(i-1,j)
-              cw(i,j) = 0.0
-           END SELECT
-        ELSE IF (i .EQ. x_end) THEN
-           SELECT CASE (blk%cell(i,j)%type)
-           CASE (CELL_BOUNDARY_TYPE)
-              
-              ! adjust for downstream boundary conditions
-              
-              SELECT CASE (blk%cell(i,j)%bctype)
-              CASE (FLOWBC_FLOW, FLOWBC_VEL)
-                 cp(i,j) = cp(i,j) - ce(i,j)
+
+           ELSE IF (i .EQ. x_end) THEN
+
+              SELECT CASE (blk%cell(i,j)%xtype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%xbctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_BOTH)
+                    cp(i,j) = cp(i,j) + ce(i,j)
+                    ce(i,j) = 0.0
+                 CASE DEFAULT
+                    cp(i,j) = cp(i,j) - ce(i,j)
+                    ce(i,j) = 0.0
+                 END SELECT
+              CASE DEFAULT
+                 bp(i,j) = bp(i,j) + ce(i,j)*blk%dp(i+1,j)
                  ce(i,j) = 0.0
               END SELECT
-           CASE DEFAULT
-              bp(i,j) = bp(i,j) +&
-                   &ce(i,j)*blk%dp(i+1,j)
-              ce(i,j) = 0.0
-           END SELECT
+           END IF
+
+           IF (j .EQ. y_beg) THEN
+              SELECT CASE (blk%cell(i,j)%ytype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_BOTH)
+                    cp(i,j) = cp(i,j) + cs(i,j)
+                    cs(i,j) = 0.0
+                 CASE DEFAULT
+                    cp(i,j) = cp(i,j) - cs(i,j)
+                    cs(i,j) = 0.0
+                 END SELECT
+              CASE DEFAULT
+                 bp(i,j) = bp(i,j) + cs(i,j)*blk%dp(i,j-1)
+                 cs(i,j) = 0.0
+              END SELECT
+           ELSE IF (j .EQ. y_end) THEN
+              SELECT CASE (blk%cell(i,j)%ytype)
+              CASE (CELL_BOUNDARY_TYPE)
+                 SELECT CASE (blk%cell(i,j)%ybctype)
+                 CASE (FLOWBC_ELEV, FLOWBC_BOTH)
+                    cp(i,j) = cp(i,j) + cn(i,j)
+                    cn(i,j) = 0.0
+                 CASE DEFAULT
+                    cp(i,j) = cp(i,j) - cn(i,j)
+                    cn(i,j) = 0.0
+                 END SELECT
+              CASE DEFAULT
+                 bp(i,j) = bp(i,j) + cn(i,j)*blk%dp(i,j+1)
+                 cn(i,j) = 0.0
+              END SELECT
+           END IF
+
+        END IF
+
+        
+
+        ! IF there is a wall blocking longitudinal flow, we need
+        ! to disconnect from the d cell on the other side
+        IF ((blk%isdead(i-1,j)%u) .AND. .NOT. &
+             &blk%isdead(i-1,j)%p) THEN
+           cp(i,j) = cp(i,j) - cw(i,j)
+           cw(i,j) = 0.0
+        END IF
+        IF ((blk%isdead(i,j)%u) .AND. .NOT. &
+             &blk%isdead(i+1,j)%p) THEN
+           cp(i,j) = cp(i,j) - ce(i,j)
+           ce(i,j) = 0.0
+        END IF
+
+        ! IF there is a wall blocking lateral flow, we need to
+        ! disconnect from the cell on the other side 
+        IF ((blk%isdead(i,j)%v) .AND. .NOT. &
+             &blk%isdead(i,j+1)%p) THEN 
+           cp(i,j) = cp(i,j) - cn(i,j)
+           cn(i,j) = 0.0
+        END IF
+        IF ((blk%isdead(i,j-1)%v) .AND. .NOT. &
+             &blk%isdead(i,j-1)%p) THEN
+           cp(i,j) = cp(i,j) - cs(i,j)
+           cs(i,j) = 0.0
         END IF
      END DO
   END DO
 
-  ! apply zero gradient on the sides
-  
-  cp(:,y_beg) = cp(:,y_beg) - cs(:,y_beg)
-  cs(:,y_beg) = 0.0
-  cp(:,y_end) = cp(:,y_end) - cn(:,y_end)
-  cn(:,y_end) = 0.0
-  
-  junk = solver(blkidx, x_beg, x_end, y_beg, y_end, depth_sweep, &
+  junk = solver(blkidx, SOLVE_DP, x_beg, x_end, y_beg, y_end, depth_sweep, &
        &cp(x_beg:x_end,y_beg:y_end), cw(x_beg:x_end,y_beg:y_end), &
        &ce(x_beg:x_end,y_beg:y_end), cs(x_beg:x_end,y_beg:y_end), &
        &cn(x_beg:x_end,y_beg:y_end), &
@@ -812,6 +974,7 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
      DO i=2,x_end
         DO j=2,y_end
            blk%depth(i,j) = blk%depth(i,j) + relax_dp*blk%dp(i,j)
+           blk%wsel(i,j) = blk%depth(i,j) + blk%zbot(i,j)
         END DO
      END DO
   ENDIF
@@ -823,7 +986,7 @@ END SUBROUTINE depth_solve
 ! ----------------------------------------------------------------
 SUBROUTINE correct_velocity(blk)
 
-  USE globals, ONLY : block_struct, bigfactor, &
+  USE globals, ONLY : block_struct, &
        &CELL_BOUNDARY_TYPE, &
        &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV
 
@@ -843,15 +1006,37 @@ SUBROUTINE correct_velocity(blk)
   DO i=x_beg,x_end
      DO j=y_beg,y_end
         correction = blk%lud(i,j)*(blk%dp(i,j)-blk%dp(i+1,j))
+        IF (i .EQ. x_end) THEN
+           SELECT CASE (blk%cell(i,j)%xtype)
+           CASE (CELL_BOUNDARY_TYPE)
+
+              ! if a flow or velocity was specified downstream, do not
+              ! correct it.
+                    
+              SELECT CASE (blk%cell(i,j)%xbctype)
+              CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                 correction = 0.0
+              END SELECT
+           END SELECT
+        END IF
         blk%uvel(i,j) = blk%ustar(i,j) + correction
         blk%ustar(i,j) = blk%uvel(i,j)
      END DO
   END DO
   
   DO i=x_beg,x_end
-     DO j=y_beg,y_end-1
-        blk%vvel(i,j) = blk%vstar(i,j) &
-             + blk%lvd(i,j)*(blk%dp(i,j)-blk%dp(i,j+1))
+     DO j=y_beg,y_end
+        correction =  blk%lvd(i,j)*(blk%dp(i,j)-blk%dp(i,j+1))
+        IF (j .EQ. y_end) THEN
+           SELECT CASE (blk%cell(i,j)%ytype)
+           CASE (CELL_BOUNDARY_TYPE)
+              SELECT CASE (blk%cell(i,j)%ybctype)
+              CASE (FLOWBC_FLOW, FLOWBC_VEL)
+                 correction = 0.0
+              END SELECT
+           END SELECT
+        END IF
+        blk%vvel(i,j) = blk%vstar(i,j) + correction
         blk%vstar(i,j) = blk%vvel(i,j)
      END DO
   END DO

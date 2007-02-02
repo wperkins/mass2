@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Fri Apr 25 12:50:24 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Mar 31 11:51:22 2005 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -16,7 +16,7 @@
 # -------------------------------------------------------------
 AC_INIT(mass2.f90)
 AM_INIT_AUTOMAKE(mass2,0.30)
-AC_CANONICAL_HOST()
+dnl AC_CANONICAL_HOST()
 
 # -------------------------------------------------------------
 # Stuff to include subdirectories
@@ -24,133 +24,140 @@ AC_CANONICAL_HOST()
 SUBDIRS="time_series util"
 AC_SUBST(SUBDIRS)
 
+                                # variables to define the solver used
+AC_SUBST(SOLVERSRC)
+AC_SUBST(SOLVEROBJ)
+AC_SUBST(SOLVERLDFLAGS)
+
 # -------------------------------------------------------------
-# check some command line options
+# Initialization/Defaults
 # -------------------------------------------------------------
 
-                                # select a compiler
+                                # use the internal TDMA solver by default
+SOLVERSRC=solver_tdma.f90
+SOLVEROBJ='solver_tdma.o'
+SOLVERFFLAGS=
+SOLVERLDFLAGS=
 
-AC_ARG_WITH(f90,
-    [  --with-f90=cmd              specify the Fortran 90 compiler],
-    F90="$withval")
+# -------------------------------------------------------------
+# Need to check for MPI first
+# -------------------------------------------------------------
+dnl AC_LANG_PUSH(Fortran 77)
 
-                                # compilation options
+dnl AC_ARG_ENABLE(mpi, 
+dnl     [  --enable-mpi            use MPI (try --help for more options)])
 
-dooptimize=""
-AC_ARG_ENABLE(optimize,
-    [  --enable-optimize            turn on optimization],
-    dooptimize=true,
-    dooptimize="")
-
-if test -n "$dooptimize" ; then
-    dodebug=""
-else
-    dodebug=true
-fi
-AC_ARG_ENABLE(debug,
-    [  --enable-debug               turn on debugging (use with --enable-optimize)],
-    dodebug=true)
-
-AC_ARG_ENABLE(profile,
-    [  --enable-profile             turn on profiling],
-    doprofile=true,
-    doprofile="")
-
-AC_ARG_WITH(extra-fflags,
-    [  --with-extra-fflags=flags    use additional compiler flags ],
-    F90FLAGS="$F90FLAGS $withval")
-
-                                # NetCDF location: set NETCDFDIR or
-                                # --with-netcdf=
-
-if test -z "$NETCDFDIR"; then
-    NETCDFDIR=/usr
-fi
-AC_ARG_WITH(netcdf,
-    [  --with-netcdf=dir            specify the location of NetCDF libraries],
-    NETCDFDIR="$withval")
-
-                                # CGNS location: set CGNSDIR or --with-cgns=
-
-if test -z "$CGNSDIR"; then
-    CGNSDIR=/usr/unsupported/CGNSLib
-fi
-AC_ARG_WITH(cgns,
-    [  --with-cgns=dir              specify the location of CGNS libraries],
-    CGNSDIR="$withval")
-
-AC_ARG_WITH(cgns-lib,
-    [  --with-cgns-lib=name         name of CGNS library: libcgns.a = cgns],
-    CGNSLIBNAME="$withval")
+dnl if test x"$enable_mpi" = x"yes"; then
+dnl     mpiok=""
+dnl     ACX_MPI(mpiok=1)
+dnl     if test x"$mpiok" = x; then
+dnl         AC_MSG_ERROR([Failed to find MPI or F90 MPI compiler for --enable-mpi], 10)
+dnl     fi
+dnl     AC_MSG_NOTICE([Configuring parallel MASS2 using MPI])
+dnl     F90=$MPIF90
+dnl     F77=$MPIF77
+dnl else
+dnl     AC_MSG_NOTICE([Configuring single processor MASS2]) 
+dnl fi
 
 # -------------------------------------------------------------
 # Checks for Programs we need
 # -------------------------------------------------------------
+AC_PROG_RANLIB()
+AC_PROG_INSTALL()
+AC_PROG_LN_S()
+AC_PROG_MAKE_SET()
 AC_PROG_F90()
-AC_PROG_RANLIB
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_MAKE_SET
 
-AC_LANG_FORTRAN77
+# FCFLAGS="$FCFLAGS $F90FLAGS"
 
+# -------------------------------------------------------------
+# check some command line options
+# -------------------------------------------------------------
 
-if test -n "$dooptimize"; then
-    F90FLAGS="$F90FLAGS $F90OPTIMIZE"
-fi
-if test -n "$dodebug"; then
-    F90FLAGS="$F90FLAGS $F90DEBUG"
-fi
-if test -n "$doprofile"; then
-    F90FLAGS="$F90FLAGS $F90PROFILE"
-fi
+                                # choose the sixpack solver library
+
+AC_ARG_WITH(sixpack,
+    [  --with-sixpack=dir           use the sixpack solver library in dir],
+    SOLVERSRC=solver_sixpack.f90
+    SOLVEROBJ='solver_sixpack.$(OBJEXT)'
+    SOLVERLDFLAGS="-L$withval/lib -lsixpack")
+
+                                # choose the aztec solver library
+
+AC_ARG_WITH(aztec,
+    [  --with-aztec=dir             use the Aztec solver library in dir],
+    SOLVERSRC=solver_aztec.f90
+    SOLVEROBJ='solver_aztec.$(OBJEXT)'
+    SOLVERFFLAGS="-I$withval/lib"
+    SOLVERLDFLAGS="-L$withval/lib -laztec")
+
+FCFLAGS="$FCFLAGS $SOLVERFFLAGS"
+
+# -------------------------------------------------------------
+# make sure the NetCDF library works
+# -------------------------------------------------------------
+ACX_NetCDF77()
+
+FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDES_PATH"
+
+# -------------------------------------------------------------
+# make sure the CGNS library works
+# -------------------------------------------------------------
+ACX_CGNS77()
+
+FCFLAGS="$FCFLAGS -I$CGNS_INCLUDE_PATH"
+
+# -------------------------------------------------------------
+# check the solver library
+# -------------------------------------------------------------
+
+                                # special flags may be needed
+                                # depending on the solver and compiler
+
+case $host in
+    i?86*linux*)
+        case $F77 in
+                            # The Absoft compiler
+            f95|f90)
+                case $SOLVERSRC in
+                    *aztec*)
+                        SOLVERLDFLAGS="$SOLVERLDFLAGS -lm -lg2c"
+                        ;;
+                    *)
+                esac
+                ;;
+            *)
+        esac
+        ;;
+    alpha*linux*|alphaev*-dec-osf*)
+                            # The DEC/Compaq/HP compiler on Alpha Platforms
+        case $F77 in
+            f90|f95|fort)
+                case $SOLVERSRC in
+                    *aztec*)
+                        SOLVERLDFLAGS="$SOLVERLDFLAGS -lm -lg2c"
+                        ;;
+                    *)
+                esac
+                ;;
+            *)
+        esac
+        ;;
+    *)
+        
+esac
 
 # -------------------------------------------------------------
 # assemble compiler flags and test
 # -------------------------------------------------------------
-F90FLAGS="$F90FLAGS -I$NETCDFDIR/include"
-F90LDFLAGS="$F90LDFLAGS -L$NETCDFDIR/lib"
-F90LIBS="$F90LIBS -lnetcdf"
+AC_LANG(Fortran)
+                                # search for modules in the
+                                # time_series directory
 
-AC_CHECK_FILE($NETCDFDIR/include/netcdf.inc, , AC_MSG_ERROR(Cannot find required header netcdf.inc))
-
-                                # some of these names for the CGNS
-                                # library are site specific
-if test -z "$CGNSLIBNAME"; then
-    case $host in
-        i?86*linux*)
-            CGNSLIBNAME=cgns.linux
-            ;;
-        alpha*linux*)
-            CGNSLIBNAME=cgns.alinux
-            ;;
-        alphaev*-dec-osf*)
-            CGNSLIBNAME=cgns.ALPHA
-            ;;
-        mips-*-irix*)
-            CGNSLIBNAME=cgns.mips4_n32
-            ;;
-        *)
-            CGNSLIBNAME=cgns
-    esac
-fi
-
-F90FLAGS="$F90FLAGS -I$CGNSDIR"
-F90LDFLAGS="$F90LDFLAGS -L$CGNSDIR/lib"
-F90LIBS="$F90LIBS -l$CGNSLIBNAME"
-
-AC_CHECK_FILE($CGNSDIR/cgnslib_f.h, , 
-              AC_MSG_ERROR(Cannot find required header cgnslib_f.h))
-
-FFLAGS="$FFLAGS $F90FLAGS ${F90MODPATH}time_series"
-LDFLAGS="$LDFLAGS $F90LDFLAGS"
+FCFLAGS="$FCFLAGS ${F90MODPATH}time_series"
+FFLAGS="$FCFLAGS"
 LIBS="$LIBS $F90LIBS"
-
-# AC_PROG_F77_WORKS
-AC_CHECK_LIB(netcdf, nf_create, ,
-             AC_MSG_ERROR(Cannot link to NetCDF library))
-AC_CHECK_LIB($CGNSLIBNAME, cg_open_f, ,
-             AC_MSG_ERROR(Cannot link to CGNS library))
 
 AC_CONFIG_SUBDIRS(time_series)
 AC_OUTPUT(Makefile util/Makefile util/cart_grid/Makefile)

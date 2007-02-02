@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 18, 2003 by William A. Perkins
-! Last Change: Thu Mar 27 11:47:31 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Mar 25 12:20:27 2004 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -524,6 +524,21 @@ CONTAINS
      i = xmax + 1
      nctmp_real(1, i, 1:ymax+1) = &
           &0.5*SNGL((var(i,1:ymax+1) + var(i-1,1:ymax+1))/conversion)
+     j = 1
+     nctmp_real(1, 1:xmax+1, j) = &
+          &0.5*SNGL((var(1:xmax+1,j) + var(1:xmax+1,j+1))/conversion)
+     j = ymax + 1
+     nctmp_real(1, 1:xmax+1, j) = &
+          &0.5*SNGL((var(1:xmax+1,j) + var(1:xmax+1,j-1))/conversion)
+
+     nctmp_real(1, 1, 1) = &
+          &0.5*SNGL((var(1,2) + var(2,1))/conversion)
+     nctmp_real(1, 1, ymax+1) = &
+          &0.5*SNGL((var(1,ymax) + var(2,ymax+1))/conversion)
+     nctmp_real(1, xmax+1, 1) = &
+          &0.5*SNGL((var(xmax,1) + var(xmax+1,2))/conversion)
+     nctmp_real(1, xmax+1, ymax+1) = &
+          &0.5*SNGL((var(xmax,ymax+1) + var(xmax+1,ymax))/conversion)
 
      ncstat = nf_put_vara_real(plot_ncid, varid, start, length, nctmp_real)
      IF (ncstat .ne. nf_noerr) CALL netcdferror(plot_ncname, ncstat)

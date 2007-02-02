@@ -8,15 +8,17 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 16, 1999 by William A. Perkins
-# Last Change: Tue Dec 11 09:14:39 2001 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jul 15 07:35:08 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-if( ! $?TEC90HOME ) then
-    setenv TEC90HOME /usr/software/tecplot9
+if( ! $?TECHOME ) then
+    setenv TECHOME /usr/software/tecplot10
 endif
+setenv TEC100HOME $TECHOME
+setenv TEC90HOME $TECHOME
 setenv TECADDONDEVDIR $PWD
-set path = ($path $TEC90HOME/adk/bin)
+set path = ($path $TECHOME/adk/bin)
 
 set os = `uname -s`
 
@@ -36,5 +38,7 @@ switch( $os )
     case OSF1*:
         setenv TECADDONDEVPLATFORM decalpha.32
         breaksw
+    case Darwin*:
+        setenv TECADDONDEVPLATFORM macx.101
     default:
 endsw

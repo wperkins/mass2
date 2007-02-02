@@ -190,8 +190,8 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
      SELECT CASE(bc_loc)
      CASE ("US", "DS")
         maxidx = ymax(block) - 1
-     ! CASE ("LB", "RB")
-        ! maxidx = xmax(block) - 1
+     CASE ("LB", "RB")
+        maxidx = xmax(block) - 1
      CASE ("IN")
         ! decide maxidx below
      CASE DEFAULT
@@ -495,17 +495,30 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
      END IF
      
 
-                                ! some indices we'll need alot
-     SELECT CASE (bc%bc_loc)
-     CASE("US")
-        i = 1
-        coni = block(conbc%block)%xmax
-     CASE ("DS")
-        i = block(bc%block)%xmax
-        coni = 1
-     END SELECT
-
      DO n = 1, bc%num_cell_pairs
+
+        SELECT CASE (bc%bc_loc)
+        CASE("US")
+           i = 1
+           coni = block(conbc%block)%xmax
+           j = bc%start_cell(n)
+           conj = conbc%start_cell(n)
+        CASE ("DS")
+           i = block(bc%block)%xmax
+           coni = 1
+           j = bc%start_cell(n)
+           conj = conbc%start_cell(n)
+        CASE ("RB")
+           i = bc%start_cell(n)
+           coni = conbc%start_cell(n)
+           j = 1
+           conj = block(conbc%block)%ymax
+        CASE ("LB")
+           i = bc%start_cell(n)
+           coni = conbc%start_cell(n)
+           j = block(bc%block)%ymax
+           conj = 1
+        END SELECT
 
                                 ! check to see if the ends of the
                                 ! block connection are in about the
@@ -517,17 +530,22 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
                                 ! this because the grid has not been
                                 ! read yet
 
-        j = bc%start_cell(n)
         x1 = block(bc%block)%x_grid(i, j)
         y1 = block(bc%block)%y_grid(i, j)
-        conj = conbc%start_cell(n)
         x2 = block(conbc%block)%x_grid(coni, conj)
         y2 = block(conbc%block)%y_grid(coni, conj)
         
         rdist = distance(x1, y1, x2, y2)
 
-        x2 = block(bc%block)%x_grid(i, j+1)
-        y2 = block(bc%block)%y_grid(i, j+1)
+        SELECT CASE (bc%bc_loc)
+        CASE ("US","DS")
+           x2 = block(bc%block)%x_grid(i, j+1)
+           y2 = block(bc%block)%y_grid(i, j+1)
+        CASE ("LB","RB")
+           x2 = block(bc%block)%x_grid(i+1, j)
+           y2 = block(bc%block)%y_grid(i+1, j)
+        END SELECT
+
         rdist = rdist/distance(x1, y1, x2, y2)
 
         IF (rdist .GT. 0.01) THEN
@@ -538,12 +556,22 @@ LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
            RETURN
         END IF
 
-        j = bc%end_cell(n)
-        x1 = block(bc%block)%x_grid(i, j+1)
-        y1 = block(bc%block)%y_grid(i, j+1)
-        conj = conbc%end_cell(n)
-        x2 = block(conbc%block)%x_grid(coni, conj+1)
-        y2 = block(conbc%block)%y_grid(coni, conj+1)
+        SELECT CASE (bc%bc_loc)
+        CASE ("US","DS")
+           j = bc%end_cell(n)
+           x1 = block(bc%block)%x_grid(i, j+1)
+           y1 = block(bc%block)%y_grid(i, j+1)
+           conj = conbc%end_cell(n)
+           x2 = block(conbc%block)%x_grid(coni, conj+1)
+           y2 = block(conbc%block)%y_grid(coni, conj+1)
+        CASE ("LB","RB")
+           i =  bc%end_cell(n)
+           x1 = block(bc%block)%x_grid(i+1, j)
+           y1 = block(bc%block)%y_grid(i+1, j)
+           coni = conbc%end_cell(n)
+           x2 = block(conbc%block)%x_grid(coni+1, conj)
+           y2 = block(conbc%block)%y_grid(coni+1, conj)
+        END SELECT
         
         rdist = distance(x1, y1, x2, y2)
 
@@ -709,7 +737,7 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
         WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
              &": block number out of range: ", block
         CALL error_message(msg, fatal=.FALSE.)
-        ierr = ierr + 1
+        ierr = ierr + lerr
         CYCLE
      END IF
 
@@ -728,8 +756,8 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
      SELECT CASE(bc_loc)
      CASE ("US", "DS")
         maxidx = ymax(block) - 1
-     ! CASE ("LF", "RT")
-        ! maxidx = xmax(block) - 1
+     CASE ("RB", "LB")
+        maxidx = xmax(block) - 1
      CASE DEFAULT
         lerr = lerr + 1
         WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &

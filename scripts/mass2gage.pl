@@ -10,7 +10,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created November 17, 1999 by William A. Perkins
-# Last Change: Mon Sep 30 07:21:05 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Aug 26 15:02:18 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -30,7 +30,7 @@ perl B<mass2gage.pl> B<-v> I<var> B<-g> I<gage> [B<-C>|B<-M>] [B<-1>]
 
 =head1 DESCRIPTION
 
-This script is used to extract a data, for one variable and gage, from
+This script is used to extract data for one variable and gage from
 a MASS2 gage output file.  It is primarily intended to be used to
 check a simulation while in progress.  
 
@@ -40,109 +40,104 @@ check a simulation while in progress.
 
 =item B<-l>
 
-list the gages and time-dependant variables in I<file> and exit.
+List the gages and time-dependant variables in I<file> and exit.
 
 =item B<-v> I<var>
 
-(required) extract the I<var> time-dependant variable from I<file>;
+(required) Extract the I<var> time-dependant variable from I<file>;
 I<var> may be either an integer or a variable name (as long as the
 name does not start with a number), either of which can be obtained
-using B<-l>
+using B<-l>.
 
 =item B<-g> I<gage>
 
-(required) extract data from the I<gage> location; I<gage> may be
+Extract data from the I<gage> location; I<gage> may be
 either an integer or a gage location name (as long as the name does
-not start with a number), either of which can be obtained using B<-l>
+not start with a number), either of which can be obtained using B<-l>.
 
 =item B<-C>
 
-output a cumulative frequency distribution; normally, a time series is
+Output a cumulative frequency distribution; normally, a time series is
 output, this option will cause the data from the specified gage to be
-sorted and assigned an exceedance probability 
+sorted and assigned an exceedance probability.
 
 =item B<-D>
 
-if the I<file> contains the variable C<isdry>, extract records for
+If the I<file> contains the variable C<isdry>, extract records for
 I<var> only when C<isdry> is zero; applies only to the extraction of a
-time series, a CFD extraction will still contain all values
+time series; a CFD extraction will still contain all values.
 
 =item B<-o> I<output>
 
-send extracted data to I<output> (does not work with B<-l>)
+Send extracted data to I<output> (does not work with B<-l>).
 
 =item B<-1> 
 
-add a line at the top of the output (line 1) containing some
-information about the extracted data
+Add a line at the top of the output (line 1) containing some
+information about the extracted data.
 
 =item B<-M> 
 
-format as a MASS1/MASS2 boundary condition file (implies -1)
+Format as a MASS1/MASS2 boundary condition file (implies -1).
 
 =item B<-X> I<n>
 
-skip the first I<n> time records in the gage file, to avoid a warm up
-period, for example
+Skip the first I<n> time records in the gage file, to avoid a warm up
+period, for example.
 
 =back
 
 =head1 EXAMPLES
 
-Here is the output from a listing (B<-l>) of a particular gage.nc file: 
+This is the output from a listing (B<-l>) of a particular gage.nc file: 
 
-    perk@gehenna> perl mass2gage.pl -l gage.nc
+    > \textbf{perl mass2gage.pl -l gage.nc }
     MASS2 Gage Output File:
-         "gage.nc"
-    3577 time slices:
-        starting: 04-05-1996 00:00:00
-          ending: 09-01-1996 00:00:03
+             "gage.nc"
+    1 time slices:
+            starting: 03-19-1999 12:00:00
+              ending: 03-19-1999 12:00:00
 
     Available Gage Locations
     -----------------------------------------------------
     Gage Name                           Block   Eta    Xi
     -----------------------------------------------------
-       1 FMS RM106.6 North                  1    25     2
-       2 FMS RM106.6 Mid-channel            1    25    12
-       3 FMS RM106.6 South                  1    25    23
+       1 T54LBC piezometer                  1   167    83
+       2 T61IRC piezometer                  2    63    27
+       3 T64RBC piezometer                  4   117     9
+       4 T81RBC piezometer                 12    38    47
+       5 T90RBC piezometer                 13   228    51
+       6 T94RBC piezometer                 13   451    15
+       7 T101LBC piezometer                14    24    63
+       8 downstream extent                 16   155    40
+       9 ERC 100-D                          1    22     7
+      10 ERC 100-H                          4   115     9
+      11 ERC 100-F                         10   116     9
+      12 ERC 100-D Alternate                1    22    10
+      13 trouble spot                      11     4    16
+      14 trouble spot upstream             11     3    16
+      15 trouble spot downstream           11     5    16
+      16 trouble spot west                 11     4    15
+      17 trouble spot east                 11     4    17
     -----------------------------------------------------
 
-    Available Time-Dependant Variables:
+    Available Time-Dependent Variables:
       8 wsel                 Water Surface Elevation, feet
       9 depth                Depth, feet
      10 vmag                 Velocity Magnitude, feet/second
      11 uvel                 Longitudinal Velocity, feet/second
      12 vvel                 Lateral Velocity, feet/second
-     13 temperature          Water Temperature, Centigrade
-     14 tdgconc              Total Dissolved Gas Concentration, milligram/liter
-     15 tdgpress             Total Dissolved Gas Pressure, millibars
-     16 tdgdeltap            Total Dissolved Gas Pressure above Atmospheric, millibars
-     17 tdgsat               Total Dissolved Gas Pressure Saturation, percent
+     13 isdry                Dry Cell Flag, none
 
-Temperature data is extracted from the same file:
+Depth data is extracted from the same file:
 
-    perk@gehenna> perl mass2gage.pl -g 2 -v temperature gage.nc
-    04-05-1996 00:00:00           7.152
-    04-05-1996 01:00:00           7.165
-    ...
-    08-31-1996 23:00:03          17.848
-    09-01-1996 00:00:03          17.847
-
-The data is formatted as a MASS1/MASS2 boundary condition file:
-
-    perk@gehenna> perl mass2gage.pl -g 19 -v temperature -M gage.nc
-    # gage.nc Extraction: FMS RM106.6 Mid-channel: Water Temperature, Centigrade
-    04-05-1996 00:00:00           7.152 /
-    04-05-1996 01:00:00           7.165 /
-    ...
-    08-31-1996 23:00:03          17.848 /
-    09-01-1996 00:00:03          17.847 /
-
-=head1 AUTHOR(S)
-
-William A. Perkins, Battelle
-
-=head1 SEE ALSO
+    03-19-1999 12:00:00           8.369
+    03-19-1999 13:00:00          9.9153
+    03-19-1999 14:00:00          9.8377
+    03-19-1999 15:00:00          9.7396
+    03-19-1999 16:00:00          9.6508
+    03-19-1999 17:00:00           9.562
+    03-19-1999 18:00:00          9.4928
 
 =cut
 

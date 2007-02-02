@@ -2,8 +2,8 @@ SHELL=/bin/sh
 LIB=$(TECADDONDEVDIR)/lib/$(PLATFORM)/$(OBJSUBDIR)/lib$(LIBBASENAME).$(LIBEXT)
 STATLIB=$(TECADDONLIBDIR)/lib$(LIBBASENAME).a
 OBJDIR=obj/$(PLATFORM)/$(OBJSUBDIR)
-IOUTILLIB=$(TEC90HOME)/lib/ext/$(PLATFORM)/libioutil.a
-GUILIB=$(TEC90HOME)/lib/ext/$(PLATFORM)/libgui.a
+IOUTILLIB=$(TECHOME)/lib/ext/$(PLATFORM)/libioutil.a
+GUILIB=$(TECHOME)/lib/ext/$(PLATFORM)/libgui.a
 # NETCDFLIB=-lnetcdf 
 shlib: $(LIB)
 statlib: $(STATLIB)

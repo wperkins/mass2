@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Mar 21 09:09:53 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Nov  6 07:47:04 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -30,8 +30,26 @@ DEBUG =  -O
 PROFILE = # -pg
 FLAGS = $(NETCDFFLAGS) $(DEBUG) $(PROFILE) -Bstatic
 
+# SOLVERSRC = solver_sixpack.f90 # solver_tdma.f90
+# SOLVERFLAGS =
+# SOLVERLDFLAGS = -L/home/perk/Projects/GrantPUD/src/sixpack-2.3.7/lib -lsixpack
+
+SOLVERSRC = solver_tdma.f90
+SOLVERFLAGS =
+SOLVERLDFLAGS = 
+SOLVERLIB = 
+
+# SOLVERSRC = solver_aztec.f90
+# SOLVERFLAGS = 
+# SOLVERLDFLAGS = -L../aztec/lib -L/usr/lib/gcc-lib/i386-redhat-linux/2.96
+# SOLVERLIB = -laztec -lm -lg2c
+
+SOLVEROBJ = $(SOLVERSRC:%.f90=%.o) 
+
+# general compile/link flags
+
 MAINDEBUG = $(DEBUG)
-F90FLAGS = $(FLAGS)
+F90FLAGS = $(SOLVERLDFLAGS) $(FLAGS) $(SOLVERFLAGS)
 LIBLOC = 
 LDFLAGS = $(NETCDFLDFLAGS) ${LIBLOC} $(FLAGS) 
 LIBS = $(NETCDFLIBS) 
@@ -67,7 +85,10 @@ SRCS =											\
 	 bed.f90									\
 	 bed_functions.f90							\
 	 accumulator.f90							\
-	 total_conc.f90
+	 total_conc.f90								\
+	 utility.f90								\
+	 hydro_solve.f90							\
+	 $(SOLVERSRC)
 
 OBJS = $(SRCS:%.f90=%.o)
 
@@ -98,7 +119,8 @@ MODULES =										\
 	sediment_source.$(MOD)						\
     particulate_source.$(MOD)					\
 	bed_module.$(MOD)							\
-	accumulator.$(MOD)
+	accumulator.$(MOD) \
+	solver_module.$(MOD)
 
 ${TARGET}: ${OBJS}
 	${LINK.f90} ${OBJS} ${LIBS} -o ${TARGET}
@@ -112,6 +134,10 @@ date_time_test: ${DATE_TST_OBJ}
 
 clean::
 	rm -rf date_time_test
+
+SOLVER_TEST_OBJ = solver_test.o $(SOLVEROBJ)
+solver_test: $(SOLVER_TEST_OBJ)
+	${LINK.f90} ${SOLVER_TEST_OBJ} ${LIBS} -o $@
 
 # dependancies for individual object files
 
@@ -156,7 +182,9 @@ generic_source.$(MOD): generic_source.o
 global_module_023.o: global_module_023.f90 misc_vars.$(MOD) $(STUPIDMOD) 
 globals.$(MOD): global_module_023.o
 
-io_routines_module.o: io_routines_module.f90
+hydro_solve.o: hydro_solve.f90 globals.$(MOD) misc_vars.$(MOD) solver_module.$(MOD)
+
+io_routines_module.o: io_routines_module.f90 misc_vars.$(MOD)
 io_routines_module.$(MOD): io_routines_module.o
 
 julian.o: julian.f90
@@ -167,19 +195,20 @@ mass2_main_025.o: mass2_main_025.f90 \
    table_boundary_conditions.$(MOD) date_time.$(MOD) scalars.$(MOD) \
    met_data_module.$(MOD) energy_flux.$(MOD) gas_functions.$(MOD) \
    plot_output.$(MOD) gage_output.$(MOD) misc_vars.$(MOD) transport_only.$(MOD) \
-   scalars_source.$(MOD) bed_module.$(MOD) accumulator.$(MOD)
+   scalars_source.$(MOD) bed_module.$(MOD) accumulator.$(MOD) solver_module.$(MOD) \
+   utility.$(MOD)
 mass2_main_025.$(MOD): mass2_main_025.o
 
 mass2.o: mass2.f90 \
 	mass2_main_025.$(MOD)
 	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2.f90
 
-misc_vars_module.o: misc_vars_module.f90 date_time.$(MOD)
-misc_vars.$(MOD): misc_vars_module.o
-
 met_data_module.o: met_data_module.f90 table_boundary_conditions.$(MOD) \
    date_time.$(MOD)
 met_data_module.$(MOD): met_data_module.o
+
+misc_vars_module.o: misc_vars_module.f90 date_time.$(MOD)
+misc_vars.$(MOD): misc_vars_module.o
 
 netcdferror.o: netcdferror.f90
 
@@ -202,6 +231,9 @@ scalars_source.$(MOD): scalars_source.o
 sediment_source.o: sediment_source.f90 globals.$(MOD) scalars.$(MOD) misc_vars.$(MOD)
 sediment_source.$(MOD): sediment_source.o
 
+$(SOLVERSRC:%.f90=%.o): $(SOLVERSRC)
+solver_module.$(MOD): $(SOLVERSRC:%.f90=%.o)
+
 table_bc_module.o: table_bc_module.f90 date_time.$(MOD)
 table_boundary_conditions.$(MOD): table_bc_module.o
 
@@ -219,8 +251,10 @@ transport_only_module.o: transport_only_module.f90 date_time.$(MOD) \
 	globals.$(MOD) misc_vars.$(MOD)
 transport_only.$(MOD): transport_only_module.o
 
+utility.o: utility.f90 misc_vars.$(MOD)
+utility.$(MOD): utility.o
 
-profile_init.o: profile_init.f90 globals.$(MOD)
+profile_init.o: profile_init.f90 globals.$(MOD) misc_vars.$(MOD)
 
 clean::
 	rm -f ${OBJS}

@@ -1,0 +1,98 @@
+\subsection{mass2slice.pl\label{mass2slice_pl}\index{mass2slice.pl}}
+
+
+Extract profile and cross section data from MASS2 plot
+output files.
+
+\subsection*{SYNOPSIS\label{mass2slice_pl_SYNOPSIS}\index{mass2slice pl!SYNOPSIS}}
+
+perl \textbf{mass2slice.pl} [\textbf{-d}] [-a] [\textbf{-i}$|$\textbf{-j}] [\textbf{-t} \textit{indices}$|$\textbf{-l}] [\textbf{-o} \textit{output}]
+\textit{file} \textit{variable} \textit{block} \textit{index} [\textit{block} \textit{index} ...]
+
+
+
+perl \textbf{mass2slice.pl} \textbf{-p} [\textbf{-t} \textit{indices}$|$\textbf{-l}] [\textbf{-o} \textit{output}]
+\textit{file} \textit{variable} \textit{block} \textit{i} \textit{j}
+
+\subsection*{DESCRIPTION\label{mass2slice_pl_DESCRIPTION}\index{mass2slice pl!DESCRIPTION}}
+
+\textbf{mass2slice.pl} is used to extract slices of data from the NetCDF
+format MASS2 plot output file.  Slices can be made either
+longitudinally (\textbf{-i}) or laterally (\textbf{-j}) across multiple blocks.
+By default, all times are output separated by a blank line (useful for
+plotting in gnuplot).
+
+\subsection*{OPTIONS\label{mass2slice_pl_OPTIONS}\index{mass2slice pl!OPTIONS}}\begin{description}
+\item[\textbf{-a}] \mbox{}
+
+Average the variable across the profile or cross section to produce
+one value.
+
+\item[\textbf{-d}] \mbox{}
+
+Place the date/time in the first two columns of the output.
+
+\item[\textbf{-D}] \mbox{}
+
+For \textbf{-i} and \textbf{-j} slices, do not output any points where the cell is
+dry.  This option is ignored if there is no wet/drying information in \textit{file}.
+
+\item[\textbf{-i}] \mbox{}
+
+Extract a profile.  Distance is computed from upstream to downstream.
+The \textit{index} is the lateral index.
+
+\item[\textbf{-j}] \mbox{}
+
+Extract a cross section. Distance is computed from the right to left
+bank (looking downstream). The \textit{index} is the longitudinal index.
+
+\item[\textbf{-p}] \mbox{}
+
+Output a timeseries at a single point rather than a slice.  If this
+option is used, both the \textit{i} and \textit{j} indices of the point (cell
+actually) are expected to be on the command line.
+
+\item[\textbf{-t} \textit{index}] \mbox{}
+
+Select a specific time, specified by \textit{index}, to extract.  By default
+all times are extracted, and their time stamp is placed in the output.
+
+\item[\textbf{-l}] \mbox{}
+
+Extract only the last time in the plot output file.  The \textbf{-t} is
+ignored if this option is specified.
+
+\item[\textbf{-o} \textit{output}] \mbox{}
+
+Send data to \textit{output} instead of standard output.
+
+\end{description}
+\subsection*{EXAMPLES\label{mass2slice_pl_EXAMPLES}\index{mass2slice pl!EXAMPLES}}
+
+This script is typically used to provide data for profile plotting.  The following gnuplot script will plot a water surface elevation profile from a three block domain:
+
+\begin{verbatim}
+ plot '<perl mass2slice.pl -t 1 -i plot.nc wsel 1 5 2 10 3 5' \
+         using 3:4 with l 1, \
+      '<perl mass2slice.pl -l -i plot.nc wsel 1 5 2 10 3 5' \
+         using 3:4 with l 3, \
+      '<perl mass2slice.pl -i plot.nc zbot 1 5 2 10 3 5' \
+         using 3:4 with l 7
+\end{verbatim}
+
+
+Block 2 is either aligned differently or of a different resolution.
+The resulting plot will show three curves: the initial conditions
+(\texttt{-t 1, wsel}), the final conditions (\texttt{-l, wsel}), and the bottom
+elevation (\texttt{zbot}).
+
+\subsection*{SEE ALSO\label{mass2slice_pl_SEE_ALSO}\index{mass2slice pl!SEE ALSO}}
+
+gnuplot(1)
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

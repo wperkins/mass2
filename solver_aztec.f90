@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November  4, 2002 by William A. Perkins
-! Last Change: Mon Jan 13 07:40:44 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Mon Aug 18 09:17:10 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -15,12 +15,15 @@
 ! ----------------------------------------------------------------
 MODULE solver_module
 
+  USE solver_common
+
   IMPLICIT NONE
 
-  include "../aztec/lib/az_aztecf.h"
+  INCLUDE "az_aztecf.h"
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
+  INTEGER, PRIVATE :: myblocks
 
   INTEGER, PRIVATE, DIMENSION(0:AZ_PROC_SIZE) :: &
        &proc_config, &          ! Processor information.
@@ -44,21 +47,39 @@ MODULE solver_module
        &val, &                  ! sparse matrix values
        &b, xsol                 ! rhs and approximate solution
 
+                                ! by block information to save 
+  TYPE aztec_blk_rec
+     INTEGER :: name(4)
+     LOGICAL :: calc(4)
+  END TYPE aztec_blk_rec
 
   INTEGER, PRIVATE, PARAMETER :: MAX_NZ_ROW = 5
+  TYPE (aztec_blk_rec), PRIVATE, ALLOCATABLE :: ainfo(:)
 CONTAINS
 
   ! ----------------------------------------------------------------
   ! INTEGER FUNCTION solver_initialize
   ! Returns 0 if all is well
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver_initialize(blocks, xmax, ymax)
+  INTEGER FUNCTION solver_initialize(blocks, xmax, ymax, do_flow, do_transport)
 
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: blocks, xmax(blocks), ymax(blocks)
+    LOGICAL, INTENT(IN) :: do_flow, do_transport
 
-    INTEGER :: imax, jmax
+    INTEGER :: iblock, ieq, imax, jmax
+
+                                ! initialize by block saved info
+
+    myblocks = blocks
+    ALLOCATE(ainfo(myblocks))
+    DO iblock = 1, myblocks
+       DO ieq = 1, 4
+          ainfo(iblock)%name(ieq) = 10*iblock + ieq
+          ainfo(iblock)%calc(ieq) = .TRUE.
+       END DO
+    END DO
 
                                 ! do serial only -- for now
 
@@ -83,6 +104,21 @@ CONTAINS
 
     call AZ_set_proc_config(proc_config, AZ_NOT_MPI)
 
+                                ! set the solver options
+
+    CALL AZ_defaults(options, params)
+    options(AZ_output) = AZ_none
+    options(AZ_solver) = AZ_bicgstab
+    options(AZ_precond) = AZ_dom_decomp
+    options(AZ_subdomain_solve) = AZ_ilu
+    options(AZ_graph_fill) = 0
+    ! options(AZ_precond) = AZ_sym_GS
+    ! options(AZ_poly_ord) = 3
+    options(AZ_conv) = AZ_r0
+    options(AZ_keep_info) = 1
+    options(AZ_reorder) = 1
+    options(AZ_output) = AZ_none
+
     solver_initialize = 0
 
   END FUNCTION solver_initialize
@@ -100,12 +136,12 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! INTEGER FUNCTION solver
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver(blk, x_start, x_end, y_start, y_end, its, &
+  INTEGER FUNCTION solver(blk, ieq, x_start, x_end, y_start, y_end, its, &
        &ap, aw, ae, as, an, bp, x)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blk, x_start, x_end, y_start, y_end, its
+    INTEGER, INTENT(IN) :: blk, ieq, x_start, x_end, y_start, y_end, its
     DOUBLE PRECISION, INTENT(IN), &
          &DIMENSION(x_start:x_end,y_start:y_end) :: &
          &ap, aw, ae, as, an, bp
@@ -183,21 +219,11 @@ CONTAINS
 
     END DO
 
+
                                 ! distribute the matrix
 
     CALL AZ_transform(proc_config, extern, bindx, val, update, update_index,&
          &extern_index, data_org, N_update, 0, 0, 0, 0, AZ_MSR_MATRIX)
-
-                                ! set the solver options
-
-    CALL AZ_defaults(options, params)
-    options(AZ_output) = AZ_none
-    options(AZ_solver) = AZ_bicgstab
-    options(AZ_precond) = AZ_sym_GS
-    options(AZ_max_iter) = its
-    options(AZ_poly_ord) = 2
-    options(AZ_conv) = AZ_r0
-    params(AZ_tol) = 1e-1
 
                                 ! fill the initial value and rhs
                                 ! vectors according to the re-ordering
@@ -210,6 +236,25 @@ CONTAINS
        b(iP) = bp(i+x_start, j+y_start)
        xsol(iP) = x(i+x_start, j+y_start)
     END DO
+
+                                ! set options
+
+    SELECT CASE (ieq)
+    CASE (SOLVE_DP)
+       options(AZ_max_iter) = depth_sweep
+       params(AZ_tol) = depth_rtol
+    CASE DEFAULT
+       options(AZ_max_iter) = scalar_sweep
+       params(AZ_tol) = scalar_rtol
+    END SELECT
+
+    data_org(AZ_name) = ainfo(blk)%name(ieq)
+    IF (ainfo(blk)%calc(ieq)) THEN
+       options(AZ_pre_calc) = AZ_calc
+       ! ainfo(blk)%calc(ieq) = .FALSE.
+    ELSE 
+       options(AZ_pre_calc) = AZ_reuse
+    END IF
 
                                 ! solve the system
 
@@ -246,6 +291,14 @@ CONTAINS
 
     IMPLICIT NONE
 
+    INTEGER :: iblock, ieq
+
+    DO iblock = 1, myblocks
+       DO ieq = 1, 4
+          CALL AZ_free_memory(ainfo(iblock)%name(ieq))
+       END DO
+    END DO
+
     DEALLOCATE(&
          &b, &
          &xsol, &
@@ -255,7 +308,8 @@ CONTAINS
          &update_index, &
          &extern_index, &
          &bindx, &
-         &val)
+         &val, &
+         &ainfo)
 
     solver_finalize = 0
 

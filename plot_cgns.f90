@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed Apr 23 12:43:31 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Apr 15 08:49:18 2005 by William A. Perkins <perk@McPerk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -18,14 +18,16 @@ MODULE plot_cgns
   USE accumulator
 
   IMPLICIT NONE
-!!$  INTERFACE 
-!!$    SUBROUTINE cg_goto_f
-!!$	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
-!!$	END SUBROUTINE cg_goto_f
-!!$	SUBROUTINE cg_array_write_f
-!!$	  !DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
-!!$	END SUBROUTINE cg_array_write_f
-!!$  END INTERFACE
+
+  ! Some crap to make the Visual Fortran compiler for Windoze happy.
+  ! It has trouble with the variable argument lists these two CGNS
+  ! routines have. 
+
+  EXTERNAL cg_goto_f
+  !DEC!$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
+  EXTERNAL cg_array_write_f
+  !DEC!$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
+
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"
@@ -156,7 +158,7 @@ CONTAINS
     IMPLICIT NONE
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_setup"
-    INTEGER :: ierr, zoneidx, max_x, max_y
+    INTEGER :: ierr, max_x, max_y
     INTEGER :: iblock
 
                                  ! make a buffer to hold data going in and out
@@ -179,6 +181,7 @@ CONTAINS
 
     CALL plot_cgns_make_name(plot_file_name)
     CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
+    CALL plot_cgns_link_coord(pfileidx, grid_file_name, max_blocks)
 
   END SUBROUTINE plot_cgns_setup
 
@@ -335,6 +338,38 @@ CONTAINS
     END IF
 
   END SUBROUTINE plot_cgns_write_metric
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_cgns_link_coord
+  ! make links to the coordinates and
+  ! metrics in the grid file
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_cgns_link_coord(fileidx, grid_file_name, nzones)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: fileidx, nzones
+    CHARACTER (LEN=*), INTENT(IN) :: grid_file_name
+    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_link_coord"
+    INTEGER :: baseidx, zoneidx, ierr
+    CHARACTER (LEN=1024) :: buffer
+    
+    baseidx = 1
+  
+    DO zoneidx = 1, nzones
+       CALL cg_goto_f(fileidx, baseidx, ierr, 'Zone_t', zoneidx, "end")
+       WRITE(buffer, '("MASS2/Block", I2.2, "/GridCoordinates")') zoneidx
+       CALL cg_link_write_f('GridCoordinates', grid_file_name, buffer, ierr)
+       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+            &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
+       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
+       CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
+       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
+       
+    END DO
+  END SUBROUTINE plot_cgns_link_coord
 
 
   ! ----------------------------------------------------------------
@@ -636,7 +671,7 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN), OPTIONAL :: conv
     INTEGER :: i, j, pos, fldidx, ierr
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_var"
-    CHARACTER (LEN=32) :: buffer
+    CHARACTER (LEN=1024) :: buffer
     DOUBLE PRECISION :: myconv, junk
 
     myconv = 1.0
@@ -794,25 +829,25 @@ CONTAINS
 
                                 ! read the number of zones
 
-    CALL cg_nzones_f(fileidx, baseidx, nzones, ierr)
-    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reread number of zones", fatal=.TRUE.)
-
-    DO zoneidx = 1, nzones
-
-                                ! make links to the coordinates and
-                                ! metrics in the grid file
-
-       CALL cg_goto_f(fileidx, baseidx, ierr, &
-            &'Zone_t', zoneidx, "end")
-       WRITE(buffer, '("MASS2/Block", I2.2, "/GridCoordinates")') zoneidx
-       CALL cg_link_write_f('GridCoordinates', grid_file_name, buffer, ierr)
-       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-            &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
-       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
-       CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
-       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
-
+!!$    CALL cg_nzones_f(fileidx, baseidx, nzones, ierr)
+!!$    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reread number of zones", fatal=.TRUE.)
+!!$
+!!$    DO zoneidx = 1, nzones
+!!$
+!!$                                ! make links to the coordinates and
+!!$                                ! metrics in the grid file
+!!$
+!!$       CALL cg_goto_f(fileidx, baseidx, ierr, &
+!!$            &'Zone_t', zoneidx, "end")
+!!$       WRITE(buffer, '("MASS2/Block", I2.2, "/GridCoordinates")') zoneidx
+!!$       CALL cg_link_write_f('GridCoordinates', grid_file_name, buffer, ierr)
+!!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+!!$            &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
+!!$       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
+!!$       CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
+!!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+!!$            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
+!!$
 !!$       IF (plot_cgns_doiter) THEN
 !!$
 !!$          CALL cg_nsols_f(pfileidx, pbaseidx, zoneidx, nsols, ierr)
@@ -869,7 +904,7 @@ CONTAINS
 !!$       END IF
 
 
-    END DO
+!!$    END DO
     CALL cg_close_f(fileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reclose file", fatal=.TRUE.)
     

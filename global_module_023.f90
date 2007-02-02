@@ -34,9 +34,10 @@ INTEGER  :: max_blocks
 
 INTEGER :: status
 
-DOUBLE PRECISION, SAVE :: grav = 32.2, tiny = 1.0D-100
-DOUBLE PRECISION, SAVE :: density = 1.94
-DOUBLE PRECISION, SAVE :: density_air = 0.00237  ! 60 degrees F
+DOUBLE PRECISION, PARAMETER :: grav = 32.2, tiny = 1.0D-100
+DOUBLE PRECISION, PARAMETER :: density = 1.94
+DOUBLE PRECISION, PARAMETER :: density_air = 0.00237  ! 60 degrees F
+DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
 
                                 ! a list of cell types
 
@@ -48,6 +49,7 @@ INTEGER, PUBLIC, PARAMETER :: &
                                 ! types
 
 INTEGER, PUBLIC, PARAMETER :: &
+     &FLOWBC_NONE = 0, &
      &FLOWBC_VEL = 1, &
      &FLOWBC_FLOW = 2, &
      &FLOWBC_ELEV = 3, &
@@ -56,9 +58,9 @@ INTEGER, PUBLIC, PARAMETER :: &
      &FLOWBC_BOTH = 6
 
 TYPE cell_type_struct
-   INTEGER :: type
+   INTEGER :: xtype, ytype
    ! the rest applies only for BOUNDARY type cells
-   INTEGER :: bctype 
+   INTEGER :: xbctype, ybctype
 END TYPE cell_type_struct
 
 
@@ -70,69 +72,75 @@ TYPE block_struct
    INTEGER :: xmax,ymax
    DOUBLE PRECISION, POINTER :: x(:,:)		! x location at control volume nodes
    DOUBLE PRECISION, POINTER :: y(:,:)		! y location at control volume nodes
-  DOUBLE PRECISION, POINTER :: x_grid(:,:)		! x location on grid (c.v. corner points)
-  DOUBLE PRECISION, POINTER :: y_grid(:,:)		! y location on grid (c.v. corner points)
-  DOUBLE PRECISION, POINTER :: x_out(:,:) ! x locations for output
-  DOUBLE PRECISION, POINTER :: y_out(:,:) ! y locations for output
-  DOUBLE PRECISION, POINTER :: x_xsi(:,:)	! x derivative wrt xsi (wrt = with respect to)
-  DOUBLE PRECISION, POINTER :: y_xsi(:,:)	! y derivative wrt xsi
-  DOUBLE PRECISION, POINTER :: x_eta(:,:)	! x derivative wrt eta
-  DOUBLE PRECISION, POINTER :: y_eta(:,:)	! y derivative wrt eta
-  DOUBLE PRECISION, POINTER :: hp1(:,:)		! metric coeff. 1 in xsi direction : P loc
-  DOUBLE PRECISION, POINTER :: hp2(:,:)		! metric coeff. 2 in eta direction : P loc
-  DOUBLE PRECISION, POINTER :: gp12(:,:)	! nonorthogonal part of the metric tensor
-  DOUBLE PRECISION, POINTER :: hv1(:,:)		! metric coeff. 1 in xsi direction : v vel loc
-  DOUBLE PRECISION, POINTER :: hv2(:,:)		! metric coeff. 2 in eta direction : v vel loc
-  DOUBLE PRECISION, POINTER :: hu1(:,:)		! metric coeff. 1 in xsi direction : u vel loc
-  DOUBLE PRECISION, POINTER :: hu2(:,:)		! metric coeff. 2 in eta direction : u vel loc
-  DOUBLE PRECISION, POINTER :: uvel_p(:,:)		! u vel at c.v. node
-  DOUBLE PRECISION, POINTER :: vvel_p(:,:)		! v vel at c.v. node
-  DOUBLE PRECISION, POINTER :: u_cart(:,:)	! u cartesian velocity component x-dir
-  DOUBLE PRECISION, POINTER :: v_cart(:,:)	! v cartesian velocity component x-dir
-  DOUBLE PRECISION, POINTER :: uvel(:,:) 		! u depth-ave velocity
-  DOUBLE PRECISION, POINTER :: vvel(:,:)		! v depth-ave velocity
-  
-  DOUBLE PRECISION, POINTER :: depth(:,:)		! water DEPTH (NOT WS ELEVATION)
-  DOUBLE PRECISION, POINTER :: wsel(:,:)		! Water Surface ELEVATION
-  DOUBLE PRECISION, POINTER :: eddy(:,:)		! eddy viscosity depth-ave
-  DOUBLE PRECISION, POINTER :: kx_diff(:,:)		! scalar turb diffusivity xsi direction
-  DOUBLE PRECISION, POINTER :: ky_diff(:,:)		! scalar turb diffusivity eta direction
-  DOUBLE PRECISION, POINTER :: uold(:,:) 		! old time u depth-ave velocity
-  DOUBLE PRECISION, POINTER :: vold(:,:)		! old time v depth-ave velocity
-  
-  DOUBLE PRECISION, POINTER :: depthold(:,:)		! old time water depth (NOT WS ELEVATION)
-  DOUBLE PRECISION, POINTER :: zbot(:,:)				! bottom elevation at control volume nodes
-  DOUBLE PRECISION, POINTER :: zbot_grid(:,:)		! bottom elevation at grid points (c.v. corners)
-  DOUBLE PRECISION, POINTER :: zbot_out(:,:)
-  DOUBLE PRECISION, POINTER :: ustar(:,:)   ! u* velocity field
-  DOUBLE PRECISION, POINTER :: vstar(:,:) 	! v* velocity field
-  DOUBLE PRECISION, POINTER :: dstar(:,:)		! d* depth field
-  DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
-  DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
-  DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
-  DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
-  DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
-  DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
-  DOUBLE PRECISION, POINTER :: chezy(:,:)				! chezy bed shear stress coefficient
-  DOUBLE PRECISION, POINTER :: mass_source(:,:)		!  mass source term or residual
+   DOUBLE PRECISION, POINTER :: x_grid(:,:)		! x location on grid (c.v. corner points)
+   DOUBLE PRECISION, POINTER :: y_grid(:,:)		! y location on grid (c.v. corner points)
+   DOUBLE PRECISION, POINTER :: x_out(:,:) ! x locations for output
+   DOUBLE PRECISION, POINTER :: y_out(:,:) ! y locations for output
+   DOUBLE PRECISION, POINTER :: x_xsi(:,:)	! x derivative wrt xsi (wrt = with respect to)
+   DOUBLE PRECISION, POINTER :: y_xsi(:,:)	! y derivative wrt xsi
+   DOUBLE PRECISION, POINTER :: x_eta(:,:)	! x derivative wrt eta
+   DOUBLE PRECISION, POINTER :: y_eta(:,:)	! y derivative wrt eta
+   DOUBLE PRECISION, POINTER :: hp1(:,:)		! metric coeff. 1 in xsi direction : P loc
+   DOUBLE PRECISION, POINTER :: hp2(:,:)		! metric coeff. 2 in eta direction : P loc
+   DOUBLE PRECISION, POINTER :: gp12(:,:)	! nonorthogonal part of the metric tensor
+   DOUBLE PRECISION, POINTER :: hv1(:,:)		! metric coeff. 1 in xsi direction : v vel loc
+   DOUBLE PRECISION, POINTER :: hv2(:,:)		! metric coeff. 2 in eta direction : v vel loc
+   DOUBLE PRECISION, POINTER :: hu1(:,:)		! metric coeff. 1 in xsi direction : u vel loc
+   DOUBLE PRECISION, POINTER :: hu2(:,:)		! metric coeff. 2 in eta direction : u vel loc
+   DOUBLE PRECISION, POINTER :: uvel_p(:,:)		! u vel at c.v. node
+   DOUBLE PRECISION, POINTER :: vvel_p(:,:)		! v vel at c.v. node
+   DOUBLE PRECISION, POINTER :: u_cart(:,:)	! u cartesian velocity component x-dir
+   DOUBLE PRECISION, POINTER :: v_cart(:,:)	! v cartesian velocity component x-dir
+   DOUBLE PRECISION, POINTER :: uvel(:,:) 		! u depth-ave velocity
+   DOUBLE PRECISION, POINTER :: vvel(:,:)		! v depth-ave velocity
+   
+   DOUBLE PRECISION, POINTER :: depth(:,:)		! water DEPTH (NOT WS ELEVATION)
+   DOUBLE PRECISION, POINTER :: wsel(:,:)		! Water Surface ELEVATION
+   DOUBLE PRECISION, POINTER :: eddy(:,:)		! eddy viscosity depth-ave
+   DOUBLE PRECISION, POINTER :: kx_diff(:,:)		! scalar turb diffusivity xsi direction
+   DOUBLE PRECISION, POINTER :: ky_diff(:,:)		! scalar turb diffusivity eta direction
+   DOUBLE PRECISION, POINTER :: uold(:,:) 		! old time u depth-ave velocity
+   DOUBLE PRECISION, POINTER :: vold(:,:)		! old time v depth-ave velocity
+   DOUBLE PRECISION, POINTER :: depthold(:,:)		! old time water depth (NOT WS ELEVATION)
 
-  DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)	! work array for output of TDG delP, %Sat
-  DOUBLE PRECISION, POINTER :: work(:,:)        ! general work array
-  DOUBLE PRECISION, POINTER :: froude_num(:,:)  ! Froude number based on local depth - velocity
-  DOUBLE PRECISION, POINTER :: courant_num(:,:) ! Courant number
+   DOUBLE PRECISION, POINTER :: uoldold(:,:) ! previous old time u depth-ave velocity
+   DOUBLE PRECISION, POINTER :: voldold(:,:) ! previous old time v depth-ave velocity
+   DOUBLE PRECISION, POINTER :: deptholdold(:,:) ! previous old time water depth (NOT WS ELEVATION)
+
+   DOUBLE PRECISION, POINTER :: zbot(:,:)				! bottom elevation at control volume nodes
+   DOUBLE PRECISION, POINTER :: zbot_grid(:,:)		! bottom elevation at grid points (c.v. corners)
+   DOUBLE PRECISION, POINTER :: zbot_out(:,:)
+   DOUBLE PRECISION, POINTER :: ustar(:,:)   ! u* velocity field
+   DOUBLE PRECISION, POINTER :: vstar(:,:) 	! v* velocity field
+   DOUBLE PRECISION, POINTER :: dstar(:,:)		! d* depth field
+   DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
+   DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
+   DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
+   DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
+   DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
+   DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
+   DOUBLE PRECISION, POINTER :: chezy(:,:)				! chezy bed shear stress coefficient
+   DOUBLE PRECISION, POINTER :: mass_source(:,:)		!  mass source term or residual
+   
+   DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)	! work array for output of TDG delP, %Sat
+   DOUBLE PRECISION, POINTER :: work(:,:)        ! general work array
+   DOUBLE PRECISION, POINTER :: froude_num(:,:)  ! Froude number based on local depth - velocity
+   DOUBLE PRECISION, POINTER :: courant_num(:,:) ! Courant number
 
                                 ! These variables are used for
                                 ! transport; they hold hydrdynamic
                                 ! values that are calculated before
                                 ! the transport calculations begin
 
-  DOUBLE PRECISION, POINTER :: inlet_area(:) 
+  ! DOUBLE PRECISION, POINTER :: inlet_area(:) 
   DOUBLE PRECISION, POINTER :: k_e(:,:), k_w(:,:), k_n(:,:), k_s(:,:)
   DOUBLE PRECISION, POINTER :: depth_e(:,:), depth_w(:,:), depth_n(:,:), depth_s(:,:)
   DOUBLE PRECISION, POINTER :: flux_e(:,:), flux_w(:,:), flux_n(:,:), flux_s(:,:)
   DOUBLE PRECISION, POINTER :: diffu_e(:,:), diffu_w(:,:), diffu_n(:,:), diffu_s(:,:)
   DOUBLE PRECISION, POINTER :: pec_e(:,:), pec_w(:,:), pec_n(:,:), pec_s(:,:)
   DOUBLE PRECISION, POINTER :: apo(:,:)
+  DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
+  DOUBLE PRECISION, POINTER :: lvd(:,:) ! part of p' coeff that has V vel stuff
   
   TYPE (isdead_struct), POINTER :: isdead(:,:)
   TYPE (cell_type_struct), POINTER :: cell(:,:)
@@ -146,31 +154,8 @@ END TYPE block_struct
 ! structure for disposable variables that can be overwritten for each block
 ! need to only allocate one of these for the single largest (xmax, ymax)
 
-TYPE coeff_struct
-
-! NOTE: loc P,E, etc. are RELATIVE to staggered grid variables U,V,C,D
-    DOUBLE PRECISION, POINTER :: ap(:,:)		! coeff at loc P in discretization
-    DOUBLE PRECISION, POINTER :: ae(:,:)		! coeff at loc E in discretization
-    DOUBLE PRECISION, POINTER :: aw(:,:)		! coeff at loc W in discretization
-    DOUBLE PRECISION, POINTER :: an(:,:)		! coeff at loc N in discretization
-    DOUBLE PRECISION, POINTER :: as(:,:)		! coeff at loc S in discretization
-    DOUBLE PRECISION, POINTER :: bp(:,:)		! coeff at loc P in discretization
-    
-    DOUBLE PRECISION, POINTER :: cp(:,:)		! coeff at loc P in discretization  d'
-    DOUBLE PRECISION, POINTER :: ce(:,:)		! coeff at loc E in discretization  d'
-    DOUBLE PRECISION, POINTER :: cw(:,:)		! coeff at loc W in discretization  d'
-    DOUBLE PRECISION, POINTER :: cn(:,:)		! coeff at loc N in discretization  d'
-    DOUBLE PRECISION, POINTER :: cs(:,:)		! coeff at loc S in discretization  d'
-    DOUBLE PRECISION, POINTER :: dp(:,:)		! coeff at loc P in discretization  d'
-    DOUBLE PRECISION, POINTER :: lud(:,:)		! part of p' coeff that has U vel stuff
-    DOUBLE PRECISION, POINTER :: lvd(:,:)		! part of p' coeff that has V vel stuff
-    DOUBLE PRECISION, POINTER :: source(:,:)	! source term
-
-END TYPE coeff_struct
-
 
 TYPE(block_struct), ALLOCATABLE :: block(:)
-TYPE(coeff_struct) :: coeff
 
 CONTAINS
 !#########################################################################
@@ -201,14 +186,19 @@ SUBROUTINE allocate_block_components(n, status_iounit)
 
   INTEGER :: imin, imax, jmin, jmax ! index limits
 
+  CHARACTER (LEN=1024) :: msg
+
   imin = i_index_min
   imax = block(n)%xmax + i_index_extra
   jmin = j_index_min
   jmax = block(n)%ymax + j_index_extra
 
-  WRITE(status_iounit,*)'starting component allocation for block number - ',n
-  WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-  WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
+  WRITE(msg,*)'starting component allocation for block number - ',n
+  CALL status_message(msg)
+  WRITE(msg,*)'         maximum number of i elements = ', imax
+  CALL status_message(msg)
+  WRITE(msg,*)'         maximum number of j elements = ', jmax
+  CALL status_message(msg)
 
   ALLOCATE(block(n)%x(imin:imax,jmin:jmax))
   ALLOCATE(block(n)%y(imin:imax,jmin:jmax))
@@ -247,10 +237,15 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   ALLOCATE(block(n)%eddy(imin:imax,jmin:jmax))		! eddy viscosity depth-ave
   ALLOCATE(block(n)%kx_diff(imin:imax,jmin:jmax))		! scalar turb diffusivity xsi direction
   ALLOCATE(block(n)%ky_diff(imin:imax,jmin:jmax))		! scalar turb diffusivity eta direction
+
   ALLOCATE(block(n)%uold(imin:imax,jmin:jmax)) 		! old time u depth-ave velocity
   ALLOCATE(block(n)%vold(imin:imax,jmin:jmax))		! old time v depth-ave velocity
-  
   ALLOCATE(block(n)%depthold(imin:imax,jmin:jmax))	! old time water depth (NOT WS ELEVATION)
+
+  ALLOCATE(block(n)%uoldold(imin:imax,jmin:jmax)) 		! old time u depth-ave velocity
+  ALLOCATE(block(n)%voldold(imin:imax,jmin:jmax))		! old time v depth-ave velocity
+  ALLOCATE(block(n)%deptholdold(imin:imax,jmin:jmax))	! old time water depth (NOT WS ELEVATION)
+
   ALLOCATE(block(n)%zbot(imin:imax,jmin:jmax))			! bottom elevation at control volume nodes
   ALLOCATE(block(n)%zbot_grid(imin:imax,jmin:jmax))	! bottom elevation at grid nodes
   ALLOCATE(block(n)%zbot_out(imin:imax,jmin:jmax))	! bottom elevation at grid nodes
@@ -276,7 +271,7 @@ SUBROUTINE allocate_block_components(n, status_iounit)
 
                                 ! precalculated values for transport 
 
-  ALLOCATE(block(n)%inlet_area(jmin:jmax))
+  ! ALLOCATE(block(n)%inlet_area(jmin:jmax))
   ALLOCATE(block(n)%k_e(imin:imax,jmin:jmax),block(n)%k_w(imin:imax,jmin:jmax),&
        &block(n)%k_n(imin:imax,jmin:jmax),block(n)%k_s(imin:imax,jmin:jmax))
   ALLOCATE(block(n)%depth_e(imin:imax,jmin:jmax),block(n)%depth_w(imin:imax,jmin:jmax),&
@@ -288,6 +283,8 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   ALLOCATE(block(n)%pec_e(imin:imax,jmin:jmax),block(n)%pec_w(imin:imax,jmin:jmax),&
        &block(n)%pec_n(imin:imax,jmin:jmax),block(n)%pec_s(imin:imax,jmin:jmax))
   ALLOCATE(block(n)%apo(imin:imax,jmin:jmax))
+  ALLOCATE(block(n)%lud(imin:imax,jmin:jmax))		! part of p' coeff that has U vel stuff
+  ALLOCATE(block(n)%lvd(imin:imax,jmin:jmax))		! part of p' coeff that has V vel stuff
 
   ALLOCATE(block(n)%isdead(imin:imax, jmin:jmax))
 
@@ -297,8 +294,10 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   block(n)%isdead(:,:)%transient = .TRUE.
 
   ALLOCATE(block(n)%cell(imin:imax, jmin:jmax))
-  block(n)%cell(:,:)%type = CELL_NORMAL_TYPE
-  block(n)%cell(:,:)%bctype = FLOWBC_VEL
+  block(n)%cell(:,:)%xtype = CELL_NORMAL_TYPE
+  block(n)%cell(:,:)%xbctype = FLOWBC_NONE
+  block(n)%cell(:,:)%ytype = CELL_NORMAL_TYPE
+  block(n)%cell(:,:)%ybctype = FLOWBC_NONE
 
   ALLOCATE(block(n)%isdry(imin:imax, jmin:jmax))
 
@@ -308,58 +307,13 @@ SUBROUTINE allocate_block_components(n, status_iounit)
 
   block(n)%xsource = 0.0
 
-  WRITE(status_iounit,*)'completed component allocation for block number - ',n
+  WRITE(msg,*)'completed component allocation for block number - ',n
+  CALL status_message(msg)
 
 END SUBROUTINE allocate_block_components
 
 
 !################################################################################
-SUBROUTINE allocate_coeff_components(imax, jmax, status_iounit)
-
-! this routine allocates each component in the array of blocks
-! allows minimal memory use for each block
-IMPLICIT NONE
-INTEGER :: imax, jmax, status_iounit	! block number, max i elements, max j elements
-
-
-WRITE(status_iounit,*)'starting component allocation for coeff'
-WRITE(status_iounit,*)'         maximum number of i elements = ', imax
-WRITE(status_iounit,*)'         maximum number of j elements = ', jmax
-
-ALLOCATE(coeff%ap(imax,jmax))
-ALLOCATE(coeff%ae(imax,jmax))		! coeff at loc E in discretization
-ALLOCATE(coeff%aw(imax,jmax))		! coeff at loc W in discretization
-ALLOCATE(coeff%an(imax,jmax))		! coeff at loc N in discretization
-ALLOCATE(coeff%as(imax,jmax))		! coeff at loc S in discretization
-ALLOCATE(coeff%bp(imax,jmax))		! coeff at loc P in discretization
-coeff%ap = 0.0
-coeff%ae = 0.0
-coeff%aw = 0.0
-coeff%an = 0.0
-coeff%as = 0.0
-coeff%bp = 0.0
-    
-ALLOCATE(coeff%cp(imax,jmax))		! coeff at loc P in discretization  d'
-ALLOCATE(coeff%ce(imax,jmax))		! coeff at loc E in discretization  d'
-ALLOCATE(coeff%cw(imax,jmax))		! coeff at loc W in discretization  d'
-ALLOCATE(coeff%cn(imax,jmax))		! coeff at loc N in discretization  d'
-ALLOCATE(coeff%cs(imax,jmax))		! coeff at loc S in discretization  d'
-ALLOCATE(coeff%dp(imax,jmax))		! coeff at loc P in discretization  d'
-ALLOCATE(coeff%lud(imax,jmax))		! part of p' coeff that has U vel stuff
-ALLOCATE(coeff%lvd(imax,jmax))		! part of p' coeff that has V vel stuff
-ALLOCATE(coeff%source(imax,jmax))	! source term
-coeff%cp = 0.0
-coeff%ce = 0.0
-coeff%cw = 0.0
-coeff%cn = 0.0
-coeff%cs = 0.0
-coeff%bp = 0.0
-
-
-WRITE(status_iounit,*)'completed component allocation for coeff'
-
-END SUBROUTINE allocate_coeff_components
-
 
 !#########################################################################
 SUBROUTINE deallocate_globals
@@ -384,7 +338,7 @@ SUBROUTINE velocity_shift()
                                 ! cell center velocity components
 
      DO i= 1, block(iblk)%xmax + 2
-        DO j=2, block(iblk)%ymax
+        DO j=1, block(iblk)%ymax + 2
            block(iblk)%uvel_p(i,j) = &
                 &0.5*(block(iblk)%uvel(i,j)+block(iblk)%uvel(i-1,j))
            block(iblk)%vvel_p(i,j) = &
@@ -392,9 +346,14 @@ SUBROUTINE velocity_shift()
         END DO
      END DO
      i = 1
-     DO j=2, block(iblk)%ymax
+     DO j = 2, block(iblk)%ymax
         block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i+1,j)
      END DO
+     j = 1
+     DO i = 2, block(iblk)%xmax
+        block(iblk)%vvel_p(i,j) = block(iblk)%vvel(i,j+1)
+     END DO
+     
 !!$     i=block(iblk)%xmax+1
 !!$     DO j=2, block(iblk)%ymax
 !!$        block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i-1,j)
@@ -418,6 +377,157 @@ SUBROUTINE velocity_shift()
      END WHERE
   END DO
 END SUBROUTINE velocity_shift
+
+! ----------------------------------------------------------------
+! SUBROUTINE metrics
+! Compute the metric coefficients for the block. Depending on the
+! metric coeff. and location use either the grid (x,y) or the node
+! (x,y)
+! ----------------------------------------------------------------
+SUBROUTINE metrics(blk)
+
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+
+  IMPLICIT NONE
+
+  TYPE (block_struct) :: blk
+
+  INTEGER :: imin, imax, jmin, jmax, i, j
+
+  imin = i_index_min
+  imax = blk%xmax+i_index_extra
+  jmin = j_index_min
+  jmax = blk%ymax+j_index_extra
+
+   ! metric coeff. 2 on the u face of the c.v.
+
+   DO i=imin, imax-1
+      DO j=jmin+1, jmax-1
+         blk%hu2(i,j) = & 
+              SQRT((blk%x_grid(i,j) - blk%x_grid(i,j-1))**2 + &
+              (blk%y_grid(i,j) - blk%y_grid(i,j-1))**2)
+      END DO
+   END DO
+
+   ! metric coeff 1 on the u face of the c.v.
+
+   DO i=imin+1, imax-i_index_extra
+      DO j=jmin, jmax
+         blk%hu1(i,j) = &
+              SQRT((blk%x(i+1,j) - blk%x(i,j))**2 + &
+              (blk%y(i+1,j) - blk%y(i,j))**2)
+      END DO
+   END DO
+
+   ! on the edge it's only a half-distance
+
+   i=imin
+   DO j=jmin, jmax
+      blk%hu1(i,j) = &
+           SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
+           ((blk%y(i+1,j) - blk%y(i,j)))**2)
+   END DO
+   i=imax-1
+   DO j=jmin, jmax
+      blk%hu1(i,j) = &
+           SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
+           ((blk%y(i+1,j) - blk%y(i,j)))**2)
+   END DO
+   
+   ! metric coeff. 1 on the v face of the c.v.
+
+   DO i=imin+1, imax-1
+      DO j=jmin, jmax - 1
+         blk%hv1(i,j) = &
+              SQRT((blk%x_grid(i,j) - blk%x_grid(i-1,j))**2 + &
+              (blk%y_grid(i,j) - blk%y_grid(i-1,j))**2) 
+      END DO
+   END DO
+
+   ! metric coeff. 2 on the v face of the c.v.
+
+   DO i=imin, imax
+      DO j=jmin+1, jmax - 1
+         blk%hv2(i,j) = &
+              SQRT((blk%x(i,j+1) - blk%x(i,j))**2 + &
+              (blk%y(i,j+1) - blk%y(i,j))**2)
+      END DO
+   END DO
+
+   ! on the edge it's only a half-distance
+
+   j = jmin
+   DO i=imin+1, imax-1
+      blk%hv2(i,j) = &
+           SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
+           ((blk%y(i,j+1) - blk%y(i,j)))**2)
+   END DO
+   j = jmax - 1
+   DO i=imin+1, imax-1
+      blk%hv2(i,j) = &
+           SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
+           ((blk%y(i,j+1) - blk%y(i,j)))**2)
+   END DO
+
+   ! compute metric tensor and derivatives at the nodal points hp1, hp2
+
+   DO i = imin+1, imax-1
+      DO j=jmin+1, jmax-1
+         blk%x_eta(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i-1,j) & 
+              - blk%x_grid(i,j-1) - blk%x_grid(i-1,j-1))
+         blk%y_eta(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i-1,j) & 
+              - blk%y_grid(i,j-1) - blk%y_grid(i-1,j-1))
+         blk%x_xsi(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i,j-1) & 
+              - blk%x_grid(i-1,j) - blk%x_grid(i-1,j-1))
+         blk%y_xsi(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i,j-1) & 
+              - blk%y_grid(i-1,j) - blk%y_grid(i-1,j-1))
+      END DO
+   END DO
+   i=imin
+   DO j=jmin+1, jmax-1
+      blk%x_eta(i,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
+      blk%y_eta(i,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
+   END DO
+   i=imax-1
+   DO j=jmin+1, jmax-1
+      blk%x_eta(i+1,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
+      blk%y_eta(i+1,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
+   END DO
+   j = jmin
+   DO i=imin+1, imax-1
+      blk%x_xsi(i,j) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
+      blk%y_xsi(i,j) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
+   END DO
+   j=jmax-1
+   DO i=imin+1, imax-1
+      blk%x_xsi(i,j+1) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
+      blk%y_xsi(i,j+1) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
+   END DO
+
+   blk%x_xsi(imin,:) = blk%x_xsi(imin+1,:)
+   blk%x_xsi(imax,:) = blk%x_xsi(imax-1,:)
+
+   blk%y_xsi(imin,:) = blk%y_xsi(imin+1,:)
+   blk%y_xsi(imax,:) = blk%y_xsi(imax-1,:)
+
+   blk%x_eta(:,jmin) = blk%x_eta(:,jmin+1)
+   blk%x_eta(:,jmax) = blk%x_eta(:,jmax-1)
+
+   blk%y_eta(:,jmin) = blk%y_eta(:,jmin+1)
+   blk%y_eta(:,jmax) = blk%y_eta(:,jmax-1)
+
+
+   blk%hp1 = SQRT(blk%x_xsi**2 + blk%y_xsi**2)
+   blk%hp2 = SQRT(blk%x_eta**2 + blk%y_eta**2)
+  
+   ! compute nonorthogonal part of the metric tensor as a check on grid quality
+
+   blk%gp12 = blk%x_xsi*blk%x_eta + blk%y_xsi*blk%y_eta
+	
+
+
+END SUBROUTINE metrics
+
 
 ! ----------------------------------------------------------------
 ! DOUBLE PRECISION FUNCTION uarea
@@ -475,13 +585,68 @@ DOUBLE PRECISION FUNCTION uflux(blk, i, jbeg, jend)
 END FUNCTION uflux
 
 ! ----------------------------------------------------------------
-! DOUBLE PRECISION FUNCTION wsinterp
-! Interpolate wsel at the location x, y which should be close to the
+! DOUBLE PRECISION FUNCTION varea
+! computes the flow area for an arbitrary v location, j is a v
+! location, ibeg and iend are cell locations
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION varea(blk, ibeg, iend, j)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  INTEGER, INTENT(IN) :: ibeg, iend, j
+  
+  INTEGER :: i
+  DOUBLE PRECISION :: d, a
+
+  varea = 0.0
+
+  DO i = ibeg, iend
+     IF (j .GT. blk%ymax) THEN
+        d = blk%depth(i, j-1)
+     ELSE IF (j .LT. 2) THEN
+        d = blk%depth(i, j)
+     ELSE
+        d = 0.5*(blk%depth(i, j+1) + blk%depth(i, j))
+     END IF
+     a = d*blk%hv1(i,j)
+     varea = varea + a
+  END DO
+
+END FUNCTION varea
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION vflux
+! computes the flux through an arbitrary v location, i is a u
+! location, jbeg and jend are cell locations
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION vflux(blk, ibeg, iend, j)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  INTEGER, INTENT(IN) :: ibeg, iend, j 
+  
+  INTEGER :: i, ioff
+  DOUBLE PRECISION :: a, q
+
+  vflux = 0.0
+
+  DO i = ibeg, iend
+     a = varea(blk, i, i, j)
+     q = a*blk%vvel(i,j)
+     vflux = vflux + q
+  END DO
+END FUNCTION vflux
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION dinterp
+! Interpolate depth at the location x, y which should be close to the
 ! centroid of cell i, j.  The method used is inverse distance
 ! weighting.  The cell and its 4 immediate neighbors (if they exist)
 ! are used.
 ! ----------------------------------------------------------------
-DOUBLE PRECISION FUNCTION wsinterp(blk, x, y, ihint, jhint)
+DOUBLE PRECISION FUNCTION dinterp(blk, x, y, ihint, jhint)
 
   IMPLICIT NONE
 
@@ -505,6 +670,63 @@ DOUBLE PRECISION FUNCTION wsinterp(blk, x, y, ihint, jhint)
   IF (iend .GT. blk%xmax) iend = blk%xmax
 
   wtotal = 0.0
+  dinterp = 0.0
+
+  j = jhint
+
+  DO i = ibeg, iend
+     d = distance(x, y, blk%x(i,j), blk%y(i,j))
+     IF (d .LT. 1.0d-10) THEN
+        dinterp = blk%depth(i,j)
+        RETURN
+     END IF
+     wtotal = wtotal + 1.0/d
+     dinterp = dinterp + blk%depth(i,j)/d
+  END DO
+
+  i = ihint
+  DO j = jbeg, jend
+     IF (j .NE. jhint) THEN
+        d = distance(x, y, blk%x(i,j), blk%y(i,j))
+        IF (d .LT. 1.0d-10) THEN
+           dinterp = blk%depth(i,j)
+           RETURN
+        END IF
+        wtotal = wtotal + 1.0/d
+        dinterp = dinterp + blk%depth(i,j)/d
+     END IF
+  END DO
+
+  dinterp = dinterp / wtotal
+END FUNCTION dinterp
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION wsinterp
+! Interpolate wsel at the location x, y which should be close to the
+! centroid of cell i, j.  The method used is inverse distance
+! weighting.  The cell and its 4 immediate neighbors (if they exist)
+! are used.
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION wsinterp(blk, x, y, ihint, jhint)
+
+  IMPLICIT NONE
+
+  DOUBLE PRECISION, EXTERNAL :: distance
+
+  TYPE (block_struct), INTENT(IN) :: blk
+  DOUBLE PRECISION, INTENT(IN) :: x, y
+  INTEGER, INTENT(IN) :: ihint, jhint
+
+  INTEGER :: i, j, ibeg, iend, jbeg, jend
+  DOUBLE PRECISION :: d, wtotal
+
+  jbeg = MAX(jhint - 1, 2)
+  jend = MIN(jhint + 1, blk%ymax)
+  
+  ibeg = MAX(ihint - 1, 2)
+  iend = MIN(ihint + 1, blk%xmax)
+
+  wtotal = 0.0
   wsinterp = 0.0
 
   j = jhint
@@ -515,24 +737,33 @@ DOUBLE PRECISION FUNCTION wsinterp(blk, x, y, ihint, jhint)
         wsinterp = blk%wsel(i,j)
         RETURN
      END IF
-     wtotal = wtotal + 1.0/d
-     wsinterp = wsinterp + blk%wsel(i,j)/d
-  END DO
-
-  i = ihint
-  DO j = jbeg, jend
-     IF (j .NE. jhint) THEN
-        d = distance(x, y, blk%x(i,j), blk%y(i,j))
-        IF (d .LT. 1.0d-10) THEN
-           wsinterp = blk%wsel(i,j)
-           RETURN
-        END IF
+     IF (.NOT. blk%isdry(i,j)) THEN
         wtotal = wtotal + 1.0/d
         wsinterp = wsinterp + blk%wsel(i,j)/d
      END IF
   END DO
 
-  wsinterp = wsinterp / wtotal
+  i = ihint
+  DO j = jbeg, jend
+     IF (j .NE. jhint) THEN     ! cell at (ihint, jhint) already included
+        d = distance(x, y, blk%x(i,j), blk%y(i,j))
+        IF (d .LT. 1.0d-10) THEN
+           wsinterp = blk%wsel(i,j)
+           RETURN
+        END IF
+        IF (.NOT. blk%isdry(i,j)) THEN
+           wtotal = wtotal + 1.0/d
+           wsinterp = wsinterp + blk%wsel(i,j)/d
+        END IF
+     END IF
+  END DO
+
+  IF (wtotal .GT. 0.0) THEN
+     wsinterp = wsinterp / wtotal
+  ELSE
+     wsinterp = blk%wsel(ihint,jhint)
+  END IF
+
 END FUNCTION wsinterp
 
 END MODULE globals

@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 5.00
 
 ###############################################################################
 
-Project: "cart_grid"=.\util\cart_grid\cart_grid.dsp - Package Owner=<4>
+Project: "cart_grid"=".\util\cart_grid\cart_grid.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -15,7 +15,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "library"=.\time_series\library.dsp - Package Owner=<4>
+Project: "library"=".\time_series\library.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -27,7 +27,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "mass2_v025"=.\mass2.dsp - Package Owner=<4>
+Project: "mass2_v025"=".\mass2.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -38,6 +38,18 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name library
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "solver_test"=".\solver_test.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

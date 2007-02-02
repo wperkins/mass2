@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Mon May 19 12:21:29 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Mon Jul 21 14:10:11 2003 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -15,11 +15,14 @@
 ! ----------------------------------------------------------------
 MODULE solver_module
 
+  USE solver_common
   USE utility
 
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
+  CHARACTER (LEN=80), PRIVATE :: sixpack_config = "sixpack.cfg"
 
   INTERFACE
      
@@ -38,8 +41,12 @@ MODULE solver_module
        CHARACTER(LEN=*) :: solver
      END SUBROUTINE Solver5
   END INTERFACE
-
   
+  INTEGER, PRIVATE :: nitmx, nitmn,noit,nres,npreit,stat
+  INTEGER, PRIVATE :: gamma,nsmit,nsolit,depthmx,mindim
+  DOUBLE PRECISION, PRIVATE :: omega,alpha,resmx,residual
+  LOGICAL, PRIVATE :: resout, set, zeroed
+  CHARACTER(LEN=80), PRIVATE :: solvername, msg
 
 CONTAINS
 
@@ -47,24 +54,99 @@ CONTAINS
   ! INTEGER FUNCTION solver_initialize
   ! Returns 0 if all is well
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver_initialize(blocks, xmax, ymax)
+  INTEGER FUNCTION solver_initialize(blocks, xmax, ymax, do_flow, do_transport)
 
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: blocks, xmax(blocks), ymax(blocks)
+    LOGICAL, INTENT(IN) :: do_flow, do_transport
+
+                                ! set solver parameters
+
+    solvername = 'sip'     ! solver name
+    omega = 1.8                 ! relaxation parameter
+    alpha = 0.5                 ! relaxation for sip and msi
+    npreit = 1                  ! preconditional iterations
+    gamma = 0                   ! recursive runs (for mg)
+    nsmit = 0                   ! number of mg smoothing iterations
+    nsolit = 0                  ! number of mg iterations at finest level
+    depthmx = 0                 ! maximum depth for mg
+    mindim = 10                 ! minimum array size for mg
+    nitmn = 0                   ! minimum number of solution iterations
+    nres = 1                    ! calculate the residual every iteration
+    resout = .FALSE.            ! print out residual or not
+    set = .FALSE.               ! do not set a solution value
+    zeroed = .FALSE.            ! do not zero solution first
+
+    CALL solver_config()
 
     solver_initialize = 0
   END FUNCTION solver_initialize
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE solver_config
+  ! ----------------------------------------------------------------
+  SUBROUTINE solver_config()
+
+    IMPLICIT NONE
+
+    LOGICAL :: opened
+    CHARACTER (LEN=1024) :: buf, msg, word, value
+    INTEGER :: iounit = 1
+
+    CALL open_existing(sixpack_config, iounit, fatal=.FALSE., result=opened)
+
+    IF (.NOT. opened) THEN
+       msg = 'sixpack: Cannot open configuration file "' // &
+            &TRIM (sixpack_config) // '", continuing with defaults'
+       CALL status_message(msg)
+       RETURN
+    END IF
+  
+    DO WHILE (.TRUE.)
+       READ (iounit, '(A1024)', END=100) buf
+       IF (LEN_TRIM(buf) .GT. 0) THEN
+          READ(buf, *) word, value
+          SELECT CASE (word)
+          CASE ("solver")
+             solvername = value
+             msg = 'sixpack: solver set to "' // TRIM(solvername) // '"'
+             CALL status_message(msg)
+          CASE ('scalar_tolerance')
+             READ(value, *) scalar_atol
+             WRITE(msg, *) 'sixpack: scalar solution tolerance (abs) set to "', scalar_atol
+             CALL status_message(msg)
+          CASE ('depth_tolerance')
+             READ(value, *) depth_atol
+             WRITE(msg, *) 'sixpack: depth correction solution tolerance (abs) set to "', depth_atol
+             CALL status_message(msg)
+          CASE ('precond_iterations')
+             READ(value, *) npreit
+             WRITE(msg, *) 'sixpack: preconditioner iterations set to ', npreit
+             CALL status_message(msg)
+          CASE ('alpha')
+             READ(value, *) alpha
+             WRITE(msg, *) 'sixpack: alpha relaxation factor set to ', alpha
+             CALL status_message(msg)
+          CASE DEFAULT
+             WRITE(msg, *) 'sixpack: configuration line not understood: ', TRIM(buf)
+             CALL error_message(msg, fatal=.FALSE.)
+          END SELECT
+       END IF
+    END DO
+100 CONTINUE
+  END SUBROUTINE solver_config
+
+
+  ! ----------------------------------------------------------------
   ! INTEGER FUNCTION solver
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver(blk, x_start, x_end, y_start, y_end, its, &
+  INTEGER FUNCTION solver(blk, ieq, x_start, x_end, y_start, y_end, its, &
        &ap, aw, ae, as, an, bp, x)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blk, x_start, x_end, y_start, y_end, its
+    INTEGER, INTENT(IN) :: blk, ieq, x_start, x_end, y_start, y_end, its
     DOUBLE PRECISION, INTENT(IN), &
          &DIMENSION(x_start:x_end,y_start:y_end) :: &
          &ap, aw, ae, as, an, bp
@@ -76,11 +158,6 @@ CONTAINS
 
     INTEGER :: nx, ny, ilocal, jlocal, i, j
     INTEGER :: ix = 2, iy = 2
-    INTEGER :: nitmx, nitmn,noit,nres,npreit,stat
-    INTEGER :: gamma,nsmit,nsolit,depthmx,mindim
-    DOUBLE PRECISION :: omega,alpha,resmx,residual
-    LOGICAL :: resout, set, zeroed
-    CHARACTER(LEN=80) :: solvername, msg
 
                                 ! aw, ae, as, an need to be on the
                                 ! other side of the equation, use this
@@ -106,25 +183,6 @@ CONTAINS
     bplocal = 0.0
     xlocal = 0.0
 
-                                ! set solver parameters
-
-    solvername = 'sip'     ! solver name
-    omega = 1.8                 ! relaxation parameter
-    alpha = 0.5                 ! relaxation for sip and msi
-    npreit = 1                  ! preconditional iterations
-    gamma = 0                   ! recursive runs (for mg)
-    nsmit = 0                   ! number of mg smoothing iterations
-    nsolit = 0                  ! number of mg iterations at finest level
-    depthmx = 0                 ! maximum depth for mg
-    mindim = 10                 ! minimum array size for mg
-    resmx = 1e-03               ! maximum residual
-    nitmx = its                 ! maximum number of solution iterations
-    nitmn = 0                   ! minimum number of solution iterations
-    nres = 1                    ! calculate the residual every iteration
-    resout = .FALSE.            ! print out residual or not
-    set = .FALSE.               ! do not set a solution value
-    zeroed = .FALSE.            ! do not zero solution first
-
                                 ! copy the coefficients and solution
                                 ! to the local arrays
 
@@ -142,6 +200,17 @@ CONTAINS
        END DO
     END DO
 
+                                ! set equation specific solver
+                                ! parameters
+
+    SELECT CASE (ieq) 
+    CASE (SOLVE_DP)
+       nitmx = depth_sweep
+       resmx = depth_atol
+    CASE DEFAULT
+       nitmx = scalar_sweep
+       resmx = scalar_atol
+    END SELECT
                                 ! solve
 
     CALL Solver5(xlocal,aelocal,awlocal,anlocal,aslocal,aplocal,bplocal,&

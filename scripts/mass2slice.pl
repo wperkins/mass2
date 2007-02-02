@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 26, 2000 by William A. Perkins
-# Last Change: Thu Jan 29 08:49:05 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Aug 26 15:05:37 2004 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -104,7 +104,7 @@ This script is typically used to provide data for profile plotting.  The followi
          '<perl mass2slice.pl -i plot.nc zbot 1 5 2 10 3 5' \
             using 3:4 with l 7
 
-Block 2 is either aliged differently or of a different resolution.
+Block 2 is either aligned differently or of a different resolution.
 The resulting plot will show three curves: the initial conditions
 (C<-t 1, wsel>), the final conditions (C<-l, wsel>), and the bottom
 elevation (C<zbot>).
@@ -112,10 +112,6 @@ elevation (C<zbot>).
 =head1 SEE ALSO
 
 gnuplot(1)
-
-=head1 AUTHOR
-
-William A. Perkins, Battelle Northwest
 
 =cut
 

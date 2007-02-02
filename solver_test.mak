@@ -50,6 +50,9 @@ ALL : "$(OUTDIR)\solver_test.exe"
 !ENDIF 
 
 CLEAN :
+	-@erase "$(INTDIR)\solver_backup.obj"
+	-@erase "$(INTDIR)\solver_common.mod"
+	-@erase "$(INTDIR)\solver_common.obj"
 	-@erase "$(INTDIR)\solver_module.mod"
 	-@erase "$(INTDIR)\solver_tdma.obj"
 	-@erase "$(INTDIR)\solver_test.obj"
@@ -58,8 +61,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /warn:nofileopt\
- /module:"solver_t/" /object:"solver_t/" 
+F90_PROJ=/include:"$(INTDIR)\\" /compile_only /nologo /optimize:3\
+ /warn:nofileopt /module:"solver_t/" /object:"solver_t/" 
 F90_OBJS=.\solver_t/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\solver_test.bsc" 
@@ -70,6 +73,8 @@ LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:no\
  /pdb:"$(OUTDIR)\solver_test.pdb" /machine:I386 /out:"$(OUTDIR)\solver_test.exe"\
  
 LINK32_OBJS= \
+	"$(INTDIR)\solver_backup.obj" \
+	"$(INTDIR)\solver_common.obj" \
 	"$(INTDIR)\solver_tdma.obj" \
 	"$(INTDIR)\solver_test.obj"
 
@@ -88,16 +93,18 @@ OutDir=.\solver_0
 
 !IF "$(RECURSE)" == "0" 
 
-ALL : "$(OUTDIR)\solver_test.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "$(OUTDIR)\solver_test.exe"
 
 !ELSE 
 
-ALL : "$(OUTDIR)\solver_test.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "$(OUTDIR)\solver_test.exe"
 
 !ENDIF 
 
 CLEAN :
-	-@erase "$(INTDIR)\DF50.PDB"
+	-@erase "$(INTDIR)\solver_backup.obj"
+	-@erase "$(INTDIR)\solver_common.mod"
+	-@erase "$(INTDIR)\solver_common.obj"
 	-@erase "$(INTDIR)\solver_module.mod"
 	-@erase "$(INTDIR)\solver_tdma.obj"
 	-@erase "$(INTDIR)\solver_test.obj"
@@ -121,6 +128,8 @@ LINK32_FLAGS=kernel32.lib /nologo /subsystem:console /incremental:yes\
  /pdb:"$(OUTDIR)\solver_test.pdb" /debug /machine:I386\
  /out:"$(OUTDIR)\solver_test.exe" /pdbtype:sept 
 LINK32_OBJS= \
+	"$(INTDIR)\solver_backup.obj" \
+	"$(INTDIR)\solver_common.obj" \
 	"$(INTDIR)\solver_tdma.obj" \
 	"$(INTDIR)\solver_test.obj"
 
@@ -130,6 +139,8 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
+
+.SUFFIXES: .fpp
 
 .for{$(F90_OBJS)}.obj:
    $(F90) $(F90_PROJ) $<  
@@ -146,15 +157,20 @@ LINK32_OBJS= \
 
 !IF "$(CFG)" == "solver_test - Win32 Release" || "$(CFG)" ==\
  "solver_test - Win32 Debug"
-SOURCE=.\solver_tdma.f90
+SOURCE=.\solver_backup.f90
+
+"$(INTDIR)\solver_backup.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\solver_common.f90
 
 !IF  "$(CFG)" == "solver_test - Win32 Release"
 
 F90_MODOUT=\
-	"solver_module"
+	"solver_common"
 
 
-"$(INTDIR)\solver_tdma.obj"	"$(INTDIR)\solver_module.mod" : $(SOURCE)\
+"$(INTDIR)\solver_common.obj"	"$(INTDIR)\solver_common.mod" : $(SOURCE)\
  "$(INTDIR)"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
@@ -162,11 +178,43 @@ F90_MODOUT=\
 !ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
 
 F90_MODOUT=\
+	"solver_common"
+
+
+"$(INTDIR)\solver_common.obj"	"$(INTDIR)\solver_common.mod" : $(SOURCE)\
+ "$(INTDIR)"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\solver_tdma.f90
+
+!IF  "$(CFG)" == "solver_test - Win32 Release"
+
+DEP_F90_SOLVE=\
+	".\solver_t\solver_common.mod"\
+	
+F90_MODOUT=\
 	"solver_module"
 
 
 "$(INTDIR)\solver_tdma.obj"	"$(INTDIR)\solver_module.mod" : $(SOURCE)\
- "$(INTDIR)"
+ $(DEP_F90_SOLVE) "$(INTDIR)" "$(INTDIR)\solver_common.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
+
+DEP_F90_SOLVE=\
+	".\solver_0\solver_common.mod"\
+	
+F90_MODOUT=\
+	"solver_module"
+
+
+"$(INTDIR)\solver_tdma.obj"	"$(INTDIR)\solver_module.mod" : $(SOURCE)\
+ $(DEP_F90_SOLVE) "$(INTDIR)" "$(INTDIR)\solver_common.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -176,21 +224,21 @@ SOURCE=.\solver_test.f90
 
 !IF  "$(CFG)" == "solver_test - Win32 Release"
 
-DEP_F90_SOLVE=\
+DEP_F90_SOLVER=\
 	".\solver_t\solver_module.mod"\
 	
 
-"$(INTDIR)\solver_test.obj" : $(SOURCE) $(DEP_F90_SOLVE) "$(INTDIR)"\
+"$(INTDIR)\solver_test.obj" : $(SOURCE) $(DEP_F90_SOLVER) "$(INTDIR)"\
  "$(INTDIR)\solver_module.mod"
 
 
 !ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
 
-DEP_F90_SOLVE=\
+DEP_F90_SOLVER=\
 	".\solver_0\solver_module.mod"\
 	
 
-"$(INTDIR)\solver_test.obj" : $(SOURCE) $(DEP_F90_SOLVE) "$(INTDIR)"\
+"$(INTDIR)\solver_test.obj" : $(SOURCE) $(DEP_F90_SOLVER) "$(INTDIR)"\
  "$(INTDIR)\solver_module.mod"
 
 

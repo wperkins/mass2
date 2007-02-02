@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "solver_t"
 # PROP Target_Dir ""
 # ADD BASE F90 /include:"solver_t/" /compile_only /nologo /warn:nofileopt
-# ADD F90 /include:"solver_t/" /compile_only /nologo /warn:nofileopt
+# ADD F90 /include:"solver_t/" /compile_only /nologo /optimize:3 /warn:nofileopt
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -83,13 +83,42 @@ LINK32=link.exe
 # Name "solver_test - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\solver_tdma.f90
+SOURCE=.\solver_backup.f90
+# End Source File
+# Begin Source File
+
+SOURCE=.\solver_common.f90
 
 !IF  "$(CFG)" == "solver_test - Win32 Release"
 
 !ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
 
 !ENDIF 
+
+F90_MODOUT=\
+	"solver_common"
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\solver_tdma.f90
+
+!IF  "$(CFG)" == "solver_test - Win32 Release"
+
+NODEP_F90_SOLVE=\
+	".\solver_t\solver_common.mod"\
+	
+
+!ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
+
+NODEP_F90_SOLVE=\
+	".\solver_0\solver_common.mod"\
+	
+
+!ENDIF 
+
+F90_MODOUT=\
+	"solver_module"
 
 # End Source File
 # Begin Source File
@@ -98,13 +127,13 @@ SOURCE=.\solver_test.f90
 
 !IF  "$(CFG)" == "solver_test - Win32 Release"
 
-DEP_F90_SOLVE=\
+NODEP_F90_SOLVER=\
 	".\solver_t\solver_module.mod"\
 	
 
 !ELSEIF  "$(CFG)" == "solver_test - Win32 Debug"
 
-DEP_F90_SOLVE=\
+NODEP_F90_SOLVER=\
 	".\solver_0\solver_module.mod"\
 	
 

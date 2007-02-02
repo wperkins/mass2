@@ -4,6 +4,7 @@
 
 PROGRAM mass2
 
+USE fptrap
 USE mass2_main_025
 USE misc_vars
 
@@ -13,8 +14,16 @@ CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
 
 INTEGER :: maxsteps
 INTEGER :: status_flag = 1
+INTEGER :: junk
 
 WRITE(*,*)'calling mass2_main' 
+
+!-----------------------------------------------------------------------------------
+! write info to the console
+WRITE(*,*)'Pacific Northwest National Laboratory'
+WRITE(*,*)
+WRITE(*,*)code_version
+WRITE(*,*)code_date
 
 CALL time_series_module_init()
 CALL date_time_flags()
@@ -22,8 +31,21 @@ CALL date_time_flags()
 CALL open_new('status.out', utility_status_iounit)
 CALL open_new('error-warning.out', utility_error_iounit)
 CALL open_new('output.out', output_iounit)
-CALL start_up(status_flag)
 
+CALL fptrap_common()
+
+CALL read_config()
+
+current_time = start_time
+
+! broadcast the number of blocks
+
+CALL allocate_blocks()
+
+CALL start_up()
+
+junk = solver_initialize(max_blocks, block(:)%xmax, block(:)%ymax, &
+     &do_flow, do_transport)
 
 !----------------------------------------------------------------------------------
 ! SOLUTION OF THE MOMENTUM, DEPTH CORRECTION, AND SCALAR TRANSPORT EQUATIONS
@@ -79,8 +101,7 @@ WRITE(*,*)'completion with status=',status_flag
 !       large time steps
 
 
-
-CLOSE(cfg_iounit)
+junk = solver_finalize()
 CLOSE(output_iounit)
 CALL plot_file_close()
 CALL gage_file_close()
@@ -93,10 +114,4 @@ CLOSE(utility_status_iounit)
 
 
 END PROGRAM mass2
-
-
-
-
-
-
 

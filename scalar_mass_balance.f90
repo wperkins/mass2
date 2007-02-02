@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created April 17, 2003 by William A. Perkins
-! Last Change: Thu Jul 17 08:44:58 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Feb 17 12:37:27 2004 by William A. Perkins <perk@leechong.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -197,9 +197,9 @@ CONTAINS
           area = blk%hu2(ioff,j)*d
           cflux = sign*u*area
           dflux = sign*k*area
-          SELECT CASE (spec%cell(i,j)%type)
+          SELECT CASE (spec%cell(i,j)%xtype)
           CASE (SCALAR_BOUNDARY_TYPE)
-             SELECT CASE (spec%cell(i,j)%bctype)
+             SELECT CASE (spec%cell(i,j)%xbctype)
              CASE (SCALBC_ZG)
                 conc = spec%conc(i,j)
                 cflux = cflux*conc

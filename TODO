@@ -8,16 +8,12 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Mon May  5 12:06:39 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Apr  2 14:01:16 2004 by William A. Perkins <perk@leechong.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
 
 High Priority:
-
-    * faster, Faster, FASTER
-
-    * documentation: theory and user manual
 
     * check the id of a scalar source specification to make sure it
       has not already been specified
@@ -37,7 +33,13 @@ High Priority:
 
     * Supply a concentration with a volume source.
 
-    * Limit the time frame for which output is produced
+    * Limit the time frame for which output is produced; supply a list
+      of output times
+
+    * higher order descretization scheme (MSOU, Norris or blended CD,
+      Peric) 
+
+    * higher order time descretization scheme (3 pt, Peric)
 
 Low Priority:
 
@@ -64,6 +66,3 @@ BUGS
       up when ghost cells were added.  Until this is fixed, do not
       apply scalar bed sources to boundary cells.
 
-    * One cannot have multiple connections defined between blocks.  An
-      example of how this fails is in test/flow/wall-1-blk.  The
-      culprit is set_block_connections.

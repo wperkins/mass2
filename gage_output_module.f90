@@ -94,9 +94,14 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE gage_read_control()
 
+    USE globals, ONLY: max_blocks
+
     IMPLICIT NONE
 
-    INTEGER :: dum, alloc_stat, i
+    INTEGER :: dum, alloc_stat, i, ierr
+    CHARACTER (LEN=1024) :: msg
+
+    ierr = 0
 
     ! count up the number of gages and allocate the structure        
     num_gages = 0    
@@ -116,9 +121,18 @@ CONTAINS
 	DO i=1,num_gages
        gage_specs(i)%ident = ' '
        READ(50,*)gage_specs(i)%block,gage_specs(i)%i_cell,gage_specs(i)%j_cell,gage_specs(i)%ident
+       IF (gage_specs(i)%block .LE. 0 .OR. gage_specs(i)%block .GT. max_blocks) THEN
+          WRITE (msg, *) 'gage location ', i, ': invalid block number: ', gage_specs(i)%block
+          CALL error_message(msg)
+          ierr = ierr + 1
+       END IF
        CALL gage_make_ident(gage_specs(i))
 	END DO
 	CLOSE(50)
+
+    IF (ierr .GT. 0) THEN
+       CALL error_message('errors in "' // TRIM(gage_control) // '" input file', fatal=.TRUE.)
+    END IF
 
     CALL status_message('allocation successful for array of gage specs')
 

@@ -1,21 +1,29 @@
-# -------------------------------------------------------------
-# file: Makefile.am
+# -*- makefile -*----------------------------------------------
+# file: Makefile.petsc
+# Makefile for MASS2 on Linux Ix86 with the Intel compiler
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Battelle Memorial Institute
 # Pacific Northwest Laboratory
 # -------------------------------------------------------------
 # -------------------------------------------------------------
-# Created March 26, 2003 by William A. Perkins
-# Last Change: Tue Oct  4 08:25:40 2005 by William A. Perkins <perk@leechong.pnl.gov>
+# Created June  1, 1998 by William A. Perkins
+# Last Change: Wed Aug 20 13:56:20 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
-AM_FFLAGS = $(FCFLAGS)
 
-SUBDIRS = @SUBDIRS@
+# Compiler specific flags
+SOLVERSRC = solver_petsc.F90
+SOLVEROBJ = $(SOLVERSRC:%.F90=%.o)
 
-bin_PROGRAMS = mass2
-check_PROGRAMS = solver_test
+NETCDFDIR = /home/perk/Projects/ParallelMASS2/src/netcdf-3.4
+NETCDFFLAGS = -I$(NETCDFDIR)/include
+NETCDFLIB = -L$(NETCDFDIR)/lib -lnetcdf
+
+CGNSDIR = /usr/unsupported/CGNSLib
+CGNSFLAGS = -I$(CGNSDIR)
+CGNSLIB = -L$(CGNSDIR)/lib -lcgns.intel
+
 
 mass2_SOURCES =									\
      gas_coeffs_module.f90						\
@@ -53,17 +61,50 @@ mass2_SOURCES =									\
 	 scalar_mass_balance.f90					\
 	 solver_backup.f90							\
 	 solver_common.f90							\
-	 distance.f90
-mass2_LDADD = $(SOLVEROBJ) time_series/libts.a \
-	@SOLVERLDFLAGS@ \
-	-L@NETCDF_LIBS_PATH@ @NETCDF_LIBS@ \
-	-L@CGNS_LIBS_PATH@ @CGNS_LIBS@
+	 distance.f90 
+mass2_OBJS=$(mass2_SOURCES:%.f90=%.o) $(SOLVEROBJ)  time_series/libts.a
+mass2_LIBS= $(NETCDFLIB) $(CGNSLIB)
 
-solver_test_SOURCES =							\
-	solver_test.f90								\
-	solver_backup.f90
-solver_test_DEPENDENCIES = $(SOLVEROBJ)
-solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
+solver_test_SRCS =								\
+	 solver_test.f90							\
+	 solver_common.f90							\
+	 solver_backup.f90
+solver_test_OBJS = $(solver_test_SRCS:%.f90=%.o)  $(SOLVEROBJ) time_series/libts.a
+
+all: mass2.petsc
+
+# Location and set up of PETSc.  This should set all of the compiler
+# flags needed
+
+PETSC_DIR=/usr/unsupported/petsc
+PETSC_ARCH=linux_intel_uni
+BOPT=O
+
+include ${PETSC_DIR}/bmake/common/base
+
+# Options that will work on Linux when the NetCDF and CGNL libraries
+# are compiled with:
+#	g77: -B108 -YEXT_NAMES=LCS -YCFRL=1
+#	g77 -fno-second-underscore: -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
+
+DEBUG =  -O3
+PROFILE = # -P
+FLAGS = $(NETCDFFLAGS) $(CGNSFLAGS) $(DEBUG) $(PROFILE) $(PETSC_INCLUDE) \
+	-Vaxlib -w95 -w90 -Itime_series
+# FLAGS = $(NETCDFFLAGS) $(CGNSFLAGS) $(DEBUG) $(PROFILE) $(PETSC_INCLUDE) -ptime_series \
+# 	-trap=INVALID,DIVBYZERO,OVERFLOW  -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
+F90FLAGS = $(FLAGS)
+
+# F90 = f90
+F90 = ifc
+COMPILE.f90 = $(F90) $(F90FLAGS) -c
+LINK.f90 = $(F90) $(F90FLAGS) $(LDFLAGS) -Bstatic
+
+mass2.petsc: $(mass2_OBJS)
+	${LINK.f90} -o $@ $(mass2_OBJS) ${mass2_LIBS} ${PETSC_FORTRAN_LIB} ${PETSC_SLES_LIB}
+
+solver_test: $(solver_test_OBJS)
+	${LINK.f90} -o $@ $(solver_test_OBJS)  ${PETSC_FORTRAN_LIB} ${PETSC_SLES_LIB} time_series/libts.a
 
 # dependancies for individual object files
 
@@ -135,9 +176,6 @@ profile_init.o: profile_init.f90 global_module_023.o misc_vars_module.o \
 scalar_mass_balance.o: scalar_mass_balance.f90 global_module_023.o \
 	scalars_source.o bed.o time_series/libts.a
 
-scalar_solve.o: scalar_solve.f90 global_module_023.o misc_vars_module.o \
-	scalars_module.o $(SOLVEROBJ)
-
 scalars_module.o: scalars_module.f90 misc_vars_module.o time_series/libts.a
 
 scalars_source.o: scalars_source.f90 temperature_source.o \
@@ -147,11 +185,9 @@ scalars_source.o: scalars_source.f90 temperature_source.o \
 sediment_source.o: sediment_source.f90 global_module_023.o scalars_module.o \
 	misc_vars_module.o time_series/libts.a
 
-solver_aztec.o: solver_aztec.f90 solver_common.o
-
 solver_common.o: solver_common.f90
 
-solver_sixpack.o: solver_sixpack.f90 solver_common.o
+solver_petsc.o: solver_petsc.F90 solver_common.o
 
 solver_tdma.o: solver_tdma.f90 solver_common.o
 
@@ -170,31 +206,9 @@ total_conc.o: total_conc.f90 scalars_source.o
 transport_only_module.o: transport_only_module.f90  \
 	global_module_023.o misc_vars_module.o time_series/libts.a
 
-clean-local:
-	rm -f *.$(F90MODULEEXT)
-	rm -f *.il work.*
-	rm -f *~
 
-mass2.ps: $(SRCS)
-	a2ps --prologue=color -C -R --columns=1 --medium=Letter --font-size=8 --sides=duplex -o $@ $(sort $(mass2_SOURCES))
+%.o: %.f90
+	${COMPILE.f90} $<
 
-# extra files to distribute
-
-EXTRA_DIST = \
-	README \
-	makefile.sgi \
-	makefile.linux \
-	makefile.intel \
-	makefile.dec \
-	makefile.lahey \
-	Makefile.mpi \
-	Makefile.intel.petsc \
-	Makefile.petsc \
-	mass2.dsw mass2.dsp mass2.mak \
-	bed_functions.inc \
-	solver_aztec.f90 \
-	solver_tdma.f90 \
-	solver_sixpack.f90 \
-	solver_backup.f90 \
-	global_parallel.f90 \
-	mass2_parallel.f90
+%.o: %.F90
+	${COMPILE.f90} $<

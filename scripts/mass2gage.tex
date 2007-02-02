@@ -1,0 +1,132 @@
+\subsection{mass2gage.pl\label{mass2gage_pl}\index{mass2gage.pl}}
+
+
+Extract data from a MASS2 gage output file (NetCDF format).
+
+\subsection*{SYNOPSIS\label{mass2gage_pl_SYNOPSIS}\index{mass2gage pl!SYNOPSIS}}
+
+perl \textbf{mass2gage.pl} \textbf{-l} \textit{file}
+
+
+
+perl \textbf{mass2gage.pl} \textbf{-v} \textit{var} \textbf{-g} \textit{gage} [\textbf{-C}$|$\textbf{-M}] [\textbf{-1}]
+[\textbf{-D}] \textbf{-X} \textit{n}] [\textbf{-o} \textit{output}] \textit{file}
+
+\subsection*{DESCRIPTION\label{mass2gage_pl_DESCRIPTION}\index{mass2gage pl!DESCRIPTION}}
+
+This script is used to extract data for one variable and gage from
+a MASS2 gage output file.  It is primarily intended to be used to
+check a simulation while in progress.
+
+\subsection*{OPTIONS\label{mass2gage_pl_OPTIONS}\index{mass2gage pl!OPTIONS}}\begin{description}
+\item[\textbf{-l}] \mbox{}
+
+List the gages and time-dependant variables in \textit{file} and exit.
+
+\item[\textbf{-v} \textit{var}] \mbox{}
+
+(required) Extract the \textit{var} time-dependant variable from \textit{file};
+\textit{var} may be either an integer or a variable name (as long as the
+name does not start with a number), either of which can be obtained
+using \textbf{-l}.
+
+\item[\textbf{-g} \textit{gage}] \mbox{}
+
+Extract data from the \textit{gage} location; \textit{gage} may be
+either an integer or a gage location name (as long as the name does
+not start with a number), either of which can be obtained using \textbf{-l}.
+
+\item[\textbf{-C}] \mbox{}
+
+Output a cumulative frequency distribution; normally, a time series is
+output, this option will cause the data from the specified gage to be
+sorted and assigned an exceedance probability.
+
+\item[\textbf{-D}] \mbox{}
+
+If the \textit{file} contains the variable \texttt{isdry}, extract records for
+\textit{var} only when \texttt{isdry} is zero; applies only to the extraction of a
+time series; a CFD extraction will still contain all values.
+
+\item[\textbf{-o} \textit{output}] \mbox{}
+
+Send extracted data to \textit{output} (does not work with \textbf{-l}).
+
+\item[\textbf{-1}] \mbox{}
+
+Add a line at the top of the output (line 1) containing some
+information about the extracted data.
+
+\item[\textbf{-M}] \mbox{}
+
+Format as a MASS1/MASS2 boundary condition file (implies -1).
+
+\item[\textbf{-X} \textit{n}] \mbox{}
+
+Skip the first \textit{n} time records in the gage file, to avoid a warm up
+period, for example.
+
+\end{description}
+\subsection*{EXAMPLES\label{mass2gage_pl_EXAMPLES}\index{mass2gage pl!EXAMPLES}}
+
+This is the output from a listing (\textbf{-l}) of a particular gage.nc file:
+
+\begin{verbatim}
+    > \textbf{perl mass2gage.pl -l gage.nc }
+    MASS2 Gage Output File:
+             "gage.nc"
+    1 time slices:
+            starting: 03-19-1999 12:00:00
+              ending: 03-19-1999 12:00:00
+\end{verbatim}
+\begin{verbatim}
+    Available Gage Locations
+    -----------------------------------------------------
+    Gage Name                           Block   Eta    Xi
+    -----------------------------------------------------
+       1 T54LBC piezometer                  1   167    83
+       2 T61IRC piezometer                  2    63    27
+       3 T64RBC piezometer                  4   117     9
+       4 T81RBC piezometer                 12    38    47
+       5 T90RBC piezometer                 13   228    51
+       6 T94RBC piezometer                 13   451    15
+       7 T101LBC piezometer                14    24    63
+       8 downstream extent                 16   155    40
+       9 ERC 100-D                          1    22     7
+      10 ERC 100-H                          4   115     9
+      11 ERC 100-F                         10   116     9
+      12 ERC 100-D Alternate                1    22    10
+      13 trouble spot                      11     4    16
+      14 trouble spot upstream             11     3    16
+      15 trouble spot downstream           11     5    16
+      16 trouble spot west                 11     4    15
+      17 trouble spot east                 11     4    17
+    -----------------------------------------------------
+\end{verbatim}
+\begin{verbatim}
+    Available Time-Dependent Variables:
+      8 wsel                 Water Surface Elevation, feet
+      9 depth                Depth, feet
+     10 vmag                 Velocity Magnitude, feet/second
+     11 uvel                 Longitudinal Velocity, feet/second
+     12 vvel                 Lateral Velocity, feet/second
+     13 isdry                Dry Cell Flag, none
+\end{verbatim}
+
+
+Depth data is extracted from the same file:
+
+\begin{verbatim}
+    03-19-1999 12:00:00           8.369
+    03-19-1999 13:00:00          9.9153
+    03-19-1999 14:00:00          9.8377
+    03-19-1999 15:00:00          9.7396
+    03-19-1999 16:00:00          9.6508
+    03-19-1999 17:00:00           9.562
+    03-19-1999 18:00:00          9.4928
+\end{verbatim}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

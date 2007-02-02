@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Fri Apr 25 12:45:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Thu Feb  1 18:53:31 2007 by William A. Perkins <perk@mcperktop.local>
 $Id$
 -------------------------------------------------------------
 
@@ -134,22 +134,23 @@ The options specific to the compilation of MASS2 are as follows:
 
         Use "cmd" as the Fortran 90 compiler command.
 
-    --enable-optimize
+    --enable-f90-optimize
 
         Optimization is turned on using flags appropriate to the
         compiler/architecture.
 
-    --enable-debug (default)
+    --enable-f90-debug (default)
 
-        Debugging flags are included by default.  If --enable-optimize
-        is specified, the debugging flags are not included.  Use
-        --enable-debug to include debugging with optimization.
+        Debugging flags are included by default.  If
+        --enable-f90-optimize is specified, the debugging flags are
+        not included.  Use --enable-f90-debug to include debugging
+        with optimization.
 
-    --enable-profile
+    --enable-f90-profile
 
         Turn on profiling.
 
-    --with-extra-fflags=flags
+    --with-extra-f90flags=flags
 
         Use the specified flags in addition to the flags added by the
         above options.  This is mostly used to add CPU specific
@@ -176,10 +177,53 @@ The options specific to the compilation of MASS2 are as follows:
         directory is expected to have the structure of the CGNS source
         as it is extracted.
 
-A typical configure 
+    --with-sixpack=dir
+ 
+    --with-aztec=dir
+
+Some typical configurations
 
     configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4
     --enable-optimize --enable-profile --with-cgns=/usr/unsupported/CGNSLib
+    --with-sixpack=/home/perk/Projects/ParallelMASS2/src/sixpack-2.3.7
+    --with-aztec=/home/perk/Projects/ParallelMASS2/src/aztec
+
+    configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4 \
+        --with-cgns=/usr/unsupported/CGNSLib --with-f90=ifc \
+        --enable-f90-optimize --enable-f90-debug
+        ----with-extra-f90flags="-tpp7 -xW"
+
+On leechong w/ Intel Compiler:
+
+    setenv FFLAGS ""
+    configure \
+        --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4 \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns-lib=cgns.LINUX \
+        --with-f90=ifc \
+        --enable-f90-optimize
+
+On mcperk w/ Absoft Compiler:
+
+setenv FCFLAGS ""
+configure \
+    --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.5.1/macosx \
+    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-cgns-lib=cgns.DARWIN \
+    --with-f90=f95 \
+    --enable-f90-optimize \
+    --enable-f90-debug
+
+On mcperktop laptop:
+
+    setenv FCFLAGS ""
+    configure \
+        --with-netcdf=/Users/perk/stuff/netcdf-3.5.1 \
+        --with-cgns=/Users/perk/gcc4/src/cgnslib_2.4 \
+        --with-cgns-lib=cgns.DARWIN \
+        --with-f90=xlf95 --enable-f90-optimize
+
+    
 
 -------------------------------------------------------------
 distributing MASS2

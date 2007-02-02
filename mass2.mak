@@ -63,9 +63,9 @@ CLEAN :
 	-@erase "$(INTDIR)\bed_source.obj"
 	-@erase "$(INTDIR)\block_bc_module.obj"
 	-@erase "$(INTDIR)\block_boundary_conditions.mod"
+	-@erase "$(INTDIR)\distance.obj"
 	-@erase "$(INTDIR)\energy_flux.mod"
 	-@erase "$(INTDIR)\energy_flux_module.obj"
-	-@erase "$(INTDIR)\fpinit_nt.obj"
 	-@erase "$(INTDIR)\gage_output.mod"
 	-@erase "$(INTDIR)\gage_output_module.obj"
 	-@erase "$(INTDIR)\gas_coeffs.mod"
@@ -76,6 +76,7 @@ CLEAN :
 	-@erase "$(INTDIR)\generic_source.obj"
 	-@erase "$(INTDIR)\global_module_023.obj"
 	-@erase "$(INTDIR)\globals.mod"
+	-@erase "$(INTDIR)\hydro_solve.obj"
 	-@erase "$(INTDIR)\io_routines_module.mod"
 	-@erase "$(INTDIR)\io_routines_module.obj"
 	-@erase "$(INTDIR)\mass2.obj"
@@ -95,12 +96,19 @@ CLEAN :
 	-@erase "$(INTDIR)\plot_output.mod"
 	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
+	-@erase "$(INTDIR)\scalar_mass.mod"
+	-@erase "$(INTDIR)\scalar_mass_balance.obj"
+	-@erase "$(INTDIR)\scalar_solve.obj"
 	-@erase "$(INTDIR)\scalars.mod"
 	-@erase "$(INTDIR)\scalars_module.obj"
 	-@erase "$(INTDIR)\scalars_source.mod"
 	-@erase "$(INTDIR)\scalars_source.obj"
 	-@erase "$(INTDIR)\sediment_source.mod"
 	-@erase "$(INTDIR)\sediment_source.obj"
+	-@erase "$(INTDIR)\solver_backup.obj"
+	-@erase "$(INTDIR)\solver_common.mod"
+	-@erase "$(INTDIR)\solver_common.obj"
+	-@erase "$(INTDIR)\solver_module.mod"
 	-@erase "$(INTDIR)\solver_tdma.obj"
 	-@erase "$(INTDIR)\table_bc_module.obj"
 	-@erase "$(INTDIR)\table_boundary_conditions.mod"
@@ -112,37 +120,40 @@ CLEAN :
 	-@erase "$(INTDIR)\transport_only.mod"
 	-@erase "$(INTDIR)\transport_only_module.obj"
 	-@erase "$(OUTDIR)\mass2.exe"
+	-@erase "$(OUTDIR)\mass2.ilk"
 
 "$(INTDIR)" :
     if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
- /include:"time_series/Release" /include:"E:\Software\CGNSLib-v2.1"\
- /compile_only /nologo /optimize:4 /fpe:3 /math_library:check /warn:nofileopt\
- /module:"Release/" /object:"Release/" 
+F90_PROJ=/include:"$(INTDIR)\\" /include:"time_series/Release"\
+ /include:"D:\Software\netcdf-3.5\include" /include:"D:\Software\cgnslib_2.3"\
+ /compile_only /nologo /optimize:3 /warn:nofileopt /module:"Release/"\
+ /object:"Release/" 
 F90_OBJS=.\Release/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2.bsc" 
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=netcdfs.lib kernel32.lib /nologo /subsystem:console\
- /incremental:no /pdb:"$(OUTDIR)\mass2.pdb" /machine:I386\
+LINK32_FLAGS=netcdfs.lib libcgns.WIN32.lib kernel32.lib /nologo\
+ /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\mass2.pdb" /machine:I386\
  /nodefaultlib:"libcmt.lib" /nodefaultlib:"libcmtd.lib"\
- /out:"$(OUTDIR)\mass2.exe" /libpath:"E:\Software\NetCDF\lib" 
+ /out:"$(OUTDIR)\mass2.exe" /libpath:"D:\Software\netcdf-3.5\lib"\
+ /libpath:"D:\Software\cgnslib_2.3\lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\accumulator.obj" \
 	"$(INTDIR)\bed.obj" \
 	"$(INTDIR)\bed_functions.obj" \
 	"$(INTDIR)\bed_source.obj" \
 	"$(INTDIR)\block_bc_module.obj" \
+	"$(INTDIR)\distance.obj" \
 	"$(INTDIR)\energy_flux_module.obj" \
-	"$(INTDIR)\fpinit_nt.obj" \
 	"$(INTDIR)\gage_output_module.obj" \
 	"$(INTDIR)\gas_coeffs_module.obj" \
 	"$(INTDIR)\gas_functions_module.obj" \
 	"$(INTDIR)\generic_source.obj" \
 	"$(INTDIR)\global_module_023.obj" \
+	"$(INTDIR)\hydro_solve.obj" \
 	"$(INTDIR)\io_routines_module.obj" \
 	"$(INTDIR)\mass2.obj" \
 	"$(INTDIR)\mass2_main_025.obj" \
@@ -154,17 +165,20 @@ LINK32_OBJS= \
 	"$(INTDIR)\plot_netcdf.obj" \
 	"$(INTDIR)\plot_output.obj" \
 	"$(INTDIR)\profile_init.obj" \
+	"$(INTDIR)\scalar_mass_balance.obj" \
+	"$(INTDIR)\scalar_solve.obj" \
 	"$(INTDIR)\scalars_module.obj" \
 	"$(INTDIR)\scalars_source.obj" \
 	"$(INTDIR)\sediment_source.obj" \
+	"$(INTDIR)\solver_backup.obj" \
+	"$(INTDIR)\solver_common.obj" \
 	"$(INTDIR)\solver_tdma.obj" \
 	"$(INTDIR)\table_bc_module.obj" \
 	"$(INTDIR)\tdg_source.obj" \
 	"$(INTDIR)\temperature_source.obj" \
 	"$(INTDIR)\total_conc.obj" \
 	"$(INTDIR)\transport_only_module.obj" \
-	"$(OUTDIR)\time_series\libts.lib" \
-	"E:\Software\CGNSLib-v2.1\lib\libcgns.win40.lib"
+	"$(OUTDIR)\time_series\libts.lib"
 
 "$(OUTDIR)\mass2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -181,11 +195,11 @@ OutDir=.\Debug
 
 !IF "$(RECURSE)" == "0" 
 
-ALL : "$(OUTDIR)\mass2.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "$(OUTDIR)\mass2.exe"
 
 !ELSE 
 
-ALL : "library - Win32 Debug" "$(OUTDIR)\mass2.exe" "$(OUTDIR)\DF50.PDB"
+ALL : "library - Win32 Debug" "$(OUTDIR)\mass2.exe"
 
 !ENDIF 
 
@@ -203,10 +217,9 @@ CLEAN :
 	-@erase "$(INTDIR)\bed_source.obj"
 	-@erase "$(INTDIR)\block_bc_module.obj"
 	-@erase "$(INTDIR)\block_boundary_conditions.mod"
-	-@erase "$(INTDIR)\DF50.PDB"
+	-@erase "$(INTDIR)\distance.obj"
 	-@erase "$(INTDIR)\energy_flux.mod"
 	-@erase "$(INTDIR)\energy_flux_module.obj"
-	-@erase "$(INTDIR)\fpinit_nt.obj"
 	-@erase "$(INTDIR)\gage_output.mod"
 	-@erase "$(INTDIR)\gage_output_module.obj"
 	-@erase "$(INTDIR)\gas_coeffs.mod"
@@ -217,6 +230,7 @@ CLEAN :
 	-@erase "$(INTDIR)\generic_source.obj"
 	-@erase "$(INTDIR)\global_module_023.obj"
 	-@erase "$(INTDIR)\globals.mod"
+	-@erase "$(INTDIR)\hydro_solve.obj"
 	-@erase "$(INTDIR)\io_routines_module.mod"
 	-@erase "$(INTDIR)\io_routines_module.obj"
 	-@erase "$(INTDIR)\mass2.obj"
@@ -236,12 +250,19 @@ CLEAN :
 	-@erase "$(INTDIR)\plot_output.mod"
 	-@erase "$(INTDIR)\plot_output.obj"
 	-@erase "$(INTDIR)\profile_init.obj"
+	-@erase "$(INTDIR)\scalar_mass.mod"
+	-@erase "$(INTDIR)\scalar_mass_balance.obj"
+	-@erase "$(INTDIR)\scalar_solve.obj"
 	-@erase "$(INTDIR)\scalars.mod"
 	-@erase "$(INTDIR)\scalars_module.obj"
 	-@erase "$(INTDIR)\scalars_source.mod"
 	-@erase "$(INTDIR)\scalars_source.obj"
 	-@erase "$(INTDIR)\sediment_source.mod"
 	-@erase "$(INTDIR)\sediment_source.obj"
+	-@erase "$(INTDIR)\solver_backup.obj"
+	-@erase "$(INTDIR)\solver_common.mod"
+	-@erase "$(INTDIR)\solver_common.obj"
+	-@erase "$(INTDIR)\solver_module.mod"
 	-@erase "$(INTDIR)\solver_tdma.obj"
 	-@erase "$(INTDIR)\table_bc_module.obj"
 	-@erase "$(INTDIR)\table_boundary_conditions.mod"
@@ -259,33 +280,35 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-F90_PROJ=/include:"$(INTDIR)\\" /include:"E:\Software\NetCDF\include"\
- /include:"time_series/Debug/" /include:"E:\Software\CGNSLib-v2.1" /compile_only\
- /nologo /recursive /debug:full /optimize:0 /warn:nofileopt /module:"Debug/"\
- /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
+F90_PROJ=/include:"$(INTDIR)\\" /include:"time_series/Debug/"\
+ /include:"D:\Software\netcdf-3.5\include" /include:"D:\Software\cgnslib_2.3"\
+ /compile_only /nologo /recursive /debug:full /optimize:0 /warn:nofileopt\
+ /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
 F90_OBJS=.\Debug/
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\mass2.bsc" 
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=netcdfs.lib kernel32.lib /nologo /subsystem:console\
- /incremental:yes /pdb:"$(OUTDIR)\mass2.pdb" /debug /machine:I386\
- /nodefaultlib:"libcmt.lib" /nodefaultlib:"libcmtd.lib"\
- /out:"$(OUTDIR)\mass2.exe" /pdbtype:sept /libpath:"E:\Software\NetCDF\lib" 
+LINK32_FLAGS=netcdfs.lib libcgns.WIN32.lib kernel32.lib /nologo\
+ /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\mass2.pdb" /debug\
+ /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"libcmtd.lib"\
+ /out:"$(OUTDIR)\mass2.exe" /pdbtype:sept /libpath:"D:\Software\netcdf-3.5\lib"\
+ /libpath:"D:\Software\cgnslib_2.3\lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\accumulator.obj" \
 	"$(INTDIR)\bed.obj" \
 	"$(INTDIR)\bed_functions.obj" \
 	"$(INTDIR)\bed_source.obj" \
 	"$(INTDIR)\block_bc_module.obj" \
+	"$(INTDIR)\distance.obj" \
 	"$(INTDIR)\energy_flux_module.obj" \
-	"$(INTDIR)\fpinit_nt.obj" \
 	"$(INTDIR)\gage_output_module.obj" \
 	"$(INTDIR)\gas_coeffs_module.obj" \
 	"$(INTDIR)\gas_functions_module.obj" \
 	"$(INTDIR)\generic_source.obj" \
 	"$(INTDIR)\global_module_023.obj" \
+	"$(INTDIR)\hydro_solve.obj" \
 	"$(INTDIR)\io_routines_module.obj" \
 	"$(INTDIR)\mass2.obj" \
 	"$(INTDIR)\mass2_main_025.obj" \
@@ -297,17 +320,20 @@ LINK32_OBJS= \
 	"$(INTDIR)\plot_netcdf.obj" \
 	"$(INTDIR)\plot_output.obj" \
 	"$(INTDIR)\profile_init.obj" \
+	"$(INTDIR)\scalar_mass_balance.obj" \
+	"$(INTDIR)\scalar_solve.obj" \
 	"$(INTDIR)\scalars_module.obj" \
 	"$(INTDIR)\scalars_source.obj" \
 	"$(INTDIR)\sediment_source.obj" \
+	"$(INTDIR)\solver_backup.obj" \
+	"$(INTDIR)\solver_common.obj" \
 	"$(INTDIR)\solver_tdma.obj" \
 	"$(INTDIR)\table_bc_module.obj" \
 	"$(INTDIR)\tdg_source.obj" \
 	"$(INTDIR)\temperature_source.obj" \
 	"$(INTDIR)\total_conc.obj" \
 	"$(INTDIR)\transport_only_module.obj" \
-	".\time_series\libts.lib" \
-	"E:\Software\CGNSLib-v2.1\lib\libcgns.win40.lib"
+	".\time_series\libts.lib"
 
 "$(OUTDIR)\mass2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -315,6 +341,8 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
+
+.SUFFIXES: .fpp
 
 .for{$(F90_OBJS)}.obj:
    $(F90) $(F90_PROJ) $<  
@@ -336,12 +364,12 @@ LINK32_OBJS= \
 
 "library - Win32 Release" : 
    cd ".\time_series"
-   $(MAKE) /$(MAKEFLAGS) /F .\library.mak CFG="library - Win32 Release" 
+   $(MAKE) /$(MAKEFLAGS) /F ".\library.mak" CFG="library - Win32 Release" 
    cd ".."
 
 "library - Win32 ReleaseCLEAN" : 
    cd ".\time_series"
-   $(MAKE) /$(MAKEFLAGS) CLEAN /F .\library.mak CFG="library - Win32 Release"\
+   $(MAKE) /$(MAKEFLAGS) CLEAN /F ".\library.mak" CFG="library - Win32 Release"\
  RECURSE=1 
    cd ".."
 
@@ -349,12 +377,12 @@ LINK32_OBJS= \
 
 "library - Win32 Debug" : 
    cd ".\time_series"
-   $(MAKE) /$(MAKEFLAGS) /F .\library.mak CFG="library - Win32 Debug" 
+   $(MAKE) /$(MAKEFLAGS) /F ".\library.mak" CFG="library - Win32 Debug" 
    cd ".."
 
 "library - Win32 DebugCLEAN" : 
    cd ".\time_series"
-   $(MAKE) /$(MAKEFLAGS) CLEAN /F .\library.mak CFG="library - Win32 Debug"\
+   $(MAKE) /$(MAKEFLAGS) CLEAN /F ".\library.mak" CFG="library - Win32 Debug"\
  RECURSE=1 
    cd ".."
 
@@ -477,7 +505,7 @@ DEP_F90_BED_FU=\
 	
 
 "$(INTDIR)\bed_functions.obj" : $(SOURCE) $(DEP_F90_BED_FU) "$(INTDIR)"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\scalars_source.mod"
 
 
 !ENDIF 
@@ -490,6 +518,7 @@ DEP_F90_BED_S=\
 	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\table_boundary_conditions.mod"\
+	".\time_series\Release\time_series.mod"\
 	".\time_series\Release\utility.mod"\
 	
 F90_MODOUT=\
@@ -508,6 +537,7 @@ DEP_F90_BED_S=\
 	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
+	".\time_series\Debug\time_series.mod"\
 	".\time_series\Debug\utility.mod"\
 	
 F90_MODOUT=\
@@ -527,6 +557,7 @@ SOURCE=.\block_bc_module.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_BLOCK=\
+	".\Release\globals.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	".\time_series\Release\utility.mod"\
@@ -537,13 +568,15 @@ F90_MODOUT=\
 
 "$(INTDIR)\block_bc_module.obj"	"$(INTDIR)\block_boundary_conditions.mod" : \
 $(SOURCE) $(DEP_F90_BLOCK) "$(INTDIR)"\
- "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\misc_vars.mod"
+ "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\misc_vars.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_BLOCK=\
+	".\Debug\globals.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	".\time_series\Debug\utility.mod"\
@@ -554,11 +587,17 @@ F90_MODOUT=\
 
 "$(INTDIR)\block_bc_module.obj"	"$(INTDIR)\block_boundary_conditions.mod" : \
 $(SOURCE) $(DEP_F90_BLOCK) "$(INTDIR)"\
- "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\misc_vars.mod"
+ "$(INTDIR)\table_boundary_conditions.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\misc_vars.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ENDIF 
+
+SOURCE=.\distance.f90
+
+"$(INTDIR)\distance.obj" : $(SOURCE) "$(INTDIR)"
+
 
 SOURCE=.\energy_flux_module.f90
 
@@ -586,16 +625,12 @@ F90_MODOUT=\
 
 !ENDIF 
 
-SOURCE=.\fpinit_nt.f90
-
-"$(INTDIR)\fpinit_nt.obj" : $(SOURCE) "$(INTDIR)"
-
-
 SOURCE=.\gage_output_module.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_GAGE_=\
+	"..\..\Software\netcdf-3.5\include\netcdf.inc"\
 	".\Release\bed_module.mod"\
 	".\Release\gas_functions.mod"\
 	".\Release\globals.mod"\
@@ -604,7 +639,6 @@ DEP_F90_GAGE_=\
 	".\Release\scalars_source.mod"\
 	".\time_series\Release\date_time.mod"\
 	".\time_series\Release\utility.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"gage_output"
@@ -620,6 +654,7 @@ F90_MODOUT=\
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_GAGE_=\
+	"..\..\Software\netcdf-3.5\include\netcdf.inc"\
 	".\Debug\bed_module.mod"\
 	".\Debug\gas_functions.mod"\
 	".\Debug\globals.mod"\
@@ -628,7 +663,6 @@ DEP_F90_GAGE_=\
 	".\Debug\scalars_source.mod"\
 	".\time_series\Debug\date_time.mod"\
 	".\time_series\Debug\utility.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"gage_output"
@@ -706,9 +740,7 @@ SOURCE=.\generic_source.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_GENER=\
-	".\bed_functions.inc"\
 	".\Release\bed_source.mod"\
-	".\Release\misc_vars.mod"\
 	".\time_series\Release\utility.mod"\
 	
 F90_MODOUT=\
@@ -716,17 +748,14 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\generic_source.obj"	"$(INTDIR)\generic_source.mod" : $(SOURCE)\
- $(DEP_F90_GENER) "$(INTDIR)" "$(INTDIR)\bed_source.mod"\
- "$(INTDIR)\misc_vars.mod"
+ $(DEP_F90_GENER) "$(INTDIR)" "$(INTDIR)\bed_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_GENER=\
-	".\bed_functions.inc"\
 	".\Debug\bed_source.mod"\
-	".\Debug\misc_vars.mod"\
 	".\time_series\Debug\utility.mod"\
 	
 F90_MODOUT=\
@@ -734,8 +763,7 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\generic_source.obj"	"$(INTDIR)\generic_source.mod" : $(SOURCE)\
- $(DEP_F90_GENER) "$(INTDIR)" "$(INTDIR)\bed_source.mod"\
- "$(INTDIR)\misc_vars.mod"
+ $(DEP_F90_GENER) "$(INTDIR)" "$(INTDIR)\bed_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -771,6 +799,34 @@ F90_MODOUT=\
 "$(INTDIR)\global_module_023.obj"	"$(INTDIR)\globals.mod" : $(SOURCE)\
  $(DEP_F90_GLOBA) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\hydro_solve.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_HYDRO=\
+	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
+	".\Release\solver_module.mod"\
+	
+
+"$(INTDIR)\hydro_solve.obj" : $(SOURCE) $(DEP_F90_HYDRO) "$(INTDIR)"\
+ "$(INTDIR)\misc_vars.mod" "$(INTDIR)\solver_module.mod" "$(INTDIR)\globals.mod"
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_HYDRO=\
+	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
+	".\Debug\solver_module.mod"\
+	
+
+"$(INTDIR)\hydro_solve.obj" : $(SOURCE) $(DEP_F90_HYDRO) "$(INTDIR)"\
+ "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\solver_module.mod"
 
 
 !ENDIF 
@@ -814,10 +870,11 @@ SOURCE=.\mass2.f90
 DEP_F90_MASS2=\
 	".\Release\mass2_main_025.mod"\
 	".\Release\misc_vars.mod"\
+	".\time_series\Release\fptrap.mod"\
 	
 
 "$(INTDIR)\mass2.obj" : $(SOURCE) $(DEP_F90_MASS2) "$(INTDIR)"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\mass2_main_025.mod"
+ "$(INTDIR)\mass2_main_025.mod" "$(INTDIR)\misc_vars.mod"
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
@@ -825,10 +882,11 @@ DEP_F90_MASS2=\
 DEP_F90_MASS2=\
 	".\Debug\mass2_main_025.mod"\
 	".\Debug\misc_vars.mod"\
+	".\time_series\Debug\fptrap.mod"\
 	
 
 "$(INTDIR)\mass2.obj" : $(SOURCE) $(DEP_F90_MASS2) "$(INTDIR)"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\mass2_main_025.mod"
+ "$(INTDIR)\mass2_main_025.mod" "$(INTDIR)\misc_vars.mod"
 
 
 !ENDIF 
@@ -848,11 +906,14 @@ DEP_F90_MASS2_=\
 	".\Release\met_data_module.mod"\
 	".\Release\misc_vars.mod"\
 	".\Release\plot_output.mod"\
+	".\Release\scalar_mass.mod"\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
+	".\Release\solver_module.mod"\
 	".\Release\table_boundary_conditions.mod"\
 	".\Release\transport_only.mod"\
 	".\time_series\Release\date_time.mod"\
+	".\time_series\Release\julian.mod"\
 	
 F90_MODOUT=\
 	"mass2_main_025"
@@ -866,7 +927,8 @@ F90_MODOUT=\
  "$(INTDIR)\scalars_source.mod" "$(INTDIR)\met_data_module.mod"\
  "$(INTDIR)\energy_flux.mod" "$(INTDIR)\gas_functions.mod"\
  "$(INTDIR)\misc_vars.mod" "$(INTDIR)\transport_only.mod"\
- "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\scalar_mass.mod"\
+ "$(INTDIR)\solver_module.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -883,11 +945,14 @@ DEP_F90_MASS2_=\
 	".\Debug\met_data_module.mod"\
 	".\Debug\misc_vars.mod"\
 	".\Debug\plot_output.mod"\
+	".\Debug\scalar_mass.mod"\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
+	".\Debug\solver_module.mod"\
 	".\Debug\table_boundary_conditions.mod"\
 	".\Debug\transport_only.mod"\
 	".\time_series\Debug\date_time.mod"\
+	".\time_series\Debug\JULIAN.mod"\
 	
 F90_MODOUT=\
 	"mass2_main_025"
@@ -901,7 +966,8 @@ F90_MODOUT=\
  "$(INTDIR)\scalars_source.mod" "$(INTDIR)\met_data_module.mod"\
  "$(INTDIR)\energy_flux.mod" "$(INTDIR)\gas_functions.mod"\
  "$(INTDIR)\misc_vars.mod" "$(INTDIR)\transport_only.mod"\
- "$(INTDIR)\bed_module.mod"
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\scalar_mass.mod"\
+ "$(INTDIR)\solver_module.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -975,7 +1041,7 @@ F90_MODOUT=\
 
 SOURCE=.\netcdferror.f90
 DEP_F90_NETCD=\
-	"E:\Software\NetCDF\include\netcdf.inc"\
+	"..\..\Software\netcdf-3.5\include\netcdf.inc"\
 	
 
 "$(INTDIR)\netcdferror.obj" : $(SOURCE) $(DEP_F90_NETCD) "$(INTDIR)"
@@ -998,9 +1064,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\particulate_source.obj"	"$(INTDIR)\particulate_source.mod" : \
-$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\sediment_source.mod"\
- "$(INTDIR)\misc_vars.mod"
+$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\sediment_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1019,9 +1084,8 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\particulate_source.obj"	"$(INTDIR)\particulate_source.mod" : \
-$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\scalars.mod"\
- "$(INTDIR)\globals.mod" "$(INTDIR)\sediment_source.mod"\
- "$(INTDIR)\misc_vars.mod"
+$(SOURCE) $(DEP_F90_PARTI) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\sediment_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1032,6 +1096,7 @@ SOURCE=.\plot_cgns.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_PLOT_=\
+	"..\..\Software\cgnslib_2.3\cgnslib_f.h"\
 	".\Release\accumulator.mod"\
 	".\Release\bed_module.mod"\
 	".\Release\gas_functions.mod"\
@@ -1041,7 +1106,6 @@ DEP_F90_PLOT_=\
 	".\Release\scalars_source.mod"\
 	".\time_series\Release\date_time.mod"\
 	".\time_series\Release\utility.mod"\
-	"E:\Software\CGNSLib-v2.1\cgnslib_f.h"\
 	
 F90_MODOUT=\
 	"plot_cgns"
@@ -1058,6 +1122,7 @@ F90_MODOUT=\
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_PLOT_=\
+	"..\..\Software\cgnslib_2.3\cgnslib_f.h"\
 	".\Debug\accumulator.mod"\
 	".\Debug\bed_module.mod"\
 	".\Debug\gas_functions.mod"\
@@ -1067,7 +1132,6 @@ DEP_F90_PLOT_=\
 	".\Debug\scalars_source.mod"\
 	".\time_series\Debug\date_time.mod"\
 	".\time_series\Debug\utility.mod"\
-	"E:\Software\CGNSLib-v2.1\cgnslib_f.h"\
 	
 F90_MODOUT=\
 	"plot_cgns"
@@ -1088,6 +1152,7 @@ SOURCE=.\plot_netcdf.f90
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_PLOT_N=\
+	"..\..\Software\netcdf-3.5\include\netcdf.inc"\
 	".\Release\accumulator.mod"\
 	".\Release\bed_module.mod"\
 	".\Release\gas_functions.mod"\
@@ -1096,7 +1161,6 @@ DEP_F90_PLOT_N=\
 	".\Release\scalars.mod"\
 	".\Release\scalars_source.mod"\
 	".\time_series\Release\date_time.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"plot_netcdf"
@@ -1113,6 +1177,7 @@ F90_MODOUT=\
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
 DEP_F90_PLOT_N=\
+	"..\..\Software\netcdf-3.5\include\netcdf.inc"\
 	".\Debug\accumulator.mod"\
 	".\Debug\bed_module.mod"\
 	".\Debug\gas_functions.mod"\
@@ -1121,7 +1186,6 @@ DEP_F90_PLOT_N=\
 	".\Debug\scalars.mod"\
 	".\Debug\scalars_source.mod"\
 	".\time_series\Debug\date_time.mod"\
-	"E:\Software\NetCDF\include\netcdf.inc"\
 	
 F90_MODOUT=\
 	"plot_netcdf"
@@ -1157,10 +1221,11 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
- $(DEP_F90_PLOT_O) "$(INTDIR)" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\scalars.mod" "$(INTDIR)\plot_netcdf.mod" "$(INTDIR)\plot_cgns.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\gas_functions.mod"\
- "$(INTDIR)\bed_module.mod" "$(INTDIR)\accumulator.mod"
+ $(DEP_F90_PLOT_O) "$(INTDIR)" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod" "$(INTDIR)\plot_netcdf.mod"\
+ "$(INTDIR)\plot_cgns.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\gas_functions.mod" "$(INTDIR)\bed_module.mod"\
+ "$(INTDIR)\accumulator.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1182,10 +1247,11 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\plot_output.obj"	"$(INTDIR)\plot_output.mod" : $(SOURCE)\
- $(DEP_F90_PLOT_O) "$(INTDIR)" "$(INTDIR)\scalars_source.mod"\
- "$(INTDIR)\scalars.mod" "$(INTDIR)\plot_netcdf.mod" "$(INTDIR)\plot_cgns.mod"\
- "$(INTDIR)\misc_vars.mod" "$(INTDIR)\globals.mod" "$(INTDIR)\gas_functions.mod"\
- "$(INTDIR)\bed_module.mod" "$(INTDIR)\accumulator.mod"
+ $(DEP_F90_PLOT_O) "$(INTDIR)" "$(INTDIR)\accumulator.mod"\
+ "$(INTDIR)\bed_module.mod" "$(INTDIR)\gas_functions.mod"\
+ "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\plot_cgns.mod"\
+ "$(INTDIR)\plot_netcdf.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\scalars_source.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1219,11 +1285,83 @@ DEP_F90_PROFI=\
 
 !ENDIF 
 
-SOURCE=.\scalars_module.f90
+SOURCE=.\scalar_mass_balance.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
 DEP_F90_SCALA=\
+	".\Release\bed_module.mod"\
+	".\Release\globals.mod"\
+	".\Release\scalars_source.mod"\
+	".\time_series\Release\utility.mod"\
+	
+F90_MODOUT=\
+	"scalar_mass"
+
+
+"$(INTDIR)\scalar_mass_balance.obj"	"$(INTDIR)\scalar_mass.mod" : $(SOURCE)\
+ $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\scalars_source.mod" "$(INTDIR)\bed_module.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_SCALA=\
+	".\Debug\bed_module.mod"\
+	".\Debug\globals.mod"\
+	".\Debug\scalars_source.mod"\
+	".\time_series\Debug\utility.mod"\
+	
+F90_MODOUT=\
+	"scalar_mass"
+
+
+"$(INTDIR)\scalar_mass_balance.obj"	"$(INTDIR)\scalar_mass.mod" : $(SOURCE)\
+ $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\globals.mod"\
+ "$(INTDIR)\scalars_source.mod" "$(INTDIR)\bed_module.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\scalar_solve.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_SCALAR=\
+	".\Release\globals.mod"\
+	".\Release\misc_vars.mod"\
+	".\Release\scalars.mod"\
+	".\Release\solver_module.mod"\
+	
+
+"$(INTDIR)\scalar_solve.obj" : $(SOURCE) $(DEP_F90_SCALAR) "$(INTDIR)"\
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\solver_module.mod" "$(INTDIR)\misc_vars.mod"\
+ "$(INTDIR)\globals.mod"
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_SCALAR=\
+	".\Debug\globals.mod"\
+	".\Debug\misc_vars.mod"\
+	".\Debug\scalars.mod"\
+	".\Debug\solver_module.mod"\
+	
+
+"$(INTDIR)\scalar_solve.obj" : $(SOURCE) $(DEP_F90_SCALAR) "$(INTDIR)"\
+ "$(INTDIR)\globals.mod" "$(INTDIR)\misc_vars.mod" "$(INTDIR)\scalars.mod"\
+ "$(INTDIR)\solver_module.mod"
+
+
+!ENDIF 
+
+SOURCE=.\scalars_module.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+DEP_F90_SCALARS=\
 	".\Release\misc_vars.mod"\
 	".\time_series\Release\utility.mod"\
 	
@@ -1232,13 +1370,13 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_module.obj"	"$(INTDIR)\scalars.mod" : $(SOURCE)\
- $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"
+ $(DEP_F90_SCALARS) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_SCALA=\
+DEP_F90_SCALARS=\
 	".\Debug\misc_vars.mod"\
 	".\time_series\Debug\utility.mod"\
 	
@@ -1247,7 +1385,7 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_module.obj"	"$(INTDIR)\scalars.mod" : $(SOURCE)\
- $(DEP_F90_SCALA) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"
+ $(DEP_F90_SCALARS) "$(INTDIR)" "$(INTDIR)\misc_vars.mod"
 	$(F90) $(F90_PROJ) $(SOURCE)
 
 
@@ -1257,7 +1395,7 @@ SOURCE=.\scalars_source.f90
 
 !IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
-DEP_F90_SCALAR=\
+DEP_F90_SCALARS_=\
 	".\bed_functions.inc"\
 	".\Release\generic_source.mod"\
 	".\Release\globals.mod"\
@@ -1274,7 +1412,7 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_source.obj"	"$(INTDIR)\scalars_source.mod" : $(SOURCE)\
- $(DEP_F90_SCALAR) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
+ $(DEP_F90_SCALARS_) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
  "$(INTDIR)\tdg_source.mod" "$(INTDIR)\generic_source.mod"\
  "$(INTDIR)\sediment_source.mod" "$(INTDIR)\particulate_source.mod"\
  "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod" "$(INTDIR)\met_data_module.mod"
@@ -1283,7 +1421,7 @@ F90_MODOUT=\
 
 !ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
 
-DEP_F90_SCALAR=\
+DEP_F90_SCALARS_=\
 	".\bed_functions.inc"\
 	".\Debug\generic_source.mod"\
 	".\Debug\globals.mod"\
@@ -1300,7 +1438,7 @@ F90_MODOUT=\
 
 
 "$(INTDIR)\scalars_source.obj"	"$(INTDIR)\scalars_source.mod" : $(SOURCE)\
- $(DEP_F90_SCALAR) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
+ $(DEP_F90_SCALARS_) "$(INTDIR)" "$(INTDIR)\temperature_source.mod"\
  "$(INTDIR)\tdg_source.mod" "$(INTDIR)\generic_source.mod"\
  "$(INTDIR)\sediment_source.mod" "$(INTDIR)\particulate_source.mod"\
  "$(INTDIR)\globals.mod" "$(INTDIR)\scalars.mod" "$(INTDIR)\met_data_module.mod"
@@ -1347,10 +1485,68 @@ F90_MODOUT=\
 
 !ENDIF 
 
+SOURCE=.\solver_backup.f90
+
+"$(INTDIR)\solver_backup.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\solver_common.f90
+
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
+
+F90_MODOUT=\
+	"solver_common"
+
+
+"$(INTDIR)\solver_common.obj"	"$(INTDIR)\solver_common.mod" : $(SOURCE)\
+ "$(INTDIR)"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+F90_MODOUT=\
+	"solver_common"
+
+
+"$(INTDIR)\solver_common.obj"	"$(INTDIR)\solver_common.mod" : $(SOURCE)\
+ "$(INTDIR)"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
 SOURCE=.\solver_tdma.f90
 
-"$(INTDIR)\solver_tdma.obj" : $(SOURCE) "$(INTDIR)"
+!IF  "$(CFG)" == "mass2_v025 - Win32 Release"
 
+DEP_F90_SOLVE=\
+	".\Release\solver_common.mod"\
+	
+F90_MODOUT=\
+	"solver_module"
+
+
+"$(INTDIR)\solver_tdma.obj"	"$(INTDIR)\solver_module.mod" : $(SOURCE)\
+ $(DEP_F90_SOLVE) "$(INTDIR)" "$(INTDIR)\solver_common.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "mass2_v025 - Win32 Debug"
+
+DEP_F90_SOLVE=\
+	".\Debug\solver_common.mod"\
+	
+F90_MODOUT=\
+	"solver_module"
+
+
+"$(INTDIR)\solver_tdma.obj"	"$(INTDIR)\solver_module.mod" : $(SOURCE)\
+ $(DEP_F90_SOLVE) "$(INTDIR)" "$(INTDIR)\solver_common.mod"
+	$(F90) $(F90_PROJ) $(SOURCE)
+
+
+!ENDIF 
 
 SOURCE=.\table_bc_module.f90
 
@@ -1485,7 +1681,7 @@ DEP_F90_TOTAL=\
 	
 
 "$(INTDIR)\total_conc.obj" : $(SOURCE) $(DEP_F90_TOTAL) "$(INTDIR)"\
- "$(INTDIR)\scalars_source.mod" "$(INTDIR)\scalars.mod"
+ "$(INTDIR)\scalars.mod" "$(INTDIR)\scalars_source.mod"
 
 
 !ENDIF 

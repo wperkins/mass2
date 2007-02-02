@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Tue Mar 18 09:34:22 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Thu Jun  5 08:17:11 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
 
@@ -44,11 +44,26 @@ DEBUG =  -O -fast
 PROFILE = # -pg
 FLAGS = $(NETCDFFLAGS) $(CGNSFFLAGS) $(DEBUG) $(PROFILE) -fpe # -non_shared # -fpe1
 
-MAINDEBUG = $(DEBUG)
-F90FLAGS = $(FLAGS)
-LIBLOC = 
-LDFLAGS = $(NETCDFLDFLAGS) $(CGNSLDFLAGS) ${LIBLOC} $(FLAGS) -non_shared
-LIBS = $(NETCDFLIBS) $(CGNSLIBS)
+# SOLVERSRC = solver_sixpack.f90 # solver_tdma.f90
+# SOLVERFLAGS =
+# SOLVERLDFLAGS = -L/home/perk/Projects/GrantPUD/src/sixpack-2.3.7/lib -lsixpack
+
+SOLVERSRC = solver_tdma.f90
+SOLVERFLAGS =
+SOLVERLDFLAGS = 
+SOLVERLIB = 
+
+# SOLVERSRC = solver_aztec.f90
+# SOLVERFLAGS = 
+# SOLVERLDFLAGS = -L../aztec/lib 
+# SOLVERLIB = -laztec -lm -lg2c
+
+SOLVEROBJ = $(SOLVERSRC:%.f90=%.o) 
+
+# general compile/link flags
+
+LDFLAGS = $(SOLVERLDFLAGS) $(NETCDFLDFLAGS) $(CGNSLDFLAGS) ${LIBLOC} $(FLAGS) -non_shared
+LIBS = $(NETCDFLIBS) $(SOLVERLIB)
 
 TARGET = mass2_v027
 SRCS =											\
@@ -84,10 +99,42 @@ SRCS =											\
 	 bed_functions.f90							\
 	 accumulator.f90							\
 	 total_conc.f90								\
-	 solver_tdma.f90
+	 utility.f90								\
+	 hydro_solve.f90							\
+	 $(SOLVERSRC)
 
 OBJS = $(SRCS:%.f90=%.o)
 
+MODULES =										\
+    block_boundary_conditions.$(MOD)			\
+    date_time.$(MOD)							\
+    energy_flux.$(MOD)							\
+    f90_unix_proc.$(MOD)						\
+    gage_output.$(MOD)							\
+    gas_coeffs.$(MOD)							\
+    gas_functions.$(MOD)						\
+    globals.$(MOD)								\
+    io_routines_module.$(MOD)					\
+    julian.$(MOD)								\
+    met_data_module.$(MOD)						\
+	plot_output.$(MOD)							\
+    scalars.$(MOD)								\
+    table_boundary_conditions.$(MOD)			\
+    misc_vars.$(MOD)							\
+    transport_only.$(MOD)						\
+    mass2_main_025.$(MOD)						\
+    scalars_source.$(MOD)						\
+	temperature_source.$(MOD)					\
+	tdg_source.$(MOD)							\
+	generic_source.$(MOD)						\
+	bed_source.$(MOD)							\
+	rdblk_mod.$(MOD)							\
+	sediment_source.$(MOD)						\
+    particulate_source.$(MOD)					\
+	bed_module.$(MOD)							\
+	accumulator.$(MOD)							\
+	solver_module.$(MOD)						\
+	utility.$(MOD)
 
 ${TARGET}: ${OBJS}
 	${LINK.f90} ${OBJS} ${LIBS} -o ${TARGET}
@@ -104,16 +151,16 @@ clean::
 
 # dependancies for individual object files
 
-accumulator.o: accumulator.f90 global_module_023.o scalars_module.o \
-	scalars_source.o misc_vars_module.o date_time_module.o
+SOLVER_TEST_OBJ = solver_test.o $(SOLVEROBJ)
+solver_test: $(SOLVER_TEST_OBJ)
+	${LINK.f90} ${SOLVER_TEST_OBJ} ${LIBS} -o $@
 
-bed.o: bed.f90 scalars_source.o scalars_module.o global_module_023.o \
-	misc_vars_module.o
+solver_test.o: SOLVER_MODULE.$(MOD)
 
-bed_functions.o: bed_functions.f90 bed.o
+clean:: 
+	rm -rf solver_test solver_test.o
 
-bed_source.o: bed_source.f90 table_bc_module.o global_module_023.o \
-	misc_vars_module.o
+# dependancies for individual object files
 
 block_bc_module.o: block_bc_module.f90 table_bc_module.o
 
@@ -132,23 +179,31 @@ generic_source.o: generic_source.f90 misc_vars_module.o bed_source.o
 
 global_module_023.o: global_module_023.f90 misc_vars_module.o
 
-io_routines_module.o: io_routines_module.f90
+hydro_solve.o: hydro_solve.f90 globals.$(MOD) misc_vars.$(MOD) solver_module.$(MOD)
+
+io_routines_module.o: io_routines_module.f90 misc_vars.$(MOD)
+
 
 julian.o: julian.f90
 
 mass2_main_025.o: mass2_main_025.f90 \
-	global_module_023.o io_routines_module.o block_bc_module.o table_bc_module.o \
-	date_time_module.o scalars_module.o met_data_module.o energy_flux_module.o \
-	gas_functions_module.o plot_output.o gage_output_module.o misc_vars_module.o \
-	transport_only_module.o scalars_source.o bed.o accumulator.o
+   globals.$(MOD) io_routines_module.$(MOD) block_boundary_conditions.$(MOD) \
+   table_boundary_conditions.$(MOD) date_time.$(MOD) scalars.$(MOD) \
+   met_data_module.$(MOD) energy_flux.$(MOD) gas_functions.$(MOD) \
+   plot_output.$(MOD) gage_output.$(MOD) misc_vars.$(MOD) transport_only.$(MOD) \
+   scalars_source.$(MOD) bed_module.$(MOD) accumulator.$(MOD) solver_module.$(MOD) \
+   utility.$(MOD)
 mass2_main_025.$(MOD): mass2_main_025.o
 
 mass2.o: mass2.f90 mass2_main_025.o
 	$(F90) $(F90FLAGS) -c $(MAINDEBUG) mass2.f90
 
-misc_vars_module.o: misc_vars_module.f90 date_time_module.o
+met_data_module.o: met_data_module.f90 table_boundary_conditions.$(MOD) \
+   date_time.$(MOD)
+met_data_module.$(MOD): met_data_module.o
 
-met_data_module.o: met_data_module.f90 table_bc_module.o date_time_module.o
+misc_vars_module.o: misc_vars_module.f90 date_time.$(MOD)
+misc_vars.$(MOD): misc_vars_module.o
 
 netcdferror.o: netcdferror.f90
 
@@ -169,6 +224,14 @@ plot_output.o: plot_output.f90 global_module_023.o scalars_module.o \
 
 scalars_module.o: scalars_module.f90 misc_vars_module.o
 
+scalar_solve.o: scalar_solve.f90 globals.$(MOD) misc_vars.$(MOD)
+
+scalars_source.o: scalars_source.f90 temperature_source.$(MOD) tdg_source.$(MOD) \
+	generic_source.$(MOD) scalars.$(MOD) met_data_module.$(MOD) \
+	sediment_source.$(MOD) particulate_source.$(MOD)
+scalars_source.$(MOD): scalars_source.o
+
+
 scalars_source.o: scalars_source.f90 temperature_source.o \
 	tdg_source.o generic_source.o scalars_module.o met_data_module.o \
 	sediment_source.o particulate_source.o
@@ -177,6 +240,13 @@ sediment_source.o: sediment_source.f90 global_module_023.o scalars_module.o \
 	misc_vars_module.o
 
 solver_tdma.o: solver_tdma.f90
+
+$(SOLVERSRC:%.f90=%.o): $(SOLVERSRC)
+solver_module.$(MOD): $(SOLVERSRC:%.f90=%.o)
+
+table_bc_module.o: table_bc_module.f90 date_time.$(MOD)
+table_boundary_conditions.$(MOD): table_bc_module.o
+
 
 table_bc_module.o: table_bc_module.f90 date_time_module.o
 
@@ -191,7 +261,11 @@ total_conc.o: total_conc.f90 scalars_source.o
 transport_only_module.o: transport_only_module.f90 date_time_module.o \
 	global_module_023.o misc_vars_module.o
 
-profile_init.o: profile_init.f90 global_module_023.o
+utility.o: utility.f90 misc_vars.$(MOD)
+utility.$(MOD): utility.o
+
+
+profile_init.o: profile_init.f90 globals.$(MOD) misc_vars.$(MOD)
 
 clean::
 	rm -f ${OBJS}

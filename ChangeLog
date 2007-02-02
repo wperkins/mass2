@@ -1,3 +1,38 @@
+2005-09-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (output): Compute bed shear for output if not
+	computed for transport
+
+2004-10-22  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/mixing/mass2_v027.base: make lateral and
+	longitudinal diffusivity the same
+
+2004-09-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_hydro): adjustments for dry cells,
+	fixed some interpolation problems
+
+	* global_module_023.f90 (wsinterp): DO NOT used dry cells to
+	determine w.s. elevation
+
+	* mass2_main_025.f90 (hydro): set isdry for side ghost cells too
+
+	* gage_output_module.f90 (gage_read_control): Check to make sure
+	block indexes read are reasonable
+
+2004-04-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_parallel.f90 (mass2_parallel): call fptrap_common() and
+	make sure current_time is set
+	(hydro_parallel): do not manually set "zero gradient" conditions 
+	(transport_parallel): call default_scalar_bc()
+
+	* mass2.f90 (mass2): call fptrap_common()
+
+	* global_parallel.f90: type and bctype to xtype and xbctype and
+	ytype and ybctype
+
 2004-04-07  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90 (fillghost_hydro): fix problems with
@@ -10,6 +45,49 @@
 
 	* block_bc_module.f90 (read_bcspecs): do not use  out of range
 	block numbers
+
+2004-04-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* README: note changes to f90 compiler options
+
+	* block_bc_module.f90 (read_bcspecs): catch out of range block
+	numbers properly
+
+	* mass2.f90 (mass2): initialize current_time here, not in
+	read_config 
+
+	* mass2_main_025.f90 (read_config): don't call CLOSE twice, make
+	sure ydigits argument of date_time_flags points to an actual
+	location  
+
+2004-03-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_scalar, transport,
+	apply_scalar_bc, apply_scalar_source):  transport BC's on block
+	sides 
+	(apply_hydro_bc, apply_scalar_bc): error message for bad/unknown
+	BC's 
+	(fillghost_scalar): make sure cell type is set
+
+	* scalar_solve.f90 (scalar_solve): account for BC's on block
+	side. 
+	(default_scalar_bc): added
+
+	* block_bc_module.f90 (read_scalar_bcspecs): allow 'RB' and 'LB'
+	conditions 
+
+2004-03-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/normal-3blk-side: new test
+
+	* test/flow/dead-1-blk-nest-side: new test
+
+	* mass2_main_025.f90 (extrapghost): The corners are now handled in
+	interp_grid so block connections can be considered.
+	(buildghost, fillghost_hydro): allow block connections on (LB, RB)
+	side. 
+
+	* global_module_023.f90 (varea, vflux): add
 
 2004-01-30  William A. Perkins  <william.perkins@pnl.gov>
 
@@ -83,6 +161,24 @@
 	1-to-many connection fixed.
 	(fillghost_scalar): ditto
 
+2003-09-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_parallel.f90 (transport_parallel): transfer only parts of
+	scalar solution
+
+	* global_parallel.f90 (mpi_init_mass2): do not define special
+	types for structures, transfer them as arrays
+
+2003-08-19  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (apply_scalar_source): added
+	(transport): compute source term in advance (for parallelization) 
+
+2003-07-29  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (start_up): call read_grid and read grid
+	points *before* calling read_bcspecs
+
 2003-07-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* block_bc_module.f90: more diagnostics on block connection errors
@@ -95,6 +191,40 @@
 
 	* particulate_source.f90 (part_parse_options): bedexch was
 	allocated with the wrong lower bound indices.
+
+2003-06-09  William A. Perkins  <william.perkins@pnl.gov>
+
+	* solver_sixpack.f90: add equation option to solver(), but it is
+	not used
+
+2003-06-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* solver_aztec.f90: USE solver_common, add equation option to
+	solver() 
+
+	* solver_tdma.f90: USE solver_common, add equation option to
+	solver() 
+
+	* solver_common.f90: created
+
+2003-06-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (check_wetdry): rely on ghost cell
+	information (if available) for rewetting; need for
+	wselev_block_neighbor and active_cell eliminated
+
+	* configure.in (--with-aztec): Fix so that all necessary libraries
+	are included when the Aztec solver is used.
+
+	* Makefile.am (solver_test_SOURCES): solver_backup.f90 needed
+	here. 
+
+2003-05-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/jda/gage_control.dat: add some gages to compare
+
+	* mass2_main_025.f90: reference to global 'iblock' removed in
+	fillghost_hydro 
 
 2003-05-20  William A. Perkins  <william.perkins@pnl.gov>
 
@@ -428,6 +558,18 @@
 	* date_time_module.f90: do not assume the length of date_string
 	and time_string when passed in
 
+2003-01-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* misc_vars_module.f90: There were LOTS of global variables here
+	that either are not being used or should not be global
+	variables. Got rid of (some of) them.
+
+	* makefile.linux: solver module depends on the utility module
+
+	* hydro_solve.f90: block connections in the depth correction
+	solution are made using the *underrelaxed* dp from the connecting
+	block 
+
 2003-01-10  William A. Perkins  <william.perkins@pnl.gov>
 
 	* plot_output.f90: use do_rptdead to output 'isdead' in plot
@@ -457,6 +599,110 @@
 	* mass2_main_025.f90: Fixed bug in apply_scalar_bc that caused
 	output of scalars to be messed up.  Changed scalar iteration
 	counter name so it did not use the hydro iteration counter.
+
+2003-01-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* gage_output_module.f90: put the number of hydro iterations in
+	the mass source output file
+
+2002-12-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/Makefile (SUBDIRS): include wave cases
+
+	* test/wave/Makefile: added
+
+	* test/wave/falconer/plot-one.gp: added to animate profile plots
+
+	* test/wave/falconer/profile-anim.sh: added to animate profile plots
+
+	* solver_sixpack.f90: added
+
+	* makefile.linux: added sixpack solver module
+
+	* mass2.f90: blocks now allocated in main program
+
+	* misc_vars_module.f90: ivec/jvec no longer used, read_grid no
+	longer used
+
+2002-12-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* makefile: brought up to date with makefile.linux and tested 
+
+	* makefile.dec: brought up to date with makefile.linux and tested 
+
+	* solver_aztec.f90: set solver options, remove debugging write
+	statements 
+
+	* solver_tdma.f90: check to make sure the indices of dd are not
+	exceeded 
+
+	* test/flow/Makefile: add dead-1-blk and dead-2-blk back to subdir
+	list 
+
+	* test/flow/dead-1-blk/Makefile: plot.eps depends on dead.lay
+
+	* test/flow/dead-2-blk: New multi-block test case like dead-2
+
+	* test/flow/normal-2blk/plot-vel.gp: plot the last time step
+	rather than the second
+
+	* test/flow/normal-2blk/plot-elev.gp: plot the last time step
+	rather than the second
+
+	* test/flow/normal-2blk/plot-depth.gp: plot the last time step
+	rather than the second
+
+	* test/flow/normal-2blk/mass2_v027.cfg: print every time step
+
+	* test/flow/wall-1-blk/bcspecs.dat: complete description of BC on
+	downstream block
+
+	* test/src-sink/seepdry/Makefile: plot.nc depends on $(MODEL)
+
+	* test/src-sink/normal/Makefile: plot.nc depends on $(MODEL)
+
+2002-11-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/normal-1blk/Makefile: Added cases for upstream stage. 
+
+	* scalars_module.f90: Add SCALBC_BLOCK boundary condition type.
+
+	* mass2_main_025.f90: Explicitly assign BC's at block to block
+	boundaries.  Verify other BC applications.
+
+	* makefile.linux: Add solver_test object file targets.
+
+	* makefile.dec:  Add solver_test object file targets. Add aztec
+	solver. 
+
+	* hydro_solve.f90: deal with cells of type CELL_BLOCKBND_TYPE.
+	BC's have to be explicitly applied for these cells; they were
+	assumed with the old TDMA solver.
+
+	* global_module_023.f90: added new cell type: CELL_BLOCKBND_TYPE 
+
+2002-10-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/mixing-transport-only: Duplicate of the mixing
+	test case using transport-only mode
+
+2002-10-23  William A. Perkins  <wa_perkins@pnl.gov>
+
+	* utility.f90: created
+
+	* mass2_main_025.f90: encapsulated cell equation assembly by
+	equation, and isolated solver code in new module
+
+	* solver_tdma.f90: created
+
+	* hydro_solve.f90: created
+
+	* mass2.f90: moved some of startup into the main program: open log
+	files and read configuration
+
+	* global_module_023.f90: 1. made constants PARAMETERs, 2. moved
+	the lud lvd components of coeff_struct to block_struct, 3. did
+	away with coeff_struct
 
 2002-08-16  William A. Perkins  <wa_perkins@pnl.gov>
 
