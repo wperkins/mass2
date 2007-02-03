@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Fri Apr  2 14:01:16 2004 by William A. Perkins <perk@leechong.pnl.gov>
+Last Change: Fri Feb  2 10:12:18 2007 by William A. Perkins <perk@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -58,6 +58,12 @@ Wetting/Drying Issues:
 
     * Test scalars and wetting and drying, particularly TDG and
       temperature. 
+
+Code Clean Up:
+
+    * put the configuration files in CVS
+
+    * configuration should use the CGNS macros from TE2THYS/PT6 
 
 BUGS
 
