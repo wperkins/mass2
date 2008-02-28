@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Fri Apr 15 08:49:18 2005 by William A. Perkins <perk@McPerk.pnl.gov>
+! Last Change: Fri Feb 23 07:55:49 2007 by William A. Perkins <perk@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -653,6 +653,7 @@ CONTAINS
        CALL plot_cgns_file_close(pfileidx)
        CALL plot_cgns_make_name(plot_file_name)
        CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
+       CALL plot_cgns_link_coord(pfileidx, grid_file_name, max_blocks)
     END IF
 
   END SUBROUTINE plot_cgns_write
