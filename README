@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Feb  1 18:53:31 2007 by William A. Perkins <perk@mcperktop.local>
+Last Change: Fri Oct 10 07:22:39 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -223,6 +223,19 @@ On mcperktop laptop:
         --with-cgns-lib=cgns.DARWIN \
         --with-f90=xlf95 --enable-f90-optimize
 
+
+On bearflag:
+
+    setenv ABSOFT /usr/software/absoft10
+    set path = ($path ${ABSOFT}/bin)
+    sh bootstrap.sh
+    configure \
+        --with-f90=f95 \
+        --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.6.1/linux64 \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns-lib=cgns.LINUX64 \
+        --enable-f90-optimize \
+        --enable-f90-debug
     
 
 -------------------------------------------------------------
