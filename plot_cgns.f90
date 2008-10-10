@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Fri Feb 23 07:55:49 2007 by William A. Perkins <perk@mcperk.pnl.gov>
+! Last Change: Thu Oct  9 11:24:14 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -136,7 +136,7 @@ CONTAINS
   
                                 ! create a single base
 
-    CALL cg_base_write_f(fileidx, "MASS2", 2, 2, baseidx, ierr)
+    CALL cg_base_write_f(fileidx, "MASS2", 2, 3, baseidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base in " //&
          &TRIM(filename), fatal=.TRUE.)
 
