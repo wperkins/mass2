@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Fri Feb  2 10:12:18 2007 by William A. Perkins <perk@bearflag.pnl.gov>
+Last Change: Wed Oct  1 12:43:35 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -43,6 +43,8 @@ High Priority:
 
 Low Priority:
 
+    * get parallel version working again; use Global Arrays 
+
     * utility to plot gage.nc directly -- perhaps some combination of
       perl script and gnuplot, maybe even with a GUI like pTk.
 
@@ -59,11 +61,22 @@ Wetting/Drying Issues:
     * Test scalars and wetting and drying, particularly TDG and
       temperature. 
 
+    * check to see how dead zones affect mass source
+
 Code Clean Up:
 
     * put the configuration files in CVS
 
     * configuration should use the CGNS macros from TE2THYS/PT6 
+
+    * get rid of NetCDF; put gage output in text files?
+
+    * check time series input to make sure it covers the entire
+      simulation period
+
+Wish List:
+
+    * Graphical user interface
 
 BUGS
 
@@ -71,4 +84,10 @@ BUGS
       concentration boundary, the source is cut in half.  This cropped
       up when ghost cells were added.  Until this is fixed, do not
       apply scalar bed sources to boundary cells.
+
+    * Large block sizes can cause a silent SEGV on Linux systems
+      because the stack is too small.  For example, the ap, ae, aw,
+      an, as, bp, and source arrays in uvel_solve will not be usable.
+      One has to increase the allowable stack size before running.
+      It would probably be better to allocate them in each call.  
 
