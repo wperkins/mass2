@@ -1,5 +1,8 @@
 2008-11-06  William A. Perkins  <william.perkins@pnl.gov>
 
+	* differencing.f90 (differencing): diff_method strings need to be
+	all the same length for some (stupid) compilers
+
 	* test/benchmark/jda/Makefile: hotstart.bin depends on $(MODEL)
 
 	* mass2_main_025.f90 (initialize): initialize old old variable values too
