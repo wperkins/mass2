@@ -10,7 +10,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October  6, 2008 by William A. Perkins
-! Last Change: Wed Nov  5 10:30:34 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Thu Nov  6 11:57:29 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -32,7 +32,7 @@ MODULE differencing
        &DIFF_MSOU = 4, &
        &DIFF_MUSCL = 5
   CHARACTER*(*), PARAMETER :: diff_method(diff_num_methods) = &
-       &(/ 'UPWIND', 'CDS', 'SOU', 'MSOU', 'MUSCL' /)
+       &(/ 'UPWIND', 'CDS   ', 'SOU   ', 'MSOU  ', 'MUSCL ' /)
 
   INTEGER :: diff_uv
   DOUBLE PRECISION :: blend_uv
