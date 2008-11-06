@@ -16,7 +16,7 @@ T F         ! initial: w.s. elev or depth, profile
 04-01-1996 05:59:59  ! end date & time
 60.0        ! time step (seconds)
 10 10.0     ! hydro iterations, mass source error
-2           ! scalar iterations
+5           ! scalar iterations
 2           ! inner iterations for scalars
 50          ! inner iterations for depth correction
 0.20001 F   ! eddy viscosity
@@ -25,8 +25,8 @@ T F         ! initial: w.s. elev or depth, profile
 0.026 F     ! manning n value if manning=TRUE
 1.49        ! constant in the bed shear stress
 0.40        ! relaxation factor for depth corrections
-0.0         ! not used
-6.0         ! not used
+1.0         ! relaxation factor for u/v momentum
+1.0 1.0     ! spatial, temporal discretization scheme blending factor
 0.2         ! initial uniform value of u velocity
 0.0         ! initial uniform value of v velocity
 0.0         ! initial uniform value of concentration                        

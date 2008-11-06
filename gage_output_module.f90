@@ -922,6 +922,7 @@ CONTAINS
        WRITE(mass_source_iounit,200, advance='no') iblock
     END DO
     WRITE(mass_source_iounit,*)
+    CALL FLUSH(mass_source_iounit)
 
 100 FORMAT('#date',8x,'time',5x)
 200 FORMAT(i5,5x)
@@ -954,6 +955,7 @@ CONTAINS
        END IF
     END DO
     WRITE(mass_source_iounit,*)
+    CALL FLUSH(mass_source_iounit)
 
 3013 FORMAT(a10,2x,a12,1x,I3,1X)
 3012 FORMAT((g12.4,1x))

@@ -37,7 +37,7 @@ if test -z "$CGNSLIBNAME"; then
             CGNSLIBNAME=cgns.mips4_n32
             ;;
         *apple-darwin*)
-            cgns_lib_name="cgns.DARWIN"
+            CGNSLIBNAME="cgns.DARWIN"
             ;;
         *)
             CGNSLIBNAME=cgns

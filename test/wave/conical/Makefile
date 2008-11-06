@@ -10,7 +10,7 @@
 # Last Change: Mon Mar 25 07:18:21 2002 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 cases := a b c

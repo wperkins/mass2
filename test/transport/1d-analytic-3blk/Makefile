@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu May  8 11:10:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Tue Oct 28 10:11:42 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -40,12 +40,12 @@ plot-Cn.1.0.nc: $(MODELFILES) $(MODEL)
 	mv plot.nc plot-Cn.1.0.nc
 
 plot-Cn.6.0.nc: $(MODELFILES) $(MODEL)
-	sed -e '18s/^20.0/120.0/' -e '38s/^18/3 /' -e '39s/^18/3 /' < mass2_v027.base > mass2_v027.cfg
+	sed -e '19s/^20.0/120.0/' -e '40s/^18/3 /' < mass2_v027.base > mass2_v027.cfg
 	$(MODEL)
 	mv plot.nc plot-Cn.6.0.nc
 
 plot-Cn.0.1.nc: $(MODELFILES) $(MODEL)
-	sed -e '18s/^20.0/2.0/' -e '38s/^18/180/' -e '39s/^18/180/' < mass2_v027.base > mass2_v027.cfg
+	sed -e '19s/^20.0/2.0/' -e '40s/^18/180/' < mass2_v027.base > mass2_v027.cfg
 	$(MODEL)
 	mv plot.nc plot-Cn.0.1.nc
 

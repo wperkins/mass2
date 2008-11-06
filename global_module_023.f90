@@ -401,6 +401,7 @@ SUBROUTINE metrics(blk)
 
    ! metric coeff. 2 on the u face of the c.v.
 
+   blk%hu2 = 1.0e-20            ! bogus nonzero value
    DO i=imin, imax-1
       DO j=jmin+1, jmax-1
          blk%hu2(i,j) = & 
@@ -411,6 +412,7 @@ SUBROUTINE metrics(blk)
 
    ! metric coeff 1 on the u face of the c.v.
 
+   blk%hu1 = 1.0e-20            ! bogus nonzero value
    DO i=imin+1, imax-i_index_extra
       DO j=jmin, jmax
          blk%hu1(i,j) = &

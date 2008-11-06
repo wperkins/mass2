@@ -7,17 +7,23 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Feb 13 13:08:17 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Nov  5 12:24:53 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
-EPSFILES = \
-	plot-Cn.1.0.eps \
-	plot-Cn.6.0.eps \
-	plot-Cn.0.1.eps
+DSCHEMES = UPWIND CDS SOU MSOU MUSCL
+TSCHEMES = 0.0 1.0
+COURANTS = 1.0 6.0 0.1
+
+PLOTEPSFILES = \
+    $(foreach t, $(TSCHEMES), \
+	$(foreach d, $(DSCHEMES), \
+	    $(foreach c, $(COURANTS), plot-Cn-$(c)-$(d)-$(t).eps)))
+
+EPSFILES = $(PLOTEPSFILES)
 
 MODELFILES = \
 	bcspecs.dat \
@@ -28,42 +34,33 @@ MODELFILES = \
 	grid2.dat \
 	mass2_v027.base \
 	scalar_bcspecs.dat \
-	scalar_source.dat \
+	scalar_source.base \
 	stage.dat
+
+PLOTFILES = $(PLOTEPSFILES:%.eps=%.nc)
 
 all: $(EPSFILES)
 
-plot-Cn.1.0.nc: $(MODELFILES) $(MODEL)
-	cp mass2_v027.base mass2_v027.cfg
+$(PLOTEPSFILES): plot-Cn-%.eps: plot-Cn-%.nc plot.gp
+	c=`expr "$*" : '\([^-]*\)-[^-]*-[^-]*' `; \
+	sed -e 's/plot\.nc/'"plot-Cn-$*.nc"'/g' \
+	    -e 's/TheTitle/Courant Number = '"$$c"'/' plot.gp | gnuplot > $@
+
+$(PLOTFILES): plot-Cn-%.nc: $(MODELFILES) $(MODEL)
+	c=`expr "$*" : '\([^-]*\)-[^-]*-[^-]*' `; \
+	d=`expr "$*" : '[^-]*-\([^-]*\)-[^-]*' `; \
+	t=`expr "$*" : '[^-]*-[^-]*-\([^-]*\)' `; \
+	dt=`echo '20*'"$$c" | bc `; \
+	os=`echo '18/'"$$c" | bc `; \
+	sed -e "s/@DT@/$$dt/" -e "s/@N@/$$os/g" -e "s/@TS@/$$t/g" mass2_v027.base > mass2_v027.cfg; \
+	sed -e "s/@SCHEME@/$$d/g" scalar_source.base > scalar_source.dat
 	$(MODEL)
-	mv plot.nc plot-Cn.1.0.nc
-
-plot-Cn.6.0.nc: $(MODELFILES) $(MODEL)
-	sed -e '18s/^20.0/120.0/' -e '38s/^18/3 /' -e '39s/^18/3 /' < mass2_v027.base > mass2_v027.cfg
-	$(MODEL)
-	mv plot.nc plot-Cn.6.0.nc
-
-plot-Cn.0.1.nc: $(MODELFILES) $(MODEL)
-	sed -e '18s/^20.0/2.0/' -e '38s/^18/180/' -e '39s/^18/180/' < mass2_v027.base > mass2_v027.cfg
-	$(MODEL)
-	mv plot.nc plot-Cn.0.1.nc
-
-plot-Cn.1.0.eps: plot.gp plot-Cn.1.0.nc
-	sed -e 's/TheTitle/Courant Number = 1.0/' \
-		-e 's/plot\.nc/plot-Cn.1.0.nc/g' plot.gp | gnuplot > $@
-
-plot-Cn.6.0.eps: plot.gp plot-Cn.6.0.nc
-	sed -e 's/plot\.nc/plot-Cn.6.0.nc/g' \
-	-e 's/TheTitle/Courant Number = 6.0/' plot.gp | gnuplot > $@
-
-plot-Cn.0.1.eps: plot.gp plot-Cn.0.1.nc
-	sed -e 's/plot\.nc/plot-Cn.0.1.nc/g' \
-	-e 's/TheTitle/Courant Number = 0.1/' plot.gp | gnuplot > $@
+	mv plot.nc $@
 
 clean:: 
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat mass2_v027.cfg
-	rm -f plot.nc gage.nc plot-Cn.1.0.nc plot-Cn.6.0.nc plot-Cn.0.1.nc
+	rm -f error-warning.out mass_source_monitor.out output.out status.out stuff_balance.out
+	rm -f gridplot1.dat mass2_v027.cfg scalar_source.dat
+	rm -f plot.nc gage.nc $(PLOTFILES)
 	rm -f batch.log
 	rm -f $(EPSFILES)

@@ -66,7 +66,7 @@ INTEGER, SAVE :: time_step_count = 0, print_freq = 1, gage_print_freq = 1, resta
 ! DOUBLE PRECISION, SAVE :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
 
 DOUBLE PRECISION, SAVE :: chezy_con_default ! ,z_step !slope, ds_elev
-DOUBLE PRECISION, SAVE :: relax_dp,mann_con
+DOUBLE PRECISION, SAVE :: relax_dp, relax_uv, blend_time, mann_con
 
 ! INTEGER, SAVE :: jspill_start   ! y node line to start spill at
 ! INTEGER, SAVE :: jspill_end			! y node line to stop spill at
@@ -164,7 +164,7 @@ DOUBLE PRECISION, SAVE :: dry_rewet_depth = 0.12
 ! and ghost cells
 ! ----------------------------------------------------------------
 
-INTEGER, PARAMETER :: nghost = 1
+INTEGER, PARAMETER :: nghost = 2
 INTEGER, PARAMETER :: i_ghost = nghost, j_ghost = nghost
 ! INTEGER, PARAMETER :: i_index_min = 1, i_index_extra = 1
 INTEGER, PARAMETER :: i_index_min = 1-i_ghost, i_index_extra = 1+i_ghost

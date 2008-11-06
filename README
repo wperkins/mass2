@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Fri Oct 10 07:22:39 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Thu Nov  6 11:23:48 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -214,14 +214,24 @@ configure \
     --enable-f90-optimize \
     --enable-f90-debug
 
-On mcperktop laptop:
+setenv FCFLAGS "-ffpe-trap=invalid,zero,overflow"
+configure \
+    --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.5.1/macosx \
+    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-cgns-lib=cgns.DARWIN \
+    --with-f90=gfortran \
+    --enable-f90-debug \
+    --enable-f90-optimize
 
-    setenv FCFLAGS ""
+On mac laptop:
+
+    setenv FCFLAGS "-fno-second-underscore"
     configure \
-        --with-netcdf=/Users/perk/stuff/netcdf-3.5.1 \
-        --with-cgns=/Users/perk/gcc4/src/cgnslib_2.4 \
-        --with-cgns-lib=cgns.DARWIN \
-        --with-f90=xlf95 --enable-f90-optimize
+        --with-netcdf=/Users/d3g096/stuff \
+        --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
+        --with-f90=g95 \
+        --enable-f90-debug \
+        --enable-f90-optimize
 
 
 On bearflag:
@@ -237,6 +247,29 @@ On bearflag:
         --enable-f90-optimize \
         --enable-f90-debug
     
+
+    sh bootstrap.sh
+    set path = ( /usr/software/intel101/x86_64/bin $path)
+    setenv FCFLAGS ""
+    configure \
+        --with-f90=ifort \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns-lib=cgns.LINUX64 \
+        --enable-f90-debug \
+        --enable-f90-optimize
+
+    # Using the GNU compiler (does not seem to work with CGNS output)
+    sh bootstrap.sh
+    setenv FCFLAGS "-ffpe-trap=invalid,zero,overflow"
+    configure \
+        --with-f90=gfortran \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns-lib=cgns.LINUX64 \
+        --enable-f90-debug \
+        --enable-f90-optimize
+
 
 -------------------------------------------------------------
 distributing MASS2

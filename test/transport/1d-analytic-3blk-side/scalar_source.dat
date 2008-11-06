@@ -1,1 +1,2 @@
-1 GEN      stuff     "Conservative Transportable Stuff"     "bulldogs/liter" /
+1 GEN      stuff     "Conservative Transportable Stuff"     "bulldogs/liter" 
+    SCHEME CDS BLEND 1.0 RELAX 0.9 /

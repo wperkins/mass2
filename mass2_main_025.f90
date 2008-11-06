@@ -51,6 +51,9 @@ IMPLICIT NONE
 
 CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
+
+CHARACTER (LEN=80), PARAMETER :: config_file_name = 'mass2_v027.cfg'
+
 !---------------------------------------------------------------------------------
 ! derived type (structures) declarations
 
@@ -145,9 +148,11 @@ SUBROUTINE initialize()
      DO iblock=1,max_blocks
         block(iblock)%uvel = uvel_initial
         block(iblock)%uold = block(iblock)%uvel
+        block(iblock)%uoldold = block(iblock)%uvel
         block(iblock)%ustar = block(iblock)%uvel
         block(iblock)%vvel = vvel_initial
         block(iblock)%vold = block(iblock)%vvel
+        block(iblock)%voldold = block(iblock)%vvel
         block(iblock)%vstar = block(iblock)%vvel
         
         IF (.NOT. read_initial_profile) THEN
@@ -162,6 +167,7 @@ SUBROUTINE initialize()
               END WHERE
            END IF
            block(iblock)%depthold = block(iblock)%depth
+           block(iblock)%deptholdold = block(iblock)%depth
            block(iblock)%dstar = block(iblock)%depth
         END IF
      END DO
@@ -170,6 +176,7 @@ SUBROUTINE initialize()
            DO iblock =1, max_blocks
               species(i)%scalar(iblock)%conc = conc_initial
               species(i)%scalar(iblock)%concold = conc_initial
+              species(i)%scalar(iblock)%concoldold = conc_initial
            END DO
         END DO
      END IF
@@ -572,95 +579,208 @@ SUBROUTINE gridplot(fname, doghost)
 
 END SUBROUTINE gridplot
 
+! ----------------------------------------------------------------
+! SUBROUTINE config_error_msg
+! ----------------------------------------------------------------
+SUBROUTINE config_error_msg(line, msg, fatal)
 
+  IMPLICIT NONE
+  
+  INTEGER, INTENT(IN) :: line
+  CHARACTER (LEN=*), INTENT(IN) :: msg
+  LOGICAL, INTENT(IN), OPTIONAL :: fatal
+  CHARACTER (LEN=1024) :: lbuffer, buffer
+
+  LOGICAL :: die
+  
+  die = .FALSE.
+  IF (PRESENT(fatal)) die = fatal
+
+  WRITE (lbuffer, *) line
+  WRITE (buffer, *) TRIM(config_file_name), ", line: ", &
+       &TRIM(ADJUSTL(lbuffer)), ': ', TRIM(msg)
+  CALL error_message(buffer, die)
+
+END SUBROUTINE config_error_msg
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE read_config
 ! ----------------------------------------------------------------
 SUBROUTINE read_config()
 
+  USE differencing
+
   IMPLICIT NONE
 
-  INTEGER :: iblock, i
+  INTEGER :: iblock, i, line
   INTEGER, PARAMETER :: cfg_iounit=10
+  CHARACTER (LEN=1024) :: msg
+  CHARACTER (LEN=80) :: diffbuf
 
-  CALL open_existing('mass2_v027.cfg', cfg_iounit)
+  CALL open_existing(config_file_name, cfg_iounit)
+
+  line = 1
 
   !-------------------------------------------------------------------------------------------------------
-  READ(cfg_iounit,'(A80)')config_file_version
-  READ(cfg_iounit,'(A80)') !sim_title
+  READ(cfg_iounit,'(A80)', ERR=1000)config_file_version
+  line = line + 1
+  READ(cfg_iounit,'(A80)', ERR=1000) !sim_title
+  line = line + 1
 
   !-------------------------------------------------------------------------------------------------------
   ! allocation of dynamic arrays
-  READ(cfg_iounit,*)max_blocks
-  READ(cfg_iounit,*)max_species
+  READ(cfg_iounit,*, ERR=1000)max_blocks
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)max_species
+  line = line + 1
 
   ALLOCATE(grid_file_name(max_blocks))
 
   DO iblock=1,max_blocks
-     READ(cfg_iounit,*)grid_file_name(iblock)
+     READ(cfg_iounit,*, ERR=1000)grid_file_name(iblock)
+     line = line + 1
   END DO
 
 
   !---------------------------------------------------------------------------------------------------------
   ! finish reading cfg file
-  READ(cfg_iounit,*)do_flow				! on/off switch for hydrodynamics
-  READ(cfg_iounit,*)do_transport	! on/off switch for transport calculations
-  READ(cfg_iounit,*)do_surface_heatx, do_surface_gasx, weather_filename !*** on/off surface exhange, weather data file
-  READ(cfg_iounit,*)debug					! extra debug printing
+  READ(cfg_iounit,*, ERR=1000)do_flow				! on/off switch for hydrodynamics
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)do_transport	! on/off switch for transport calculations
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)do_surface_heatx, do_surface_gasx, weather_filename !*** on/off surface exhange, weather data file
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)debug					! extra debug printing
+  line = line + 1
   
-  READ(cfg_iounit,*)manning							! switch between manning or chezy bottom friction equation
-  READ(cfg_iounit,*)write_restart_file, restart_print_freq	! write out a binary restart file "hotstart_date_time.bin"
-  READ(cfg_iounit,*)read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
-  READ(cfg_iounit,*)do_gage_print				! do gage print
-  READ(cfg_iounit,*)given_initial_wsel, read_initial_profile	! if TRUE then wsel_or_depth_initial is the initial water elv.
+  READ(cfg_iounit,*, ERR=1000)manning							! switch between manning or chezy bottom friction equation
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)write_restart_file, restart_print_freq	! write out a binary restart file "hotstart_date_time.bin"
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)read_hotstart_file	! read in a binary hotstart file "hotstart.bin"
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)do_gage_print				! do gage print
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)given_initial_wsel, read_initial_profile	! if TRUE then wsel_or_depth_initial is the initial water elv.
+  line = line + 1
 																						! IF FALSE then wsel_or_depth_initial is the initial depth
 
 
 
-  READ(cfg_iounit,*)start_time%date_string, start_time%time_string	! model start date & time 
-  READ(cfg_iounit,*)end_time%date_string, end_time%time_string			! model end date & time
-  READ(cfg_iounit,*)delta_t 		! time step (seconds)
+  READ(cfg_iounit,*, ERR=1000)start_time%date_string, start_time%time_string	! model start date & time 
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)end_time%date_string, end_time%time_string			! model end date & time
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)delta_t 		! time step (seconds)
+  line = line + 1
 
 
-  READ(cfg_iounit,*)number_hydro_iterations, max_mass_source_sum	!*** number of internal iterations at a fixed time level
+  READ(cfg_iounit,*, ERR=1000)number_hydro_iterations, max_mass_source_sum	!*** number of internal iterations at a fixed time level
+  line = line + 1
 																																! max summation of mass source at any iteration
-  READ(cfg_iounit,*)number_scalar_iterations !*** number of internal iterations for scalar solutions	
-  READ(cfg_iounit,*)scalar_sweep	! internal iterations
-  READ(cfg_iounit,*)depth_sweep		! depth correction internal iterations
-  READ(cfg_iounit,*)eddy_default, do_spatial_eddy  ! turb eddy viscosity
+  READ(cfg_iounit,*, ERR=1000)number_scalar_iterations !*** number of internal iterations for scalar solutions	
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)scalar_sweep	! internal iterations
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)depth_sweep		! depth correction internal iterations
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)eddy_default, do_spatial_eddy  ! turb eddy viscosity
+  line = line + 1
   
   ! scalar diffusion coeff in xsi (ft^2/sec) ! scalar diffusion coeff in eta (ft^2/sec)
-  READ(cfg_iounit,*)kx_diff_default,do_spatial_kx
-  READ(cfg_iounit,*)ky_diff_default,do_spatial_ky 
+  READ(cfg_iounit,*, ERR=1000)kx_diff_default,do_spatial_kx
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)ky_diff_default,do_spatial_ky 
+  line = line + 1
 									
 									! chezy constant if chezy-type relation is used (manning=FALSE)
-  READ(cfg_iounit,*)chezy_con_default, do_spatial_chezy		! manning n value if manning=TRUE
-  READ(cfg_iounit,*)mann_con		! constant in the bed shear stress  =1.0 if metric units
-  READ(cfg_iounit,*)relax_dp		! relaxation factor for depth corrections
-  READ(cfg_iounit,*)inlet_flow	! uniform inlet flow rate in non spill/non gen areas
-  READ(cfg_iounit,*) ! ds_elev			! downstream water elevation bc (feet) (no longer used)
+  READ(cfg_iounit,*, ERR=1000)chezy_con_default, do_spatial_chezy		! manning n value if manning=TRUE
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)mann_con		! constant in the bed shear stress  =1.0 if metric units
+  line = line + 1
+  relax_uv = 1.0
+  blend_uv = 1.0
+  READ(cfg_iounit,*, ERR=1000)relax_dp	! relaxation factor for depth corrections
+  line = line + 1
 
-  READ(cfg_iounit,*)uvel_initial	! initial uniform value of u velocity
-  READ(cfg_iounit,*)vvel_initial	! initial uniform value of v velocity
-  READ(cfg_iounit,*)conc_initial	! initial uniform value of concentration
-  READ(cfg_iounit,*)wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
+  IF (relax_dp .LE. 0.0 .OR. relax_dp .GT. 1.0) THEN
+     WRITE (msg, *) "depth correction underrelaxation out of range (", relax_dp, ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END IF
 
-  READ(cfg_iounit,*)uvel_wind		! initial uniform value of u wind velocity
-  READ(cfg_iounit,*)vvel_wind		! initial uniform value of v wind velocity
+  READ(cfg_iounit,*, ERR=1000)relax_uv    ! relaxation factor for u/v momentum
+  line = line + 1
+
+  IF (relax_uv .LE. 0.0 .OR. relax_uv .GT. 1.0) THEN
+     WRITE (msg, *) "momentum underrelaxation out of range (", relax_uv, ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END IF
+
+
+  ! blending for 2nd-order spatial differencing scheme (e.g. central difference)
+  ! blending for 3-time level temporal differencing scheme
+
+  READ(cfg_iounit,*, ERR=1000) diffbuf, blend_uv, blend_time
+  line = line + 1
+
+  diff_uv = differ_method_from_string(diffbuf)
+
+  SELECT CASE (diff_uv) 
+  CASE (DIFF_UPWIND)
+     blend_uv = 0.0             ! ignore what ever was read
+  CASE (0)
+     WRITE (msg, *) "unknown differencing method (", TRIM(diffbuf) , ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END SELECT
+
+  IF (blend_uv .LT. 0.0 .OR. blend_uv .GT. 1.0) THEN
+     WRITE (msg, *) "momentum 2nd order blending factor out of range (", blend_uv, ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END IF
+  
+  IF (blend_time .LT. 0.0 .OR. blend_time .GT. 1.0) THEN
+     WRITE (msg, *) "temporal 2nd order blending factor out of range (", blend_time, ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END IF
+  
+
+  READ(cfg_iounit,*, ERR=1000)uvel_initial	! initial uniform value of u velocity
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)vvel_initial	! initial uniform value of v velocity
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)conc_initial	! initial uniform value of concentration
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)wsel_or_depth_initial	! initial uniform value of depth OR water surface elv.
+  line = line + 1
+
+  READ(cfg_iounit,*, ERR=1000)uvel_wind		! initial uniform value of u wind velocity
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000)vvel_wind		! initial uniform value of v wind velocity
+  line = line + 1
 
                                 ! wetting and drying parameters
 
-  READ(cfg_iounit,*)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
+  READ(cfg_iounit,*, ERR=1000)do_wetdry, dry_depth, dry_rewet_depth, dry_zero_depth
+  line = line + 1
 
                                 ! initial bed information
 
-  READ(cfg_iounit,*)bed_default_porosity, bed_initial_depth, read_bed_init
+  READ(cfg_iounit,*, ERR=1000)bed_default_porosity, bed_initial_depth, read_bed_init
+  line = line + 1
 
-  READ(cfg_iounit,*) print_freq, do_accumulate		! printout frequency every print_freq time steps
-  READ(cfg_iounit,*) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
-  READ(cfg_iounit,*) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
-  READ(cfg_iounit,*) gage_print_freq
+  READ(cfg_iounit,*, ERR=1000) print_freq, do_accumulate		! printout frequency every print_freq time steps
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000) plot_do_netcdf, do_flow_diag, do_flow_output	! NetCDF output flags
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000) plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime ! CGNS output flags
+  line = line + 1
+  READ(cfg_iounit,*, ERR=1000) gage_print_freq
+  line = line + 1
 
   CLOSE(cfg_iounit)
 
@@ -676,6 +796,13 @@ SUBROUTINE read_config()
   i = INT(LOG10(REAL(i)) + 1)
   IF (i .GT. 999) CALL date_time_flags(ydigits = i)
 
+  RETURN
+
+1000 CONTINUE
+
+  WRITE (msg, *) 'read error'
+  CALL config_error_msg(line, msg, .TRUE.)
+  RETURN
 
 END SUBROUTINE read_config
 
@@ -742,7 +869,7 @@ SUBROUTINE buildghost(iblock)
   IMPLICIT NONE
   
   INTEGER, INTENT(IN) :: iblock
-  INTEGER :: k, cells, con_cells, con_block, fcells
+  INTEGER :: k, cells, con_cells, con_block, ifcells, jfcells
   INTEGER :: i, ibeg, iend, ixtra, coni, conibeg, coniend, icoff
   INTEGER :: j, jbeg, jend, jxtra, conj, conjbeg, conjend, jcoff
   INTEGER :: num_bc
@@ -764,10 +891,10 @@ SUBROUTINE buildghost(iblock)
 
             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
             CASE("US")
-               ibeg = 0
-               iend = ibeg
-               conibeg = block(con_block)%xmax - 1
-               coniend = conibeg
+               ibeg = 0 - (nghost - 1)
+               iend = ibeg + (nghost - 1)
+               coniend = block(con_block)%xmax - 1
+               conibeg = coniend - (nghost - 1)
                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
@@ -778,9 +905,9 @@ SUBROUTINE buildghost(iblock)
                jcoff = 1
             CASE ("DS")
                ibeg = block(iblock)%xmax + 1
-               iend = ibeg
+               iend = ibeg + (nghost - 1)
                conibeg = 2
-               coniend = conibeg
+               coniend = conibeg + (nghost - 1)
                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
@@ -790,10 +917,10 @@ SUBROUTINE buildghost(iblock)
                icoff = 0
                jcoff = 1
             CASE ("RB") 
-               jbeg = 0
-               jend = jbeg
-               conjbeg = block(con_block)%ymax - 1
-               conjend = conjbeg
+               jbeg = 0 - (nghost - 1)
+               jend = jbeg + (nghost - 1)
+               conjend = block(con_block)%ymax - 1
+               conjbeg = conjend - (nghost - 1)
                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
@@ -804,9 +931,9 @@ SUBROUTINE buildghost(iblock)
                jcoff = 0
             CASE ("LB") 
                jbeg = block(iblock)%ymax + 1
-               jend = jbeg
+               jend = jbeg + (nghost - 1)
                conjbeg = 2
-               conjend = conjbeg
+               conjend = conjbeg + (nghost - 1)
                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)
                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k) + 1
                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)
@@ -815,6 +942,25 @@ SUBROUTINE buildghost(iblock)
                con_cells = coniend - conibeg
                icoff = 1
                jcoff = 0
+            END SELECT
+
+                                ! fine cells per coarse cell
+
+            SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+            CASE ("US", "DS")
+               ifcells = 1
+               IF (cells .GE. con_cells) THEN
+                  jfcells = cells/con_cells
+               ELSE 
+                  jfcells = con_cells/cells
+               END IF
+            CASE ("LB", "RB")
+               IF (cells .GE. con_cells) THEN
+                  ifcells = cells/con_cells
+               ELSE 
+                  ifcells = con_cells/cells
+               END IF
+               jfcells = 1
             END SELECT
 
             IF (cells .EQ. con_cells) THEN
@@ -843,24 +989,22 @@ SUBROUTINE buildghost(iblock)
                ! if this is the fine block, we need to interpolate
                ! ghost cell corners from the coarse cell corners
 
-                                ! fine cells per coarse cell
-               fcells = cells/con_cells
-
                DO i = ibeg, iend
-                  coni = conibeg + (i - ibeg)/fcells
+                  coni = conibeg + (i - ibeg)/ifcells
                   DO j = jbeg, jend
-                     conj = conjbeg + (j - jbeg)/fcells
+                     conj = conjbeg + (j - jbeg)/jfcells
 
-                     IF (ibeg .EQ. iend) THEN
-                        fract = DBLE(MOD(j - jbeg, fcells))
+                     IF (ifcells .EQ. 1) THEN
+                        fract = DBLE(MOD(j - jbeg, jfcells))
+                        fract = fract/DBLE(jfcells)
                         icoff = 0
                         jcoff = 1
                      ELSE 
-                        fract = DBLE(MOD(i - ibeg, fcells))
+                        fract = DBLE(MOD(i - ibeg, ifcells))
+                        fract = fract/DBLE(ifcells)
                         icoff = 1
                         jcoff = 0
                      END IF
-                     fract = fract/DBLE(fcells)
 
                      CALL interpolate_point(fract,&
                           &block(con_block)%x_grid(coni,conj),&
@@ -881,13 +1025,11 @@ SUBROUTINE buildghost(iblock)
                ! if this is the coarse block, we copy selected fine
                ! block corners for the ghost cells
 
-               fcells = con_cells/cells ! fine cells per coarse cell
-
                DO i = ibeg, iend
-                  coni = conibeg + (i - ibeg)*fcells
+                  coni = conibeg + (i - ibeg)*ifcells
                   DO j = jbeg, jend
 
-                     conj = conjbeg + (j - jbeg)*fcells
+                     conj = conjbeg + (j - jbeg)*jfcells
                      block(iblock)%x_grid(i,j) = block(con_block)%x_grid(coni,conj)
                      block(iblock)%y_grid(i,j) = block(con_block)%y_grid(coni,conj)
                      block(iblock)%zbot_grid(i,j) = block(con_block)%zbot_grid(coni,conj)
@@ -898,6 +1040,8 @@ SUBROUTINE buildghost(iblock)
          END DO
       END IF
    END DO
+
+   CALL extrapghostcorners(block(iblock))
 
 END SUBROUTINE buildghost
 
@@ -928,6 +1072,9 @@ SUBROUTINE extrapghost(blk)
              &(blk%zbot_grid(i-2,j) - blk%zbot_grid(i-1,j))
         ! blk%zbot_grid(i,j) = blk%zbot_grid(i-1,j) 
      END DO
+  END DO
+
+  DO ig = 1, nghost
      j = 1 - ig
      DO i = 1, blk%xmax
         blk%x_grid(i,j) = blk%x_grid(i,j+1) - (blk%x_grid(i,j+2) - blk%x_grid(i,j+1))
@@ -942,12 +1089,71 @@ SUBROUTINE extrapghost(blk)
              &(blk%zbot_grid(i,j-2) - blk%zbot_grid(i,j-1))
      END DO
 
-     ! The corners are handled in interp_grid so block connections can
-     ! be considered
-     
   END DO
 
+  CALL extrapghostcorners(blk)
+
 END SUBROUTINE extrapghost
+
+! ----------------------------------------------------------------
+! SUBROUTINE extrapghostcorners
+! ----------------------------------------------------------------
+SUBROUTINE extrapghostcorners(blk)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(INOUT) :: blk
+  INTEGER :: ig, jg
+
+  DO ig = 1, nghost
+     DO jg = 1, nghost
+        CALL extrap_1_corner(blk, 1 - ig, 1 - jg, 1, 1)
+        CALL extrap_1_corner(blk, 1 - ig, blk%ymax + jg, 1, -1)
+        CALL extrap_1_corner(blk, blk%xmax + ig, 1 - jg, -1, 1)
+        CALL extrap_1_corner(blk, blk%xmax + ig, blk%ymax + jg, -1, -1)
+     END DO
+  END DO
+END SUBROUTINE extrapghostcorners
+
+! ----------------------------------------------------------------
+! SUBROUTINE extrap_1_corner
+! ----------------------------------------------------------------
+SUBROUTINE extrap_1_corner(blk, i, j, ioff, joff)
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(INOUT) :: blk
+  INTEGER, INTENT(IN) :: i, j, ioff, joff
+  DOUBLE PRECISION :: mi, mj, bi, bj
+  INTEGER :: i1, i2, j1, j2
+
+  i1 = i + ioff
+  i2 = i + 2*ioff
+  j1 = j + joff
+  j2 = j + 2*joff
+
+  IF (blk%x_grid(i, j2) .NE. blk%x_grid(i, j1)) THEN
+     mi = (blk%y_grid(i, j2) - blk%y_grid(i, j1))/(blk%x_grid(i, j2) - blk%x_grid(i, j1))
+     bi = blk%y_grid(i, j2) - mi*blk%x_grid(i, j2)
+  END IF
+
+  IF (blk%x_grid(i2, j) .NE. blk%x_grid(i1, j)) THEN
+     mj = (blk%y_grid(i2, j) - blk%y_grid(i1, j))/(blk%x_grid(i2, j) - blk%x_grid(i1, j))
+     bj = blk%y_grid(i2, j) - mj*blk%x_grid(i2, j)
+  END IF
+     
+  IF (blk%x_grid(i, j2) .EQ. blk%x_grid(i, j1)) THEN
+     blk%x_grid(i, j) = blk%x_grid(i, j2)
+     blk%y_grid(i, j) = mj*blk%x_grid(i, j) + bj
+  ELSE IF (blk%x_grid(i2, j) .EQ. blk%x_grid(i1, j)) THEN
+     blk%x_grid(i, j) = blk%x_grid(i2, j)
+     blk%y_grid(i, j) = mi*blk%x_grid(i, j) + bi
+  ELSE 
+     blk%y_grid(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
+     blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
+  END IF
+
+END SUBROUTINE extrap_1_corner
 
 
 ! ----------------------------------------------------------------
@@ -955,27 +1161,44 @@ END SUBROUTINE extrapghost
 ! ----------------------------------------------------------------
 SUBROUTINE fillghost(iblock)
 
+  USE misc_vars, ONLY : nghost
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN) :: iblock
   INTEGER :: i, ibeg, iend, coni, conibeg, coniend
   INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
   INTEGER :: k, con_block
-  INTEGER :: num_bc, cells, concells, fcells
+  INTEGER :: ig, jg
+  INTEGER :: num_bc, cells, concells, ifcells, jfcells
 
+                                ! cell-centered quantities
                                 ! for extrapolated cells, use
                                 ! parameters from the neighboring real
                                 ! cell (metrics are computed elsewhere)
 
-  block(iblock)%eddy(1,:) = block(iblock)%eddy(2,:)
-  block(iblock)%kx_diff(1,:) = block(iblock)%kx_diff(2,:)
-  block(iblock)%ky_diff(1,:) = block(iblock)%ky_diff(2,:)
-  block(iblock)%chezy(1,:) = block(iblock)%chezy(2,:)
-  block(iblock)%eddy(block(iblock)%xmax+1,:) = block(iblock)%eddy(block(iblock)%xmax,:)
-  block(iblock)%kx_diff(block(iblock)%xmax+1,:) = block(iblock)%kx_diff(block(iblock)%xmax,:)
-  block(iblock)%ky_diff(block(iblock)%xmax+1,:) = block(iblock)%ky_diff(block(iblock)%xmax,:)
-  block(iblock)%chezy(block(iblock)%xmax+1,:) = block(iblock)%chezy(block(iblock)%xmax,:)
-
+  
+  DO ig = 1, nghost
+     block(iblock)%eddy(2-ig,:) = block(iblock)%eddy(2,:)
+     block(iblock)%kx_diff(2-ig,:) = block(iblock)%kx_diff(2,:)
+     block(iblock)%ky_diff(2-ig,:) = block(iblock)%ky_diff(2,:)
+     block(iblock)%chezy(2-ig,:) = block(iblock)%chezy(2,:)
+     block(iblock)%eddy(block(iblock)%xmax+ig,:) = block(iblock)%eddy(block(iblock)%xmax,:)
+     block(iblock)%kx_diff(block(iblock)%xmax+ig,:) = block(iblock)%kx_diff(block(iblock)%xmax,:)
+     block(iblock)%ky_diff(block(iblock)%xmax+ig,:) = block(iblock)%ky_diff(block(iblock)%xmax,:)
+     block(iblock)%chezy(block(iblock)%xmax+ig,:) = block(iblock)%chezy(block(iblock)%xmax,:)
+  END DO
+  DO jg = 1, nghost 
+     block(iblock)%eddy(:, 2-jg) = block(iblock)%eddy(:,2)
+     block(iblock)%kx_diff(:, 2-jg) = block(iblock)%kx_diff(:,2)
+     block(iblock)%ky_diff(:, 2-jg) = block(iblock)%ky_diff(:,2)
+     block(iblock)%chezy(:, 2-jg) = block(iblock)%chezy(:,2)
+     block(iblock)%eddy(:,block(iblock)%ymax+ig) = block(iblock)%eddy(:,block(iblock)%ymax)
+     block(iblock)%kx_diff(:,block(iblock)%ymax+ig) = block(iblock)%kx_diff(:,block(iblock)%ymax)
+     block(iblock)%ky_diff(:,block(iblock)%ymax+ig) = block(iblock)%ky_diff(:,block(iblock)%ymax)
+     block(iblock)%chezy(:,block(iblock)%ymax+ig) = block(iblock)%chezy(:,block(iblock)%ymax)
+   END DO
+    
                                 ! copy ghost cell metrics and
                                 ! parameters from connecting block
 
@@ -989,10 +1212,10 @@ SUBROUTINE fillghost(iblock)
          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
             CASE("US")
-               ibeg = 1
-               iend = ibeg
-               conibeg = block(con_block)%xmax
-               coniend = conibeg
+               ibeg = 2 - nghost
+               iend = ibeg + (nghost - 1)
+               coniend = block(con_block)%xmax
+               conibeg = coniend - (nghost - 1)
                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
                cells = jend - jbeg + 1
@@ -1000,10 +1223,10 @@ SUBROUTINE fillghost(iblock)
                conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
                concells = conjend - conjbeg + 1
             CASE ("DS")
-               ibeg = block(iblock)%xmax + 1
-               iend = ibeg
-               conibeg = block(con_block)%xmax
-               coniend = conibeg
+               iend = block(iblock)%xmax + nghost
+               ibeg = iend - (nghost - 1)
+               conibeg = 2
+               coniend = conibeg + (nghost - 1)
                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
                cells = jend - jbeg + 1
@@ -1017,10 +1240,10 @@ SUBROUTINE fillghost(iblock)
                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
                concells = coniend - conibeg + 1
-               jbeg = 1
-               jend = jbeg
-               conjbeg = block(con_block)%ymax
-               conjend = conjbeg
+               jbeg = 2 - nghost
+               jend = jbeg + (nghost - 1)
+               conjend = block(con_block)%ymax + nghost
+               conjbeg = conjend - (nghost - 1)
             CASE ("LB")
                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
@@ -1028,12 +1251,32 @@ SUBROUTINE fillghost(iblock)
                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
                concells = coniend - conibeg + 1
-               jbeg = block(iblock)%ymax + 1
-               jend = jbeg
-               conjbeg = 2
-               conjend = conjbeg
+               jbeg = block(iblock)%ymax + nghost
+               jend = jbeg + (nghost - 1)
+               conjbeg = 2 
+               conjend = conjbeg + (nghost - 1)
+            CASE DEFAULT
+               ! FIXME: should never happen  need to crash here
             END SELECT
-         
+
+            SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+            CASE ("US", "DS")
+               ifcells = 1
+               IF (cells .GE. concells) THEN
+                  jfcells = cells/concells
+               ELSE 
+                  jfcells = concells/cells
+               END IF
+            CASE ("LB", "RB")
+               IF (cells .GE. concells) THEN
+                  ifcells = cells/concells
+               ELSE 
+                  ifcells = concells/cells
+               END IF
+               jfcells = 1
+            END SELECT
+
+
             IF (cells .EQ. concells) THEN
 
                coni = conibeg
@@ -1062,14 +1305,12 @@ SUBROUTINE fillghost(iblock)
                   coni = coni + 1
                END DO
 
-            ELSE IF (cells .GT. concells) THEN
-
-               fcells = cells/concells
+            ELSE 
 
                DO i = ibeg, iend
-                  coni = conibeg + (i - ibeg)/fcells
+                  coni = conibeg + (i - ibeg)/ifcells
                   DO j = jbeg, jend
-                     conj = conjbeg + (j - jbeg)/fcells
+                     conj = conjbeg + (j - jbeg)/jfcells
                      ! do not copy metrics, they are calculated
                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
@@ -1078,18 +1319,6 @@ SUBROUTINE fillghost(iblock)
                   END DO
                END DO
 
-            ELSE IF (cells .LT. concells) THEN
-               fcells = concells/cells
-               DO i = ibeg, iend
-                  coni = conibeg + (i - ibeg)*fcells
-                  DO j = jbeg, jend
-                     conj = conjbeg + (j - jbeg)*fcells
-                     block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-                     block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-                     block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-                     block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
-                  END DO
-               END DO
             END IF
          END DO
       END SELECT
@@ -1110,36 +1339,6 @@ SUBROUTINE interp_grid(blk)
 
   TYPE(block_struct), INTENT(INOUT) :: blk
   INTEGER :: i, j, ig, ivec(4),jvec(4),ivec2(4),jvec2(4)
-
-  ! This places the points at the (ghost) corners of the grids.  If
-  ! you don't do this it looks funny in gridplot1.dat.
-
-  DO ig = 1, nghost
-     i = 1 - ig
-     j = 1 - ig
-     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j+1) + blk%x_grid(i+1,j))
-     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j+1) + blk%y_grid(i+1,j))
-     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j+1) + blk%zbot_grid(i+1,j))
-  
-     i = 1 - ig
-     j = blk%ymax + ig
-     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j-1) + blk%x_grid(i+1,j))
-     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j-1) + blk%y_grid(i+1,j))
-     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i+1,j))
-     
-     i = blk%xmax + ig
-     j = 1 - ig
-     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j+1) + blk%x_grid(i-1,j))
-     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j+1) + blk%y_grid(i-1,j))
-     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j+1) + blk%zbot_grid(i-1,j))
-     
-     i = blk%xmax + ig
-     j = blk%ymax + ig
-     blk%x_grid(i,j) = 0.5*(blk%x_grid(i,j-1) + blk%x_grid(i-1,j))
-     blk%y_grid(i,j) = 0.5*(blk%y_grid(i,j-1) + blk%y_grid(i-1,j))
-     blk%zbot_grid(i,j) = 0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i-1,j))
-  END DO
-
 
   DO i = i_index_min + 1, blk%xmax + i_index_extra - 1
      DO j = j_index_min + 1, blk%ymax + j_index_extra - 1
@@ -1206,7 +1405,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   TYPE (block_struct), INTENT(IN) :: cblk
   TYPE (bc_spec_struct), INTENT(IN) :: bc
 
-  INTEGER :: n, cells, concells, fcells
+  INTEGER :: n, cells, concells, ifcells, jfcells
   INTEGER :: i, j, iu, ju
   INTEGER :: conjbeg, conjend, conj, jbeg, jend
   INTEGER :: conibeg, coniend, coni, ibeg, iend
@@ -1218,56 +1417,71 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   
      SELECT CASE (bc%bc_loc)
      CASE ("US")
-        ibeg = 1
-        iend = 1
-        conibeg = cblk%xmax
+        ibeg = 2 - nghost
+        iend = ibeg + (nghost - 1)
         coniend = cblk%xmax
+        conibeg = coniend - (nghost - 1)
         jbeg = bc%start_cell(n)+1
         jend = bc%end_cell(n)+1
         conjbeg = bc%con_start_cell(n)+1
         conjend = bc%con_end_cell(n)+1
         cells = jend - jbeg + 1
         concells = conjend - conjbeg + 1
-        side = .FALSE.
      CASE ("DS")
-        ibeg = blk%xmax + 1
-        iend = blk%xmax + 1
+        iend = blk%xmax + nghost
+        ibeg = iend - (nghost - 1)
         conibeg = 2
-        coniend = 2
+        coniend = conibeg + (nghost - 1)
         jbeg = bc%start_cell(n)+1
         jend = bc%end_cell(n)+1
         conjbeg = bc%con_start_cell(n)+1
         conjend = bc%con_end_cell(n)+1
         cells = jend - jbeg + 1
         concells = conjend - conjbeg + 1
-        side = .FALSE.
      CASE ("RB")
         ibeg = bc%start_cell(n)+1
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = 1
-        jend = 1
-        conjbeg = cblk%ymax
+        jbeg = 2 - nghost
+        jend = jbeg + (nghost - 1)
         conjend = cblk%ymax
+        conjbeg = conjend - (nghost - 1)
         cells = iend - ibeg + 1
         concells = coniend - conibeg + 1
-        side = .TRUE.
      CASE ("LB")
         ibeg = bc%start_cell(n)+1
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = blk%ymax+1
-        jend = blk%ymax+1
+        jend = blk%ymax + nghost
+        jbeg = jend - (nghost - 1)
         conjbeg = 2
-        conjend = 2
+        conjend = conjbeg + (nghost - 1)
         cells = iend - ibeg + 1
         concells = coniend - conibeg + 1
-        side = .TRUE.
      CASE DEFAULT
         WRITE (msg, *) 'fillghost_hydro: invalid block side "', TRIM(bc%bc_loc), '"'
         CALL error_message(msg)
+     END SELECT
+
+     SELECT CASE (bc%bc_loc)
+     CASE ("US", "DS")
+        ifcells = 1
+        IF (cells .GE. concells) THEN
+           jfcells = cells/concells
+        ELSE 
+           jfcells = concells/cells
+        END IF
+        side = .FALSE.
+     CASE ("LB", "RB")
+        IF (cells .GE. concells) THEN
+           ifcells = cells/concells
+        ELSE 
+           ifcells = concells/cells
+        END IF
+        jfcells = 1
+        side = .TRUE.
      END SELECT
 
      IF (cells .EQ. concells) THEN
@@ -1295,12 +1509,12 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         ! need to interpolate some of the variables from the coarse
         ! block
 
-        fcells = cells/concells
+                                ! copy the first cross vel value
 
-        IF (ibeg .EQ. iend) THEN
-           blk%vvel(ibeg,jbeg-1) = cblk%vvel(conibeg,conjbeg-1)
+        IF (.NOT. side) THEN
+           blk%vvel(ibeg:iend,jbeg-1) = cblk%vvel(conibeg:coniend,conjbeg-1)
         ELSE 
-           blk%vvel(ibeg-1,jbeg) = cblk%vvel(conibeg-1,conjbeg)
+           blk%uvel(ibeg-1,jbeg:jend) = cblk%uvel(conibeg-1,conjbeg:conjend)
         END IF
 
                                 ! we need to do the depth first so
@@ -1308,9 +1522,9 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! accurate
 
         DO i = ibeg, iend
-           coni = conibeg + (i - ibeg)/fcells
+           coni = conibeg + (i - ibeg)/ifcells
            DO j = jbeg, jend
-              conj = conjbeg + (j - jbeg)/fcells
+              conj = conjbeg + (j - jbeg)/jfcells
            
                                 ! all the fine ghost cells are dry if
                                 ! the neighboring coarse cell is dry
@@ -1329,12 +1543,12 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! linearly interpolate cross vel within the
                                 ! neighboring coarse cell
 
-              IF (ibeg .EQ. iend) THEN
+              IF (.NOT. side) THEN
                  blk%vvel(i,j) = (cblk%vvel(coni, conj) - cblk%vvel(coni, conj-1))*&
-                      &(DBLE(MOD(j - jbeg + 1, fcells)))/DBLE(fcells) + cblk%vvel(coni, conj-1)
+                      &(DBLE(MOD(j - jbeg + 1, jfcells)))/DBLE(jfcells) + cblk%vvel(coni, conj-1)
               ELSE 
                  blk%uvel(i,j) = (cblk%uvel(coni, conj) - cblk%uvel(coni-1, conj))*&
-                      &(DBLE(MOD(i - ibeg + 1, fcells)))/DBLE(fcells) + cblk%uvel(coni-1, conj)
+                      &(DBLE(MOD(i - ibeg + 1, ifcells)))/DBLE(ifcells) + cblk%uvel(coni-1, conj)
               END IF
            END DO
         END DO
@@ -1342,40 +1556,44 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                                 ! now we can calculate the total local
                                 ! flow area and u
         
-        IF (ibeg .EQ. iend) THEN
-           coni = conibeg
-           DO conj = conjbeg, conjend
-              IF (ibeg .GT. 2) THEN
-                 cflux = uflux(cblk, coni, conj, conj)
-              ELSE
-                 cflux = uflux(cblk, coni, conj, conj)
-              END IF
-              ju = jbeg + (conj - conjbeg)*fcells
-              carea = uarea(blk, ibeg, ju, ju + fcells - 1)
-              DO j = ju, ju + fcells - 1
-                 IF (carea .GT. 0.0) THEN
-                    blk%uvel(ibeg,j) = cflux/carea
-                 ELSE 
-                    blk%uvel(ibeg,j) = 0.0
+        IF (.NOT. side) THEN
+           DO i = ibeg, iend
+              coni = conibeg + (i - ibeg)/ifcells
+              DO conj = conjbeg, conjend
+                 IF (i .GT. 2) THEN
+                    cflux = uflux(cblk, coni, conj, conj)
+                 ELSE
+                    cflux = uflux(cblk, coni, conj, conj)
                  END IF
+                 ju = jbeg + (conj - conjbeg)*jfcells
+                 carea = uarea(blk, ibeg, ju, ju + jfcells - 1)
+                 DO j = ju, ju + jfcells - 1
+                    IF (carea .GT. 0.0) THEN
+                       blk%uvel(i,j) = cflux/carea
+                    ELSE 
+                       blk%uvel(i,j) = 0.0
+                    END IF
+                 END DO
               END DO
            END DO
         ELSE
-           conj = conjbeg
-           DO coni = conibeg, coniend
-              IF (jbeg .GT. 2) THEN
-                 cflux = vflux(cblk, coni, coni, conj-1)
-              ELSE
-                 cflux = vflux(cblk, coni, coni, conj)
-              END IF
-              iu = ibeg + (coni - conibeg)*fcells
-              carea = varea(blk, iu, iu  + fcells - 1, jbeg)
-              DO i = iu, iu + fcells - 1
-                 IF (carea .GT. 0.0) THEN
-                    blk%vvel(i,jbeg) = cflux/carea
-                 ELSE 
-                    blk%vvel(i,jbeg) = 0.0
+           DO j = jbeg, jend
+              conj = conjbeg + (j - jbeg)/jfcells
+              DO coni = conibeg, coniend
+                 IF (j .GT. 2) THEN
+                    cflux = vflux(cblk, coni, coni, conj-1)
+                 ELSE
+                    cflux = vflux(cblk, coni, coni, conj)
                  END IF
+                 iu = ibeg + (coni - conibeg)*ifcells
+                 carea = varea(blk, iu, iu  + ifcells - 1, jbeg)
+                 DO i = iu, iu + ifcells - 1
+                    IF (carea .GT. 0.0) THEN
+                       blk%vvel(i,j) = cflux/carea
+                    ELSE 
+                       blk%vvel(i,j) = 0.0
+                    END IF
+                 END DO
               END DO
            END DO
         END IF
@@ -1385,8 +1603,6 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         ! this block is the coarse block; we should be able to copy
         ! most of what we need
 
-        fcells = concells/cells
-
 
                                 ! this ghost cell is dry if all
                                 ! neighboring cells are dry, so
@@ -1395,39 +1611,39 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
 
                                 ! copy the first cross vel value
 
-        IF (ibeg .EQ. iend) THEN
-           blk%vvel(ibeg, jbeg-1) = cblk%vvel(conibeg, conjbeg-1)
+        IF (.NOT. side) THEN
+           blk%vvel(ibeg:iend, jbeg-1) = cblk%vvel(conibeg:coniend, conjbeg-1)
         ELSE
-           blk%uvel(ibeg-1, jbeg) = cblk%uvel(conibeg-1, conjbeg)
+           blk%uvel(ibeg-1, jbeg:jend) = cblk%uvel(conibeg-1, conjbeg:conjend)
         END IF
 
         DO i = ibeg, iend
-           coni = conibeg + (i - ibeg)*fcells
+           coni = conibeg + (i - ibeg)*ifcells
            DO j = jbeg, jend
-              conj = conjbeg + (j - jbeg)*fcells
+              conj = conjbeg + (j - jbeg)*jfcells
 
                                 ! interpolate depth at the ghost cell
                                 ! centroid, using the closest
                                 ! neighboring cell as a hint
 
               blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), &
-                   &coni, conj + fcells/2)
+                   &coni, conj + jfcells/2)
               blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
               IF (do_wetdry) THEN
                  blk%wsel(i,j) = MAX(blk%wsel(i,j), blk%zbot(i,j))
                  blk%depth(i,j) = MAX(blk%depth(i,j), dry_zero_depth)
               END IF
 
-              IF (ibeg .EQ. iend) THEN
+              IF (.NOT. side) THEN
 
                                 ! copy next cross v value
-                 blk%vvel(i,j) = cblk%vvel(coni, conj + fcells - 1)
+                 blk%vvel(i,j) = cblk%vvel(coni, conj + jfcells - 1)
 
                                 ! compute u using fluxes
-                 IF (ibeg .GT. 2) THEN
-                    cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+                 IF (i .GT. 2) THEN
+                    cflux = uflux(cblk, coni, conj, conj + jfcells - 1)
                  ELSE 
-                    cflux = uflux(cblk, coni, conj, conj + fcells - 1)
+                    cflux = uflux(cblk, coni, conj, conj + jfcells - 1)
                  END IF
                  carea = uarea(blk, i, j, j)
                  IF (carea .GT. 0.0) THEN
@@ -1437,13 +1653,13 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                  END IF
                  
               ELSE 
-                 blk%uvel(i,j) = cblk%uvel(coni + fcells - 1, conj)
+                 blk%uvel(i,j) = cblk%uvel(coni + ifcells - 1, conj)
 
                  carea = varea(blk, i, i, j)
                  IF (jbeg .GT. 2) THEN
-                    cflux = vflux(cblk, coni, coni + fcells - 1, conj-1)
+                    cflux = vflux(cblk, coni, coni + ifcells - 1, conj-1)
                  ELSE 
-                    cflux = vflux(cblk, coni, coni + fcells - 1, conj)
+                    cflux = vflux(cblk, coni, coni + ifcells - 1, conj)
                  END IF
                  IF (carea .GT. 0.0) THEN
                     blk%vvel(i,j) = cflux/carea
@@ -1501,7 +1717,7 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
   TYPE (scalar_struct), INTENT(IN) :: csclr
   TYPE (scalar_bc_spec_struct), INTENT(IN) :: bc
 
-  INTEGER :: n, cells, concells, fcells
+  INTEGER :: n, cells, concells, ifcells, jfcells
   INTEGER :: i, ibeg, iend, coni, conibeg, coniend
   INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
   DOUBLE PRECISION :: carea, cflux, farea
@@ -1513,10 +1729,10 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
 
      SELECT CASE (bc%bc_loc)
      CASE ("US")
-        ibeg = 1
-        iend = ibeg
-        conibeg = cblk%xmax
-        coniend = conibeg
+        ibeg = 2 - nghost
+        iend = ibeg + (nghost - 1)
+        coniend = cblk%xmax
+        conibeg = coniend - (nghost - 1)
         jbeg = bc%start_cell(n)+1
         jend = bc%end_cell(n)+1
         conjbeg = bc%con_start_cell(n)+1
@@ -1524,10 +1740,10 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         cells = jend - jbeg + 1
         concells = conjend - conjbeg + 1
      CASE ("DS")
-        ibeg = blk%xmax + 1
-        iend = ibeg
+        iend = blk%xmax + nghost
+        ibeg = iend - (nghost - 1)
         conibeg = 2
-        coniend = conibeg
+        coniend = conibeg + (nghost - 1)
         jbeg = bc%start_cell(n)+1
         jend = bc%end_cell(n)+1
         conjbeg = bc%con_start_cell(n)+1
@@ -1539,10 +1755,10 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = 1
-        jend = jbeg
-        conjbeg = cblk%ymax
-        conjend = conjbeg
+        jbeg = 2 - nghost
+        jend = jbeg + (nghost - 1)
+        conjend = cblk%ymax
+        conjbeg = conjend - (nghost - 1)
         cells = iend - ibeg + 1
         concells = coniend - conibeg + 1
         side = .TRUE.
@@ -1551,13 +1767,30 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = blk%ymax + 1
-        jend = jbeg
+        jend = blk%ymax + nghost
+        jbeg = jend - (nghost - 1)
         conjbeg = 2
-        conjend = conjbeg
+        conjend = conjbeg + (nghost - 1)
         cells = iend - ibeg + 1
         concells = coniend - conibeg + 1
         side = .TRUE.
+     END SELECT
+
+     SELECT CASE (bc%bc_loc)
+     CASE ("US", "DS")
+        ifcells = 1
+        IF (cells .GE. concells) THEN
+           jfcells = cells/concells
+        ELSE 
+           jfcells = concells/cells
+        END IF
+     CASE ("LB", "RB")
+        IF (cells .GE. concells) THEN
+           ifcells = cells/concells
+        ELSE 
+           ifcells = concells/cells
+        END IF
+        jfcells = 1
      END SELECT
 
      IF (cells .EQ. concells) THEN
@@ -1581,12 +1814,10 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
         ! this block has more cells than the neighboring block, we
         ! need to interpolate the variables from the coarse block
 
-        fcells = cells/concells
-
         DO i = ibeg, iend
-           coni = conibeg + (i - ibeg - 1)/fcells
+           coni = conibeg + (i - ibeg - 1)/ifcells
            DO j = jbeg, jend
-              conj = conjbeg + (j - jbeg - 1)/fcells
+              conj = conjbeg + (j - jbeg - 1)/jfcells
 
               sclr%conc(i,j) = scalar_interp(cblk, csclr, &
                    &blk%x(i,j), blk%y(i,j), coni, conj)
@@ -1598,34 +1829,30 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
 
         ! this block is the coarse block
 
-        fcells = concells/cells
-
         DO i = ibeg, iend
-           coni = conibeg + (i - ibeg)*fcells
+           coni = conibeg + (i - ibeg)*ifcells
            DO j = jbeg, jend
-              conj = conjbeg + (j - jbeg)*fcells
+              conj = conjbeg + (j - jbeg)*jfcells
 
               sclr%conc(i,j) = scalar_interp(cblk, csclr, &
-                   &blk%x(i,j), blk%y(i,j), coni, conj + fcells/2)
+                   &blk%x(i,j), blk%y(i,j), coni + ifcells/2, conj + jfcells/2)
            END DO
         END DO
      END IF
 
 
      sclr%concold(ibeg:iend,jbeg:jend) = sclr%conc(ibeg:iend,jbeg:jend)
-     IF (side) THEN 
-        IF (jbeg .EQ. 1) THEN
-           sclr%cell(ibeg:iend,jbeg+1)%ytype = SCALAR_NORMAL_TYPE
-        ELSE 
-           sclr%cell(ibeg:iend,jend-1)%ytype = SCALAR_NORMAL_TYPE
-        END IF
-     ELSE 
-        IF (ibeg .EQ. 1) THEN
-           sclr%cell(ibeg+1,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
-        ELSE 
-           sclr%cell(ibeg-1,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
-        END IF
-     END IF
+
+     SELECT CASE (bc%bc_loc)
+     CASE ("US")
+        sclr%cell(2,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
+     CASE ("DS")
+        sclr%cell(blk%xmax,jbeg:jend)%xtype = SCALAR_NORMAL_TYPE
+     CASE ("RB")
+        sclr%cell(ibeg:iend,2)%ytype = SCALAR_NORMAL_TYPE
+     CASE ("LB")
+        sclr%cell(ibeg:iend,blk%ymax)%ytype = SCALAR_NORMAL_TYPE
+     END SELECT
   END DO
 
 
@@ -1898,38 +2125,44 @@ SUBROUTINE default_hydro_bc(blk)
   IMPLICIT NONE
 
   TYPE (block_struct) :: blk
-  INTEGER :: x_end, y_end, i, j
+  INTEGER :: x_beg, y_beg, x_end, y_end, i, j, ig
 
+  x_beg = 2
+  y_beg = 2
   x_end = blk%xmax
   y_end = blk%ymax
 
-  i = 1
-  blk%uvel(i,:) = 0.0
-  blk%vvel(i,:) = blk%vvel(i+1,:)
-  blk%cell(i+1,:)%xtype = CELL_BOUNDARY_TYPE
-  blk%cell(i+1,:)%xbctype = FLOWBC_NONE
-  CALL extrapolate_udepth(blk, i, 2, y_end, level=.FALSE.)
+  blk%cell(x_beg,:)%xtype = CELL_BOUNDARY_TYPE
+  blk%cell(x_beg,:)%xbctype = FLOWBC_NONE
+  blk%cell(x_end,:)%xtype = CELL_BOUNDARY_TYPE
+  blk%cell(x_end,:)%xbctype = FLOWBC_NONE
+  blk%cell(:,y_beg)%ytype = CELL_BOUNDARY_TYPE
+  blk%cell(:,y_beg)%ybctype = FLOWBC_NONE
+  blk%cell(:,y_end)%ytype = CELL_BOUNDARY_TYPE
+  blk%cell(:,y_end)%ybctype = FLOWBC_NONE
 
-  i = blk%xmax + 1
-  blk%uvel(i,:) = 0.0
-  blk%vvel(i,:) = blk%vvel(i-1,:)
-  blk%cell(i-1,:)%xtype = CELL_BOUNDARY_TYPE
-  blk%cell(i-1,:)%xbctype = FLOWBC_NONE
-  CALL extrapolate_udepth(blk, i, 2, y_end, level=.FALSE.)
+  DO ig = 1, nghost
 
-  j = 1
-  blk%uvel(:,j) = blk%uvel(:,j+1)
-  blk%vvel(:,j) = 0.0
-  blk%cell(:,j+1)%ytype = CELL_BOUNDARY_TYPE
-  blk%cell(:,j+1)%ybctype = FLOWBC_NONE
-  CALL extrapolate_vdepth(blk, 2, x_end, j, level=.FALSE.)
+     i = x_beg - ig
+     blk%uvel(i,:) = 0.0
+     blk%vvel(i,:) = blk%vvel(x_beg,:)
+     CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
 
-  j = blk%ymax + 1
-  blk%uvel(:,j) = blk%uvel(:,j-1)
-  blk%vvel(:,j) = 0.0
-  blk%cell(:,j-1)%ytype = CELL_BOUNDARY_TYPE
-  blk%cell(:,j-1)%ybctype = FLOWBC_NONE
-  CALL extrapolate_vdepth(blk, 2, x_end, j, level=.FALSE.)
+     i = blk%xmax + ig
+     blk%uvel(i,:) = 0.0
+     blk%vvel(i,:) = blk%vvel(x_end,:)
+     CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+
+     j = y_beg - ig
+     blk%uvel(:,j) = blk%uvel(:,y_beg)
+     blk%vvel(:,j) = 0.0
+     CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+
+     j = blk%ymax + ig
+     blk%uvel(:,j) = blk%uvel(:,y_end)
+     blk%vvel(:,j) = 0.0
+     CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+  END DO
 
   blk%isdead(:,:)%u = .FALSE.
   blk%isdead(:,:)%v = .FALSE.
@@ -2788,7 +3021,9 @@ SUBROUTINE transport(status_flag)
 
            CALL apply_scalar_source(iblock, ispecies, x_start, y_start)
 
-           CALL scalar_solve(iblock, block(iblock), species(ispecies)%scalar(iblock), x_start, y_start)
+           CALL scalar_solve(iblock, block(iblock), species(ispecies)%scalar(iblock), &
+                &scalar_source(ispecies)%relax, scalar_source(ispecies)%scheme, &
+                &scalar_source(ispecies)%cds_blend, x_start, y_start)
 
         END DO ! species loop
         
@@ -3291,18 +3526,24 @@ SUBROUTINE read_hotstart()
      !WRITE(*,*)'done with uvel read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%uold
      !WRITE(*,*)'done with uold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%uoldold
+     !WRITE(*,*)'done with uoldold read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%ustar
      !WRITE(*,*)'done with ustar read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%vvel
      !WRITE(*,*)'done with vvel read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%vold
      !WRITE(*,*)'done with vold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%voldold
+     !WRITE(*,*)'done with voldold read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%vstar
      !WRITE(*,*)'done with vstar read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%depth
      !WRITE(*,*)'done with depth read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%depthold
      !WRITE(*,*)'done with depthold read for block -',iblock
+     READ(hotstart_iounit,*) block(iblock)%deptholdold
+     !WRITE(*,*)'done with deptholdold read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%dstar
      !WRITE(*,*)'done with dstar read for block -',iblock
      READ(hotstart_iounit,*) block(iblock)%eddy 
@@ -3334,6 +3575,9 @@ SUBROUTINE read_hotstart()
            CALL status_message(msg)
            READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
            WRITE(msg,*)'done with concold read for species -',i,'and block -',iblock
+           CALL status_message(msg)
+           READ(hotstart_iounit,*) species(i)%scalar(iblock)%concoldold
+           WRITE(msg,*)'done with concoldold read for species -',i,'and block -',iblock
            CALL status_message(msg)
         END DO
      END DO
@@ -3404,6 +3648,11 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
             &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
+       block(iblock)%work = block(iblock)%uoldold
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
+       WRITE(restart_iounit,*)block(iblock)%work
+
        block(iblock)%work = block(iblock)%ustar
        WHERE(abs(block(iblock)%work) < tiny) &
             &block(iblock)%work = sign(tiny, block(iblock)%work)
@@ -3419,6 +3668,11 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
             &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
 
+       block(iblock)%work = block(iblock)%voldold
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
+       WRITE(restart_iounit,*)block(iblock)%work
+
        block(iblock)%work = block(iblock)%vstar
        WHERE(abs(block(iblock)%work) < tiny) &
             &block(iblock)%work = sign(tiny, block(iblock)%work)
@@ -3430,6 +3684,11 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
        WRITE(restart_iounit,*)block(iblock)%work
 
        block(iblock)%work = block(iblock)%depthold
+       WHERE(abs(block(iblock)%work) < tiny) &
+            &block(iblock)%work = sign(tiny, block(iblock)%work)
+       WRITE(restart_iounit,*)block(iblock)%work
+
+       block(iblock)%work = block(iblock)%deptholdold
        WHERE(abs(block(iblock)%work) < tiny) &
             &block(iblock)%work = sign(tiny, block(iblock)%work)
        WRITE(restart_iounit,*)block(iblock)%work
@@ -3455,7 +3714,7 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
 !!$		WRITE(restart_iounit,*) block(iblock)%depthold
 !!$		WRITE(restart_iounit,*) block(iblock)%dstar	
 !!$		WRITE(restart_iounit,*) block(iblock)%eddy
-	END DO 
+    END DO
 
 	IF(do_transport)THEN
 		DO i=1,max_species
@@ -3466,6 +3725,11 @@ IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print
               WRITE(restart_iounit,*)block(iblock)%work
               
               block(iblock)%work = species(i)%scalar(iblock)%concold
+              WHERE(abs(block(iblock)%work) < tiny) &
+                   &block(iblock)%work = sign(tiny, block(iblock)%work) 
+              WRITE(restart_iounit,*)block(iblock)%work
+
+              block(iblock)%work = species(i)%scalar(iblock)%concoldold
               WHERE(abs(block(iblock)%work) < tiny) &
                    &block(iblock)%work = sign(tiny, block(iblock)%work) 
               WRITE(restart_iounit,*)block(iblock)%work

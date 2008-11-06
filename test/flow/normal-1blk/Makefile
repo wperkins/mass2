@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Fri Jan  2 10:27:34 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Oct 29 11:40:03 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -127,5 +127,6 @@ clean::
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
 	rm -f gridplot1.dat
-	rm -f plot.nc 
+	rm -f plot.nc grid.cgns plot000.cgns
+	rm -f tecplot.phy
 	rm -f $(EPSFILES)

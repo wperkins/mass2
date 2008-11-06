@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Thu Apr 15 11:11:53 2004 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Wed Nov  5 10:25:57 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -175,17 +175,22 @@ END SUBROUTINE transport_precalc
 ! ----------------------------------------------------------------
 ! SUBROUTINE scalar_solve
 ! ----------------------------------------------------------------
-SUBROUTINE scalar_solve(blkidx, blk, scalar, xstart, ystart)
+SUBROUTINE scalar_solve(blkidx, blk, scalar, relax, scheme, blend, xstart, ystart)
 
   USE globals, ONLY: block_struct
   USE scalars, ONLY: scalar_struct, SCALAR_BOUNDARY_TYPE, SCALBC_CONC, SCALBC_ZG
+  USE misc_vars, ONLY: blend_time
+  USE differencing
   USE solver_module
+  
 
   IMPLICIT NONE
   
   TYPE (block_struct), INTENT(IN) :: blk
   TYPE (scalar_struct), INTENT(INOUT) :: scalar
   INTEGER, INTENT(IN) :: blkidx, xstart, ystart
+  INTEGER, INTENT(IN) :: scheme
+  DOUBLE PRECISION, INTENT(IN) :: relax, blend
 
   INTEGER :: xend, yend
 
@@ -196,36 +201,71 @@ SUBROUTINE scalar_solve(blkidx, blk, scalar, xstart, ystart)
        & an(xstart:blk%xmax, ystart:blk%ymax), &
        & as(xstart:blk%xmax, ystart:blk%ymax), &
        & bp(xstart:blk%xmax, ystart:blk%ymax)
+  DOUBLE PRECISION :: ap2, ae2, aw2, an2, as2, aee, aww, ann, ass
 
   INTEGER :: i, j, junk
 
   xend = blk%xmax
   yend = blk%ymax
 
-
-  ae(xstart:xend,ystart:yend) = &
-       &max(0d+00, -blk%flux_e(xstart:xend,ystart:yend), &
-       &blk%diffu_e(xstart:xend,ystart:yend) - &
-       &blk%flux_e(xstart:xend,ystart:yend)/2.0)
-  aw(xstart:xend,ystart:yend) = &
-       &max(0d+00, blk%flux_w(xstart:xend,ystart:yend), &
-       &blk%diffu_w(xstart:xend,ystart:yend) + &
-       &blk%flux_w(xstart:xend,ystart:yend)/2.0)
-  an(xstart:xend,ystart:yend) = &
-       &max(0d+00, -blk%flux_n(xstart:xend,ystart:yend), &
-       &blk%diffu_n(xstart:xend,ystart:yend) - &
-       &blk%flux_n(xstart:xend,ystart:yend)/2.0)
-  as(xstart:xend,ystart:yend) = &
-       &max(0d+00, blk%flux_s(xstart:xend,ystart:yend), &
-       &blk%diffu_s(xstart:xend,ystart:yend) + &
-       &blk%flux_s(xstart:xend,ystart:yend)/2.0)
   bp = 0.0
 
   DO i= xstart,xend
      DO j=ystart,yend
 
-        ap(i,j) = ae(i,j) + aw(i,j) + an(i,j) + as(i,j) + blk%apo(i,j) 
-        bp(i,j) = scalar%srcterm(i,j) + blk%apo(i,j)* scalar%concold(i,j)
+        CALL differ2(scheme, blk%flux_w(i,j), blk%diffu_w(i,j), blk%flux_e(i,j), blk%diffu_e(i,j), &
+             &scalar%conc(i-2,j), scalar%conc(i-1,j), scalar%conc(i,j), scalar%conc(i+1,j), scalar%conc(i+2,j),&
+             &aw(i,j), aw2, aww, ae(i,j), ae2, aee)
+        CALL differ2(scheme, blk%flux_s(i,j), blk%diffu_s(i,j), blk%flux_n(i,j), blk%diffu_n(i,j), &
+             &scalar%conc(i,j-2), scalar%conc(i,j-1), scalar%conc(i,j), scalar%conc(i,j+1), scalar%conc(i,j+2),&
+             &as(i,j), as2, ass, an(i,j), an2, ann)
+
+!         ! make sure the extra ghost cells at a boundary are not used
+
+!         SELECT CASE (scalar%cell(i,j)%xtype)
+!         CASE (SCALAR_BOUNDARY_TYPE)
+!            IF (i .EQ. xstart) THEN
+!               aww = 0.0
+!            ELSE 
+!               aee = 0.0
+!            END IF
+!         END SELECT
+       
+!         SELECT CASE (scalar%cell(i,j)%ytype)
+!         CASE (SCALAR_BOUNDARY_TYPE)
+!            IF (j .EQ. ystart) THEN
+!               ass = 0.0
+!            ELSE IF (j .EQ. yend) THEN
+!               ann = 0.0
+!            END IF
+!         END SELECT
+
+        ap(i,j) = ae(i,j) + aw(i,j) + an(i,j) + as(i,j)
+        ap2 = ae2 + aw2 + an2 + as2 + aee + aww + ann + ass
+
+        bp(i,j) = bp(i,j) + blend*(-ae(i,j) + ae2)*scalar%conc(i+1,j)
+        bp(i,j) = bp(i,j) + blend*(           aee)*scalar%conc(i+2,j)
+        bp(i,j) = bp(i,j) + blend*(-aw(i,j) + aw2)*scalar%conc(i-1,j)
+        bp(i,j) = bp(i,j) + blend*(           aww)*scalar%conc(i-2,j)
+        bp(i,j) = bp(i,j) + blend*(-an(i,j) + an2)*scalar%conc(i,j+1)
+        bp(i,j) = bp(i,j) + blend*(           ann)*scalar%conc(i,j+2)
+        bp(i,j) = bp(i,j) + blend*(-as(i,j) + as2)*scalar%conc(i,j-1)
+        bp(i,j) = bp(i,j) + blend*(           ass)*scalar%conc(i,j-2)
+        bp(i,j) = bp(i,j) + blend*( ap(i,j) - ap2)*scalar%conc(i,j)
+
+        ! blended 3-time level time discretization
+
+        ap(i, j) = ap(i, j) + blk%apo(i, j)
+
+        bp(i, j) = bp(i, j) + blk%apo(i,j)*scalar%concold(i,j) + blend_time*( &
+             &   -0.5*blk%apo(i,j)*scalar%conc(i,j) + &
+             &        blk%apo(i,j)*scalar%concold(i,j) - &
+             &    0.5*blk%apo(i,j)*scalar%concoldold(i,j) &
+             &  )
+
+        bp(i,j) = bp(i,j) + scalar%srcterm(i,j) 
+
+        
 
         SELECT CASE (scalar%cell(i,j)%xtype)
         CASE (SCALAR_BOUNDARY_TYPE)
@@ -283,6 +323,11 @@ SUBROUTINE scalar_solve(blkidx, blk, scalar, xstart, ystart)
            END IF
         END SELECT
 
+        ! implicit underrelaxation
+
+        bp(i, j) = bp(i, j) + (1 - relax)/relax*ap(i,j)*scalar%conc(i,j)
+        ap(i, j) = ap(i, j)/relax 
+
      END DO
   END DO
 
@@ -301,6 +346,7 @@ END SUBROUTINE scalar_solve
 SUBROUTINE default_scalar_bc(blk, sclr)
 
   USE globals, ONLY: block_struct
+  USE misc_vars, ONLY: nghost
   USE scalars, ONLY: scalar_struct, SCALAR_BOUNDARY_TYPE, SCALBC_NONE
 
   IMPLICIT NONE
@@ -308,24 +354,33 @@ SUBROUTINE default_scalar_bc(blk, sclr)
   TYPE (block_struct), INTENT(INOUT) :: blk
   TYPE (scalar_struct), INTENT(INOUT) :: sclr
 
-  INTEGER :: x_end, y_end, i, j
+  INTEGER :: x_beg, y_beg, x_end, y_end, i, j, ig
 
+  x_beg = 2
+  y_beg = 2
   x_end = blk%xmax
   y_end = blk%ymax
 
-  sclr%conc(1,:) = sclr%conc(2,:)
-  sclr%cell(2,:)%xtype = SCALAR_BOUNDARY_TYPE
-  sclr%cell(2,:)%xbctype = SCALBC_NONE
+  ! fill ghost cells with edge values (zero gradient at boundary)
 
-  sclr%conc(x_end+1,:) = sclr%conc(x_end,:)
+  DO ig = 1,nghost
+     sclr%conc(x_beg - ig, :) = sclr%conc(2,:)
+     sclr%conc(x_end + ig, :) = sclr%conc(x_end,:)
+     sclr%conc(:, y_beg - ig) = sclr%conc(:,y_beg)
+     sclr%conc(:, y_end + ig) = sclr%conc(:,y_end)
+  END DO
+
+  ! set cell type around edges
+
+  sclr%cell(x_beg,:)%xtype = SCALAR_BOUNDARY_TYPE
+  sclr%cell(x_beg,:)%xbctype = SCALBC_NONE
+
   sclr%cell(x_end,:)%xtype = SCALAR_BOUNDARY_TYPE
   sclr%cell(x_end,:)%xbctype = SCALBC_NONE
 
-  sclr%conc(:,1) = sclr%conc(:,2)
-  sclr%cell(:,2)%ytype = SCALAR_BOUNDARY_TYPE
-  sclr%cell(:,2)%ybctype = SCALBC_NONE
+  sclr%cell(:,y_beg)%ytype = SCALAR_BOUNDARY_TYPE
+  sclr%cell(:,y_beg)%ybctype = SCALBC_NONE
 
-  sclr%conc(:,y_end+1) = sclr%conc(:,y_end)
   sclr%cell(:,y_end)%ytype = SCALAR_BOUNDARY_TYPE
   sclr%cell(:,y_end)%ybctype = SCALBC_NONE
 

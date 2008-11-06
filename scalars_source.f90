@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Thu May 15 15:20:23 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Fri Oct 17 11:07:33 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -60,6 +60,10 @@ MODULE scalars_source
                                 ! e.g. kg/l*(28.317 l/ft^3) = kg/ft^3
 
      DOUBLE PRECISION :: conversion
+     DOUBLE PRECISION :: relax
+
+     INTEGER :: scheme
+     DOUBLE PRECISION :: cds_blend
 
      TYPE(temperature_source_rec), POINTER :: temp_param
      TYPE(tdg_source_rec), POINTER :: tdg_param
@@ -106,12 +110,13 @@ CONTAINS
     USE utility
     USE globals, ONLY: max_blocks
     USE scalars, ONLY: max_species
+    USE differencing
 
     IMPLICIT NONE
 
     INTEGER :: i, istat, id, disidx, iblk, iopt, jopt
 
-    CHARACTER (LEN=20) :: type_name, short_name, units
+    CHARACTER (LEN=20) :: type_name, short_name, units, schemebuf
     CHARACTER (LEN=256) :: long_name, options(source_max_option), &
          &alloptions(source_max_option), buffer
     
@@ -137,6 +142,9 @@ CONTAINS
        scalar_source(id)%description = long_name
        scalar_source(id)%units = units
        scalar_source(id)%conversion = 1.0
+       scalar_source(id)%scheme = diff_upwind
+       scalar_source(id)%cds_blend = 0.0
+       scalar_source(id)%relax = 1.0
        NULLIFY(scalar_source(id)%temp_param)
        NULLIFY(scalar_source(id)%tdg_param)
        NULLIFY(scalar_source(id)%generic_param)
@@ -150,6 +158,40 @@ CONTAINS
        jopt = 1
        DO WHILE ((LEN_TRIM(alloptions(iopt)) .GT. 0) .AND. (iopt .LE. source_max_option))
           SELECT CASE (alloptions(iopt))
+          CASE ('SCHEME') 
+             IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
+                WRITE(buffer, *) 'additional argument missing for SCHEME keyword'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             READ(alloptions(iopt+1),*) schemebuf
+             scalar_source(id)%scheme = differ_method_from_string(schemebuf)
+             IF (scalar_source(id)%scheme .LE. 0) THEN
+                WRITE(buffer, *) 'Unknown differencing scheme: (', TRIM(schemebuf), ')'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             iopt = iopt + 1
+          CASE ('BLEND')
+             IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
+                WRITE(buffer, *) 'additional argument missing for BLEND keyword'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             READ(alloptions(iopt+1),*) scalar_source(id)%cds_blend
+             IF (scalar_source(id)%cds_blend < 0.0 .OR. scalar_source(id)%cds_blend > 1.0) THEN
+                WRITE(buffer, *) 'CDS Blend factor out of range'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             iopt = iopt + 1
+          CASE ('RELAX')
+             IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
+                WRITE(buffer, *) 'additional argument missing for RELAX keyword'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             READ(alloptions(iopt+1),*) scalar_source(id)%relax
+             IF (scalar_source(id)%relax <= 0.0 .OR. scalar_source(id)%relax > 1.0) THEN
+                WRITE(buffer, *) 'under relaxation out of range'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             iopt = iopt + 1
           CASE ('CONVERT')
              IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
                 WRITE(buffer, *) 'additional argument missing for CONVERT keyword'
@@ -163,6 +205,11 @@ CONTAINS
           END SELECT
           iopt = iopt + 1
        END DO
+
+       SELECT CASE (scalar_source(id)%scheme) 
+       CASE (diff_upwind)
+          scalar_source(id)%cds_blend = 0.0
+       END SELECT
        
                                 ! deal with scalar type specific options
 

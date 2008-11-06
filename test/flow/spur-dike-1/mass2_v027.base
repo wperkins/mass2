@@ -13,9 +13,9 @@ F           ! read hotstart file
 T           ! gage output
 T F         ! initial: w.s. elev or depth, profile
 04-01-1996 00:00:00  ! start date & time
-04-01-1996 00:05:00  ! end date & time
+04-01-1996 00:10:00  ! end date & time
 0.25        ! time step (seconds)
-5 0.001     ! hydro iterations, mass source error
+10 1.0e-04  ! hydro iterations, mass source error
 2           ! scalar iterations
 2           ! inner iterations for scalars
 25          ! inner iterations for depth correction
@@ -25,8 +25,8 @@ T F         ! initial: w.s. elev or depth, profile
 0.0100 F    ! manning n value if manning=TRUE
 1.49        ! constant in the bed shear stress
 0.20        ! relaxation factor for depth corrections
-0.0         ! not used
-0.62        ! not used
+0.7	    ! u/v underrelaxation
+@S@ 1.0 1.0     ! u/v differencing method and blend and temporal differencing blend factor 
 0.0         ! initial uniform value of u velocity
 0.0         ! initial uniform value of v velocity
 25.0        ! initial uniform value of concentration 

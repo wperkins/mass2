@@ -14,10 +14,10 @@ T			do gage print
 T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial water elv.; depth if FALSE
 01-01-1997 05:00:00	start date & time
 01-01-1997 09:59:59	end date & time
-20.0			delta_t 	! time step (seconds)
+@DT@			delta_t 	! time step (seconds)
 10 10.0		number_hydro_iterations, max_mass_source_sum	! number of internal iterations at a fixed time level
-2			number_scalar_iterations
-2			scalar_sweep	! internal iterations
+10			number_scalar_iterations
+5			scalar_sweep	! internal iterations
 30			depth_sweep
 0.20001 F		eddy viscosity
 0.0 F		kx_diff		! diffusion coeff in xsi (ft^2/sec)
@@ -25,8 +25,8 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 0.02600 F			chezy_con	! manning n value if manning=TRUE
 1.49			mann_con	! constant in the bed shear stress  =1.0 if metric units, 1.49*1.49 for english
 0.40			relax_dp	! relaxation factor for depth corrections
-0.0			inlet_flow	! uniform inlet flow rate in non spill/non gen areas
-5.0			ds_elev		! downstream water elevation bc (feet) (changed from 638  CR 3/30/99
+0.7			relax_uv	! u/v underrelaxation
+UPWIND 0.0 @TS@		diff_uv, blend_uv, blend_time	! u/v spatial differing scheme and blending factor, temporal differencing blending factor
 0.2			uvel_initial	! initial uniform value of u velocity
 0.0			vvel_initial	! initial uniform value of v velocity
 0.0			conc_initial	! initial uniform value of concentration						
@@ -35,7 +35,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 0.0			vvel_wind	! uniform value of v wind velocity
 F 0.0 0.0 0.0            ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0	F 1		bed porosity, initial bed depth, read from initial_bed.dat, bed iterations
-36	F	    print_freq  	! printout frequency
+@N@	F	    print_freq  	! printout frequency
 T T F               ! netcdf plot output, ouput flow diag, output flow (in transport only)
 F F T 999999        ! cgns plot output, cell centered, field descriptions, times per file
-36			gage_print_freq
+@N@			gage_print_freq

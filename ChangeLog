@@ -1,4 +1,233 @@
+2008-11-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/jda/Makefile: hotstart.bin depends on $(MODEL)
+
+	* mass2_main_025.f90 (initialize): initialize old old variable values too
+	(read_hotstart): read old old variable values
+	(write_restart): write old old variable values
+
+	* transport_only_module.f90 (read_restart): read old old variable
+	values 
+
+2008-11-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/jda/mass2_v027.run: use MSOU
+
+	* test/flow/Rodi/mass2_v027.base: turn off 2nd order time
+	differencing so SOU spatial differencing works
+
+	* test/flow/spur-dike-1/mass2_v027.base: turn off 2nd order time
+	differencing so SOU spatial differencing works
+
+	* test/transport/1d-advection-1blk/Makefile: add MSOU and MUSCL schemes
+
+	* test/transport/1d-analytic-2blk/Makefile: add MSOU and MUSCL schemes
+
+	* test/transport/skew30-blk: run for multiple differencing schemes
+
+	* test/transport/1d-analytic-2blk-side: run for multiple differencing schemes
+
+	* test/transport/1d-advection-1blk/Makefile: add MSOU and MUSCL schemes
+
+	* test/transport/skew30/Makefile: add MSOU and MUSCL schemes
+
+	* test/transport/skew45-blk: run for multiple differencing schemes
+
+	* test/transport/skew45/Makefile: add MSOU and MUSCL schemes
+
+	* scalar_solve.f90 (scalar_solve): call differ2() instead of
+	differ()
+	(default_scalar_bc): fill all ghost cells with something
+	reasonable
+
+	* mass2_main_025.f90 (default_hydro_bc): fill all ghost cells with
+	something reasonable
+
+	* hydro_solve.f90 (vvel_solve, uvel_solve): call differ2() instead
+	of differ()
+
+	* differencing.f90 (msou_limiter, muscl_limiter, differ2): new
+	routines to implement flux limited methods
+	(differencing): add MSOU and MUSCL methods
+
+	* test/transport/1d-analytic-1blk/Makefile: add MSOU and MUSCL differencing
+	schemes
+
+	* test/flow/Rodi/Makefile: add MSOU and MUSCL differencing
+	schemes
+
+	* test/flow/spur-dike-1/Makefile: add MSOU and MUSCL differencing
+	schemes 
+
+2008-11-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/skew30: run for multiple differencing schemes
+
+2008-10-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/skew45: run for multiple differencing schemes
+
+	* test/flow/spur-dike-1: run for multiple differencing schemes
+
+	* test/flow/Rodi/Makefile: add SOU differencing case
+
+	* test/benchmark/jda/mass2_v027.run: use full SOU instead of CDS
+	for u/v momentum (which actually runs)
+
+	* differencing.f90 (differencing): add second order upwinding (SOU)
+
+	* hydro_solve.f90 (uvel_solve, vvel_solve): use coefficients 2
+	cells away, except at some boundaries
+
+	* mass2_main_025.f90 (read_config): correct checking of u/v
+	momentum differencing method
+
+	* scalar_solve.f90 (scalar_solve): use coefficients 2 cells away,
+	except at some boundaries
+
+2008-10-29  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_hydro): update for multiple ghost
+	cell layers
+
+	* test/flow/Rodi/Makefile: correct metric plots dependencies
+
+	* test/transport/Makefile: add 1d-advection-*-side cases
+
+	* test/transport/1d-advection-1blk/Makefile: improve make clean
+
+	* test/transport/1d-analytic-2blk/Makefile: improve make clean
+
+	* test/transport/1d-analytic-3blk-side/mass2_v027.base: update
+	with u/v differencing scheme and time blending
+
+	* test/transport/1d-analytic-2blk-side/mass2_v027.base: update
+	with u/v differencing scheme and time blending
+
+	* test/transport/1d-analytic-3blk/Makefile: correct editing of
+	configuration file
+
+	* test/transport/1d-analytic-2blk-side/scalar_source.dat: use full CDS
+
+	* test/transport/1d-analytic-3blk-side/scalar_source.dat: use full CDS
+
+	* test/transport/1d-analytic-3blk/scalar_source.dat: use full CDS
+
+	* mass2_main_025.f90 (fillghost_scalar): fix small problem with
+	scalar cell type
+
+2008-10-28  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_scalar): make work with two layers
+	of ghost cells
+	(fillghost): really make work with two layers of ghost cells
+
+2008-10-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/benchmark/jda/Makefile: rework to have a warmup simulation
+
+	* mass2_main_025.f90 (buildghost, extrapghost): make work with two
+	layers of ghost cells
+	(extrapghostcorners, extrap_1_corner): add helper routines to
+	build ghost cells at block corners
+	(interp_grid): mesh corner extrapolation is no longer handled here
+
+	* misc_vars_module.f90 (misc_vars): increase the number of ghost
+	cells to 2
+
+2008-10-24  William A. Perkins  <william.perkins@pnl.gov>
+
+	* global_module_023.f90 (metrics): initialize hu1 and hu2 to some
+	bogus values (for corner ghost cells)
+
+2008-10-22  William A. Perkins  <william.perkins@pnl.gov>
+
+	* hydro_solve.f90 (uvel_solve, vvel_solve): use differ()
+
+	* Makefile.am: hydro_solve.o depends on differencing.o
+
+	* scalar_solve.f90 (scalar_solve): caller specifies differencing
+	scheme; use differ(); 2nd order coefficients don't need to be in
+	arrays 
+
+	* scalars_module.f90 (allocate_scalarblock_components): make sure
+	all values get initialized
+
+	* differencing.f90 (differ): combine differ_en and differ_ws and
+	add higher order coefficients
+
+2008-10-21  William A. Perkins  <william.perkins@pnl.gov>
+
+	* scalars_source.f90 (scalars_source): add scheme to scalar_source_rec
+	(scalar_source_read): read differencing scheme
+
+	* misc_vars_module.f90 (misc_vars): move blend_uv to differencing
+	module 
+
+	* mass2_main_025.f90 (read_config): read u/v-momentum differencing
+	method from the configuration file
+
+	* differencing.f90 (differencing): add differencing method
+	keywords and routines to handle them
+
+2008-10-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/dead-2-blk/Makefile: correct MODEL name
+
+	* test/flow/dead-2/Makefile: correct MODEL name
+
+2008-10-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/wave/conical/Makefile: correct MODEL name
+
+	* test/transport/1d-analytic-2blk/Makefile: correct MODEL name
+
+	* test/transport/1d-analytic-2blk/scalar_source.dat: use some
+	under-relaxation
+
+	* test/transport/1d-analytic-2blk/scalar_bcspecs.dat: remove old
+	block connection lines
+
+	* test/flow/spur-dike-1/streamlines.lay: show line for separation
+
+	* test/flow/Rodi/streamlines.lay: show line for separation
+
+	* gage_output_module.f90 (mass_file_setup, mass_print): flush the
+	mass source output after every write
+
+	* hydro_solve.f90 (uvel_solve, vvel_solve, depth_solve): do
+	blended 3-level time differencing
+
+	* mass2_main_025.f90 (read_config): read blend_time
+
+	* misc_vars_module.f90 (misc_vars): add blend_time factor
+
+	* scalar_solve.f90 (scalar_solve): do blended 3-level time
+	differencing 
+
 2008-10-10  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/transport/Makefile: add net cases
+
+	* hydro_solve.f90 (uvel_solve, vvel_solve): enable 2nd order
+	differencing and implicit underrelaxation
+
+	* mass2_main_025.f90 (read_config): add u/v relaxation and
+	blending factors; do some error checking
+
+	* scalar_solve.f90 (scalar_solve): enable 2nd order differencing
+	and implicit underrelaxation
+
+	* scalars_source.f90 (scalars_source_rec): add underrelaxation and
+	blending factor
+	(scalar_source_read): read underrelaxation and blending factor
+
+	* misc_vars_module.f90 (misc_vars): add u/v momentum
+	underrelaxation and blend variables
+
+	* Makefile.am (mass2_SOURCES): add differencing.f90
+
+	* differencing.f90: added
 
 	* plot_cgns.f90 (plot_cgns_file_setup): use correct physical dimensions
 

@@ -145,6 +145,12 @@ SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax)
   species(i)%scalar(block)%cell(:,:)%ytype = SCALAR_NORMAL_TYPE
   species(i)%scalar(block)%cell(:,:)%ybctype = SCALBC_NONE
 
+  species(i)%scalar(block)%conc = 0.0
+  species(i)%scalar(block)%concold = 0.0
+  species(i)%scalar(block)%concoldold = 0.0
+
+  species(i)%scalar(block)%influx = 0.0
+  species(i)%scalar(block)%outflux = 0.0
   species(i)%scalar(block)%netflux = 0.0
   species(i)%scalar(block)%mass = 0.0
   species(i)%scalar(block)%bedmass = 0.0

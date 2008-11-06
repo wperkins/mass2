@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Oct  1 12:43:35 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Thu Nov  6 11:23:49 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -78,6 +78,8 @@ Wish List:
 
     * Graphical user interface
 
+    * the transport test cases should be transport only for the most part
+
 BUGS
 
     * when a scalar bed source is included in a cell that has a held
@@ -91,3 +93,9 @@ BUGS
       One has to increase the allowable stack size before running.
       It would probably be better to allocate them in each call.  
 
+    * hydro_solve() and scalar_solve() declare several arrays that end
+      up on the stack.  This causes a SEGV for large blocks when the
+      shell stacksize limit is small.  These arrays should probably be
+      allocated, but that might be slow.  
+
+    * CGNS output in transport only mode cause a SEGV.

@@ -1,0 +1,5 @@
+1 US TABLE 1 CONC PART "conc.dat"  1  7  24 /
+1 US TABLE 1 CONC PART "zero.dat"  1  1   6 /
+1 RB TABLE 1 CONC ALL  "zero.dat"  1 /
+1 LB ZEROG 1 CONC ALL /
+1 DS ZEROG 1 CONC ALL /

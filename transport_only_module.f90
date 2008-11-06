@@ -346,17 +346,23 @@ SUBROUTINE read_restart(plane_type, plane)
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with uold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with uoldold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with ustar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%vvel_bk
            !WRITE(*,*)'done with vvel read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with vold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with voldold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with vstar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%depth_bk
            !WRITE(*,*)'done with depth read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with depthold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with deptholdold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with dstar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work 
@@ -370,6 +376,8 @@ SUBROUTINE read_restart(plane_type, plane)
 			!WRITE(*,*)'done with conc read for species -',i,'and block -',iblock
                       READ(hotstart_iounit,*) hydro_interp(iblock)%work
 			!WRITE(*,*)'done with concold read for species -',i,'and block -',iblock
+                      READ(hotstart_iounit,*) hydro_interp(iblock)%work
+			!WRITE(*,*)'done with concoldold read for species -',i,'and block -',iblock
                    END DO
 		END DO
 	END IF
@@ -388,17 +396,23 @@ SUBROUTINE read_restart(plane_type, plane)
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with uold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with uoldold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with ustar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%vvel_fw
            !WRITE(*,*)'done with vvel read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with vold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with voldold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with vstar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%depth_fw
            !WRITE(*,*)'done with depth read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with depthold read for block -',iblock
+           READ(hotstart_iounit,*) hydro_interp(iblock)%work
+           !WRITE(*,*)'done with deptholdold read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work
            !WRITE(*,*)'done with dstar read for block -',iblock
            READ(hotstart_iounit,*) hydro_interp(iblock)%work 
@@ -412,6 +426,8 @@ SUBROUTINE read_restart(plane_type, plane)
 			!WRITE(*,*)'done with conc read for species -',i,'and block -',iblock
                       READ(hotstart_iounit,*) hydro_interp(iblock)%work
 			!WRITE(*,*)'done with concold read for species -',i,'and block -',iblock
+                      READ(hotstart_iounit,*) hydro_interp(iblock)%work
+			!WRITE(*,*)'done with concoldold read for species -',i,'and block -',iblock
                    END DO
 		END DO
 	END IF

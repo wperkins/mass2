@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Thu Aug 25 14:49:48 2005 by William A. Perkins <perk@McPerk.pnl.gov>
+! Last Change: Wed Nov  5 11:25:05 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -19,10 +19,11 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
 
   USE globals, ONLY : block_struct, bigfactor, &
        &CELL_BOUNDARY_TYPE, &
-       &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, &
+       &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, FLOWBC_BLOCK,&
        &FLOWBC_ZEROG, FLOWBC_BOTH, density_air, density, grav
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
+       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff, relax_uv, blend_time
+  USE differencing
   USE solver_module
 
   IMPLICIT NONE
@@ -38,6 +39,8 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
   DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
   DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
   DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
+  DOUBLE PRECISION :: aw2, ae2, as2, an2, ap2   ! second order flux coefficients
+  DOUBLE PRECISION :: aww, aee, ass, ann        ! second order flux coefficients
   DOUBLE PRECISION :: apo                       ! coefficients in discretization eqns
   DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
@@ -114,14 +117,70 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
         diffu_w =  2.0*k_w*depth_w*hw2/hw1
         diffu_n =  k_n*depth_n*hn1/hn2
         diffu_s =  k_s*depth_s*hs1/hs2
-        pec_e = flux_e/diffu_e
-        pec_w = flux_w/diffu_w
-        pec_n = flux_n/diffu_n
-        pec_s = flux_s/diffu_s
-        ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
-        aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
-        an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
-        as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
+        ! pec_e = flux_e/diffu_e
+        ! pec_w = flux_w/diffu_w
+        ! pec_n = flux_n/diffu_n
+        ! pec_s = flux_s/diffu_s
+        ! ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
+        ! aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
+        ! an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
+        ! as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
+        CALL differ2(diff_uv, flux_w, diffu_w, flux_e, diffu_e, &
+             &blk%uvel(i-2,j), blk%uvel(i-1,j), blk%uvel(i,j), blk%uvel(i+1,j), blk%uvel(i+2,j), &
+             &aw(i,j), aw2, aww, ae(i,j), ae2, aee)
+        CALL differ2(diff_uv, flux_s, diffu_s, flux_n, diffu_n, &
+             &blk%uvel(i,j-2), blk%uvel(i,j-1), blk%uvel(i,j), blk%uvel(i,j+1), blk%uvel(i,j+2), &
+             &as(i,j), as2, ass, an(i,j), an2, ann)
+
+!         ! adjust coefficients for boundaries
+
+!         IF (i .EQ. x_beg) THEN
+!            SELECT CASE (blk%cell(i,j)%xtype)
+!            CASE (CELL_BOUNDARY_TYPE)
+!               SELECT CASE (blk%cell(i,j)%xbctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  aww = 0.0
+!               END SELECT
+!            END SELECT
+!         ELSE IF (i .EQ. x_end) THEN
+!            ! downstream (east)
+!            SELECT CASE (blk%cell(i,j)%xtype)
+!            CASE (CELL_BOUNDARY_TYPE)
+!               SELECT CASE (blk%cell(i,j)%xbctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  aee = 0.0
+!               END SELECT
+!            END SELECT
+!         END IF
+
+!         IF (j .EQ. y_beg) THEN 
+!            ! right bank (south)
+!            IF (blk%cell(i,j)%ytype .EQ. CELL_BOUNDARY_TYPE .OR.&
+!                 &blk%cell(i+1,j)%ytype .EQ. CELL_BOUNDARY_TYPE) THEN
+!               SELECT CASE (blk%cell(i,j)%ybctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  ass = 0.0
+!               END SELECT
+!            END IF
+!         ELSE IF (j .EQ. y_end) THEN
+!            ! left bank (north)
+!            IF (blk%cell(i,j)%ytype .EQ. CELL_BOUNDARY_TYPE .OR.&
+!                 &blk%cell(i+1,j)%ytype .EQ. CELL_BOUNDARY_TYPE) THEN
+!               SELECT CASE (blk%cell(i,j)%ybctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  ann = 0.0
+!               END SELECT
+!            END IF
+!         END IF
+
         apo = hp1*hp2*0.5*(blk%depthold(i,j)+blk%depthold(i+1,j))/delta_t
         
         source(i,j) = 0.0
@@ -193,9 +252,25 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
              + curve_4 + curve_5 + curve_6 + curve_7
         ! end of U curvature terms ---------------------------------------------
         
+        ap(i,j) = ae(i,j)+aw(i,j)+an(i,j)+as(i,j)
+        ap2 = ae2 + aw2 + as2 + an2 + aww + aee + ass + ann
               
-        ap(i,j) = ae(i,j)+aw(i,j)+an(i,j)+as(i,j) + &
-             &apo
+
+        source(i,j) = source(i,j) + blend_uv*(-ae(i,j) + ae2)*blk%uvel(i+1,j)
+        source(i,j) = source(i,j) + blend_uv*(           aee)*blk%uvel(i+2,j)
+        source(i,j) = source(i,j) + blend_uv*(-aw(i,j) + aw2)*blk%uvel(i-1,j)
+        source(i,j) = source(i,j) + blend_uv*(           aww)*blk%uvel(i-2,j)
+        source(i,j) = source(i,j) + blend_uv*(-an(i,j) + an2)*blk%uvel(i,j+1)
+        source(i,j) = source(i,j) + blend_uv*(           ann)*blk%uvel(i,j+2)
+        source(i,j) = source(i,j) + blend_uv*(-as(i,j) + as2)*blk%uvel(i,j-1)
+        source(i,j) = source(i,j) + blend_uv*(           ass)*blk%uvel(i,j-2)
+        source(i,j) = source(i,j) + blend_uv*( ap(i,j) - ap2)*blk%uvel(i,j)
+
+        ! blended 3-time level time discretization
+
+        ap(i,j) = ap(i,j) + apo
+        source(i,j) = source(i,j) + apo*blk%uold(i,j) + apo*blend_time*( &
+             &-0.5*blk%uvel(i,j) + blk%uold(i,j) - 0.5*blk%uoldold(i,j))
         
         !** Bed Shear Stress Linearization **
 
@@ -299,31 +374,39 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
                  an(i,j) = 0.0
               END IF
            END IF
+
+           ! IF there is a wall blocking lateral flow, we need to
+           ! disconnect from the u cell on the other side (with a
+           ! slip condition)
+           IF ((blk%isdead(i,j)%v .OR. &
+                &blk%isdead(i+1,j)%v) .AND. .NOT. &
+                &blk%isdead(i,j+1)%u) THEN 
+              ap(i,j) = ap(i,j) - an(i,j)
+              an(i,j) = 0.0
+           END IF
+           IF ((blk%isdead(i,j-1)%v .OR. &
+                &blk%isdead(i+1,j-1)%v) .AND. .NOT. &
+                &blk%isdead(i,j-1)%u) THEN
+              ap(i,j) = ap(i,j) - as(i,j)
+              as(i,j) = 0.0
+           END IF
+        
         END IF
 
-        ! IF there is a wall blocking lateral flow, we need to
-        ! disconnect from the u cell on the other side (with a
-        ! slip condition)
-        IF ((blk%isdead(i,j)%v .OR. &
-             &blk%isdead(i+1,j)%v) .AND. .NOT. &
-             &blk%isdead(i,j+1)%u) THEN 
-           ap(i,j) = ap(i,j) - an(i,j)
-           an(i,j) = 0.0
-        END IF
-        IF ((blk%isdead(i,j-1)%v .OR. &
-             &blk%isdead(i+1,j-1)%v) .AND. .NOT. &
-             &blk%isdead(i,j-1)%u) THEN
-           ap(i,j) = ap(i,j) - as(i,j)
-           as(i,j) = 0.0
-        END IF
-        
-        bp(i,j) = source(i,j) + apo*blk%uold(i,j) &
+        bp(i,j) = source(i,j) &
              - 0.5*grav*hp2*(depth_e**2 - depth_w**2) &
              - grav*hp2*depth_p*(blk%zbot(i+1,j) - blk%zbot(i,j))
-        
+
+        ! implicit underrelaxation
+
+        bp(i,j) = bp(i,j) + (1 - relax_uv)/relax_uv*ap(i,j)*blk%uvel(i,j)
+        ap(i,j) = ap(i,j)/relax_uv
+
         ! compute and store for use in pressure correction equation
         
         blk%lud(i,j) = 0.5*grav*hp2*(depth_e+depth_w)/ap(i,j)
+
+        
 
      END DO
   END DO
@@ -343,10 +426,11 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
 
   USE globals, ONLY : block_struct, bigfactor, &
        &CELL_BOUNDARY_TYPE, &
-       & FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, &
+       & FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, FLOWBC_BLOCK, &
        & FLOWBC_ZEROG, density_air, density, grav
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff
+       &uvel_wind, vvel_wind, wind_speed, wind_drag_coeff, relax_uv, blend_time
+  USE differencing
   USE solver_module
 
   IMPLICIT NONE
@@ -361,7 +445,9 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
   DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
   DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
   DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
-  DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
+  DOUBLE PRECISION :: aw2, ae2, as2, an2, ap2   ! second order flux coefficients
+  DOUBLE PRECISION :: aww, aee, ass, ann        ! second order flux coefficients
+  DOUBLE PRECISION :: apo
   DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
 
@@ -437,14 +523,67 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
         diffu_w =  2.0*k_w*depth_w*hw2/hw1
         diffu_n =  k_n*depth_n*hn1/hn2
         diffu_s =  k_s*depth_s*hs1/hs2
-        pec_e = flux_e/diffu_e
-        pec_w = flux_w/diffu_w
-        pec_n = flux_n/diffu_n
-        pec_s = flux_s/diffu_s
-        ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
-        aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
-        an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
-        as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
+        ! pec_e = flux_e/diffu_e
+        ! pec_w = flux_w/diffu_w
+        ! pec_n = flux_n/diffu_n
+        ! pec_s = flux_s/diffu_s
+        ! ae(i,j) = diffu_e*afunc(pec_e) + max(-flux_e,0.0d0)
+        ! aw(i,j) = diffu_w*afunc(pec_w) + max(flux_w,0.0d0)
+        ! an(i,j) = diffu_n*afunc(pec_n) + max(-flux_n,0.0d0)
+        ! as(i,j) = diffu_s*afunc(pec_s) + max(flux_s,0.0d0)
+        CALL differ2(diff_uv, flux_w, diffu_w, flux_e, diffu_e, &
+             &blk%vvel(i-2,j), blk%vvel(i-1,j), blk%vvel(i,j), blk%vvel(i+1,j), blk%vvel(i+2,j), &
+             &aw(i,j), aw2, aww, ae(i,j), ae2, aee)
+        CALL differ2(diff_uv, flux_s, diffu_s, flux_n, diffu_n, &
+             &blk%vvel(i,j-2), blk%vvel(i,j-1), blk%vvel(i,j), blk%vvel(i,j+1), blk%vvel(i,j+2), &
+             &as(i,j), as2, ass, an(i,j), an2, ann)
+
+!         IF (i .EQ. x_beg) THEN
+!            ! upstream (west)
+!            IF (blk%cell(i,j)%xtype .EQ. CELL_BOUNDARY_TYPE .OR.&
+!                 &blk%cell(i,j+1)%xtype .EQ. CELL_BOUNDARY_TYPE) THEN
+!               SELECT CASE (blk%cell(i,j)%xbctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  aww = 0.0
+!               END SELECT
+!            END IF
+!         ELSE IF (i .EQ. x_end) THEN
+!            ! downstream (east)
+!            IF (blk%cell(i,j)%xtype .EQ. CELL_BOUNDARY_TYPE .OR.&
+!                 &blk%cell(i,j+1)%xtype .EQ. CELL_BOUNDARY_TYPE) THEN
+!               SELECT CASE (blk%cell(i,j)%xbctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  aee = 0.0
+!               END SELECT
+!            END IF
+!         END IF
+
+!         IF (j .EQ. y_beg) THEN
+!            SELECT CASE (blk%cell(i,j)%ytype)
+!            CASE (CELL_BOUNDARY_TYPE)
+!               SELECT CASE (blk%cell(i,j)%ybctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  ass = 0.0
+!               END SELECT
+!            END SELECT
+!         ELSE IF (j .EQ. y_end) THEN
+!            SELECT CASE (blk%cell(i,j)%ytype)
+!            CASE (CELL_BOUNDARY_TYPE)
+!               SELECT CASE (blk%cell(i,j)%ybctype)
+!               CASE (FLOWBC_BLOCK)
+!                  ! do nothing
+!               CASE DEFAULT
+!                  ann = 0.0
+!               END SELECT
+!            END SELECT
+!         END IF
+
         apo = hp1*hp2*0.5*(blk%depthold(i,j)+blk%depthold(i,j+1))/delta_t
 
         source(i,j) = 0.0
@@ -509,10 +648,24 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
 
         ! end of V curvature terms ---------------------------------------------
 
+        ap(i,j) = ae(i,j)+aw(i,j)+an(i,j)+as(i,j)
+        ap2 = ae2 + aw2 + as2 + an2 + aww + aee + ass + ann
+              
+        source(i,j) = source(i,j) + blend_uv*(-ae(i,j) + ae2)*blk%vvel(i+1,j)
+        source(i,j) = source(i,j) + blend_uv*(           aee)*blk%vvel(i+2,j)
+        source(i,j) = source(i,j) + blend_uv*(-aw(i,j) + aw2)*blk%vvel(i-1,j)
+        source(i,j) = source(i,j) + blend_uv*(           aww)*blk%vvel(i-2,j)
+        source(i,j) = source(i,j) + blend_uv*(-an(i,j) + an2)*blk%vvel(i,j+1)
+        source(i,j) = source(i,j) + blend_uv*(           ann)*blk%vvel(i,j+2)
+        source(i,j) = source(i,j) + blend_uv*(-as(i,j) + as2)*blk%vvel(i,j-1)
+        source(i,j) = source(i,j) + blend_uv*(           ass)*blk%vvel(i,j-2)
+        source(i,j) = source(i,j) + blend_uv*( ap(i,j) - ap2)*blk%vvel(i,j)
+        
+        ! blended 3-time level time discretization
 
-        ap(i,j) = ae(i,j)+aw(i,j)+an(i,j)+as(i,j) &
-             + apo
-
+        ap(i,j) = ap(i,j) + apo
+        source(i,j) = source(i,j) + apo*blk%vold(i,j) + &
+             &apo*blend_time*( -0.5*blk%vvel(i,j) + blk%vold(i,j) - 0.5*blk%voldold(i,j))
 
         !** Bed Shear Stress Linearization **
 
@@ -613,28 +766,34 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
                  an(i,j) = 0.0
               END SELECT
            END IF
+
+           ! IF there is a wall blocking longitudinal flow, we need
+           ! to disconnect from the v cell on the other side (with
+           ! a slip condition)
+           IF ((blk%isdead(i-1,j)%u .OR. &
+                &blk%isdead(i-1,j+1)%u) .AND. .NOT. &
+                &blk%isdead(i-1,j)%v) THEN
+              ap(i,j) = ap(i,j) - aw(i,j)
+              aw(i,j) = 0.0
+           END IF
+           IF ((blk%isdead(i,j)%u .OR. &
+                &blk%isdead(i,j+1)%u) .AND. .NOT. &
+                &blk%isdead(i+1,j)%v) THEN
+              ap(i,j) = ap(i,j) - ae(i,j)
+              ae(i,j) = 0.0
+           END IF
+
         END IF
 
-        ! IF there is a wall blocking longitudinal flow, we need
-        ! to disconnect from the v cell on the other side (with
-        ! a slip condition)
-        IF ((blk%isdead(i-1,j)%u .OR. &
-             &blk%isdead(i-1,j+1)%u) .AND. .NOT. &
-             &blk%isdead(i-1,j)%v) THEN
-           ap(i,j) = ap(i,j) - aw(i,j)
-           aw(i,j) = 0.0
-        END IF
-        IF ((blk%isdead(i,j)%u .OR. &
-             &blk%isdead(i,j+1)%u) .AND. .NOT. &
-             &blk%isdead(i+1,j)%v) THEN
-           ap(i,j) = ap(i,j) - ae(i,j)
-           ae(i,j) = 0.0
-        END IF
-
-        bp(i,j) = source(i,j) + apo*blk%vold(i,j) &
+        bp(i,j) = source(i,j) &
              - 0.5*grav*hp1*(depth_n**2 - depth_s**2) &
              - grav*hp1*depth_p*(blk%zbot(i,j+1) - blk%zbot(i,j))
         
+        ! implicit underrelaxation
+
+        bp(i,j) = bp(i,j) + (1 - relax_uv)/relax_uv*ap(i,j)*blk%vvel(i,j)
+        ap(i,j) = ap(i,j)/relax_uv
+
         ! compute and store for use in pressure correction equation
         
         blk%lvd(i,j) = 0.5*grav*hp1*(depth_n+depth_s)/ap(i,j)
@@ -783,7 +942,7 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
        &CELL_BOUNDARY_TYPE, &
        &FLOWBC_VEL, FLOWBC_FLOW, FLOWBC_ELEV, FLOWBC_BOTH, FLOWBC_ZEROG
   USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra, &
-       &update_depth, relax_dp
+       &update_depth, relax_dp, blend_time
   USE solver_module
 
   IMPLICIT NONE
@@ -840,11 +999,16 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
         flux_s = hs1*blk%vstar(i,j-1)*depth_s
               
         cpo = hp1*hp2/delta_t
+
+        ! blended 3-time level time discretization
+
         blk%mass_source(i,j) = &
              &cpo*(blk%depthold(i,j) - blk%depth(i,j)) + &
+             &cpo*blend_time*(-0.5*blk%depth(i,j) + blk%depthold(i,j) - 0.5*blk%deptholdold(i,j)) + &
              &flux_w - flux_e + flux_s - flux_n + &
              &blk%xsource(i,j)*hp1*hp2
               
+
         ce(i,j) = he2*depth_e*blk%lud(i,j)
         cw(i,j) = hw2*depth_w*blk%lud(i-1,j)
         cn(i,j) = hn1*depth_n*blk%lvd(i,j)
