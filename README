@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Nov  6 11:23:48 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Wed Nov 12 07:15:42 2008 by William A. Perkins <d3g096@PE10588>
 $Id$
 -------------------------------------------------------------
 
@@ -224,6 +224,14 @@ configure \
     --enable-f90-optimize
 
 On mac laptop:
+
+    setenv FCFLAGS "-fno-second-underscore -ffpe-trap=invalid,zero,overflow"
+    configure \
+        --with-netcdf=/Users/d3g096/stuff \
+        --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
+        --with-f90=gfortran-mp-4.3 \
+        --enable-f90-debug \
+        --enable-f90-optimize
 
     setenv FCFLAGS "-fno-second-underscore"
     configure \

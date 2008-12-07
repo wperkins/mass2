@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Nov  6 11:23:49 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Tue Nov 11 15:25:23 2008 by William A. Perkins <d3g096@PE10588.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -35,11 +35,6 @@ High Priority:
 
     * Limit the time frame for which output is produced; supply a list
       of output times
-
-    * higher order descretization scheme (MSOU, Norris or blended CD,
-      Peric) 
-
-    * higher order time descretization scheme (3 pt, Peric)
 
 Low Priority:
 
@@ -74,11 +69,18 @@ Code Clean Up:
     * check time series input to make sure it covers the entire
       simulation period
 
+    * put the transient CGNS stuff back in (for visit)
+
+    * change CGNS output variables to standard names (for visit)
+
 Wish List:
 
     * Graphical user interface
 
-    * the transport test cases should be transport only for the most part
+    * the transport test cases should be transport only for the most
+      part
+
+    * simple eddy viscosity model ala Zhou
 
 BUGS
 
@@ -99,3 +101,5 @@ BUGS
       allocated, but that might be slow.  
 
     * CGNS output in transport only mode cause a SEGV.
+
+    * Visit doesn't like cell-centered CGNS output.  Why?
