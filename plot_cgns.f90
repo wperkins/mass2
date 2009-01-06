@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Thu Oct  9 11:24:14 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Tue Jan  6 07:41:08 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -159,7 +159,6 @@ CONTAINS
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_setup"
     INTEGER :: ierr, max_x, max_y
-    INTEGER :: iblock
 
                                  ! make a buffer to hold data going in and out
  
@@ -421,13 +420,13 @@ CONTAINS
 
           CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                &accum_block(iblock)%hydro%ucart%sum, &
-               &'ucart', 'Eastward Velocity', 'feet/second')
+               &'VelocityX', 'Eastward Velocity', 'feet/second')
 
                                 ! average v_cart
 
           CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                &accum_block(iblock)%hydro%vcart%sum, &
-               &'vcart', 'Northward Velocity', 'feet/second')
+               &'VelocityY', 'Northward Velocity', 'feet/second')
 
                                 ! average depth
 
@@ -441,13 +440,13 @@ CONTAINS
 
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%uvelp%sum, &
-                  &'uvel', 'Longitudinal Velocity', 'feet/second')
+                  &'GridVelocityXi', 'Longitudinal Velocity', 'feet/second')
 
                                 ! average v
 
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%vvelp%sum, &
-                  &'vvel', 'Lateral Velocity', 'feet/second')
+                  &'GridVelocityEta', 'Lateral Velocity', 'feet/second')
 
                                 ! average wsel
 
@@ -459,7 +458,7 @@ CONTAINS
 
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%vmag%sum, &
-                  &'vmag', 'Velocity Magnitude', 'feet/second')
+                  &'VelocityMagnitude', 'Velocity Magnitude', 'feet/second')
 
                                 ! average bed shear
 
@@ -471,13 +470,19 @@ CONTAINS
 
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%froude%sum, &
-                  &'froude', 'Froude Number', 'none')
+                  &'FroudeNumber', 'Froude Number', 'none')
 
                                 ! Courant number
 
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%courant%sum, &
-                  &'courant', 'Courant Number', 'none')
+                  &'CourantNumber', 'Courant Number', 'none')
+
+                                ! Eddy Viscosity
+
+             CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                  &accum_block(iblock)%hydro%eddyvisc%sum, &
+                  &'KinematicEddyViscosity', 'Kinematic Eddy Viscosity', 'feet/second^2')
 
           END IF
 
@@ -813,8 +818,7 @@ CONTAINS
 
     INTEGER, INTENT(IN) :: fileidx
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_file_close"
-    CHARACTER (LEN=1024) :: buffer
-    INTEGER :: baseidx, nzones, zoneidx, ierr
+    INTEGER :: baseidx, ierr
 
     baseidx = 1
 
@@ -922,12 +926,6 @@ CONTAINS
     IMPLICIT NONE
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_close"
-    INTEGER :: nzones, zoneidx, nsols, solidx, solloc, ierr, idx(2)
-    CHARACTER (LEN=1024) :: buffer
-    CHARACTER (LEN=80) :: solname
-    CHARACTER (LEN=20) :: datestr, timestr
-    CHARACTER (LEN=32), ALLOCATABLE :: names(:)
-    DOUBLE PRECISION, ALLOCATABLE :: times(:)
 
     CALL plot_cgns_file_close(pfileidx)
 
