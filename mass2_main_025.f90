@@ -73,9 +73,8 @@ SUBROUTINE start_up()
 
   IMPLICIT NONE
 
-  INTEGER :: var, imax, jmax
+  INTEGER :: imax, jmax
   INTEGER :: i, j 
-  CHARACTER (LEN=1024) :: msg
 
   baro_press = 760.0              ! in case weather is not read
 
@@ -264,6 +263,12 @@ SUBROUTINE initialize()
         CALL check_wetdry(block(iblock))
      END DO
   END IF
+
+  IF (do_calc_eddy) THEN
+     CALL bedshear(block(iblock))
+     CALL calc_eddy_viscosity(block(iblock))
+  END IF
+
 END SUBROUTINE initialize
 
 
@@ -684,7 +689,7 @@ SUBROUTINE read_config()
   line = line + 1
   READ(cfg_iounit,*, ERR=1000)depth_sweep		! depth correction internal iterations
   line = line + 1
-  READ(cfg_iounit,*, ERR=1000)eddy_default, do_spatial_eddy  ! turb eddy viscosity
+  READ(cfg_iounit,*, ERR=1000)eddy_default, do_spatial_eddy !, do_calc_eddy  ! turb eddy viscosity
   line = line + 1
   
   ! scalar diffusion coeff in xsi (ft^2/sec) ! scalar diffusion coeff in eta (ft^2/sec)
@@ -870,8 +875,8 @@ SUBROUTINE buildghost(iblock)
   
   INTEGER, INTENT(IN) :: iblock
   INTEGER :: k, cells, con_cells, con_block, ifcells, jfcells
-  INTEGER :: i, ibeg, iend, ixtra, coni, conibeg, coniend, icoff
-  INTEGER :: j, jbeg, jend, jxtra, conj, conjbeg, conjend, jcoff
+  INTEGER :: i, ibeg, iend, coni, conibeg, coniend, icoff
+  INTEGER :: j, jbeg, jend, conj, conjbeg, conjend, jcoff
   INTEGER :: num_bc
   DOUBLE PRECISION :: fract
 
@@ -1053,7 +1058,7 @@ SUBROUTINE extrapghost(blk)
   IMPLICIT NONE
 
   TYPE (block_struct), INTENT(INOUT) :: blk
-  INTEGER :: i, j, ibeg, iend, jbeg, jend, ig
+  INTEGER :: i, j, ig
 
   DO ig = 1, nghost
      i = 1 - ig
@@ -1338,7 +1343,7 @@ SUBROUTINE interp_grid(blk)
   IMPLICIT NONE
 
   TYPE(block_struct), INTENT(INOUT) :: blk
-  INTEGER :: i, j, ig, ivec(4),jvec(4),ivec2(4),jvec2(4)
+  INTEGER :: i, j, ivec(4),jvec(4),ivec2(4),jvec2(4)
 
   DO i = i_index_min + 1, blk%xmax + i_index_extra - 1
      DO j = j_index_min + 1, blk%ymax + j_index_extra - 1
@@ -1410,7 +1415,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   INTEGER :: conjbeg, conjend, conj, jbeg, jend
   INTEGER :: conibeg, coniend, coni, ibeg, iend
   LOGICAL :: side
-  DOUBLE PRECISION :: carea, cflux, farea
+  DOUBLE PRECISION :: carea, cflux
   CHARACTER (LEN=1024) :: msg
   
   DO n = 1, bc%num_cell_pairs
@@ -1498,6 +1503,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
               blk%vvel(i,j) = cblk%vvel(coni, conj)
               blk%depth(i,j) = cblk%depth(coni, conj)
               blk%isdry(i,j) = cblk%isdry(coni, conj)
+              blk%eddy(i,j) = cblk%eddy(coni, conj)
               conj = conj + 1
            END DO
            coni = coni + 1
@@ -1720,7 +1726,6 @@ SUBROUTINE fillghost_scalar(blk, sclr, cblk, csclr, bc)
   INTEGER :: n, cells, concells, ifcells, jfcells
   INTEGER :: i, ibeg, iend, coni, conibeg, coniend
   INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
-  DOUBLE PRECISION :: carea, cflux, farea
   LOGICAL :: side
   
   DO n = 1, bc%num_cell_pairs
@@ -1928,27 +1933,9 @@ SUBROUTINE hydro(status_flag)
 
   IMPLICIT NONE
   
-  DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
-  DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
-  DOUBLE PRECISION :: zbot_e, zbot_w, zbot_n, zbot_s, dwsdx
-  DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
-  DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
-  DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
-  DOUBLE PRECISION :: apo, cpo								! coefficients in discretization eqns
-  DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
-  DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
-
-  INTEGER :: k, status_flag, x_beg, y_beg, num_bc, i, j, junk
+  INTEGER :: status_flag, x_beg, y_beg, num_bc, i, j
   LOGICAL :: alldry
-
-  DOUBLE PRECISION :: barea, maxdrain, sc, sp
-  DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
-  DOUBLE PRECISION :: h1_eta_e, h1_eta_w, h1_eta_n, h1_eta_s	! e.g., h1_eta_p is the partial deriv
-  DOUBLE PRECISION :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
-  DOUBLE PRECISION :: curve_1,curve_2,curve_3,curve_4,curve_5,curve_6,curve_7	! curvature terms
-  DOUBLE PRECISION :: k_p,k_e,k_w,k_n,k_s 
-  DOUBLE PRECISION :: cross_term				! eddy viscosity cross term in momement equations
-  DOUBLE PRECISION, EXTERNAL :: afunc
+  DOUBLE PRECISION :: apo
 
   ! Assign U,V,D BCs for this time
   ! set U boundary conditions for this time
@@ -2093,6 +2080,15 @@ SUBROUTINE hydro(status_flag)
 
         IF (do_wetdry .AND. iterate_wetdry)&
              &CALL check_wetdry(block(iblock))
+        
+        ! Calculate bed shear stress here if it is needed for eddy
+        ! viscosity calculation
+        CALL bedshear(block(iblock))
+
+        ! If specified, compute eddy viscosity
+        IF (do_calc_eddy) THEN
+           CALL calc_eddy_viscosity(block(iblock))
+        END IF
 
      END DO		! block loop end
      
@@ -2106,7 +2102,7 @@ SUBROUTINE hydro(status_flag)
      IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
      
      !------------------------------------------------------------------------
-     
+
   END DO    ! internal time iteration loop for momentum, depth correction equations
   
   IF (do_wetdry .AND. .NOT. iterate_wetdry) THEN
@@ -2147,21 +2143,27 @@ SUBROUTINE default_hydro_bc(blk)
      blk%uvel(i,:) = 0.0
      blk%vvel(i,:) = blk%vvel(x_beg,:)
      CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+     blk%eddy(i,:) = blk%eddy(x_beg,:)
 
      i = blk%xmax + ig
      blk%uvel(i,:) = 0.0
      blk%vvel(i,:) = blk%vvel(x_end,:)
      CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+     blk%eddy(i,:) = blk%eddy(x_end,:)
 
      j = y_beg - ig
      blk%uvel(:,j) = blk%uvel(:,y_beg)
      blk%vvel(:,j) = 0.0
      CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+     blk%eddy(:,j) = blk%eddy(:,y_beg)
 
      j = blk%ymax + ig
      blk%uvel(:,j) = blk%uvel(:,y_end)
      blk%vvel(:,j) = 0.0
      CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+     blk%eddy(:,j) = blk%eddy(:,y_end)
+
+     
   END DO
 
   blk%isdead(:,:)%u = .FALSE.
@@ -2185,7 +2187,6 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
   LOGICAL, INTENT(INOUT) :: ds_flux_given
 
   INTEGER :: x_end, y_end, i, j, k, jj, ii
-  INTEGER :: con_block, con_i, con_j
   INTEGER :: i_beg, i_end, j_beg, j_end
   DOUBLE PRECISION :: input_total
 
@@ -2818,7 +2819,7 @@ SUBROUTINE extrapolate_udepth(blk, i, jmin, jmax, level)
   INTEGER, INTENT(IN) :: i, jmin, jmax
   LOGICAL, INTENT(IN), OPTIONAL :: level
 
-  INTEGER :: ioff, j
+  INTEGER :: ioff
   LOGICAL :: dolvl
 
   ioff = 1                      ! by default, do the upstream end.
@@ -2860,7 +2861,7 @@ SUBROUTINE extrapolate_vdepth(blk, imin, imax, j, level)
   INTEGER, INTENT(IN) :: imin, imax, j
   LOGICAL, INTENT(IN), OPTIONAL :: level
 
-  INTEGER :: joff, i
+  INTEGER :: joff
   LOGICAL :: dolvl
 
   joff = 1                      ! by default, do the upstream end.
@@ -2967,7 +2968,7 @@ SUBROUTINE transport(status_flag)
   IMPLICIT NONE
 
   INTEGER :: status_flag, var, iter
-  INTEGER :: i, j, ispecies, num_bc, junk
+  INTEGER :: ispecies, num_bc
 
   IF(.NOT. do_flow)THEN
      dum_val = current_time%time + delta_t/86400.0d0 ! velocity and depth are at the NEW time
@@ -3049,8 +3050,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
   INTEGER, INTENT(INOUT) :: xstart, ystart
 
   INTEGER :: con_block, k
-  INTEGER :: i, ii, con_i, i_beg, i_end, x_end
-  INTEGER :: j, jj, con_j, j_beg, j_end, y_end
+  INTEGER :: i, ii, i_beg, i_end, x_end
+  INTEGER :: j, jj, j_beg, j_end, y_end
   DOUBLE PRECISION :: tmp
 
   CHARACTER (LEN=1024) :: buf
@@ -3612,7 +3613,7 @@ END SUBROUTINE read_hotstart
 SUBROUTINE write_restart(status_flag)
 IMPLICIT NONE
 
-INTEGER :: i, j, status_flag, iblock
+INTEGER :: i, status_flag, iblock
 
 
 IF( (current_time%time >= end_time%time) .OR. (MOD(time_step_count,restart_print_freq) == 0) )THEN
