@@ -7,10 +7,93 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Wed Nov  5 11:25:05 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Tue Jan  6 11:00:05 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION harmonic
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION harmonic(x1, x2)
+
+  IMPLICIT NONE
+  DOUBLE PRECISION, INTENT(IN) :: x1, x2
+
+  IF (x1 + x2 .EQ. 0.0) THEN
+     harmonic = 0.0
+  ELSE 
+     harmonic = 2.0*x1*x2/(x1 + x2)
+  END IF
+
+END FUNCTION harmonic
+
+! ----------------------------------------------------------------
+! SUBROUTINE bedshear
+! computes the shear used by biota/sediment scalars
+! ----------------------------------------------------------------
+SUBROUTINE bedshear(blk)
+
+  USE globals, ONLY: block_struct, grav, density
+  USE misc_vars, ONLY: manning, mann_con
+
+  IMPLICIT NONE
+
+  TYPE (block_struct) :: blk
+  INTEGER :: i, j
+  DOUBLE PRECISION :: roughness, u, v
+
+  blk%shear = 0 
+  DO i = 1, blk%xmax + 1
+     DO j = 2, blk%ymax
+        IF (i .EQ. 1) THEN
+           u = blk%uvel(i,j)
+           v = 0.0
+        ELSE IF (i .EQ. blk%xmax + 1) THEN
+           u = blk%uvel(i-1,j)
+           v = 0.0
+        ELSE 
+           u = 0.5*(blk%uvel(i-1,j) + blk%uvel(i,j))
+           v = 0.5*(blk%vvel(i-1,j) + blk%vvel(i,j))
+        END IF
+        IF(manning)THEN
+           roughness = 0.0
+           IF (blk%depth(i,j) .GT. 0.0) THEN
+              roughness = (grav*blk%chezy(i,j)**2)/&
+                   &(mann_con*blk%depth(i,j)**0.3333333)
+           END IF
+        ELSE
+           roughness = blk%chezy(i,j)
+        ENDIF
+        blk%shear(i,j) = roughness*density*(u*u + v*v)
+     END DO
+  END DO
+
+END SUBROUTINE bedshear
+
+! ----------------------------------------------------------------
+! SUBROUTINE calc_eddy_viscosity
+! ----------------------------------------------------------------
+SUBROUTINE calc_eddy_viscosity(blk)
+
+  USE globals, ONLY: block_struct, vonkarmon, density, viscosity_water
+
+  IMPLICIT NONE
+
+  TYPE (block_struct), INTENT(INOUT) :: blk
+
+  INTEGER :: i, j
+
+  DO i = 2, blk%xmax
+     DO j = 2, blk%ymax
+        blk%eddy(i,j) = viscosity_water + &
+             &vonkarmon/6.0*sqrt(blk%shear(i,j)/density)*blk%depth(i,j)
+     END DO
+  END DO
+
+END SUBROUTINE calc_eddy_viscosity
+
+
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE uvel_solve
@@ -28,24 +111,27 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
 
   IMPLICIT NONE
 
+  EXTERNAL harmonic
+  DOUBLE PRECISION harmonic
+
   INTEGER, INTENT(IN) :: blkidx
   TYPE(block_struct), INTENT(INOUT) :: blk
   DOUBLE PRECISION, INTENT(IN) :: delta_t
 
 
+
   DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
   DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
-  DOUBLE PRECISION :: zbot_e, zbot_w, zbot_n, zbot_s, dwsdx
+  DOUBLE PRECISION :: zbot_e, zbot_w
   DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
   DOUBLE PRECISION :: diffu_e,diffu_w,diffu_n,diffu_s			! diffusion
-  DOUBLE PRECISION :: pec_e,pec_w,pec_n,pec_s	! peclet numbers
   DOUBLE PRECISION :: aw2, ae2, as2, an2, ap2   ! second order flux coefficients
   DOUBLE PRECISION :: aww, aee, ass, ann        ! second order flux coefficients
   DOUBLE PRECISION :: apo                       ! coefficients in discretization eqns
-  DOUBLE PRECISION :: u_p, u_e, u_w, u_s, u_n	! u velocities at P and on staggered grid
+  DOUBLE PRECISION :: u_p, u_s, u_n	! u velocities at P and on staggered grid
   DOUBLE PRECISION :: v_p, v_n, v_s, v_e, v_w	! v velocities at P and on staggered grid
 
-  INTEGER :: k, x_beg, y_beg, i, j, junk
+  INTEGER :: x_beg, y_beg, i, j, junk
 
   DOUBLE PRECISION :: sc, sp
   DOUBLE PRECISION :: h1_eta_p, h2_xsi_p						! derivatives of metric coeff
@@ -90,11 +176,14 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
               
         v_p = 0.25*(blk%vvel(i,j) + blk%vvel(i+1,j) &
              + blk%vvel(i,j-1) + blk%vvel(i+1,j-1))
-        k_e = blk%eddy(i,j)   ! replace with geometric weighted k's
+
+        ! Use harmonic averages for eddy viscosity
+
+        k_e = blk%eddy(i,j+1)   ! replace with geometric weighted k's
         k_w = blk%eddy(i,j)
-        k_n = blk%eddy(i,j)
-        k_s = blk%eddy(i,j)
-        k_p = blk%eddy(i,j)
+        k_p = harmonic(k_w, k_e)
+        k_n = harmonic(k_p, harmonic(blk%eddy(i,j+1), blk%eddy(i+1,j+1)))
+        k_s = harmonic(k_p, harmonic(blk%eddy(i,j-1), blk%eddy(i+1,j-1)))
         
         depth_e = blk%depth(i+1,j)
         zbot_e = blk%zbot(i+1,j)
@@ -435,6 +524,9 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
 
   IMPLICIT NONE
 
+  EXTERNAL harmonic
+  DOUBLE PRECISION harmonic
+
   INTEGER, INTENT(IN) :: blkidx
   TYPE (block_struct), INTENT(INOUT) :: blk
   DOUBLE PRECISION, INTENT(IN) :: delta_t
@@ -496,11 +588,11 @@ SUBROUTINE vvel_solve(blkidx, blk, delta_t)
         u_p = 0.25*(blk%uvel(i,j) + blk%uvel(i-1,j) &
              + blk%uvel(i,j+1) + blk%uvel(i-1,j+1))
               
-        k_e = blk%eddy(i,j)   ! replace with geometric weighted k's
-        k_w = blk%eddy(i,j)
-        k_n = blk%eddy(i,j)
         k_s = blk%eddy(i,j)
-        k_p = blk%eddy(i,j)
+        k_n = blk%eddy(i,j+1)
+        k_p = harmonic(k_s, k_n)
+        k_e = harmonic(k_p, harmonic(blk%eddy(i+1,j), blk%eddy(i+1,j+1)))
+        k_w = harmonic(k_p, harmonic(blk%eddy(i-1,j), blk%eddy(i-1,j+1)))
 
         depth_n = blk%depth(i,j+1)
         zbot_n = blk%zbot(i,j+1)
