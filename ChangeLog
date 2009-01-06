@@ -1,3 +1,34 @@
+2009-01-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* accumulator.f90 (accumulator): accumulate eddy viscosity too 
+
+	* global_module_023.f90 (globals): add vonkarmon and
+	viscosity_water; get rid of some unused variables
+
+	* hydro_solve.f90 (harmonic, bedshear): added
+	(uvel_solve, vvel_solve): use harmonic means to compute face eddy
+	viscosity  
+
+	* mass2_main_025.f90 (start_up, buildghost, extrapghost)
+	(interp_grid, fillghost_scalar, hydro, apply_hydro_bc)
+	(extrapolate_udepth, extrapolate_vdepth, transport, etc):  get
+	rid of unused variables
+	(default_hydro_bc): copy eddy viscosity into ghost cells by
+	default 
+	(hydro): calculate eddy viscosity in the hydro iteration loop
+	(fillghost_hydro): need to copy eddy viscosity into ghost cells
+	too 
+	(initialize): calculate eddy viscosity
+
+	* misc_vars_module.f90 (misc_vars): add do_calc_eddy flag
+
+	* plot_cgns.f90 (plot_cgns_write): use standard CGNS variable
+	names and eddy viscosity
+	(plot_cgns_file_close, plot_cgns_close): get rid of unused
+	variables 
+
+	* scalar_solve.f90 (bedshear): move to hydro_solve.f90
+
 2008-11-06  William A. Perkins  <william.perkins@pnl.gov>
 
 	* differencing.f90 (differencing): diff_method strings need to be
