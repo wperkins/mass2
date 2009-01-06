@@ -101,6 +101,7 @@ LOGICAL, SAVE :: do_flow_output = .FALSE.
 LOGICAL, SAVE :: do_flow_diag = .TRUE. !.FALSE.
 LOGICAL, SAVE :: do_transport_restart = .FALSE.
 LOGICAL, SAVE :: do_spatial_eddy, do_spatial_kx, do_spatial_ky, do_spatial_chezy
+LOGICAL, SAVE :: do_calc_eddy = .FALSE.
 LOGICAL, SAVE :: do_surface_heatx = .FALSE. , do_surface_gasx = .FALSE.
 LOGICAL, SAVE :: do_accumulate = .FALSE.
 LOGICAL, SAVE :: do_rptdead = .FALSE.
