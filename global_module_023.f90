@@ -38,6 +38,8 @@ DOUBLE PRECISION, PARAMETER :: grav = 32.2, tiny = 1.0D-100
 DOUBLE PRECISION, PARAMETER :: density = 1.94
 DOUBLE PRECISION, PARAMETER :: density_air = 0.00237  ! 60 degrees F
 DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
+DOUBLE PRECISION, PARAMETER :: vonkarmon = 0.4
+DOUBLE PRECISION, PARAMETER :: viscosity_water = 1.22e-05 ! ft^2/s @ 60F
 
                                 ! a list of cell types
 
@@ -574,7 +576,7 @@ DOUBLE PRECISION FUNCTION uflux(blk, i, jbeg, jend)
   TYPE (block_struct), INTENT(IN) :: blk
   INTEGER, INTENT(IN) :: i, jbeg, jend
   
-  INTEGER :: j, ioff
+  INTEGER :: j
   DOUBLE PRECISION :: a, q
 
   uflux = 0.0
@@ -629,7 +631,7 @@ DOUBLE PRECISION FUNCTION vflux(blk, ibeg, iend, j)
   TYPE (block_struct), INTENT(IN) :: blk
   INTEGER, INTENT(IN) :: ibeg, iend, j 
   
-  INTEGER :: i, ioff
+  INTEGER :: i
   DOUBLE PRECISION :: a, q
 
   vflux = 0.0
