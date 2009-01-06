@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 25, 2000 by William A. Perkins
-! Last Change: Thu Apr 17 15:28:02 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Jan  6 07:32:36 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -59,6 +59,7 @@ MODULE accumulator
      TYPE (accum_var_rec) :: shear
      TYPE (accum_var_rec) :: froude
      TYPE (accum_var_rec) :: courant
+     TYPE (accum_var_rec) :: eddyvisc
   END TYPE accum_hydro_rec
 
   TYPE accum_bed_rec
@@ -168,6 +169,7 @@ CONTAINS
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%shear)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%froude)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%courant)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%eddyvisc)
        END IF
        IF (do_transport) THEN
           ALLOCATE(accum_block(iblk)%conc(max_species))
@@ -262,6 +264,7 @@ CONTAINS
           CALL accum_reset_var(accum_block(iblk)%hydro%shear)
           CALL accum_reset_var(accum_block(iblk)%hydro%froude)
           CALL accum_reset_var(accum_block(iblk)%hydro%courant)
+          CALL accum_reset_var(accum_block(iblk)%hydro%eddyvisc)
        END IF
        IF (do_transport) THEN
           DO ispec = 1, max_species
@@ -480,6 +483,7 @@ CONTAINS
           CALL accum_var(block(iblk)%shear, accum_block(iblk)%hydro%shear)
           CALL accum_var(block(iblk)%froude_num, accum_block(iblk)%hydro%froude)
           CALL accum_var(block(iblk)%courant_num, accum_block(iblk)%hydro%courant)
+          CALL accum_var(block(iblk)%eddy, accum_block(iblk)%hydro%eddyvisc)
        END IF
        IF (do_transport) THEN
           DO ispec = 1, max_species
@@ -569,6 +573,7 @@ CONTAINS
           CALL accum_calc_var(accum_block(iblk)%hydro%shear)
           CALL accum_calc_var(accum_block(iblk)%hydro%froude)
           CALL accum_calc_var(accum_block(iblk)%hydro%courant)
+          CALL accum_calc_var(accum_block(iblk)%hydro%eddyvisc)
        END IF
        IF (do_transport) THEN
           DO ispec = 1, max_species
