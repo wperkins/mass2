@@ -7,52 +7,9 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Wed Nov  5 10:25:57 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Tue Jan  6 09:27:51 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 ! $Id$
-
-! ----------------------------------------------------------------
-! SUBROUTINE bedshear
-! computes the shear used by biota/sediment scalars
-! ----------------------------------------------------------------
-SUBROUTINE bedshear(blk)
-
-  USE globals, ONLY: block_struct, grav, density
-  USE misc_vars, ONLY: manning, mann_con
-
-  IMPLICIT NONE
-
-  TYPE (block_struct) :: blk
-  INTEGER :: i, j
-  DOUBLE PRECISION :: roughness, u, v
-
-  blk%shear = 0 
-  DO i = 1, blk%xmax + 1
-     DO j = 2, blk%ymax
-        IF (i .EQ. 1) THEN
-           u = blk%uvel(i,j)
-           v = 0.0
-        ELSE IF (i .EQ. blk%xmax + 1) THEN
-           u = blk%uvel(i-1,j)
-           v = 0.0
-        ELSE 
-           u = 0.5*(blk%uvel(i-1,j) + blk%uvel(i,j))
-           v = 0.5*(blk%vvel(i-1,j) + blk%vvel(i,j))
-        END IF
-        IF(manning)THEN
-           roughness = 0.0
-           IF (blk%depth(i,j) .GT. 0.0) THEN
-              roughness = (grav*blk%chezy(i,j)**2)/&
-                   &(mann_con*blk%depth(i,j)**0.3333333)
-           END IF
-        ELSE
-           roughness = blk%chezy(i,j)
-        ENDIF
-        blk%shear(i,j) = roughness*density*sqrt(u*u + v*v)
-     END DO
-  END DO
-
-END SUBROUTINE bedshear
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE transport_precalc
