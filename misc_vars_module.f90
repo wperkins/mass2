@@ -66,7 +66,7 @@ INTEGER, SAVE :: time_step_count = 0, print_freq = 1, gage_print_freq = 1, resta
 ! DOUBLE PRECISION, SAVE :: h2_xsi_e, h2_xsi_w, h2_xsi_n, h2_xsi_s	! of h1 in eta direction at point p
 
 DOUBLE PRECISION, SAVE :: chezy_con_default ! ,z_step !slope, ds_elev
-DOUBLE PRECISION, SAVE :: relax_dp, relax_uv, blend_time, mann_con
+DOUBLE PRECISION, SAVE :: relax_dp, relax_uv, blend_time, mann_con, relax_eddy
 
 ! INTEGER, SAVE :: jspill_start   ! y node line to start spill at
 ! INTEGER, SAVE :: jspill_end			! y node line to stop spill at
