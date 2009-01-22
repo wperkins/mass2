@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 18, 2003 by William A. Perkins
-! Last Change: Thu Mar 25 12:20:27 2004 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Mon Jan 12 13:48:42 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -36,7 +36,7 @@ MODULE plot_netcdf
   INTEGER, PRIVATE :: depth_varid, wsel_varid
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, dp_varid, sat_varid
-  INTEGER, PRIVATE :: courant_varid, froude_varid, isdry_varid, isdead_varid
+  INTEGER, PRIVATE :: courant_varid, froude_varid, visc_varid, isdry_varid, isdead_varid
   INTEGER, PRIVATE, POINTER :: part_depos_varid(:), depos_varid(:), erode_varid(:)
   INTEGER, PRIVATE, POINTER :: bedsed_varid(:), bedmass_varid(:)
   INTEGER, PRIVATE, POINTER :: beddis_varid(:), bedpore_varid(:), bedporemass_varid(:)
@@ -237,7 +237,6 @@ CONTAINS
        ucart_varid = plot_add_time_var("ucart", "Eastward Velocity", "feet/second")
        vcart_varid = plot_add_time_var("vcart", "Northward Velocity", "feet/second")
        depth_varid = plot_add_time_var("depth", "Water Depth", "feet")
-
        
                                 ! diagnostic values
 
@@ -249,6 +248,7 @@ CONTAINS
           shear_varid = plot_add_time_var("shear", "Bed Shear Stress", "pound/foot^2")
           courant_varid = plot_add_time_var("courant", "Courant Number", "none")
           froude_varid = plot_add_time_var("froude", "Froude Number", "none")
+          visc_varid = plot_add_time_var("eddyvisc", "Kinematic Eddy Viscosity", "feet^2/second")
        END IF
 
        IF (do_wetdry) THEN
@@ -673,6 +673,12 @@ CONTAINS
              CALL plot_print_time_var(courant_varid, start, length, &
                   &block(iblock)%xmax, block(iblock)%ymax,&
                   &accum_block(iblock)%hydro%courant%sum)
+
+                                ! Eddy Viscosity
+ 
+             CALL plot_print_time_var(visc_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%eddyvisc%sum)
 
           END IF
 
