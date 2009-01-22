@@ -298,18 +298,16 @@ SUBROUTINE uvel_solve(blkidx, blk, delta_t)
         h1_eta_e = (blk%hv1(i+1,j) - blk%hv1(i+1,j-1))
         h1_eta_w = (blk%hv1(i,j) - blk%hv1(i,j-1))
         
-        IF((j/=2).AND.(j/=y_end))THEN
-           h1_eta_n = blk%hu1(i,j+1) - blk%hu1(i,j)
-           h1_eta_s = blk%hu1(i,j) - blk%hu1(i,j-1)
-           h2_xsi_n = blk%hv2(i+1,j) - blk%hv2(i,j)
-           h2_xsi_s = blk%hv2(i+1,j-1) - blk%hv2(i,j-1)
-        ELSE IF(j==2)THEN
-           
-           h1_eta_s = 2.0*(blk%hu1(i,j) - blk%hu1(i,j-1))
-        ELSE IF(j == y_end)THEN
-           h1_eta_n = 2.0*(blk%hu1(i,j+1) - blk%hu1(i,j))
-           
-        END IF
+        ! IF((j/=2).AND.(j/=y_end))THEN
+        h1_eta_n = blk%hu1(i,j+1) - blk%hu1(i,j)
+        h1_eta_s = blk%hu1(i,j) - blk%hu1(i,j-1)
+        h2_xsi_n = blk%hv2(i+1,j) - blk%hv2(i,j)
+        h2_xsi_s = blk%hv2(i+1,j-1) - blk%hv2(i,j-1)
+        ! ELSE IF(j==2)THEN
+        !    h1_eta_s = 2.0*(blk%hu1(i,j) - blk%hu1(i,j-1))
+        ! ELSE IF(j == y_end)THEN
+        !    h1_eta_n = 2.0*(blk%hu1(i,j+1) - blk%hu1(i,j))
+        ! END IF
         
         u_p = blk%uvel(i,j)
         u_n = 0.5*(blk%uvel(i,j)+blk%uvel(i,j+1))
