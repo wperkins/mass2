@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Tue Jan  6 07:41:08 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
+! Last Change: Mon Jan 12 12:50:20 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -482,7 +482,7 @@ CONTAINS
 
              CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                   &accum_block(iblock)%hydro%eddyvisc%sum, &
-                  &'KinematicEddyViscosity', 'Kinematic Eddy Viscosity', 'feet/second^2')
+                  &'KinematicEddyViscosity', 'Kinematic Eddy Viscosity', 'feet^2/second')
 
           END IF
 
