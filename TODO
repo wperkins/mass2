@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov 11 15:25:23 2008 by William A. Perkins <d3g096@PE10588.pnl.gov>
+Last Change: Tue Jan 27 07:38:52 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -36,12 +36,30 @@ High Priority:
     * Limit the time frame for which output is produced; supply a list
       of output times
 
+    * Come up with some signal files that will cause MASS2 to do
+      things when they appear in the working directory. The existence
+      of such files would be checked each time step at which time
+      specific action is taken.  Actions might include
+
+        * abort the run
+        * dump a hotstart file (if enabled)
+        * dump plot output  (if enabled)
+        * combinations of the above
+
+    * Transient CGNS that Visit understands
+
+        * needs to be 2D
+        * no CoordinateZ?
+        * Need a BaseIterativeData node (but does not require time?)
+
 Low Priority:
 
     * get parallel version working again; use Global Arrays 
 
     * utility to plot gage.nc directly -- perhaps some combination of
       perl script and gnuplot, maybe even with a GUI like pTk.
+
+    * just do away with NetCDF gage output
 
     * add the capability to specify a non-point contaminant source
       that avoids the bed; this could be implemented by just using a
@@ -79,8 +97,6 @@ Wish List:
 
     * the transport test cases should be transport only for the most
       part
-
-    * simple eddy viscosity model ala Zhou
 
 BUGS
 

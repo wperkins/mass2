@@ -1,3 +1,36 @@
+2009-01-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_cgns.f90 (plot_cgns): make the CGNS output 2D and transient
+	(visit now understands it, but not tecplot)
+
+2009-01-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* hydro_solve.f90 (calc_eddy_viscosity): under relax computed eddy
+	viscosity 
+
+	* mass2_main_025.f90 (initialize): bedshear and eddy viscosity
+	need to be computed for *all* blocks
+	(read_config): read and check eddy viscosity under relaxation
+
+2009-01-22  William A. Perkins  <william.perkins@pnl.gov>
+
+	* hydro_solve.f90 (calc_eddy_viscosity): under relax computed eddy
+	viscosity 
+
+	* plot_netcdf.f90 (plot_file_setup_netcdf, plot_print_netcdf): add
+	eddy viscosity output
+
+	* plot_cgns.f90 (plot_cgns_write): correct eddy viscosity units
+
+	* global_module_023.f90 (allocate_block_components): add space for
+	previous eddy viscosity value
+
+	* mass2_main_025.f90 (read_config): add flag for eddy viscosity
+	calculation 
+
+	* misc_vars_module.f90 (misc_vars): add eddy viscosity
+	underrelaxation factor
+
 2009-01-22  William Perkins  <d3g096@turbulent.pnl.gov>
 
 	* hydro_solve.f90 (uvel_solve): some of the grid metric
