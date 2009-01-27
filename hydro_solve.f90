@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Tue Jan  6 11:00:05 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
+! Last Change: Thu Jan 22 10:00:57 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -77,17 +77,21 @@ END SUBROUTINE bedshear
 SUBROUTINE calc_eddy_viscosity(blk)
 
   USE globals, ONLY: block_struct, vonkarmon, density, viscosity_water
+  USE misc_vars, ONLY: relax_eddy
 
   IMPLICIT NONE
 
   TYPE (block_struct), INTENT(INOUT) :: blk
 
   INTEGER :: i, j
+  DOUBLE PRECISION :: eddystar
 
   DO i = 2, blk%xmax
      DO j = 2, blk%ymax
-        blk%eddy(i,j) = viscosity_water + &
+        eddystar = viscosity_water + &
              &vonkarmon/6.0*sqrt(blk%shear(i,j)/density)*blk%depth(i,j)
+        blk%eddy(i,j) = relax_eddy*eddystar +&
+             &(1.0 - relax_eddy)*blk%eddy(i,j)
      END DO
   END DO
 
