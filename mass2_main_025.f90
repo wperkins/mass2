@@ -265,8 +265,10 @@ SUBROUTINE initialize()
   END IF
 
   IF (do_calc_eddy) THEN
-     CALL bedshear(block(iblock))
-     CALL calc_eddy_viscosity(block(iblock))
+     DO iblock=1,max_blocks
+        CALL bedshear(block(iblock))
+        CALL calc_eddy_viscosity(block(iblock))
+     END DO
   END IF
 
 END SUBROUTINE initialize
@@ -689,9 +691,17 @@ SUBROUTINE read_config()
   line = line + 1
   READ(cfg_iounit,*, ERR=1000)depth_sweep		! depth correction internal iterations
   line = line + 1
-  READ(cfg_iounit,*, ERR=1000)eddy_default, do_spatial_eddy !, do_calc_eddy  ! turb eddy viscosity
+
+  relax_eddy = 0.7
+  READ(cfg_iounit,*, ERR=1000)eddy_default, do_spatial_eddy, do_calc_eddy, relax_eddy  ! turb eddy viscosity
   line = line + 1
   
+  IF (relax_eddy .LE. 0.0 .OR. relax_eddy .GT. 1.0) THEN
+     WRITE (msg, *) "eddy viscosity underrelaxation out of range (", relax_dp, ")"
+     CALL config_error_msg(line, msg)
+     GOTO 1000
+  END IF
+
   ! scalar diffusion coeff in xsi (ft^2/sec) ! scalar diffusion coeff in eta (ft^2/sec)
   READ(cfg_iounit,*, ERR=1000)kx_diff_default,do_spatial_kx
   line = line + 1
