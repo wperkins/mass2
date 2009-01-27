@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Jan 12 12:50:20 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
+! Last Change: Tue Jan 27 12:58:34 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -31,6 +31,7 @@ MODULE plot_cgns
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"
+  LOGICAL, PRIVATE, PARAMETER :: do2D = .TRUE.
   INTEGER, PRIVATE :: pfileidx
   INTEGER, PRIVATE :: pbaseidx
   CHARACTER (LEN=1024), PRIVATE :: plot_file_name
@@ -40,6 +41,7 @@ MODULE plot_cgns
   INTEGER, ALLOCATABLE, PRIVATE :: tmp_int(:)
   REAL, ALLOCATABLE, PRIVATE :: tmp_real(:)
   DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: tmp_double(:)
+  REAL, ALLOCATABLE, PRIVATE :: tmp_times(:)
 
                                 ! this flag is used to determine the
                                 ! kind of grid stored in CGNS. If
@@ -65,6 +67,7 @@ MODULE plot_cgns
 
   INTEGER, PRIVATE :: plot_cgns_outstep = 0
   INTEGER, PUBLIC :: plot_cgns_maxtime = 10
+  DOUBLE PRECISION, PRIVATE :: plot_cgns_start_time = -1
 
 CONTAINS
 
@@ -125,7 +128,7 @@ CONTAINS
     LOGICAL, INTENT(IN) :: docoord
     INTEGER, INTENT(INOUT) :: fileidx, baseidx
 
-    INTEGER :: iblock, zoneidx, ierr
+    INTEGER :: iblock, zoneidx, ierr, physdim
 
                                 ! open the CGNS file for writing
 
@@ -136,7 +139,12 @@ CONTAINS
   
                                 ! create a single base
 
-    CALL cg_base_write_f(fileidx, "MASS2", 2, 3, baseidx, ierr)
+    IF (do2D) THEN
+       physdim = 2
+    ELSE 
+       physdim = 3
+    END IF
+    CALL cg_base_write_f(fileidx, "MASS2", 2, 2, baseidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base in " //&
          &TRIM(filename), fatal=.TRUE.)
 
@@ -167,6 +175,10 @@ CONTAINS
     ALLOCATE(tmp_int(2*max_x*max_y), &
          &tmp_real(2*max_x*max_y), &
          &tmp_double(2*max_x*max_y))
+    ALLOCATE(tmp_times(plot_cgns_maxtime))
+    plot_cgns_start_time = -1.0
+    tmp_times = 0.0
+    
 
                                 ! make a grid file with coordinates in it
 
@@ -229,15 +241,19 @@ CONTAINS
                & blk%x_grid(1:size(1), 1:size(2)))
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateY', &
                & blk%y_grid(1:size(1), 1:size(2)))
-          CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
-               & blk%zbot_grid(1:size(1), 1:size(2)))
+          IF (.NOT. do2D) THEN
+             CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
+                  & blk%zbot_grid(1:size(1), 1:size(2)))
+          END IF
        ELSE 
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateX', &
                & blk%x_out(1:size(1), 1:size(2)))
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateY', &
                & blk%y_out(1:size(1), 1:size(2)))
-          CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
-               & blk%zbot_out(1:size(1), 1:size(2)))
+          IF (.NOT. do2D) THEN
+             CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
+                  & blk%zbot_out(1:size(1), 1:size(2)))
+          END IF
        END IF
 
                                 ! include the grid metric coefficient
@@ -391,12 +407,24 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN) :: salinity, baro_press
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write"
 
-    INTEGER :: iblock, ispecies, solidx, xmax, ymax, ierr, ifract
+    INTEGER :: iblock, ispecies, solidx, xmax, ymax, ierr, ifract, timeidx
     CHARACTER (LEN=32) :: timestamp
+    DOUBLE PRECISION :: elapsed
 
     timestamp = TRIM(accum_time%date_string) // " " // &
          &TRIM(accum_time%time_string)
+
+    elapsed = date_to_decimal(accum_time%date_string, accum_time%time_string)
+    elapsed = elapsed/SECONDS
+
+    IF (plot_cgns_start_time .LT. 0.0) THEN
+       plot_cgns_start_time = elapsed
+    END IF
     
+    elapsed = elapsed - plot_cgns_start_time
+    timeidx = MOD(plot_cgns_outstep, plot_cgns_maxtime) + 1
+    tmp_times(timeidx) = elapsed;
+
     DO iblock = 1, max_blocks
 
        xmax =  block(iblock)%xmax
@@ -453,6 +481,7 @@ CONTAINS
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &accum_block(iblock)%hydro%wsel%sum, &
                   &'wsel', 'Water Surface Elevation', 'feet')
+
 
                                 ! average velocity magnitude
 
@@ -655,7 +684,7 @@ CONTAINS
 
     plot_cgns_outstep = plot_cgns_outstep + 1
     IF (MOD(plot_cgns_outstep, plot_cgns_maxtime) .EQ. 0) THEN
-       CALL plot_cgns_file_close(pfileidx)
+       CALL plot_cgns_file_close(pfileidx, pbaseidx)
        CALL plot_cgns_make_name(plot_file_name)
        CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
        CALL plot_cgns_link_coord(pfileidx, grid_file_name, max_blocks)
@@ -812,107 +841,42 @@ CONTAINS
   ! SUBROUTINE plot_cgns_file_close
   ! This closes the plot file and adds links to the grid
   ! ----------------------------------------------------------------
-  SUBROUTINE plot_cgns_file_close(fileidx)
+  SUBROUTINE plot_cgns_file_close(fileidx, baseidx)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: fileidx
+    INTEGER, INTENT(IN) :: fileidx, baseidx
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_file_close"
-    INTEGER :: baseidx, ierr
+    INTEGER :: ierr, times(2)
 
-    baseidx = 1
+                                ! figure out how many time planes are
+                                ! stored in this file
+
+    times(2) = 0
+
+    IF (plot_cgns_outstep .GT. 0) THEN
+       times(1) = MOD(plot_cgns_outstep, plot_cgns_maxtime) 
+       IF (times(1) .EQ. 0) THEN
+          times = plot_cgns_maxtime
+       END IF
+       CALL cg_simulation_type_write_f(fileidx, baseidx, TimeAccurate, ierr)
+       IF (ierr .EQ. ERROR) &
+            &CALL plot_cgns_error(func, "cannot write simulation type", fatal=.FALSE.)
+       CALL cg_biter_write_f(fileidx, baseidx, "TransientBase", times, ierr)
+       IF (ierr .EQ. ERROR) &
+            &CALL plot_cgns_error(func, "cannot write base iterative data", fatal=.FALSE.)
+       CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
+            &'BaseIterativeData_t', 1, 'end')
+       CALL cg_array_write_f('TimeValues', RealSingle, 1, times, tmp_times, ierr)
+       IF (ierr .EQ. ERROR) THEN
+          CALL plot_cgns_error(func, "cannot write TimeValues in BaseIterativeData node", fatal=.TRUE.)
+       END IF
+    END IF
 
                                 ! close the file that is now open
 
     CALL cg_close_f(fileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot close file", fatal=.TRUE.)
-
-                                ! reopen the CGNS file for modification
-
-    CALL cg_open_f(plot_file_name, MODE_MODIFY, fileidx, ierr)
-    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reopen", fatal=.TRUE.)
-
-                                ! read the number of zones
-
-!!$    CALL cg_nzones_f(fileidx, baseidx, nzones, ierr)
-!!$    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reread number of zones", fatal=.TRUE.)
-!!$
-!!$    DO zoneidx = 1, nzones
-!!$
-!!$                                ! make links to the coordinates and
-!!$                                ! metrics in the grid file
-!!$
-!!$       CALL cg_goto_f(fileidx, baseidx, ierr, &
-!!$            &'Zone_t', zoneidx, "end")
-!!$       WRITE(buffer, '("MASS2/Block", I2.2, "/GridCoordinates")') zoneidx
-!!$       CALL cg_link_write_f('GridCoordinates', grid_file_name, buffer, ierr)
-!!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-!!$            &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
-!!$       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
-!!$       CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
-!!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-!!$            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
-!!$
-!!$       IF (plot_cgns_doiter) THEN
-!!$
-!!$          CALL cg_nsols_f(pfileidx, pbaseidx, zoneidx, nsols, ierr)
-!!$          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reread number of solutions", fatal=.TRUE.)
-!!$       
-!!$          IF (nsols .GT. 0) THEN
-!!$
-!!$             ALLOCATE(names(nsols))
-!!$             IF (zoneidx .EQ. 1) ALLOCATE(times(nsols))
-!!$             
-!!$             DO solidx = 1, nsols
-!!$
-!!$                CALL cg_sol_info_f(pfileidx, pbaseidx, zoneidx, solidx, solname, solloc, ierr)
-!!$                IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot read solution info", fatal=.TRUE.)
-!!$       
-!!$                READ(solname, *) datestr, timestr
-!!$          
-!!$                IF (zoneidx .EQ. 1) times(solidx) = date_to_decimal(datestr, timestr)
-!!$                names(solidx) = solname
-!!$             END DO
-!!$
-!!$             CALL cg_ziter_write_f(pfileidx, pbaseidx, zoneidx, 'ZoneSolutions', ierr)
-!!$             IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write zone iterative data", fatal=.TRUE.)
-!!$
-!!$             CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
-!!$                  &'Zone_t', zoneidx, &
-!!$                  &'ZoneIterativeData_t', 1, 'end')
-!!$             IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot find zone iterative data", fatal=.TRUE.)
-!!$
-!!$             idx(1) = 32
-!!$             idx(2) = nsols
-!!$             CALL cg_array_write_f('ZoneSolutionPointers', Character, 2, idx, names, ierr)
-!!$             IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write zone solution pointers", fatal=.TRUE.)
-!!$             
-!!$             IF (zoneidx .EQ. 1) THEN
-!!$                
-!!$                CALL cg_biter_write_f(pfileidx, pbaseidx, 'Solution Time Planes', nsols, ierr)
-!!$                IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base iterative data", fatal=.TRUE.)
-!!$
-!!$                CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
-!!$                     &'BaseIterativeData_t', 1, 'end')
-!!$                IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot find base iterative data", fatal=.TRUE.)
-!!$
-!!$                idx(1) = nsols
-!!$             
-!!$                CALL cg_array_write_f('TimeValues', RealDouble, 1, idx, times, ierr)
-!!$                IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base solution data", fatal=.TRUE.)
-!!$
-!!$                DEALLOCATE(times)
-!!$             END IF
-!!$
-!!$             DEALLOCATE(names)
-!!$          END IF
-!!$       END IF
-
-
-!!$    END DO
-    CALL cg_close_f(fileidx, ierr)
-    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot reclose file", fatal=.TRUE.)
-    
 
   END SUBROUTINE plot_cgns_file_close
 
@@ -927,9 +891,9 @@ CONTAINS
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_close"
 
-    CALL plot_cgns_file_close(pfileidx)
+    CALL plot_cgns_file_close(pfileidx, pbaseidx)
 
-    DEALLOCATE(tmp_real, tmp_double)
+    DEALLOCATE(tmp_real, tmp_double, tmp_times)
 
 
   END SUBROUTINE plot_cgns_close
