@@ -1,5 +1,8 @@
 2009-01-27  William A. Perkins  <william.perkins@pnl.gov>
 
+	* test/benchmark/jda/mass2_v027.run, mass2_v027.warmup: update
+	eddy viscosity input
+
 	* plot_cgns.f90 (plot_cgns): make the CGNS output 2D and transient
 	(visit now understands it, but not tecplot)
 
