@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Jan 27 07:38:52 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Thu Feb 26 13:21:56 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -90,6 +90,12 @@ Code Clean Up:
     * put the transient CGNS stuff back in (for visit)
 
     * change CGNS output variables to standard names (for visit)
+
+    * start using doxygen for code documentation
+
+    * find and apply an "indent"-like program for Fortran 90/95 --
+      needs to do formatting and make sure variable names are all the
+      same case
 
 Wish List:
 
