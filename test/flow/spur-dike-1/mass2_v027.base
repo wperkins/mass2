@@ -8,18 +8,18 @@ F           ! on/off switch for transport calculations
 F F "weather.dat"
 F           ! extra debug printing
 T           ! manning bottom friction equation
-T   100000  ! write out restart files
+T   1500    ! write out restart files
 F           ! read hotstart file
 T           ! gage output
 T F         ! initial: w.s. elev or depth, profile
 04-01-1996 00:00:00  ! start date & time
 04-01-1996 00:10:00  ! end date & time
-0.25        ! time step (seconds)
+0.01        ! time step (seconds)
 10 1.0e-04  ! hydro iterations, mass source error
 2           ! scalar iterations
 2           ! inner iterations for scalars
 25          ! inner iterations for depth correction
-1.61e-02 F  ! eddy viscosity
+1.61e-02 F F ! eddy viscosity
 0.20001 F   ! diffusion coeff in xsi (ft^2/sec)
 0.50001 F   ! diffusion coeff in eta (ft^2/sec)
 0.0100 F    ! manning n value if manning=TRUE
@@ -37,5 +37,5 @@ T 0.01 0.015 0.005 ! do wet/dry, dry depth, rewet depth, zero depth
 0.4 0.0 F 1 ! bed: porosity, initial depth, read initial, iterations
 999999 F    ! 2D output frequency, averaging
 T T F       ! 2D enable netcdf, diag, flow
-F F T 999999 ! cgns: enable, cell centered, field desc, times/file
-4           ! gage output frequency
+T F T 999999 ! cgns: enable, cell centered, field desc, times/file
+100           ! gage output frequency

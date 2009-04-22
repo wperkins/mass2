@@ -19,7 +19,7 @@ F F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 2			number_scalar_iterations
 2			scalar_sweep	! internal iterations
 30			depth_sweep
-4.0e-03   F		eddy viscosity
+4.0e-03   F F		eddy viscosity
 3.0e-02   F		kx_diff		! diffusion coeff in xsi (ft^2/sec)
 2.6e-02   F		ky_diff		! diffusion coeff in eta (ft^2/sec)
 0.01125   F	    ! (0.01125 for slip, 0.00925 for rough)
