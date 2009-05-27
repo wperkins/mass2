@@ -1,3 +1,4 @@
+
 #! /bin/csh -f
 # -------------------------------------------------------------
 # file: env.csh
@@ -8,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 16, 1999 by William A. Perkins
-# Last Change: Thu Jul 15 07:35:08 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed Apr 22 10:53:54 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -17,6 +18,7 @@ if( ! $?TECHOME ) then
 endif
 setenv TEC100HOME $TECHOME
 setenv TEC90HOME $TECHOME
+setenv TEC360HOME $TECHOME
 setenv TECADDONDEVDIR $PWD
 set path = ($path $TECHOME/adk/bin)
 
@@ -24,7 +26,7 @@ set os = `uname -s`
 
 switch( $os )
     case Linux*:
-        setenv TECADDONDEVPLATFORM linux.22
+        setenv TECADDONDEVPLATFORM linux64.26
         breaksw
     case IRIX64*:
         setenv TECADDONDEVPLATFORM sgix.62
