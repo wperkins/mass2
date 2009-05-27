@@ -1,3 +1,19 @@
+2009-05-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_file_header): added
+	(gage_print_text): revive text gage output and make default
+
+	* test/benchmark/mcn-test/hotstart.bin: updated
+
+	* test/benchmark/mcn-test/mass2_v027.base: update for momentum
+	underrelaxation and discretization method
+
+	* test/benchmark/mcn-test/mass2_v027.warmup: update for momentum
+	underrelaxation and discretization method
+
+	* test/benchmark/mcn-test/scalar_bcspecs.dat: block connections
+	not needed
+
 2009-01-27  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/benchmark/jda/mass2_v027.run, mass2_v027.warmup: update
