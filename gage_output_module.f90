@@ -154,6 +154,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: iounit
     INTEGER :: i
 
+    WRITE(iounit, '(A)', ADVANCE='NO') "#"
     WRITE(iounit, 101, ADVANCE='NO') "timestamp"
     WRITE(iounit, 100, ADVANCE='NO') "elapsed"
     
@@ -199,8 +200,8 @@ CONTAINS
 
     WRITE(iounit, *)
   
-100 FORMAT(A15, ',')
-101 FORMAT(A20, ',')
+100 FORMAT(A15, ' ')
+101 FORMAT(A19, ' ')
   END SUBROUTINE gage_file_header
 
 
@@ -340,9 +341,9 @@ CONTAINS
        END IF
        CLOSE(50)
     END DO
-100 FORMAT(F15.6, ',')
-101 FORMAT(A20, ',')
-102 FORMAT(E15.8, ',')
+100 FORMAT(F15.6, ' ')
+101 FORMAT(A20, ' ')
+102 FORMAT(E15.8, ' ')
 
   END SUBROUTINE gage_print_text
 
