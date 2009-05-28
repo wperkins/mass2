@@ -1,3 +1,9 @@
+2009-05-28  William A. Perkins  <william.perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_file_header, gage_print_text): use
+	space instead of comma for delimiter so gnuplotting is the same as
+	BC files
+
 2009-05-27  William A. Perkins  <william.perkins@pnl.gov>
 
 	* gage_output_module.f90 (gage_file_header): added
