@@ -217,7 +217,7 @@ CONTAINS
     ! construct the generic file name for the gage output files
     ! file = "gage_block=1_icell=11_jcell=2.out"
     DO i=1,num_gages
-       gage_specs(i)%filename = "gage_" // TRIM(gage_specs(i).ident) // ".out"
+       gage_specs(i)%filename = "gage_" // TRIM(gage_specs(i)%ident) // ".out"
        OPEN(gage_iounit, file=gage_specs(i)%filename)
        CALL gage_file_header(gage_iounit)
        CLOSE(50)
