@@ -1,3 +1,11 @@
+2009-07-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/spur-dike-1/streamlines-metric.lay: draw the x-velocity
+	separation line
+
+	* test/flow/another-jump/mass2_v027.cfg: update configuration file
+	format; switch to MSOU scheme
+
 2009-05-28  William A. Perkins  <william.perkins@pnl.gov>
 
 	* gage_output_module.f90 (gage_file_header, gage_print_text): use
