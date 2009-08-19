@@ -50,30 +50,27 @@ TYPE scalar_cell_type_struct
 END TYPE scalar_cell_type_struct
 
 TYPE scalar_struct
-	DOUBLE PRECISION, POINTER :: conc(:,:) ! c depth-ave concentration
-	DOUBLE PRECISION, POINTER :: concold(:,:) ! c old depth-ave concentration
-	DOUBLE PRECISION, POINTER :: concoldold(:,:) ! c old depth-ave concentration
-    DOUBLE PRECISION, POINTER :: srcterm(:,:) ! precomputed source term
-    TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
+   DOUBLE PRECISION, POINTER :: conc(:,:) ! c depth-ave concentration
+   DOUBLE PRECISION, POINTER :: concold(:,:) ! c old depth-ave concentration
+   DOUBLE PRECISION, POINTER :: concoldold(:,:) ! c old depth-ave concentration
+   DOUBLE PRECISION, POINTER :: srcterm(:,:) ! precomputed source term
+   TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
 
                                 ! keep track of the mass of the
                                 ! species in the water column and in
                                 ! the bed
-    DOUBLE PRECISION :: mass, massold
-    DOUBLE PRECISION :: bedmass, bedmassold
+   DOUBLE PRECISION :: mass, massold
+   DOUBLE PRECISION :: bedmass, bedmassold
 
                                 ! a place to record the accumulated
                                 ! flux of the species into the box
                                 ! (negative means outflow)
-    DOUBLE PRECISION :: influx, outflux, netflux
+   DOUBLE PRECISION :: influx, outflux, netflux
 END TYPE scalar_struct
 
 TYPE species_struct
-
-	TYPE(scalar_struct), POINTER :: scalar(:) ! need one for each block up to max_blocks
-
+   TYPE(scalar_struct), POINTER :: scalar(:) ! need one for each block up to max_blocks
 END TYPE species_struct
-
 
 TYPE(species_struct), ALLOCATABLE :: species(:)
 
