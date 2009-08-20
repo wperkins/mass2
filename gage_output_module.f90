@@ -66,6 +66,7 @@ MODULE gage_output
   INTEGER, PRIVATE, POINTER :: bedporemass_varid(:), bedpore_varid(:), beddis_varid(:)
   INTEGER, PRIVATE, POINTER :: part_depos_varid(:), bedpartmass_varid(:), bedpart_varid(:)
   INTEGER, PRIVATE :: beddepth_varid
+  INTEGER, PRIVATE :: evap_varid
 
 CONTAINS
 
@@ -191,6 +192,8 @@ CONTAINS
              WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-erode'
              WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
              WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
+          CASE (TEMP)
+             WRITE(iounit, 100, ADVANCE='NO') "evap"
           END SELECT
        END DO
        IF (source_doing_sed) THEN
@@ -334,7 +337,10 @@ CONTAINS
                      &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
                 WRITE(gage_iounit, 102, ADVANCE='NO')&
                      &bed(iblock)%particulate(j, icell, jcell)
-                
+
+             CASE (TEMP)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     scalar_source(j)%temp_param%block(iblock)%evaporation(icell, jcell)
              END SELECT
 
           END DO
@@ -670,6 +676,12 @@ CONTAINS
                   &"Mass of " // TRIM(scalar_source(i)%description) // " in Bed", &
                   &"mass/foot^2", .TRUE.)
 
+             CASE (TEMP)
+
+                evap_varid = gage_add_time_var(&
+                  &"evaporation", &
+                  &"Evaporation Rate", &
+                  &"in/day", .TRUE.)
 
           END SELECT
        END DO
@@ -855,6 +867,11 @@ CONTAINS
                         &bed(iblock)%porosity(icell, jcell))
                    CALL gage_print_time_var(beddis_varid(j), index, value)
                 END IF
+
+             CASE (TEMP)
+
+                CALL gage_print_time_var(evap_varid, index, &
+                     &scalar_source(j)%temp_param%block(iblock)%evaporation(icell,jcell))
 
              CASE (TDG)
                 conc_TDG = species(j)%scalar(iblock)%conc(icell,jcell)
