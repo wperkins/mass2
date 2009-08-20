@@ -3303,7 +3303,7 @@ SUBROUTINE update(status_flag)
 
 IMPLICIT NONE
 
-INTEGER :: status_flag, iblock, ispecies
+INTEGER :: status_flag, iblock, ispecies, i, j
 
 
 DO iblock=1,max_blocks
@@ -3334,10 +3334,22 @@ IF (do_transport) THEN
               = species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax)
          species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
               = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
+         SELECT CASE (scalar_source(ispecies)%srctype)
+         CASE (TEMP)
+            IF (scalar_source(ispecies)%temp_param%doexchange) THEN
+               DO i = 2, block(iblock)%xmax
+                  DO j = 2, block(iblock)%ymax
+                     scalar_source(ispecies)%temp_param%block(iblock)%evaporation(i,j) = &
+                          &evaporation_rate(species(ispecies)%scalar(iblock)%conc(i,j))
+                  END DO
+               END DO
+            END IF
+         END SELECT
       END DO
    END DO
    CALL scalar_mass_balance(delta_t)
    IF (source_doing_sed) CALL bed_accounting(delta_t)
+   
 END IF
 
 IF (do_accumulate) CALL accumulate(current_time%time)
