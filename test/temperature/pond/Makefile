@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February  1, 2002 by William A. Perkins
-# Last Change: Wed May 27 13:48:33 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Wed Aug 19 12:53:24 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2
@@ -17,7 +17,8 @@ GNUPLOT = gnuplot
 EPSFILES = \
 	temp.eps \
 	temp.1992.eps \
-	temp.summer.1992.eps
+	temp.summer.1992.eps \
+	evap.summer.1992.eps
 
 MODELFILES = \
 	mass2_v027.cfg \
@@ -29,7 +30,7 @@ MODELFILES = \
 
 all: $(EPSFILES)
 
-$(EPSFILES): %.eps: gage_1.out
+$(EPSFILES): %.eps: %.gp gage_1.out
 	$(GNUPLOT) $*.gp > $*.eps
 
 
