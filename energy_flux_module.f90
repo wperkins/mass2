@@ -1,12 +1,14 @@
 
 MODULE energy_flux
 
+  USE constants
+
 IMPLICIT NONE
 
 PRIVATE :: net_solar_rad, net_longwave, back_radiation
-PRIVATE :: evaporation, conduction, windspeed, rel_humid, sat_vapor_press
+PRIVATE :: conduction, windspeed, rel_humid, sat_vapor_press
 
-DOUBLE PRECISION :: stephan_boltz = 5.67e-8 !stephan-boltzmann constant in W/m2-K4
+
 
 
 CONTAINS
@@ -86,6 +88,26 @@ DOUBLE PRECISION :: wind_speed	! wind speed in m/s at a height 7 m above water s
 evaporation = -windspeed(wind_speed)*( sat_vapor_press(t_water) - sat_vapor_press(t_dew) )
 
 END FUNCTION evaporation
+
+! ----------------------------------------------------------------
+! DOUBLE PRECISION FUNCTION latent_heat
+!
+! Computes the latent heat of vaporization for water (kJ/kg) given the
+! temperature (degree C).  Got this from Wikipedia (I know, I know),
+! which referenced
+!
+!   Quartic fit to Table 2.1,p.16, Textbook: R.R.Rogers & M.K. Yau, A
+!   Short Course in Cloud Physics, 2e,(1989), Pergamon press
+! ----------------------------------------------------------------
+DOUBLE PRECISION FUNCTION latent_heat(T)
+
+  IMPLICIT NONE
+  DOUBLE PRECISION, INTENT(IN) :: T
+
+  latent_heat = - 0.0000614342*T**3 + 0.00158927*T**2 - 2.36418*T + 2500.79
+
+END FUNCTION latent_heat
+
 
 !#########################################################################
 DOUBLE PRECISION FUNCTION conduction(t_water, t_air, wind_speed)
