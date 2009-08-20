@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 25, 2000 by William A. Perkins
-! Last Change: Tue Jan  6 07:32:36 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Wed Aug 19 15:34:17 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -41,6 +41,10 @@ MODULE accumulator
      DOUBLE PRECISION, POINTER :: min(:, :)
      DOUBLE PRECISION, POINTER :: sum(:, :)
   END TYPE accum_var_rec
+
+  TYPE accum_temp_rec
+     TYPE (accum_var_rec) :: evaporation
+  END TYPE accum_temp_rec
 
   TYPE accum_tdg_rec
      TYPE (accum_var_rec) :: press
@@ -76,6 +80,7 @@ MODULE accumulator
      TYPE (accum_var_rec), POINTER :: conc(:)
      TYPE (accum_tdg_rec) :: tdg
      TYPE (accum_bed_rec) :: bed 
+     TYPE (accum_temp_rec) :: temp
   END TYPE accum_block_rec
 
   TYPE (accum_block_rec), ALLOCATABLE :: accum_block(:)
@@ -176,6 +181,8 @@ CONTAINS
           DO ispec = 1, max_species
              CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%conc(ispec))
              SELECT CASE (scalar_source(ispec)%srctype)
+             CASE (TEMP)
+                CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%temp%evaporation)
              CASE (TDG)
                 CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%tdg%press)
                 CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%tdg%deltap)
@@ -270,6 +277,8 @@ CONTAINS
           DO ispec = 1, max_species
              CALL accum_reset_var(accum_block(iblk)%conc(ispec))
              SELECT CASE (scalar_source(ispec)%srctype)
+             CASE (TEMP)
+                CALL accum_reset_var(accum_block(iblk)%temp%evaporation)
              CASE (TDG)
                 CALL accum_reset_var(accum_block(iblk)%tdg%press)
                 CALL accum_reset_var(accum_block(iblk)%tdg%deltap)
@@ -490,6 +499,9 @@ CONTAINS
              CALL accum_var(species(ispec)%scalar(iblk)%conc, &
                   &accum_block(iblk)%conc(ispec))
              SELECT CASE (scalar_source(ispec)%srctype)
+             CASE (TEMP)
+                CALL accum_var(scalar_source(ispec)%temp_param%block(iblk)%evaporation,&
+                     &accum_block(iblk)%temp%evaporation)
              CASE (TDG)
                 CALL accumulate_tdg(iblk, ispec)
              END SELECT
@@ -579,6 +591,8 @@ CONTAINS
           DO ispec = 1, max_species
              CALL accum_calc_var(accum_block(iblk)%conc(ispec))
              SELECT CASE (scalar_source(ispec)%srctype)
+             CASE (TEMP)
+                CALL accum_calc_var(accum_block(iblk)%temp%evaporation)
              CASE (TDG)
                 CALL accum_calc_var(accum_block(iblk)%tdg%press)
                 CALL accum_calc_var(accum_block(iblk)%tdg%deltap)
