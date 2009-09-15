@@ -32,9 +32,9 @@ MODULE gage_output
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   TYPE gage_specs_struct
-     !CHARACTER (LEN=80) :: filename = ''  ! fails for non F95 compilers
      CHARACTER (LEN=80) :: filename
      CHARACTER (LEN=40) :: ident
+     INTEGER :: iounit
      INTEGER :: block
      INTEGER :: i_cell, j_cell
   END TYPE gage_specs_struct
@@ -42,6 +42,7 @@ MODULE gage_output
   TYPE(gage_specs_struct), POINTER :: gage_specs(:)
 
   INTEGER, PARAMETER :: gage_iounit = 50
+  LOGICAL, PARAMETER :: doflush = .FALSE.
   INTEGER :: num_gages
   CHARACTER (LEN=80), PARAMETER, PRIVATE :: gage_control = 'gage_control.dat'
 
@@ -107,19 +108,19 @@ CONTAINS
     ! count up the number of gages and allocate the structure        
     num_gages = 0    
     CALL open_existing(gage_control, 50)
-	DO WHILE(.TRUE.)
+    DO WHILE(.TRUE.)
        READ(50,*,END=100)dum
        num_gages = num_gages + 1	
-	END DO
-100	CLOSE(50)
+    END DO
+100 CLOSE(50)
 
-	ALLOCATE(gage_specs(num_gages), STAT = alloc_stat)
-	IF(alloc_stat /= 0)THEN
+    ALLOCATE(gage_specs(num_gages), STAT = alloc_stat)
+    IF(alloc_stat /= 0)THEN
        CALL error_message('allocation failed for the array of gage specs ')
-	ENDIF
+    ENDIF
 
     CALL open_existing(gage_control, 50)
-	DO i=1,num_gages
+    DO i=1,num_gages
        gage_specs(i)%ident = ' '
        READ(50,*)gage_specs(i)%block,gage_specs(i)%i_cell,gage_specs(i)%j_cell,gage_specs(i)%ident
        IF (gage_specs(i)%block .LE. 0 .OR. gage_specs(i)%block .GT. max_blocks) THEN
@@ -128,8 +129,8 @@ CONTAINS
           ierr = ierr + 1
        END IF
        CALL gage_make_ident(gage_specs(i))
-	END DO
-	CLOSE(50)
+    END DO
+    CLOSE(50)
 
     IF (ierr .GT. 0) THEN
        CALL error_message('errors in "' // TRIM(gage_control) // '" input file', fatal=.TRUE.)
@@ -221,9 +222,10 @@ CONTAINS
     ! file = "gage_block=1_icell=11_jcell=2.out"
     DO i=1,num_gages
        gage_specs(i)%filename = "gage_" // TRIM(gage_specs(i).ident) // ".out"
-       OPEN(gage_iounit, file=gage_specs(i)%filename)
-       CALL gage_file_header(gage_iounit)
-       CLOSE(50)
+       gage_specs(i)%iounit = gage_iounit + i - 1
+       OPEN(gage_specs(i)%iounit, file=gage_specs(i)%filename)
+       CALL gage_file_header(gage_specs(i)%iounit)
+       IF (doflush) CLOSE(gage_specs(i)%iounit)
     END DO
   END SUBROUTINE gage_file_setup_text
   
@@ -250,32 +252,36 @@ CONTAINS
     DOUBLE PRECISION :: value
     CHARACTER (LEN=tslen) :: timestamp
 
+    INTEGER :: gunit
+
     timestamp = TRIM(date_string) // ' ' // TRIM(time_string)
 
     DO i=1,num_gages
-       OPEN(gage_iounit, file=gage_specs(i)%filename, POSITION="APPEND")
+       gunit = gage_specs(i)%iounit
+       IF (doflush)&
+            & OPEN(gunit, file=gage_specs(i)%filename, POSITION="APPEND")
 
-       WRITE(gage_iounit, 101, ADVANCE='NO') timestamp
-       WRITE(gage_iounit, 100, ADVANCE='NO') elapsed
+       WRITE(gunit, 101, ADVANCE='NO') timestamp
+       WRITE(gunit, 100, ADVANCE='NO') elapsed
 
        iblock = gage_specs(i)%block
        icell = gage_specs(i)%i_cell + 1 ! convert from cell to i,j
        jcell = gage_specs(i)%j_cell + 1
 
        
-       WRITE (gage_iounit, 102, ADVANCE='NO') block(iblock)%wsel(icell,jcell)
-       WRITE (gage_iounit, 102, ADVANCE='NO') block(iblock)%depth(icell,jcell)
-       WRITE (gage_iounit, 102, ADVANCE='NO') &
+       WRITE (gunit, 102, ADVANCE='NO') block(iblock)%wsel(icell,jcell)
+       WRITE (gunit, 102, ADVANCE='NO') block(iblock)%depth(icell,jcell)
+       WRITE (gunit, 102, ADVANCE='NO') &
             &SQRT(block(iblock)%uvel(icell,jcell)**2 + block(iblock)%vvel(icell,jcell)**2)
-       WRITE (gage_iounit, 102, ADVANCE='NO') block(iblock)%uvel(icell,jcell)
-       WRITE (gage_iounit, 102, ADVANCE='NO') block(iblock)%vvel(icell,jcell)
+       WRITE (gunit, 102, ADVANCE='NO') block(iblock)%uvel(icell,jcell)
+       WRITE (gunit, 102, ADVANCE='NO') block(iblock)%vvel(icell,jcell)
 
        IF (block(iblock)%isdry(icell,jcell)) THEN
           value = 1.0
        ELSE
           value = 0.0
        END IF
-       WRITE (gage_iounit, 102, ADVANCE='NO') value
+       WRITE (gunit, 102, ADVANCE='NO') value
 
        IF(do_transport)THEN
 
@@ -283,69 +289,70 @@ CONTAINS
              t_water = species(source_temp_idx)%scalar(iblock)%conc(icell,jcell)
           END IF
           DO j = 1, max_species
-             WRITE (gage_iounit, 102, ADVANCE='NO') &
+             WRITE (gunit, 102, ADVANCE='NO') &
                   &species(j)%scalar(iblock)%conc(icell,jcell)/&
                   &scalar_source(j)%conversion
              SELECT CASE(scalar_source(j)%srctype)
              CASE (GEN)
                 IF (scalar_source(j)%generic_param%issorbed) THEN
-                   WRITE(gage_iounit, 102, ADVANCE='NO') bed(iblock)%pore(j, icell, jcell)
+                   WRITE(gunit, 102, ADVANCE='NO') bed(iblock)%pore(j, icell, jcell)
                    value = 0.0
                    IF (bed(iblock)%depth(icell, jcell) .GT. 0.0) value= &
                         &bed(iblock)%pore(j, icell, jcell)/ &
                         &(bed(iblock)%depth(icell, jcell)* &
                         &bed(iblock)%porosity(icell, jcell))
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-                   WRITE(gage_iounit, 102, ADVANCE='NO') &
+                   WRITE(gunit, 102, ADVANCE='NO') value
+                   WRITE(gunit, 102, ADVANCE='NO') &
                         &bed(iblock)%pore(j, icell, jcell)*&
                         &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
                 ELSE
                    value = 0.0
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   WRITE(gunit, 102, ADVANCE='NO') value
+                   WRITE(gunit, 102, ADVANCE='NO') value
+                   WRITE(gunit, 102, ADVANCE='NO') value
                 END IF
                 
              CASE (TDG)                             
                 conc_TDG = species(j)%scalar(iblock)%conc(icell,jcell)
                 value = TDGasPress(conc_TDG,  t_water,  salinity)
-                WRITE(gage_iounit, 102, ADVANCE='NO') value
+                WRITE(gunit, 102, ADVANCE='NO') value
                 
                 value = TDGasDP(conc_TDG,  t_water,  salinity, baro_press)
-                WRITE(gage_iounit, 102, ADVANCE='NO') value
+                WRITE(gunit, 102, ADVANCE='NO') value
           
                 value = TDGasSaturation(conc_TDG,  t_water,  salinity, baro_press)
-                WRITE(gage_iounit, 102, ADVANCE='NO') value
+                WRITE(gunit, 102, ADVANCE='NO') value
 
              CASE (SED)                             
                 ifract = scalar_source(j)%sediment_param%ifract
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &scalar_source(j)%sediment_param%block(iblock)%deposition(icell, jcell)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &scalar_source(j)%sediment_param%block(iblock)%erosion(icell, jcell)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &bed(iblock)%sediment(ifract, icell, jcell)* &
                      &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &bed(iblock)%sediment(ifract, icell, jcell)
 
              CASE (PART)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &bed(iblock)%sediment(j, icell, jcell)* &
                      &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      &bed(iblock)%particulate(j, icell, jcell)
 
              CASE (TEMP)
-                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                WRITE(gunit, 102, ADVANCE='NO')&
                      scalar_source(j)%temp_param%block(iblock)%evaporation(icell, jcell)
              END SELECT
 
           END DO
        END IF
-       CLOSE(50)
+       WRITE(gunit, *)
+       IF (doflush) CLOSE(gunit)
     END DO
 100 FORMAT(F15.6, ' ')
 101 FORMAT(A20, ' ')
@@ -977,10 +984,15 @@ CONTAINS
 
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
-    INTEGER ncstat
+    INTEGER :: ncstat
+    INTEGER :: i
 
     IF (gage_do_text) THEN
-       CLOSE(gage_iounit)
+       IF (.NOT. doflush) THEN
+          DO i=1,num_gages
+             CLOSE(gage_specs(i)%iounit)
+          END DO
+       END IF
     END IF
     IF (gage_do_netcdf) THEN
        ncstat = nf_close(gage_ncid)
@@ -1013,7 +1025,7 @@ CONTAINS
        WRITE(mass_source_iounit,200, advance='no') iblock
     END DO
     WRITE(mass_source_iounit,*)
-    CALL FLUSH(mass_source_iounit)
+    IF (doflush) CALL FLUSH(mass_source_iounit)
 
 100 FORMAT('#date',8x,'time',5x)
 200 FORMAT(i5,5x)
@@ -1046,7 +1058,7 @@ CONTAINS
        END IF
     END DO
     WRITE(mass_source_iounit,*)
-    CALL FLUSH(mass_source_iounit)
+    IF (doflush) CALL FLUSH(mass_source_iounit)
 
 3013 FORMAT(a10,2x,a12,1x,I3,1X)
 3012 FORMAT((g12.4,1x))
