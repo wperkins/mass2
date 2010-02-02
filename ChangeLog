@@ -1,3 +1,9 @@
+2010-02-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (start_up): allocate inlet_area and
+	table_input with the maximum block dimension, not the maximum j
+	dimension. 
+
 2010-01-27  William A. Perkins  <william.perkins@pnl.gov>
 
 	* block_bc_module.f90 (set_bc_part): fixed wrong file name in
