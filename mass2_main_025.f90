@@ -112,7 +112,7 @@ SUBROUTINE start_up()
   END IF
 
   ! ALLOCATE(work(imax,jmax))
-  ALLOCATE(inlet_area(jmax), table_input(jmax))
+  ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
 
   !-------------------------------------------------------------------------------
   ! read in the grid files for each block
