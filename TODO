@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Thu Feb 26 13:21:56 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Wed Feb  3 11:45:59 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -66,6 +66,9 @@ Low Priority:
       different keyword (instead of BEDSOUCE) in scalar_source.dat
 
     * Open or radiant boundary condition.
+
+    * Ability to identify when things aren't going well, e.g. really
+      big negative depths, and just crash
 
 Wetting/Drying Issues:
 
