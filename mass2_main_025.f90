@@ -32,6 +32,7 @@ USE table_boundary_conditions
 USE date_time
 USE gage_output
 USE plot_output
+USE block_flux_output
 USE scalars
 USE scalars_source
 USE met_data_module
@@ -351,6 +352,7 @@ SUBROUTINE output_init()
   IF(do_gage_print) THEN
      CALL gage_file_setup(do_transport,error_iounit, status_iounit)
      CALL mass_file_setup()
+     CALL block_flux_setup()
   END IF
 
 
@@ -3508,6 +3510,7 @@ IF(do_gage_print)THEN
             &DBLE((current_time%time - start_time%time)*24), &
             &do_transport, salinity, baro_press)
        CALL mass_print(current_time%date_string, current_time%time_string)
+       CALL block_flux_print(current_time%date_string, current_time%time_string)
 ! 3011 FORMAT(i5,5x)
 ! 3005 FORMAT('#date',8x,'time',5x)
 
