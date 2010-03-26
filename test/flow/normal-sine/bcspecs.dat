@@ -1,0 +1,4 @@
+1 US TABLE FLUX ALL "discharge.dat" /
+1 DS BLOCK ELEV ALL 2 /
+2 US BLOCK VELO ALL 1 /
+2 DS TABLE ELEV ALL "stage.dat" /
