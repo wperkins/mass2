@@ -8,7 +8,7 @@ F           ! on/off switch for transport calculations
 F F "weather.dat"
 F           ! extra debug printing
 T           ! manning bottom friction equation
-T   1500    ! write out restart files
+F   1500    ! write out restart files
 F           ! read hotstart file
 T           ! gage output
 T F         ! initial: w.s. elev or depth, profile
@@ -19,7 +19,7 @@ T F         ! initial: w.s. elev or depth, profile
 2           ! scalar iterations
 2           ! inner iterations for scalars
 25          ! inner iterations for depth correction
-1.61e-02 F F ! eddy viscosity
+1.29-02 F F 0.7 ! eddy viscosity
 0.20001 F   ! diffusion coeff in xsi (ft^2/sec)
 0.50001 F   ! diffusion coeff in eta (ft^2/sec)
 0.0100 F    ! manning n value if manning=TRUE
