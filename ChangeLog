@@ -1,3 +1,17 @@
+2010-03-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/normal-sine: channel test with sinusoidal cross
+	section 
+
+	* mass2_main_025.f90 (output_init, output): output block flux
+	report 
+
+	* mass2.f90 (mass2): close block flux report
+
+	* Makefile.am: incorporate block_flux_output module
+
+	* block_flux_output.f90: added
+
 2010-02-02  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90 (start_up): allocate inlet_area and
