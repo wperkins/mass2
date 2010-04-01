@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 24, 2010 by William A. Perkins
-! Last Change: Wed Mar 24 13:55:51 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Mon Mar 29 07:49:01 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -37,11 +37,14 @@ CONTAINS
     CALL open_new(block_flux_ioname, block_flux_iounit)
     !                        
     WRITE(block_flux_iounit, 10) 'Upstream', 'Downstream', 'Right Bank', 'Left Bank'
-    WRITE(block_flux_iounit, 11)
+    WRITE(block_flux_iounit, 11, advance='no')
+    WRITE(block_flux_iounit, 12, advance='no')
+    WRITE(block_flux_iounit, 12, advance='yes')
     CALL FLUSH(block_flux_iounit)
 
 10 FORMAT('#Date       Time         Blk ',4(1X,A15)) 
-11 FORMAT('##########  ############ ### ',4(1X,15(1H#)))
+11 FORMAT('##########  ############ ### ')
+12 FORMAT(4(1X,15(1H#)))
 
 
   END SUBROUTINE block_flux_setup
@@ -61,7 +64,7 @@ CONTAINS
     INTEGER, PARAMETER:: sides = 4
     INTEGER :: iblock
     INTEGER :: imax, jmax
-    DOUBLE PRECISION :: flux(4)
+    DOUBLE PRECISION :: flux(4), area(4)
 
     DO iblock = 1, max_blocks
        imax = block(iblock)%xmax
@@ -71,14 +74,20 @@ CONTAINS
        flux(3) = vflux(block(iblock), 2, imax, 1)  ! right bank
        flux(4) = vflux(block(iblock), 2, imax, jmax)  ! left bank
 
+       area(1) = uarea(block(iblock), 1, 2, jmax) ! upstream
+       area(2) = uarea(block(iblock), imax, 2, jmax) ! downstream
+       area(3) = varea(block(iblock), 2, imax, 1)  ! right bank
+       area(4) = varea(block(iblock), 2, imax, jmax)  ! left bank
+
        WRITE(block_flux_iounit, 100, advance='no') date_string,time_string, iblock
-       WRITE(block_flux_iounit, 200) flux(1), flux(2), flux(3), flux(4)
+       WRITE(block_flux_iounit, 200, advance='no') flux(1), flux(2), flux(3), flux(4)
+       WRITE(block_flux_iounit, 200, advance='yes') area(1), area(2), area(3), area(4)
     END DO
 
     CALL FLUSH(block_flux_iounit)
 
 100 FORMAT(a10,2x,a12,1x,I3,1x)
-200 FORMAT(4(1X,E15.4))
+200 FORMAT(4(1X,E15.6))
 
 
   END SUBROUTINE block_flux_print
