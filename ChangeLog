@@ -1,3 +1,8 @@
+2010-04-01  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_flux_output.f90 (block_flux_print): write block edge areas
+	too 
+
 2010-03-26  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/flow/normal-sine: channel test with sinusoidal cross
