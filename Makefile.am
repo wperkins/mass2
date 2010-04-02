@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Wed Mar 24 12:03:53 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Fri Apr  2 11:31:04 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FFLAGS = $(FCFLAGS)
@@ -147,7 +147,7 @@ scalar_solve.o: scalar_solve.f90 global_module_023.o misc_vars_module.o \
 
 scalars_module.o: scalars_module.f90 misc_vars_module.o time_series/libts.a
 
-scalars_source.o: scalars_source.f90 temperature_source.o \
+scalars_source.o: scalars_source.f90 temperature_source.o misc_vars_module.o \
 	tdg_source.o generic_source.o scalars_module.o met_data_module.o \
 	sediment_source.o particulate_source.o differencing.o time_series/libts.a 
 
