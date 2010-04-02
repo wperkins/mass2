@@ -753,6 +753,16 @@ SUBROUTINE read_config()
      GOTO 1000
   END SELECT
 
+  IF (nghost .LT. 2) THEN
+     SELECT CASE (diff_uv)
+     CASE (DIFF_SOU, DIFF_MSOU, DIFF_MUSCL)
+        WRITE (msg, *) 'uv differencing method "', TRIM(diffbuf), &
+             &'" unavailable - too few ghost cells'
+        CALL config_error_msg(line, msg)
+        GOTO 1000
+     END SELECT
+  END IF
+
   IF (blend_uv .LT. 0.0 .OR. blend_uv .GT. 1.0) THEN
      WRITE (msg, *) "momentum 2nd order blending factor out of range (", blend_uv, ")"
      CALL config_error_msg(line, msg)
