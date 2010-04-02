@@ -1449,8 +1449,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   
      SELECT CASE (bc%bc_loc)
      CASE ("US")
-        ibeg = 2 - nghost
-        iend = ibeg + (nghost - 1)
+        iend = 1
+        ibeg = iend - (nghost - 1)
         coniend = cblk%xmax
         conibeg = coniend - (nghost - 1)
         jbeg = bc%start_cell(n)+1
@@ -1460,8 +1460,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         cells = jend - jbeg + 1
         concells = conjend - conjbeg + 1
      CASE ("DS")
-        iend = blk%xmax + nghost
-        ibeg = iend - (nghost - 1)
+        ibeg = blk%xmax + 1
+        iend = ibeg + (nghost - 1)
         conibeg = 2
         coniend = conibeg + (nghost - 1)
         jbeg = bc%start_cell(n)+1
@@ -1475,8 +1475,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = 2 - nghost
-        jend = jbeg + (nghost - 1)
+        jend = 1
+        jbeg = jend - (nghost - 1)
         conjend = cblk%ymax
         conjbeg = conjend - (nghost - 1)
         cells = iend - ibeg + 1
@@ -1599,7 +1599,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                     cflux = uflux(cblk, coni, conj, conj)
                  END IF
                  ju = jbeg + (conj - conjbeg)*jfcells
-                 carea = uarea(blk, ibeg, ju, ju + jfcells - 1)
+                 carea = uarea(blk, i, ju, ju + jfcells - 1)
                  DO j = ju, ju + jfcells - 1
                     IF (carea .GT. 0.0) THEN
                        blk%uvel(i,j) = cflux/carea
@@ -1621,7 +1621,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                     cflux = vflux(cblk, coni, coni, conj)
                  END IF
                  iu = ibeg + (coni - conibeg)*ifcells
-                 carea = varea(blk, iu, iu  + ifcells - 1, jbeg)
+                 carea = varea(blk, iu, iu  + ifcells - 1, j)
                  DO i = iu, iu + ifcells - 1
                     IF (carea .GT. 0.0) THEN
                        blk%vvel(i,j) = cflux/carea
