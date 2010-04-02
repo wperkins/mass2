@@ -1,5 +1,16 @@
 2010-04-02  William A. Perkins  <william.perkins@pnl.gov>
 
+	* Makefile.am (scalars_source.o): now depends on
+	misc_vars_module.o 
+
+	* scalars_source.f90 (scalar_source_read): make it an error to
+	choose a momentum differencing scheme that takes more ghost cells
+	than are available
+
+	* mass2_main_025.f90 (read_config): make it an error to choose a
+	momentum differencing scheme that takes more ghost cells than are
+	available 
+
 	* mass2.f90 (mass2): close block flux output if used
 
 	* mass2_main_025.f90 (output_init,output): optionally output block
