@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 24, 2010 by William A. Perkins
-# Last Change: Wed Mar 24 14:49:51 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Tue Mar 30 11:35:59 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -47,8 +47,8 @@ w = 100.0
 l = 1000.0
 
                                         # numbers of cells in each block
-nx = [ 100, 100 ]
-ny = [  10,  20 ]
+nx = [ 100, 200 ]
+ny = [  10,  30 ]
 
 blocks = len(nx)
 
