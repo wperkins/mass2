@@ -352,7 +352,7 @@ SUBROUTINE output_init()
   IF(do_gage_print) THEN
      CALL gage_file_setup(do_transport,error_iounit, status_iounit)
      CALL mass_file_setup()
-     CALL block_flux_setup()
+     IF (debug) CALL block_flux_setup()
   END IF
 
 
@@ -1141,7 +1141,7 @@ SUBROUTINE extrap_1_corner(blk, i, j, ioff, joff)
 
   TYPE (block_struct), INTENT(INOUT) :: blk
   INTEGER, INTENT(IN) :: i, j, ioff, joff
-  DOUBLE PRECISION :: mi, mj, bi, bj
+  DOUBLE PRECISION :: mi, mj, bi, bj, zi, zj
   INTEGER :: i1, i2, j1, j2
 
   i1 = i + ioff
@@ -1169,6 +1169,11 @@ SUBROUTINE extrap_1_corner(blk, i, j, ioff, joff)
      blk%y_grid(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
      blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
   END IF
+
+  zi = blk%zbot_grid(i,j1) - (blk%zbot_grid(i,j2) - blk%zbot_grid(i,j1))
+  zj = blk%zbot_grid(i1,j) - (blk%zbot_grid(i2,j) - blk%zbot_grid(i1,j))
+
+  blk%zbot_grid(i,j) = 0.5*(zi+zj)
 
 END SUBROUTINE extrap_1_corner
 
@@ -1591,6 +1596,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                     ELSE 
                        blk%uvel(i,j) = 0.0
                     END IF
+                    ! WRITE (*,101) i, j, coni, conj, cflux, carea
+                    ! 101 FORMAT('In fillghost_hydro: ', 4(1X, I3), 2(1X, E15.6))
                  END DO
               END DO
            END DO
@@ -3510,7 +3517,9 @@ IF(do_gage_print)THEN
             &DBLE((current_time%time - start_time%time)*24), &
             &do_transport, salinity, baro_press)
        CALL mass_print(current_time%date_string, current_time%time_string)
-       CALL block_flux_print(current_time%date_string, current_time%time_string)
+       IF (debug) &
+            &CALL block_flux_print(current_time%date_string, current_time%time_string)
+
 ! 3011 FORMAT(i5,5x)
 ! 3005 FORMAT('#date',8x,'time',5x)
 
