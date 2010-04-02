@@ -1,3 +1,11 @@
+2010-04-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2.f90 (mass2): close block flux output if used
+
+	* mass2_main_025.f90 (output_init,output): optionally output block
+	flux 
+	(extrap_1_corner): extrapolate z too
+
 2010-04-01  William A. Perkins  <william.perkins@pnl.gov>
 
 	* block_flux_output.f90 (block_flux_print): write block edge areas
