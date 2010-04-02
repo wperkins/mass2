@@ -1,5 +1,8 @@
 2010-04-02  William A. Perkins  <william.perkins@pnl.gov>
 
+	* mass2_main_025.f90 (fillghost_hydro): incorrect indexes used for
+	flux calculations in fine block
+
 	* Makefile.am (scalars_source.o): now depends on
 	misc_vars_module.o 
 
