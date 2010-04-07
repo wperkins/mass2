@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Tue Jan 27 12:58:34 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Wed Apr  7 09:09:05 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -393,7 +393,8 @@ CONTAINS
   SUBROUTINE plot_cgns_write(date_string, time_string, salinity, baro_press)
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry, do_rptdead
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, &
+         &do_transport, do_wetdry, do_rptdead
     USE scalars
     USE scalars_source
     USE date_time
@@ -512,6 +513,19 @@ CONTAINS
              CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                   &accum_block(iblock)%hydro%eddyvisc%sum, &
                   &'KinematicEddyViscosity', 'Kinematic Eddy Viscosity', 'feet^2/second')
+
+
+                                ! average u
+
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &accum_block(iblock)%hydro%uflux%sum, &
+                  &'GridFluxXi', 'Longitudinal Flux', 'feet^3/second')
+
+                                ! average v
+
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &accum_block(iblock)%hydro%vflux%sum, &
+                  &'GridFluxEta', 'Lateral Flux', 'feet^3/second')
 
           END IF
 
