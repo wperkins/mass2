@@ -91,6 +91,8 @@ TYPE block_struct
    DOUBLE PRECISION, POINTER :: hu2(:,:)		! metric coeff. 2 in eta direction : u vel loc
    DOUBLE PRECISION, POINTER :: uvel_p(:,:)		! u vel at c.v. node
    DOUBLE PRECISION, POINTER :: vvel_p(:,:)		! v vel at c.v. node
+   DOUBLE PRECISION, POINTER :: uflux(:,:)      ! east face flux for c.v.
+   DOUBLE PRECISION, POINTER :: vflux(:,:)      ! north face flux for c.v.
    DOUBLE PRECISION, POINTER :: u_cart(:,:)	! u cartesian velocity component x-dir
    DOUBLE PRECISION, POINTER :: v_cart(:,:)	! v cartesian velocity component x-dir
    DOUBLE PRECISION, POINTER :: uvel(:,:) 		! u depth-ave velocity
@@ -233,6 +235,10 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   block(n)%uvel = 0.0
   ALLOCATE(block(n)%vvel(imin:imax,jmin:jmax))		! v depth-ave velocity
   block(n)%vvel = 0.0
+  ALLOCATE(block(n)%uflux(imin:imax,jmin:jmax))		! east face flux in c.v.
+  block(n)%uflux = 0.0
+  ALLOCATE(block(n)%vflux(imin:imax,jmin:jmax))		! north face flux in c.v.
+  block(n)%vflux = 0.0
   
   ALLOCATE(block(n)%depth(imin:imax,jmin:jmax))		! water DEPTH (NOT WS ELEVATION)
   ALLOCATE(block(n)%wsel(imin:imax,jmin:jmax))		! Water Surface ELEVATION
@@ -331,22 +337,60 @@ END SUBROUTINE deallocate_globals
 ! ----------------------------------------------------------------
 SUBROUTINE velocity_shift()
 
+  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+
   IMPLICIT NONE
 
   INTEGER :: iblk, i, j
+  DOUBLE PRECISION :: flux1, flux2, fluxsum
 
   DO iblk = 1, max_blocks
 
-                                ! cell center velocity components
-
-     DO i= 1, block(iblk)%xmax + 2
-        DO j=1, block(iblk)%ymax + 2
-           block(iblk)%uvel_p(i,j) = &
-                &0.5*(block(iblk)%uvel(i,j)+block(iblk)%uvel(i-1,j))
-           block(iblk)%vvel_p(i,j) = &
-                &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+                                ! cell center velocity components 
+                                ! with fluxes !
+     block(iblk)%uflux = 0.0
+     block(iblk)%vflux = 0.0
+     DO i = i_index_min+1, block(iblk)%xmax+i_index_extra
+        fluxsum = 0.0
+        DO j=2, block(iblk)%ymax 
+           flux1 = uflux(block(iblk), i-1, j, j)
+           flux2 = uflux(block(iblk), i, j, j)
+           fluxsum = fluxsum + flux2
+           block(iblk)%uflux(i,j) = flux2
+           block(iblk)%uvel_p(i,j) = 0.5*(flux1+flux2)/block(iblk)%hp2(i,j)/block(iblk)%depth(i,j)
         END DO
+        block(iblk)%uflux(i,1) = block(iblk)%uflux(i,2)
+        block(iblk)%uflux(i,block(iblk)%ymax+1) = block(iblk)%uflux(i,block(iblk)%ymax)
+        ! DO j=2, block(iblk)%ymax 
+        !    block(iblk)%uflux(i,j) = fluxsum
+        ! END DO
      END DO
+
+     DO j= j_index_min+1, block(iblk)%ymax + j_index_extra
+        fluxsum = 0.0
+        DO i = 2, block(iblk)%xmax
+           flux1 = vflux(block(iblk), i, i, j-1)
+           flux2 = vflux(block(iblk), i, i, j)
+           fluxsum = fluxsum + flux2
+           block(iblk)%vflux(i,j) = flux2
+           block(iblk)%vvel_p(i,j) = 0.5*(flux1+flux2)/block(iblk)%hp1(i,j)/block(iblk)%depth(i,j)
+        END DO
+        block(iblk)%vflux(1,j) = block(iblk)%vflux(i,2)
+        block(iblk)%vflux(i,block(iblk)%xmax+1) = block(iblk)%vflux(i,block(iblk)%xmax)
+        ! DO i = 2, block(iblk)%xmax
+        !    block(iblk)%vflux(i,j) = fluxsum
+        ! END DO
+     END DO
+
+
+!      DO i= 1, block(iblk)%xmax + 2
+!         DO j=1, block(iblk)%ymax + 2
+!            block(iblk)%uvel_p(i,j) = &
+!                 &0.5*(block(iblk)%uvel(i,j)+block(iblk)%uvel(i-1,j))
+!            block(iblk)%vvel_p(i,j) = &
+!                 &0.5*(block(iblk)%vvel(i,j)+block(iblk)%vvel(i,j-1))
+!         END DO
+!      END DO
      i = 1
      DO j = 2, block(iblk)%ymax
         block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i+1,j)
