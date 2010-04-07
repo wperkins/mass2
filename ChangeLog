@@ -1,3 +1,19 @@
+2010-04-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_netcdf.f90 (plot_file_setup_netcdf, plot_print_netcdf): add
+	new block variables uflux and vflux to output
+
+	* plot_cgns.f90 (plot_cgns_write): write uflux and vflux
+
+	* global_module_023.f90 (globals, allocate_block_components): add
+	new block variables uflux and vflux
+	(velocity_shift): compute p-cell velocities using fluxes instead
+	of averaging; compute new block variables uflux and vflux
+
+	* accumulator.f90 (accumulator, accum_initialize, accum_reset) 
+	(accumulate, accum_calc): add new accumulated variables uflux and
+	vflux 
+
 2010-04-02  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_main_025.f90 (fillghost_hydro): incorrect indexes used for
