@@ -8,7 +8,12 @@ IMPLICIT NONE
 PRIVATE :: net_solar_rad, net_longwave, back_radiation
 PRIVATE :: conduction, windspeed, rel_humid, sat_vapor_press
 
-
+DOUBLE PRECISION, PARAMETER, PRIVATE :: coeff(4) = (/ &
+     &0.46, &           ! wind function modifier
+     &9.2, &            ! wind function offset
+     &0.47, &           ! conduction coefficient
+     &0.80 &            ! "brunt" coefficient for lw back radiation
+     &/)
 
 
 CONTAINS
@@ -51,7 +56,7 @@ DOUBLE PRECISION FUNCTION net_longwave(t_air, t_dew)
 IMPLICIT NONE
 DOUBLE PRECISION :: t_air, t_dew
 DOUBLE PRECISION :: reflect = 0.03			! relflectance assumed to be 0.03 
-DOUBLE PRECISION :: brunt_coeff = 0.65	! ave. value
+DOUBLE PRECISION :: brunt_coeff = coeff(4)	! ave. value
 
 net_longwave = 4.4e-8*(t_air + 273.15)**4 * &
 							 ( brunt_coeff + 0.031*SQRT(sat_vapor_press(t_dew)) )*(1.0 - reflect)
@@ -121,7 +126,7 @@ DOUBLE PRECISION :: t_water	! water surface temperature in degrees C
 DOUBLE PRECISION :: t_air		! air temperature in degrees C
 DOUBLE PRECISION :: wind_speed	! wind speed in m/s at a height 7 m above water surface
 
-conduction = -0.47*windspeed(wind_speed)*(t_water - t_air)
+conduction = -coeff(3)*windspeed(wind_speed)*(t_water - t_air)
 
 END FUNCTION conduction
 
@@ -135,7 +140,7 @@ DOUBLE PRECISION FUNCTION windspeed(wind_speed)
 IMPLICIT NONE
 DOUBLE PRECISION :: wind_speed	! wind speed in m/s at a height 7 m above water surface
 
-windspeed = 9.2 + 0.46*wind_speed**2
+windspeed = coeff(2) + coeff(1)*wind_speed**2
 
 END FUNCTION windspeed
 
