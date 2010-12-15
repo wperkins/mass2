@@ -17,7 +17,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 24, 2000 by William A. Perkins
-! Last Change: Wed Aug 19 11:37:11 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Mon Sep 28 07:48:11 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -113,7 +113,7 @@ CONTAINS
   ! DOUBLE PRECISION FUNCTION evaporation_rate
   !
   ! This routine uses the evaporation() function to estimate a an water
-  ! evaporation rate, in ft/s.
+  ! evaporation rate, in in/day.
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION evaporation_rate(t)
     
