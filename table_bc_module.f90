@@ -29,7 +29,7 @@ USE time_series
 
 IMPLICIT NONE
 
-INTEGER, PARAMETER  :: max_cell_values = 10
+INTEGER, PARAMETER  :: max_cell_values = 40
 INTEGER :: max_tables = 0, max_scalar_tables = 0
 
 
