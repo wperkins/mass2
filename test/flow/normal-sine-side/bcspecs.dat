@@ -1,4 +1,0 @@
-1 RB TABLE FLUX ALL "discharge.dat" /
-1 LB BLOCK ELEV ALL 2 /
-2 RB BLOCK VELO ALL 1 /
-2 LB TABLE ELEV ALL "stage.dat" /
