@@ -32,6 +32,7 @@ USE table_boundary_conditions
 USE date_time
 USE gage_output
 USE plot_output
+USE block_flux_output
 USE scalars
 USE scalars_source
 USE met_data_module
@@ -112,7 +113,7 @@ SUBROUTINE start_up()
   END IF
 
   ! ALLOCATE(work(imax,jmax))
-  ALLOCATE(inlet_area(jmax), table_input(jmax))
+  ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
 
   !-------------------------------------------------------------------------------
   ! read in the grid files for each block
@@ -351,6 +352,7 @@ SUBROUTINE output_init()
   IF(do_gage_print) THEN
      CALL gage_file_setup(do_transport,error_iounit, status_iounit)
      CALL mass_file_setup()
+     IF (debug) CALL block_flux_setup()
   END IF
 
 
@@ -751,6 +753,16 @@ SUBROUTINE read_config()
      GOTO 1000
   END SELECT
 
+  IF (nghost .LT. 2) THEN
+     SELECT CASE (diff_uv)
+     CASE (DIFF_SOU, DIFF_MSOU, DIFF_MUSCL)
+        WRITE (msg, *) 'uv differencing method "', TRIM(diffbuf), &
+             &'" unavailable - too few ghost cells'
+        CALL config_error_msg(line, msg)
+        GOTO 1000
+     END SELECT
+  END IF
+
   IF (blend_uv .LT. 0.0 .OR. blend_uv .GT. 1.0) THEN
      WRITE (msg, *) "momentum 2nd order blending factor out of range (", blend_uv, ")"
      CALL config_error_msg(line, msg)
@@ -1139,7 +1151,7 @@ SUBROUTINE extrap_1_corner(blk, i, j, ioff, joff)
 
   TYPE (block_struct), INTENT(INOUT) :: blk
   INTEGER, INTENT(IN) :: i, j, ioff, joff
-  DOUBLE PRECISION :: mi, mj, bi, bj
+  DOUBLE PRECISION :: mi, mj, bi, bj, zi, zj
   INTEGER :: i1, i2, j1, j2
 
   i1 = i + ioff
@@ -1167,6 +1179,11 @@ SUBROUTINE extrap_1_corner(blk, i, j, ioff, joff)
      blk%y_grid(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
      blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
   END IF
+
+  zi = blk%zbot_grid(i,j1) - (blk%zbot_grid(i,j2) - blk%zbot_grid(i,j1))
+  zj = blk%zbot_grid(i1,j) - (blk%zbot_grid(i2,j) - blk%zbot_grid(i1,j))
+
+  blk%zbot_grid(i,j) = 0.5*(zi+zj)
 
 END SUBROUTINE extrap_1_corner
 
@@ -1432,8 +1449,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
   
      SELECT CASE (bc%bc_loc)
      CASE ("US")
-        ibeg = 2 - nghost
-        iend = ibeg + (nghost - 1)
+        iend = 1
+        ibeg = iend - (nghost - 1)
         coniend = cblk%xmax
         conibeg = coniend - (nghost - 1)
         jbeg = bc%start_cell(n)+1
@@ -1443,8 +1460,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         cells = jend - jbeg + 1
         concells = conjend - conjbeg + 1
      CASE ("DS")
-        iend = blk%xmax + nghost
-        ibeg = iend - (nghost - 1)
+        ibeg = blk%xmax + 1
+        iend = ibeg + (nghost - 1)
         conibeg = 2
         coniend = conibeg + (nghost - 1)
         jbeg = bc%start_cell(n)+1
@@ -1458,8 +1475,8 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
         iend = bc%end_cell(n)+1
         conibeg = bc%con_start_cell(n)+1
         coniend = bc%con_end_cell(n)+1
-        jbeg = 2 - nghost
-        jend = jbeg + (nghost - 1)
+        jend = 1
+        jbeg = jend - (nghost - 1)
         conjend = cblk%ymax
         conjbeg = conjend - (nghost - 1)
         cells = iend - ibeg + 1
@@ -1582,13 +1599,15 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                     cflux = uflux(cblk, coni, conj, conj)
                  END IF
                  ju = jbeg + (conj - conjbeg)*jfcells
-                 carea = uarea(blk, ibeg, ju, ju + jfcells - 1)
+                 carea = uarea(blk, i, ju, ju + jfcells - 1)
                  DO j = ju, ju + jfcells - 1
                     IF (carea .GT. 0.0) THEN
                        blk%uvel(i,j) = cflux/carea
                     ELSE 
                        blk%uvel(i,j) = 0.0
                     END IF
+                    ! WRITE (*,101) i, j, coni, conj, cflux, carea
+                    ! 101 FORMAT('In fillghost_hydro: ', 4(1X, I3), 2(1X, E15.6))
                  END DO
               END DO
            END DO
@@ -1602,7 +1621,7 @@ SUBROUTINE fillghost_hydro(blk, cblk, bc)
                     cflux = vflux(cblk, coni, coni, conj)
                  END IF
                  iu = ibeg + (coni - conibeg)*ifcells
-                 carea = varea(blk, iu, iu  + ifcells - 1, jbeg)
+                 carea = varea(blk, iu, iu  + ifcells - 1, j)
                  DO i = iu, iu + ifcells - 1
                     IF (carea .GT. 0.0) THEN
                        blk%vvel(i,j) = cflux/carea
@@ -3520,6 +3539,9 @@ IF(do_gage_print)THEN
             &DBLE((current_time%time - start_time%time)*24), &
             &do_transport, salinity, baro_press)
        CALL mass_print(current_time%date_string, current_time%time_string)
+       IF (debug) &
+            &CALL block_flux_print(current_time%date_string, current_time%time_string)
+
 ! 3011 FORMAT(i5,5x)
 ! 3005 FORMAT('#date',8x,'time',5x)
 

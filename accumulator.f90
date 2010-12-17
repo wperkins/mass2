@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 25, 2000 by William A. Perkins
-! Last Change: Wed Aug 19 15:34:17 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Fri Dec 17 09:44:56 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -57,6 +57,8 @@ MODULE accumulator
      TYPE (accum_var_rec) :: vvelp
      TYPE (accum_var_rec) :: ucart
      TYPE (accum_var_rec) :: vcart
+     TYPE (accum_var_rec) :: uflux
+     TYPE (accum_var_rec) :: vflux
      TYPE (accum_var_rec) :: vmag
      TYPE (accum_var_rec) :: depth
      TYPE (accum_var_rec) :: wsel
@@ -168,6 +170,8 @@ CONTAINS
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vvelp)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%ucart)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vcart)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%uflux)
+          CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vflux)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%vmag)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%depth)
           CALL accum_init_var(block(iblk)%xmax, block(iblk)%ymax, accum_block(iblk)%hydro%wsel)
@@ -265,6 +269,8 @@ CONTAINS
           CALL accum_reset_var(accum_block(iblk)%hydro%vvelp)
           CALL accum_reset_var(accum_block(iblk)%hydro%ucart)
           CALL accum_reset_var(accum_block(iblk)%hydro%vcart)
+          CALL accum_reset_var(accum_block(iblk)%hydro%uflux)
+          CALL accum_reset_var(accum_block(iblk)%hydro%vflux)
           CALL accum_reset_var(accum_block(iblk)%hydro%vmag)
           CALL accum_reset_var(accum_block(iblk)%hydro%depth)
           CALL accum_reset_var(accum_block(iblk)%hydro%wsel)
@@ -468,6 +474,8 @@ CONTAINS
           CALL accum_var(block(iblk)%vvel_p, accum_block(iblk)%hydro%vvelp)
           CALL accum_var(block(iblk)%u_cart, accum_block(iblk)%hydro%ucart)
           CALL accum_var(block(iblk)%v_cart, accum_block(iblk)%hydro%vcart)
+          CALL accum_var(block(iblk)%uflux, accum_block(iblk)%hydro%uflux)
+          CALL accum_var(block(iblk)%vflux, accum_block(iblk)%hydro%vflux)
 
                                 ! velocity magnitudes
 
@@ -580,6 +588,8 @@ CONTAINS
           CALL accum_calc_var(accum_block(iblk)%hydro%vvelp)
           CALL accum_calc_var(accum_block(iblk)%hydro%ucart)
           CALL accum_calc_var(accum_block(iblk)%hydro%vcart)
+          CALL accum_calc_var(accum_block(iblk)%hydro%uflux)
+          CALL accum_calc_var(accum_block(iblk)%hydro%vflux)
           CALL accum_calc_var(accum_block(iblk)%hydro%vmag)
           CALL accum_calc_var(accum_block(iblk)%hydro%depth)
           CALL accum_calc_var(accum_block(iblk)%hydro%shear)

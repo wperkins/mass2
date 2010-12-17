@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 18, 2003 by William A. Perkins
-! Last Change: Mon Jan 12 13:48:42 2009 by William A. Perkins <d3g096@mcperk.pnl.gov>
+! Last Change: Wed Apr  7 09:08:55 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -33,6 +33,7 @@ MODULE plot_netcdf
   INTEGER, PRIVATE :: x_varid, y_varid, zbot_varid, time_varid, ts_varid
   INTEGER, PRIVATE :: hp1_varid, hp2_varid, gp12_varid, area_varid
   INTEGER, PRIVATE :: u_varid, v_varid, ucart_varid, vcart_varid, vmag_varid, shear_varid
+  INTEGER, PRIVATE :: uflux_varid, vflux_varid
   INTEGER, PRIVATE :: depth_varid, wsel_varid
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, dp_varid, sat_varid
@@ -157,7 +158,8 @@ CONTAINS
   SUBROUTINE plot_file_setup_netcdf()
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry, do_rptdead
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, &
+         &do_transport, do_wetdry, do_rptdead
     USE scalars, ONLY: max_species
     USE scalars_source
 
@@ -249,6 +251,8 @@ CONTAINS
           courant_varid = plot_add_time_var("courant", "Courant Number", "none")
           froude_varid = plot_add_time_var("froude", "Froude Number", "none")
           visc_varid = plot_add_time_var("eddyvisc", "Kinematic Eddy Viscosity", "feet^2/second")
+          uflux_varid = plot_add_time_var("uflux", "Longitudinal Flux", "cfs")
+          vflux_varid = plot_add_time_var("vflux", "Lateral Flux", "cfs")
        END IF
 
        IF (do_wetdry) THEN
@@ -552,7 +556,8 @@ CONTAINS
   SUBROUTINE plot_print_netcdf(date_string, time_string, salinity, baro_press)
 
     USE globals
-    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, do_transport, do_wetdry, do_rptdead
+    USE misc_vars, ONLY: do_flow, do_flow_output, do_flow_diag, &
+         &do_transport, do_wetdry, do_rptdead
     USE scalars
     USE scalars_source
     USE date_time
@@ -679,6 +684,18 @@ CONTAINS
              CALL plot_print_time_var(visc_varid, start, length, &
                   &block(iblock)%xmax, block(iblock)%ymax,&
                   &accum_block(iblock)%hydro%eddyvisc%sum)
+
+                                ! u flux
+
+             CALL plot_print_time_var(uflux_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%uflux%sum)
+             
+                                ! v flux
+             
+             CALL plot_print_time_var(vflux_varid, start, length, &
+                  &block(iblock)%xmax, block(iblock)%ymax,&
+                  &accum_block(iblock)%hydro%vflux%sum)
 
           END IF
 

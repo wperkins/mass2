@@ -915,13 +915,13 @@ SUBROUTINE set_bc_part(iounit, spec, cells, maxidx, line, ierr)
   DO i = 1, spec%num_cell_pairs
      IF (spec%start_cell(i) .LT. 1 .OR. spec%start_cell(i) .GT. maxidx) THEN
         ierr = ierr + 1
-        WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+        WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
              &": start index ", spec%start_cell(i), ' out of range'
         CALL error_message(msg, fatal=.FALSE.)
      END IF
      IF (spec%end_cell(i) .LT. 1 .OR. spec%end_cell(i) .GT. maxidx) THEN
         ierr = ierr + 1
-        WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+        WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
              &": end index ", spec%end_cell(i), ' out of range'
         CALL error_message(msg, fatal=.FALSE.)
      END IF

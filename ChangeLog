@@ -1,3 +1,78 @@
+2010-12-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* configure.in: need to call AC_PROG_FC() before AC_PROG_F90()
+
+	* table_bc_module.f90 (table_boundary_conditions): increase
+	maximum number of table columns
+
+2010-04-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_netcdf.f90 (plot_file_setup_netcdf, plot_print_netcdf): add
+	new block variables uflux and vflux to output
+
+	* plot_cgns.f90 (plot_cgns_write): write uflux and vflux
+
+	* global_module_023.f90 (globals, allocate_block_components): add
+	new block variables uflux and vflux
+	(velocity_shift): compute p-cell velocities using fluxes instead
+	of averaging; compute new block variables uflux and vflux
+
+	* accumulator.f90 (accumulator, accum_initialize, accum_reset) 
+	(accumulate, accum_calc): add new accumulated variables uflux and
+	vflux 
+
+2010-04-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (fillghost_hydro): incorrect indexes used for
+	flux calculations in fine block
+
+	* Makefile.am (scalars_source.o): now depends on
+	misc_vars_module.o 
+
+	* scalars_source.f90 (scalar_source_read): make it an error to
+	choose a momentum differencing scheme that takes more ghost cells
+	than are available
+
+	* mass2_main_025.f90 (read_config): make it an error to choose a
+	momentum differencing scheme that takes more ghost cells than are
+	available 
+
+	* mass2.f90 (mass2): close block flux output if used
+
+	* mass2_main_025.f90 (output_init,output): optionally output block
+	flux 
+	(extrap_1_corner): extrapolate z too
+
+2010-04-01  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_flux_output.f90 (block_flux_print): write block edge areas
+	too 
+
+2010-03-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/normal-sine: channel test with sinusoidal cross
+	section 
+
+	* mass2_main_025.f90 (output_init, output): output block flux
+	report 
+
+	* mass2.f90 (mass2): close block flux report
+
+	* Makefile.am: incorporate block_flux_output module
+
+	* block_flux_output.f90: added
+
+2010-02-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* mass2_main_025.f90 (start_up): allocate inlet_area and
+	table_input with the maximum block dimension, not the maximum j
+	dimension. 
+
+2010-01-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_bc_module.f90 (set_bc_part): fixed wrong file name in
+	error messages 
+
 2009-09-15  William A. Perkins  <william.perkins@pnl.gov>
 
 	* gage_output_module.f90 (gage_read_control) 
@@ -34,6 +109,15 @@
 	* energy_flux_module.f90 (latent_heat): add function
 
 	* Makefile.am (mass2_SOURCES): add constants.f90
+
+2009-07-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/flow/spur-dike-1/streamlines-metric.lay: draw the x-velocity
+	separation line
+
+	* test/flow/another-jump/mass2_v027.cfg: update configuration file
+	format; switch to MSOU scheme
+
 
 2009-05-28  William A. Perkins  <william.perkins@pnl.gov>
 

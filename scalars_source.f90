@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Fri Oct 17 11:07:33 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Fri Apr  2 11:30:28 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -108,6 +108,7 @@ CONTAINS
   SUBROUTINE scalar_source_read()
 
     USE utility
+    USE misc_vars, ONLY: nghost
     USE globals, ONLY: max_blocks
     USE scalars, ONLY: max_species
     USE differencing
@@ -169,6 +170,16 @@ CONTAINS
                 WRITE(buffer, *) 'Unknown differencing scheme: (', TRIM(schemebuf), ')'
                 CALL error_message(buffer, fatal=.TRUE.)
              END IF
+
+             IF (nghost .LT. 2) THEN
+                SELECT CASE (diff_uv)
+                CASE (DIFF_SOU, DIFF_MSOU, DIFF_MUSCL)
+                   WRITE (buffer, *) 'differencing method "', TRIM(schemebuf), &
+                        &'" unavailable - too few ghost cells'
+                   CALL error_message(buffer, fatal=.TRUE.)
+                END SELECT
+             END IF
+             
              iopt = iopt + 1
           CASE ('BLEND')
              IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
