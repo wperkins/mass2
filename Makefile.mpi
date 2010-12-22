@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Tue Dec 21 12:19:10 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Dec 22 14:15:32 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -28,7 +28,10 @@ mass2_SOURCES = \
 	block_var.f90 \
 	block_parallel.f90 \
 	block_grid.f90 \
-	mass2_parallel.f90
+	differencing.f90 \
+	mass2_config.f90 \
+	mass2_parallel.f90 \
+	solver_common.f90
 mass2_OBJS = $(mass2_SOURCES:%.f90=%.o)
 mass2_LIBS = time_series/libts.a
 
@@ -52,7 +55,10 @@ block_grid.o: block_grid.f90 block_parallel.o
 block_parallel.o: block_parallel.f90 block_var.o
 block_var.o: block_var.f90 block_var_base.o
 block_var_base.o: block_var_base.f90
-mass2_parallel.o: mass2_parallel.f90 block_grid.o
+diffenencing.o: differencing.f90
+mass2_config.o: mass2_config.f90 differencing.o solver_common.o block_var_base.o
+mass2_parallel.o: mass2_parallel.f90 block_grid.o mass2_config.o
+solver_common.o: solver_common.f90
 
 clean::
 	rm -f $(mass2_OBJS) *.mod *~

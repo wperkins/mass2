@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Wed Dec 22 08:05:40 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Dec 22 15:05:31 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -82,6 +82,8 @@ CONTAINS
     CALL block_var_get(blk%zbot_grid, BLK_VAR_CURRENT)
 
     ! CALL ga_print(blk%y_grid%ga_handle)
+
+    DEALLOCATE(x, y, z)
 
   END SUBROUTINE block_read_grid
 
@@ -303,7 +305,7 @@ CONTAINS
     INTEGER :: nblk(1)
     INTEGER :: junk
     INTEGER :: lo(ndim), hi(ndim)
-    DOUBLE PRECISION, ALLOCATABLE :: tmp(:, :)
+    DOUBLE PRECISION, POINTER :: tmp(:, :)
 
     IF (PRESENT(doghost)) mydoghost = doghost
 
@@ -315,15 +317,8 @@ CONTAINS
     WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
 
     DO iblk= 1, nblk(1)
-       imin = block(iblk)%varbase%imin_global
-       imax = block(iblk)%varbase%imax_global
-       jmin = block(iblk)%varbase%jmin_global
-       jmax = block(iblk)%varbase%jmax_global
 
-       ALLOCATE(tmp(imin:imax, jmin:jmax))
-
-       lo = 1
-       CALL nga_inquire(block(iblk)%varbase%ga_handle, junk, junk, hi)
+       tmp => block_buffer(block(iblk))
 
        IF (mydoghost) THEN
           imin = 1 - i_ghost
@@ -341,17 +336,322 @@ CONTAINS
        nj = jmax - jmin + 1
 
        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
-       CALL nga_get(block(iblk)%x_grid%ga_handle, lo, hi, tmp, hi)
+       CALL block_var_all(block(iblk)%x_grid, tmp)
        WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
-       CALL nga_get(block(iblk)%y_grid%ga_handle, lo, hi, tmp, hi)
+       CALL block_var_all(block(iblk)%y_grid, tmp)
        WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
-       CALL nga_get(block(iblk)%zbot_grid%ga_handle, lo, hi, tmp, hi)
+       CALL block_var_all(block(iblk)%zbot_grid, tmp)
        WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
+
+       DEALLOCATE(tmp)
     END DO
 
     CLOSE(grid_iounit)
 
   END SUBROUTINE block_gridplot
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_interp_grid
+  ! interpolate x_grid,y_grid,zbot_grid onto the c.v. points by simple
+  ! averaging
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_interp_grid(blk)
+
+    IMPLICIT NONE
+
+    TYPE(block_struct), INTENT(INOUT) :: blk
+    INTEGER :: i, j, ivec(4),jvec(4),ivec2(4),jvec2(4), idx
+    INTEGER :: imin, imax, jmin, jmax
+
+    imin = MAX(blk%varbase%imin_owned, i_index_min + 1)
+    imax = MIN(blk%varbase%imax_owned, blk%xmax + i_index_extra - 1)
+    jmin = MAX(blk%varbase%jmin_owned, j_index_min + 1)
+    jmax = MIN(blk%varbase%jmax_owned, blk%ymax + j_index_extra - 1)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          blk%x%current(i,j) = 0.25*(blk%x_grid%current(i,j)+blk%x_grid%current(i-1,j)+&
+               & blk%x_grid%current(i,j-1)+blk%x_grid%current(i-1,j-1))
+          blk%y%current(i,j) = 0.25*(blk%y_grid%current(i,j)+blk%y_grid%current(i-1,j)+&
+               & blk%y_grid%current(i,j-1)+blk%y_grid%current(i-1,j-1))
+          blk%zbot%current(i,j) = 0.25*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i-1,j)+&
+               & blk%zbot_grid%current(i,j-1)+blk%zbot_grid%current(i-1,j-1))
+       END DO
+    END DO
+
+    ! now take care of the edges of the grid
+    ! remember that the c.v.'s have an extra i,j line than the grid
+
+    imin = blk%varbase%imin_owned
+    imax = blk%varbase%imax_owned
+    jmin = blk%varbase%jmin_owned
+    jmax = blk%varbase%jmax_owned
+
+    i=i_index_min
+    IF (block_owns_i(blk, i)) THEN
+       DO j= jmin, jmax
+          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j)+blk%x_grid%current(i,j-1))
+          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j)+blk%y_grid%current(i,j-1))
+          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i,j-1))
+       END DO
+    END IF
+
+    i= blk%xmax+i_index_extra
+    IF (block_owns_i(blk, i)) THEN
+       DO j= jmin, jmax
+          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i-1,j)+blk%x_grid%current(i-1,j-1))
+          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i-1,j)+blk%y_grid%current(i-1,j-1))
+          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i-1,j)+blk%zbot_grid%current(i-1,j-1))
+       END DO
+    END IF
+
+    j=j_index_min
+    IF (block_owns_j(blk, j)) THEN
+       DO i = imin, imax
+          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j)+blk%x_grid%current(i-1,j))
+          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j)+blk%y_grid%current(i-1,j))
+          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i-1,j))
+       END DO
+    END IF
+
+    j= blk%ymax+j_index_extra
+    IF (block_owns_j(blk, j)) THEN
+       DO i = imin, imax
+          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j-1)+blk%x_grid%current(i-1,j-1))
+          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j-1)+blk%y_grid%current(i-1,j-1))
+          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j-1)+blk%zbot_grid%current(i-1,j-1))
+       END DO
+    END IF
+
+    ivec = (/i_index_min, i_index_min,&
+         &blk%xmax + i_index_extra, blk%xmax+i_index_extra/)
+    jvec = (/j_index_min, blk%ymax+j_index_extra,&
+         &j_index_min,blk%ymax+j_index_extra/)
+    ivec2 = (/i_index_min,i_index_min,&
+         &blk%xmax+i_index_extra-1,blk%xmax+i_index_extra-1/)
+    jvec2 = (/j_index_min,blk%ymax+j_index_extra-1,&
+         &j_index_min,blk%ymax+j_index_extra-1/)
+
+    DO idx = 1, 4
+       i = ivec(idx)
+       j = jvec(idx)
+       IF (block_owns(blk, i, j)) THEN
+          blk%x%current(i,j) = blk%x_grid%current(ivec2(idx),jvec2(idx))
+          blk%y%current(i,j) = blk%y_grid%current(ivec2(idx),jvec2(idx))
+          blk%zbot%current(i,j) = blk%zbot_grid%current(ivec2(idx),jvec2(idx))
+       END IF
+    END DO
+
+    CALL block_var_put(blk%x)
+    CALL block_var_put(blk%y)
+    CALL block_var_put(blk%zbot)
+    CALL ga_sync()
+    CALL block_var_get(blk%x)
+    CALL block_var_get(blk%y)
+    CALL block_var_get(blk%zbot)
+    
+  END SUBROUTINE block_interp_grid
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_metrics
+  ! Compute the metric coefficients for the block. Depending on the
+  ! metric coeff. and location use either the grid (x,y) or the node
+  ! (x,y)
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_metrics(blk)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct) :: blk
+
+    INTEGER :: imin, imax, jmin, jmax, i, j
+
+    imin = i_index_min
+    imax = blk%xmax+i_index_extra
+    jmin = j_index_min
+    jmax = blk%ymax+j_index_extra
+
+    ! metric coeff. 2 on the u face of the c.v.
+
+    blk%hu2%current = 1.0e-20            ! bogus nonzero value
+    DO i=imin, imax-1
+       DO j=jmin+1, jmax-1
+          IF (block_owns(blk, i, j)) THEN
+             blk%hu2%current(i,j) = & 
+                  SQRT((blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1))**2 + &
+                  (blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1))**2)
+          END IF
+       END DO
+    END DO
+
+    ! metric coeff 1 on the u face of the c.v.
+
+    blk%hu1%current = 1.0e-20            ! bogus nonzero value
+    DO i=imin+1, imax-i_index_extra
+       DO j=jmin, jmax
+          IF (block_owns(blk, i, j)) THEN
+             blk%hu1%current(i,j) = &
+                  SQRT((blk%x%current(i+1,j) - blk%x%current(i,j))**2 + &
+                  (blk%y%current(i+1,j) - blk%y%current(i,j))**2)
+          END IF
+       END DO
+    END DO
+
+    ! on the edge it's only a half-distance
+
+    i=imin
+    DO j=jmin, jmax
+       IF (block_owns(blk, i, j)) THEN
+          blk%hu1%current(i,j) = &
+               SQRT(((blk%x%current(i+1,j) - blk%x%current(i,j)))**2 + &
+               ((blk%y%current(i+1,j) - blk%y%current(i,j)))**2)
+       END IF
+    END DO
+    i=imax-1
+    DO j=jmin, jmax
+       IF (block_owns(blk, i, j)) THEN
+          blk%hu1%current(i,j) = &
+               SQRT(((blk%x%current(i+1,j) - blk%x%current(i,j)))**2 + &
+               ((blk%y%current(i+1,j) - blk%y%current(i,j)))**2)
+       END IF
+    END DO
+
+    ! metric coeff. 1 on the v face of the c.v.
+
+    DO i=imin+1, imax-1
+       DO j=jmin, jmax - 1
+          IF (block_owns(blk, i, j)) THEN
+             blk%hv1%current(i,j) = &
+                  SQRT((blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j))**2 + &
+                  (blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j))**2) 
+          END IF
+       END DO
+    END DO
+
+    ! metric coeff. 2 on the v face of the c.v.
+
+    DO i=imin, imax
+       DO j=jmin+1, jmax - 1
+          IF (block_owns(blk, i, j)) THEN
+             blk%hv2%current(i,j) = &
+                  SQRT((blk%x%current(i,j+1) - blk%x%current(i,j))**2 + &
+                  (blk%y%current(i,j+1) - blk%y%current(i,j))**2)
+          END IF
+       END DO
+    END DO
+
+    ! on the edge it's only a half-distance
+
+    j = jmin
+    DO i=imin+1, imax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%hv2%current(i,j) = &
+               SQRT(((blk%x%current(i,j+1) - blk%x%current(i,j)))**2 + &
+               ((blk%y%current(i,j+1) - blk%y%current(i,j)))**2)
+       END IF
+    END DO
+    j = jmax - 1
+    DO i=imin+1, imax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%hv2%current(i,j) = &
+               SQRT(((blk%x%current(i,j+1) - blk%x%current(i,j)))**2 + &
+               ((blk%y%current(i,j+1) - blk%y%current(i,j)))**2)
+       END IF
+    END DO
+
+    ! compute metric tensor and derivatives at the nodal points hp1, hp2
+
+    DO i = imin+1, imax-1
+       DO j=jmin+1, jmax-1
+          IF (block_owns(blk, i, j)) THEN
+             blk%x_eta%current(i,j) = 0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i-1,j) & 
+                  - blk%x_grid%current(i,j-1) - blk%x_grid%current(i-1,j-1))
+             blk%y_eta%current(i,j) = 0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i-1,j) & 
+                  - blk%y_grid%current(i,j-1) - blk%y_grid%current(i-1,j-1))
+             blk%x_xsi%current(i,j) = 0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i,j-1) & 
+                  - blk%x_grid%current(i-1,j) - blk%x_grid%current(i-1,j-1))
+             blk%y_xsi%current(i,j) = 0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i,j-1) & 
+                  - blk%y_grid%current(i-1,j) - blk%y_grid%current(i-1,j-1))
+          END IF
+       END DO
+    END DO
+    i=imin
+    DO j=jmin+1, jmax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_eta%current(i,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1)
+          blk%y_eta%current(i,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1)
+       END IF
+    END DO
+    i=imax-1
+    DO j=jmin+1, jmax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_eta%current(i+1,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1)
+          blk%y_eta%current(i+1,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1)
+       END IF
+    END DO
+    j = jmin
+    DO i=imin+1, imax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_xsi%current(i,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j)
+          blk%y_xsi%current(i,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j)
+       END IF
+    END DO
+    j=jmax-1
+    DO i=imin+1, imax-1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_xsi%current(i,j+1) = blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j)
+          blk%y_xsi%current(i,j+1) = blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j)
+       END IF
+    END DO
+
+    IF (block_owns_i(blk, imin)) THEN
+       blk%x_xsi%current(imin,:) = blk%x_xsi%current(imin+1,:)
+       blk%y_xsi%current(imin,:) = blk%y_xsi%current(imin+1,:)
+    END IF
+    IF (block_owns_i(blk, imax)) THEN 
+       blk%x_xsi%current(imax,:) = blk%x_xsi%current(imax-1,:)
+       blk%y_xsi%current(imax,:) = blk%y_xsi%current(imax-1,:)
+    END IF
+    IF (block_owns_j(blk, jmin)) THEN
+       blk%x_eta%current(:,jmin) = blk%x_eta%current(:,jmin+1)
+       blk%y_eta%current(:,jmin) = blk%y_eta%current(:,jmin+1)
+    END IF
+    IF (block_owns_j(blk, jmax)) THEN
+       blk%x_eta%current(:,jmax) = blk%x_eta%current(:,jmax-1)
+       blk%y_eta%current(:,jmax) = blk%y_eta%current(:,jmax-1)
+    END IF
+
+    blk%hp1%current = SQRT(blk%x_xsi%current**2 + blk%y_xsi%current**2)
+    blk%hp2%current = SQRT(blk%x_eta%current**2 + blk%y_eta%current**2)
+
+    ! compute nonorthogonal part of the metric tensor as a check on grid quality
+
+    blk%gp12%current = blk%x_xsi%current*blk%x_eta%current + &
+         &blk%y_xsi%current*blk%y_eta%current
+
+    CALL block_var_put(blk%hp1)
+    CALL block_var_put(blk%hp2)
+    CALL block_var_put(blk%hu1)
+    CALL block_var_put(blk%hv2)
+    CALL block_var_put(blk%gp12)
+    CALL block_var_put(blk%x_xsi)
+    CALL block_var_put(blk%y_xsi)
+    CALL block_var_put(blk%x_eta)
+    CALL block_var_put(blk%y_eta)
+    CALL ga_sync()
+    CALL block_var_get(blk%hp1)
+    CALL block_var_get(blk%hp2)
+    CALL block_var_get(blk%hu1)
+    CALL block_var_get(blk%hv2)
+    CALL block_var_get(blk%gp12)
+    CALL block_var_get(blk%x_xsi)
+    CALL block_var_get(blk%y_xsi)
+    CALL block_var_get(blk%x_eta)
+    CALL block_var_get(blk%y_eta)
+
+
+  END SUBROUTINE block_metrics
 
 
 END MODULE block_parallel_grid

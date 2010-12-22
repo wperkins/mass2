@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Tue Dec 21 12:23:23 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Dec 22 11:26:20 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -31,7 +31,6 @@ MODULE block_variable
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   INTEGER, PUBLIC, PARAMETER :: &
-       &BLK_VAR_ALL = 0, &
        &BLK_VAR_CURRENT = 1, &
        &BLK_VAR_STAR = 2, &
        &BLK_VAR_OLD = 3, &
@@ -284,6 +283,7 @@ CONTAINS
        var%star(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
     END IF
 
+
   END SUBROUTINE block_var_iterate
   
   ! ----------------------------------------------------------------
@@ -309,5 +309,38 @@ CONTAINS
     END IF
 
   END SUBROUTINE block_var_timestep
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_all
+  !
+  ! This fills buffer with the entire global array of the specified
+  ! variable (and index).
+  !
+  ! It is assumed that buffer has the correct dimensions.  The caller
+  ! should get the buffer using function block_buffer()
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_all(var, buffer, index)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex = BLK_VAR_CURRENT
+
+    INTEGER :: junk, lo(ndim), hi(ndim), ld(ndim)
+
+    IF (PRESENT(index)) myindex = index
+
+    CALL nga_inquire(var%ga_handle, junk, junk, hi)
+    lo = 1
+    ld = hi - lo + 1
+    lo(3) = myindex
+    hi(3) = myindex
+    CALL nga_get(var%ga_handle, lo, hi, buffer, ld)
+
+  END SUBROUTINE block_var_all
+
 
 END MODULE block_variable
