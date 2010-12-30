@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Wed Dec 22 11:26:20 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Dec 30 10:53:50 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -111,6 +111,10 @@ CONTAINS
        v%old = 0.0
        v%oldold = 0.0
 
+    ELSE 
+       NULLIFY(v%star)
+       NULLIFY(v%old)
+       NULLIFY(v%oldold)
     END IF
 
     RETURN

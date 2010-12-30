@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Wed Dec 22 15:02:13 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Dec 30 12:21:16 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -24,6 +24,41 @@ MODULE block_module
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
+                                ! a list of cell types
+
+  INTEGER, PUBLIC, PARAMETER :: &
+       &CELL_NORMAL_TYPE = 1, &
+       &CELL_BOUNDARY_TYPE = 3
+
+                                ! a list of flow boundary condition
+                                ! types
+
+  INTEGER, PUBLIC, PARAMETER :: &
+       &FLOWBC_NONE = 0, &
+       &FLOWBC_VEL = 1, &
+       &FLOWBC_FLOW = 2, &
+       &FLOWBC_ELEV = 3, &
+       &FLOWBC_BLOCK = 4, &
+       &FLOWBC_ZEROG = 5, &
+       &FLOWBC_BOTH = 6
+
+  ! ----------------------------------------------------------------
+  ! TYPE cell_type_struct
+  ! ----------------------------------------------------------------
+  TYPE cell_type_struct
+     INTEGER :: xtype, ytype
+     ! the rest applies only for BOUNDARY type cells
+     INTEGER :: xbctype, ybctype
+  END TYPE cell_type_struct
+
+  ! ----------------------------------------------------------------
+  ! TYPE isdead_struct
+  ! ----------------------------------------------------------------
+  TYPE isdead_struct
+     LOGICAL :: u, v, p, transient
+  END TYPE isdead_struct
+
+
   ! ----------------------------------------------------------------
   ! TYPE block_struct
   ! ----------------------------------------------------------------
@@ -38,6 +73,41 @@ MODULE block_module
      TYPE (block_var), POINTER :: hp1, hp2, hv1, hv2, hu1, hu2, gp12
      TYPE (block_var), POINTER :: eddy, kx_diff, ky_diff, chezy
      TYPE (block_var), POINTER :: uvel, vvel, depth, wsel
+     TYPE (block_var), POINTER :: uvel_p, vvel_p, u_cart, v_cart
+     TYPE (block_var), POINTER :: froude_num, courant_num
+     TYPE (block_var), POINTER :: mass_source
+
+     DOUBLE PRECISION, POINTER :: uflux(:,:)      ! east face flux for c.v.
+     DOUBLE PRECISION, POINTER :: vflux(:,:)      ! north face flux for c.v.
+     DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
+     DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
+     DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
+     DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
+     DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
+     DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
+     DOUBLE PRECISION, POINTER :: apo(:,:)
+     DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
+     DOUBLE PRECISION, POINTER :: lvd(:,:) ! part of p' coeff that has V vel stuff
+
+     DOUBLE PRECISION, POINTER :: xsource(:,:)
+
+
+     ! These variables are used for transport; they hold hydrdynamic
+     ! values that are calculated before the transport calculations
+     ! begin
+
+     DOUBLE PRECISION, POINTER :: k_e(:,:), k_w(:,:), k_n(:,:), k_s(:,:)
+     DOUBLE PRECISION, POINTER :: depth_e(:,:), depth_w(:,:), depth_n(:,:), depth_s(:,:)
+     DOUBLE PRECISION, POINTER :: flux_e(:,:), flux_w(:,:), flux_n(:,:), flux_s(:,:)
+     DOUBLE PRECISION, POINTER :: diffu_e(:,:), diffu_w(:,:), diffu_n(:,:), diffu_s(:,:)
+     DOUBLE PRECISION, POINTER :: pec_e(:,:), pec_w(:,:), pec_n(:,:), pec_s(:,:)
+     DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)	! work array for output of TDG delP, %Sat
+  
+     TYPE (isdead_struct), POINTER :: isdead(:,:)
+     TYPE (cell_type_struct), POINTER :: cell(:,:)
+
+     LOGICAL, POINTER :: isdry(:,:)
+
   END TYPE block_struct
 
   TYPE(block_struct), PUBLIC, ALLOCATABLE :: block(:)
@@ -104,13 +174,33 @@ CONTAINS
     blk%vvel => block_var_allocate("vvel", blk%varbase, const=.FALSE.)
     blk%depth => block_var_allocate("depth", blk%varbase, const=.FALSE.)
     blk%wsel => block_var_allocate("wsel", blk%varbase, const=.TRUE.)
-    
-    
+
+    blk%u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
+    blk%v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
+    blk%u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
+    blk%v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
+
+    ! local variables that do not need to be shared with other processors
+
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+
+    ALLOCATE(blk%uflux(imin:imax, jmin:jmax))
+    ALLOCATE(blk%vflux(imin:imax, jmin:jmax))
+    ALLOCATE(blk%dp(imin:imax, jmin:jmax))
+    ALLOCATE(blk%bedshear1(imin:imax, jmin:jmax))
+    ALLOCATE(blk%bedshear2(imin:imax, jmin:jmax))
+    ALLOCATE(blk%shear(imin:imax, jmin:jmax))
+    ALLOCATE(blk%windshear1(imin:imax, jmin:jmax))
+    ALLOCATE(blk%windshear2(imin:imax, jmin:jmax))
+    ALLOCATE(blk%apo(imin:imax, jmin:jmax))
+    ALLOCATE(blk%lud(imin:imax, jmin:jmax))
+    ALLOCATE(blk%lvd(imin:imax, jmin:jmax))
+    ALLOCATE(blk%xsource(imin:imax, jmin:jmax)) 
 
   END SUBROUTINE block_allocate_size
 
   ! ----------------------------------------------------------------
-  ! FUNCTION block_var_buffer
+  ! FUNCTION block_buffer
   ! ----------------------------------------------------------------
   FUNCTION block_buffer(blk)
 
@@ -131,6 +221,46 @@ CONTAINS
     RETURN
 
   END FUNCTION block_buffer
+
+  ! ----------------------------------------------------------------
+  ! FUNCTION block_array_owned(blk)
+  ! ----------------------------------------------------------------
+  FUNCTION block_array_owned(blk)
+
+    IMPLICIT NONE
+    
+    TYPE (block_struct), INTENT(IN) :: blk
+    DOUBLE PRECISION, POINTER :: block_array_owned(:, :)
+
+    INTEGER :: imin, imax, jmin, jmax
+
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+
+    ALLOCATE(block_array_owned(imin:imax, jmin:jmax))
+
+    RETURN
+
+  END FUNCTION block_array_owned
+
+  ! ----------------------------------------------------------------
+  ! FUNCTION block_array_used(blk)
+  ! ----------------------------------------------------------------
+  FUNCTION block_array_used(blk)
+
+    IMPLICIT NONE
+    
+    TYPE (block_struct), INTENT(IN) :: blk
+    DOUBLE PRECISION, POINTER :: block_array_used(:, :)
+
+    INTEGER :: imin, imax, jmin, jmax
+
+    CALL block_used_window(blk, imin, imax, jmin, jmax)
+
+    ALLOCATE(block_array_used(imin:imax, jmin:jmax))
+
+    RETURN
+
+  END FUNCTION block_array_used
 
   ! ----------------------------------------------------------------
   ! LOGICAL FUNCTION block_owns_i
@@ -180,9 +310,9 @@ CONTAINS
 
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE block_owns_window
+  ! SUBROUTINE block_owned_window
   ! ----------------------------------------------------------------
-  SUBROUTINE block_owns_window(blk, imin, jmin, imax, jmax)
+  SUBROUTINE block_owned_window(blk, imin, jmin, imax, jmax)
 
     IMPLICIT NONE
 
@@ -194,7 +324,25 @@ CONTAINS
     jmin = blk%varbase%jmin_owned
     jmax = blk%varbase%jmax_owned
 
-  END SUBROUTINE block_owns_window
+  END SUBROUTINE block_owned_window
+  
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_used_window
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_used_window(blk, imin, jmin, imax, jmax)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER, INTENT(OUT) :: imin, jmin, imax, jmax
+
+    imin = blk%varbase%imin_used
+    imax = blk%varbase%imax_used
+    jmin = blk%varbase%jmin_used
+    jmax = blk%varbase%jmax_used
+
+  END SUBROUTINE block_used_window
   
 
 

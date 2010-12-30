@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Wed Dec 22 14:48:33 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Dec 30 14:49:26 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -47,10 +47,8 @@ PROGRAM mass2_parallel
   IF (mpi_rank .EQ. 0) THEN
      CALL banner()
   END IF
-  
-  max_blocks = 1
-  ALLOCATE(grid_file_name(max_blocks))
-  grid_file_name(1) = "grid.out"
+
+  CALL read_config()
   CALL read_grid()
   
 
@@ -61,9 +59,6 @@ PROGRAM mass2_parallel
   END IF
 
   CALL ga_sync()
-
-  DEALLOCATE(block)
-
   CALL ga_terminate()
   CALL mpi_finalize(ierr)   
 
@@ -104,6 +99,64 @@ SUBROUTINE read_grid()
   
 
 END SUBROUTINE read_grid
+
+! ----------------------------------------------------------------
+! SUBROUTINE bc_init
+! ----------------------------------------------------------------
+SUBROUTINE bc_init()
+
+  USE hydro_bc
+
+  IMPLICIT NONE
+
+  INTEGER :: iblock, i
+
+  !-------------------------------------------------------------------------------
+  ! read, allocate, and set up block and table boundary conditions
+
+  ! read hydrodynamics related stuff
+  CALL allocate_block_bc(max_blocks)
+
+  CALL read_bcspecs(bcspec_iounit, max_blocks, block%xmax, block%ymax)
+
+  CALL read_bc_tables
+
+  ! now decipher which cells talk to each other in the block connections
+  IF(max_blocks > 1)THEN
+     CALL set_block_connections(max_blocks, error_iounit, status_iounit)
+  END IF
+
+  !---------------------------------------------------------------------------------
+  ! IF(do_transport)THEN
+  !    ! read species related stuff
+  !    CALL allocate_scalar_block_bc(max_blocks)
+  !    CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
+  !         &block%xmax, block%ymax)
+  !    CALL read_scalar_bc_tables()
+  !    CALL set_scalar_block_connections(max_blocks, max_species)
+  !    CALL scalar_source_read()
+  !    IF (source_doing_sed) CALL bed_initialize()
+  !    CALL scalar_mass_init()
+
+  !    ! transport only mode
+  !    IF(.NOT. do_flow)THEN
+  !       CALL allocate_hydro_interp_blocks()
+  !       DO i=1,max_blocks
+  !          CALL allocate_hydro_interp_comp(i, status_iounit)
+  !       END DO
+  !       CALL read_transport_only_dat()
+  !       CALL check_transport_only_dat(start_time%time,end_time%time)
+  !    END IF
+
+  ! END IF
+
+  ! ! read in met data from a file
+  ! IF (source_need_met) THEN
+  !    CALL read_met_data(weather_filename)
+  !    CALL update_met_data(current_time%time)
+  ! END IF
+
+END SUBROUTINE bc_init
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE banner
