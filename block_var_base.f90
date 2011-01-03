@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 20, 2010 by William A. Perkins
-! Last Change: Sat Jan  1 08:29:11 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 09:02:58 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -15,22 +15,11 @@
 ! ----------------------------------------------------------------
 MODULE block_variable_base
 
+  USE globals
+
   IMPLICIT NONE
 
-#include "mafdecls.fh"
-#include "global.fh"
-
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
-  ! ----------------------------------------------------------------
-  ! global parameters used to control cell overlap at block boundaries,
-  ! and ghost cells
-  ! ----------------------------------------------------------------
-
-  INTEGER, PUBLIC, PARAMETER :: nghost = 2
-  INTEGER, PUBLIC, PARAMETER :: i_ghost = nghost, j_ghost = nghost
-  INTEGER, PUBLIC, PARAMETER :: i_index_min = 1-i_ghost, i_index_extra = 1+i_ghost
-  INTEGER, PUBLIC, PARAMETER :: j_index_min = 1-j_ghost, j_index_extra = 1+j_ghost
 
   ! dimensions of the global array
   INTEGER, PUBLIC, PARAMETER :: ndim = 3
@@ -67,6 +56,9 @@ CONTAINS
        &RESULT (base)
     
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     INTEGER, INTENT(IN) :: xmax, ymax
     INTEGER :: dims(ndim), chunk(ndim), lo(ndim), hi(ndim)
@@ -142,6 +134,9 @@ CONTAINS
   SUBROUTINE block_var_base_deallocate(base)
 
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     TYPE (block_var_base), POINTER, INTENT(INOUT) :: base
 

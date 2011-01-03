@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 30, 2010 by William A. Perkins
-! Last Change: Fri Dec 31 09:38:31 2010 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 09:29:09 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -16,6 +16,7 @@
 MODULE hydro_bc
 
   USE utility
+  USE config
   USE table_boundary_conditions
 
   IMPLICIT NONE
@@ -311,6 +312,8 @@ CONTAINS
 
              CALL set_bc_area(block_bc(block)%bc_spec(num_bc), cells, &
                   &xmax(block) - 1, ymax(block) - 1, line, lerr)
+
+           do_rptdead = .TRUE.
 
           CASE ("ZEROG")
 

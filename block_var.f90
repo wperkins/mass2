@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Sat Jan  1 08:15:56 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 09:05:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -64,6 +64,9 @@ CONTAINS
        &RESULT(v)
   
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     CHARACTER (LEN=*), INTENT(IN) :: name
     TYPE (block_var_base), POINTER, INTENT(IN) :: base
@@ -140,6 +143,9 @@ CONTAINS
 
     IMPLICIT NONE
 
+#include "mafdecls.fh"
+#include "global.fh"
+
     TYPE (block_var), POINTER, INTENT(INOUT) :: v
     LOGICAL :: ok
 
@@ -164,6 +170,9 @@ CONTAINS
   SUBROUTINE block_var_get(var, index)
 
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     TYPE (block_var), INTENT(INOUT) :: var
     INTEGER, INTENT(IN), OPTIONAL :: index
@@ -218,6 +227,9 @@ CONTAINS
   SUBROUTINE block_var_put(var, index)
 
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     TYPE (block_var), INTENT(INOUT) :: var
     INTEGER, INTENT(IN), OPTIONAL :: index
@@ -294,6 +306,7 @@ CONTAINS
 
     DO i = imin, imax
        DO j = jmin, jmax
+          ! FIXME
        END DO
     END DO
     
@@ -359,6 +372,9 @@ CONTAINS
   SUBROUTINE block_var_all(var, buffer, index)
 
     IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
     TYPE (block_var), INTENT(IN) :: var
     DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)

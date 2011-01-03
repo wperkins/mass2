@@ -72,12 +72,12 @@ MODULE config
   DOUBLE PRECISION, PUBLIC :: blend_time
 
   DOUBLE PRECISION, SAVE :: uvel_initial
-  DOUBLE PRECISION, SAVE :: vvel_initial
-  DOUBLE PRECISION, SAVE :: conc_initial
-  DOUBLE PRECISION, SAVE :: wsel_or_depth_initial
+  DOUBLE PRECISION, PUBLIC, SAVE :: vvel_initial
+  DOUBLE PRECISION, PUBLIC, SAVE :: conc_initial
+  DOUBLE PRECISION, PUBLIC, SAVE :: wsel_or_depth_initial
 
-  DOUBLE PRECISION, SAVE :: uvel_wind
-  DOUBLE PRECISION, SAVE :: vvel_wind
+  DOUBLE PRECISION, PUBLIC, SAVE :: uvel_wind
+  DOUBLE PRECISION, PUBLIC, SAVE :: vvel_wind
 
   ! ----------------------------------------------------------------
   ! global parameters for wetting and drying
@@ -85,40 +85,70 @@ MODULE config
 
                                 ! flag to turn wetting and drying on
 
-  LOGICAL, SAVE :: do_wetdry = .TRUE.
+  LOGICAL, PUBLIC, SAVE :: do_wetdry = .TRUE.
 
                                 ! flag to do wet/dry checking every
                                 ! hydro iteration, rather than every
                                 ! time step
 
-  LOGICAL, SAVE :: iterate_wetdry = .TRUE.
+  LOGICAL, PUBLIC, SAVE :: iterate_wetdry = .TRUE.
 
                                 ! the depth that defines "dry"
 
-  DOUBLE PRECISION, SAVE :: dry_depth = 0.1
+  DOUBLE PRECISION, PUBLIC, SAVE :: dry_depth = 0.1
 
                                 ! the minimum depth at which cells
                                 ! are initialized (in cold starts)
 
-  DOUBLE PRECISION, SAVE :: dry_zero_depth = 0.05
+  DOUBLE PRECISION, PUBLIC, SAVE :: dry_zero_depth = 0.05
 
                                 ! the indicator depth at which
                                 ! rewetting is allowed
 
-  DOUBLE PRECISION, SAVE :: dry_rewet_depth = 0.12
+  DOUBLE PRECISION, PUBLIC, SAVE :: dry_rewet_depth = 0.12
 
-  DOUBLE PRECISION, SAVE :: bed_default_porosity
-  DOUBLE PRECISION, SAVE ::bed_initial_depth
+  DOUBLE PRECISION, PUBLIC, SAVE :: bed_default_porosity
+  DOUBLE PRECISION, PUBLIC, SAVE ::bed_initial_depth
   LOGICAL, PUBLIC :: read_bed_init = .FALSE.
 
   INTEGER, PUBLIC :: print_freq
   LOGICAL, PUBLIC :: do_accumulate
 
   LOGICAL, PUBLIC :: plot_do_netcdf, do_flow_diag, do_flow_output
-  LOGICAL, PUBLIC :: plot_do_cgns, plot_cgns_docell, plot_cgns_dodesc
-  INTEGER, PUBLIC :: plot_cgns_maxtime
+
+  LOGICAL, PUBLIC :: plot_do_cgns
+
+                                ! this flag is used to determine the
+                                ! kind of grid stored in CGNS. If
+                                ! .FALSE., the CGNS output mimics that
+                                ! to netcdf. Otherwise, the CGNS
+                                ! output uses the grid read in by
+                                ! mass2 and all values are cell
+                                ! centered.
+
+  LOGICAL, PUBLIC :: plot_cgns_docell = .FALSE.
+
+                                ! this flag is used to determine if
+                                ! descriptor nodes are written along
+                                ! with the data.
+
+  LOGICAL, PUBLIC :: plot_cgns_dodesc = .TRUE.
+
+                                ! since the CGNS format becomes very
+                                ! unwieldy with large numbers of
+                                ! nodes, the plot output can be split
+                                ! into several files containing a
+                                ! fixed number of output time steps
+
+  INTEGER, PUBLIC :: plot_cgns_maxtime = 10
   
   INTEGER, PUBLIC :: gage_print_freq
+
+  ! ----------------------------------------------------------------
+  ! some derived configuration parameters that are not in the file
+  ! ----------------------------------------------------------------
+  
+  LOGICAL, PUBLIC, SAVE :: do_rptdead = .FALSE.
 
 CONTAINS
 

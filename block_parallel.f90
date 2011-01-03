@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Sat Jan  1 08:27:54 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 14:08:49 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -82,13 +82,12 @@ MODULE block_module
      TYPE (block_var), POINTER :: eddy, kx_diff, ky_diff, chezy
      TYPE (block_var), POINTER :: uvel, vvel, depth, wsel
      TYPE (block_var), POINTER :: uvel_p, vvel_p, u_cart, v_cart
-     TYPE (block_var), POINTER :: froude_num, courant_num
+     TYPE (block_var), POINTER :: vmag, froude_num, courant_num
      TYPE (block_var), POINTER :: mass_source
+     TYPE (block_var), POINTER :: uflux, vflux
 
      ! these values are only needed locally
 
-     DOUBLE PRECISION, POINTER :: uflux(:,:)      ! east face flux for c.v.
-     DOUBLE PRECISION, POINTER :: vflux(:,:)      ! north face flux for c.v.
      DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
      DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
      DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
@@ -116,6 +115,11 @@ MODULE block_module
      TYPE (cell_type_struct), POINTER :: cell(:,:)
 
      LOGICAL, POINTER :: isdry(:,:)
+
+     ! This is allocated only by the root process.  It is used to
+     ! collect the various block_var's to the root process for output
+
+     DOUBLE PRECISION, POINTER :: buffer(:,:)
 
   END TYPE block_struct
 
@@ -184,15 +188,20 @@ CONTAINS
     blk%depth => block_var_allocate("depth", blk%varbase, const=.FALSE.)
     blk%wsel => block_var_allocate("wsel", blk%varbase, const=.TRUE.)
 
+    blk%uvel_p => block_var_allocate("uvel_p", blk%varbase, const=.TRUE.)
+    blk%vvel_p => block_var_allocate("vvel_p", blk%varbase, const=.TRUE.)
     blk%u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
     blk%v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
-    blk%u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
-    blk%v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
+
+    blk%vmag => block_var_allocate("vmag", blk%varbase, const=.TRUE.)
+    blk%froude_num => block_var_allocate("froude_num", blk%varbase, const=.TRUE.)
+    blk%courant_num => block_var_allocate("courant_num", blk%varbase, const=.TRUE.)
+
+    blk%uflux => block_var_allocate("u_flux", blk%varbase, const=.TRUE.)
+    blk%vflux => block_var_allocate("v_flux", blk%varbase, const=.TRUE.)
 
     ! local variables that do not need to be shared with other processors
 
-    blk%uflux => block_array_owned(blk)
-    blk%vflux => block_array_owned(blk)
     blk%dp => block_array_owned(blk)
     blk%bedshear1 => block_array_owned(blk)
     blk%bedshear2 => block_array_owned(blk)
@@ -224,6 +233,7 @@ CONTAINS
     blk%pec_n => block_array_owned(blk)
     blk%pec_s => block_array_owned(blk)
 
+    blk%buffer => block_buffer(blk)
 
   END SUBROUTINE block_allocate_size
 
@@ -454,6 +464,9 @@ CONTAINS
 
     IMPLICIT NONE
 
+#include "mafdecls.fh"
+#include "global.fh"
+ 
     INTEGER :: b, nblk(1)
     INTEGER :: p, nproc, me
     INTEGER :: ij(4)
@@ -496,6 +509,21 @@ CONTAINS
 101 FORMAT('Block ', I2, ': Process ', I2, ': GA:    ', I3, ': ', I3, ': ', I3, ': ', I3)
 
   END SUBROUTINE block_distribution_report
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_collect
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_collect(blk, var)
+
+    IMPLICIT NONE
+    
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    TYPE (block_var), INTENT(IN) :: var
+
+    CALL block_var_all(var, blk%buffer)
+
+  END SUBROUTINE block_collect
+
 
 
 END MODULE block_module

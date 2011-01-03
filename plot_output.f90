@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Sat Jan  1 11:05:58 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 13:51:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -21,6 +21,9 @@ MODULE plot_output
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
+#include "mafdecls.fh"
+#include "global.fh"
 
 CONTAINS
 
@@ -45,19 +48,19 @@ CONTAINS
 
     IMPLICIT NONE
 
+    ! this has to be collective
     CALL plot_geometry()
     !FIXME: CALL accum_initialize()
-    CALL plot_cgns_setup()
+
+    IF (ga_nodeid() .EQ. 0) THEN
+       CALL plot_cgns_setup()
+    END IF
   END SUBROUTINE plot_file_setup
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print
   ! ----------------------------------------------------------------
   SUBROUTINE plot_print(date_string, time_string, salinity, baro_press)
-
-    USE scalars_source, ONLY: source_doing_sed
-    USE bed_module
-    USE globals
     
     IMPLICIT NONE
 
@@ -67,8 +70,10 @@ CONTAINS
     CHARACTER (LEN=80) :: zone_name
 
     !FIXME: CALL accum_calc()
-    CALL velocity_shift()
-    CALL plot_cgns_write(date_string, time_string, salinity, baro_press)
+    !FIXME: CALL velocity_shift()
+    IF (ga_nodeid() .EQ. 0) THEN
+       CALL plot_cgns_write(date_string, time_string, salinity, baro_press)
+    END IF
     !FIXME: CALL accum_reset()
 
   END SUBROUTINE plot_print
@@ -81,7 +86,9 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CALL plot_cgns_close()
+    IF (ga_nodeid() .EQ. 0) THEN
+       CALL plot_cgns_close()
+    END IF
 
     !FIXME: CALL accum_done()
 

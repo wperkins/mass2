@@ -7,17 +7,18 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 06:22:26 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Mon Jan  3 13:41:44 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
-! MODULE block_parallel_grid
+! MODULE block_grid
 !
 ! Block grid manipulation routines
 ! ----------------------------------------------------------------
-MODULE block_parallel_grid
+MODULE block_grid
 
   USE utility
+  USE config, ONLY: max_blocks
   USE block_module
 
   IMPLICIT NONE
@@ -305,7 +306,6 @@ CONTAINS
     INTEGER :: nblk(1)
     INTEGER :: junk
     INTEGER :: lo(ndim), hi(ndim)
-    DOUBLE PRECISION, POINTER :: tmp(:, :)
 
     IF (PRESENT(doghost)) mydoghost = doghost
 
@@ -317,8 +317,6 @@ CONTAINS
     WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
 
     DO iblk= 1, nblk(1)
-
-       tmp => block_buffer(block(iblk))
 
        IF (mydoghost) THEN
           imin = 1 - i_ghost
@@ -336,14 +334,13 @@ CONTAINS
        nj = jmax - jmin + 1
 
        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
-       CALL block_var_all(block(iblk)%x_grid, tmp)
-       WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%y_grid, tmp)
-       WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%zbot_grid, tmp)
-       WRITE(grid_iounit,'(8G16.8)')tmp(imin:imax,jmin:jmax)
+       CALL block_var_all(block(iblk)%x_grid, block(iblk)%buffer)
+       WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
+       CALL block_var_all(block(iblk)%y_grid, block(iblk)%buffer)
+       WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
+       CALL block_var_all(block(iblk)%zbot_grid, block(iblk)%buffer)
+       WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
 
-       DEALLOCATE(tmp)
     END DO
 
     CLOSE(grid_iounit)
@@ -463,7 +460,7 @@ CONTAINS
 
     IMPLICIT NONE
 
-    TYPE (block_struct) :: blk
+    TYPE (block_struct), INTENT(INOUT) :: blk
 
     INTEGER :: imin, imax, jmin, jmax, i, j
 
@@ -654,99 +651,132 @@ CONTAINS
   END SUBROUTINE block_metrics
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE plot_geometry
+  ! SUBROUTINE block_plot_geometry
   ! This routine is used to compute the geometry of the output.  It is
   ! intended to be the ONLY place where the coordinates of output data
   ! are computed.  This routine exists so that output grids can remain
   ! understandable even when the computation grid is complicated with
   ! ghost cells, half cells, etc.
   ! ----------------------------------------------------------------
-  ! SUBROUTINE plot_geometry()
+  SUBROUTINE block_plot_geometry(blk)
 
-  !   USE globals
-  !   USE misc_vars, ONLY: i_ghost, j_ghost
-  !   IMPLICIT NONE
+    IMPLICIT NONE
 
-  !   INTEGER :: iblock, i, j
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    INTEGER :: i, j
 
-  !   DO iblock = 1, max_blocks
+    ! without ghost cells, the output locations are the same as the
+    ! computation locations
 
-  !                               ! without ghost cells, the output
-  !                               ! locations are the same as the
-  !                               ! computation locations
+    blk%x_out%current = blk%x%current
+    blk%y_out%current = blk%y%current
+    blk%zbot_out%current = blk%zbot%current
 
-  !      block(iblock)%x_out = block(iblock)%x
-  !      block(iblock)%y_out = block(iblock)%y
-  !      block(iblock)%zbot_out = block(iblock)%zbot
+    ! with ghost cells at the up/down stream end, the output
+    ! locations need to be interpolated at the block ends. The
+    ! number of ghost cells in irrevalent, as long as there are
+    ! ghost cells
 
-  !                               ! with ghost cells at the up/down
-  !                               ! stream end, the output locations
-  !                               ! need to be interpolated at the block
-  !                               ! ends. The number of ghost cells in
-  !                               ! irrevalent, as long as there are
-  !                               ! ghost cells
+    IF (i_ghost .GT. 0) THEN
+       i = 1
+       IF (block_owns(blk, i, 1)) THEN
+          blk%x_out%current(i,1) = blk%x_grid%current(i,1)
+          blk%y_out%current(i,1) = blk%y_grid%current(i,1)
+          blk%zbot_out%current(i,1) = blk%zbot_grid%current(i,1)
+       END IF
+       DO j = 2, blk%ymax
+          IF (block_owns(blk, i, j)) THEN
+             blk%x_out%current(i,j) = &
+                  &0.5*(blk%x_grid%current(i,j-1) + blk%x_grid%current(i,j))
+             blk%y_out%current(i,j) = &
+                  &0.5*(blk%y_grid%current(i,j-1) + blk%y_grid%current(i,j))
+             blk%zbot_out%current(i,j) = &
+                  &0.5*(blk%zbot_grid%current(i,j-1) + blk%zbot_grid%current(i,j))
+          END IF
+       END DO
+       j = blk%ymax + 1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_out%current(i,j) = blk%x_grid%current(i,j-1)
+          blk%y_out%current(i,j) = blk%y_grid%current(i,j-1)
+          blk%zbot_out%current(i,j) = blk%zbot_grid%current(i,j-1)
+       END IF
 
-  !      IF (i_ghost .GT. 0) THEN
-  !         i = 1
-  !         block(iblock)%x_out(i,1) = block(iblock)%x_grid(i,1)
-  !         block(iblock)%y_out(i,1) = block(iblock)%y_grid(i,1)
-  !         block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i,1)
-  !         DO j = 2, block(iblock)%ymax
-  !            block(iblock)%x_out(i,j) = &
-  !                 &0.5*(block(iblock)%x_grid(i,j-1) + block(iblock)%x_grid(i,j))
-  !            block(iblock)%y_out(i,j) = &
-  !                 &0.5*(block(iblock)%y_grid(i,j-1) + block(iblock)%y_grid(i,j))
-  !            block(iblock)%zbot_out(i,j) = &
-  !                 &0.5*(block(iblock)%zbot_grid(i,j-1) + block(iblock)%zbot_grid(i,j))
-  !         END DO
-  !         j = block(iblock)%ymax + 1
-  !         block(iblock)%x_out(i,j) = block(iblock)%x_grid(i,j-1)
-  !         block(iblock)%y_out(i,j) = block(iblock)%y_grid(i,j-1)
-  !         block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i,j-1)
-          
-  !         i =  block(iblock)%xmax + 1
-  !         block(iblock)%x_out(i,1) = block(iblock)%x_grid(i-1,1)
-  !         block(iblock)%y_out(i,1) = block(iblock)%y_grid(i-1,1)
-  !         block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i-1,1)
-  !         DO j = 2, block(iblock)%ymax
-  !            block(iblock)%x_out(i,j) = &
-  !                 &0.5*(block(iblock)%x_grid(i-1,j-1) + block(iblock)%x_grid(i-1,j))
-  !            block(iblock)%y_out(i,j) = &
-  !                 &0.5*(block(iblock)%y_grid(i-1,j-1) + block(iblock)%y_grid(i-1,j))
-  !            block(iblock)%zbot_out(i,j) = &
-  !                 &0.5*(block(iblock)%zbot_grid(i-1,j-1) + block(iblock)%zbot_grid(i-1,j))
-  !         END DO
-  !         j = block(iblock)%ymax + 1
-  !         block(iblock)%x_out(i,j) = block(iblock)%x_grid(i-1,j-1)
-  !         block(iblock)%y_out(i,j) = block(iblock)%y_grid(i-1,j-1)
-  !         block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i-1,j-1)
-  !      END IF
-       
-  !                               ! ditto for lateral ghost cells
+       i =  blk%xmax + 1
+       IF (block_owns(blk, i, 1)) THEN
+          blk%x_out%current(i,1) = blk%x_grid%current(i-1,1)
+          blk%y_out%current(i,1) = blk%y_grid%current(i-1,1)
+          blk%zbot_out%current(i,1) = blk%zbot_grid%current(i-1,1)
+       END IF
+       DO j = 2, blk%ymax
+          IF (block_owns(blk, i, j)) THEN
+             blk%x_out%current(i,j) = &
+                  &0.5*(blk%x_grid%current(i-1,j-1) + blk%x_grid%current(i-1,j))
+             blk%y_out%current(i,j) = &
+                  &0.5*(blk%y_grid%current(i-1,j-1) + blk%y_grid%current(i-1,j))
+             blk%zbot_out%current(i,j) = &
+                  &0.5*(blk%zbot_grid%current(i-1,j-1) + blk%zbot_grid%current(i-1,j))
+          END IF
+       END DO
+       j = blk%ymax + 1
+       IF (block_owns(blk, i, j)) THEN
+          blk%x_out%current(i,j) = blk%x_grid%current(i-1,j-1)
+          blk%y_out%current(i,j) = blk%y_grid%current(i-1,j-1)
+          blk%zbot_out%current(i,j) = blk%zbot_grid%current(i-1,j-1)
+       END IF
+    END IF
 
-  !      IF (j_ghost .GT. 0) THEN
-  !         j = 1
-  !         DO i = 2, block(iblock)%xmax
-  !            block(iblock)%x_out(i,j) = &
-  !                 &0.5*(block(iblock)%x_grid(i,j) + block(iblock)%x_grid(i-1,j))
-  !            block(iblock)%y_out(i,j) = &
-  !                 &0.5*(block(iblock)%y_grid(i,j) + block(iblock)%y_grid(i-1,j))
-  !            block(iblock)%zbot_out(i,j) = &
-  !                 &0.5*(block(iblock)%zbot_grid(i,j) + block(iblock)%zbot_grid(i-1,j))
-  !         END DO
-  !         j = block(iblock)%ymax + 1
-  !         DO i = 2, block(iblock)%xmax
-  !            block(iblock)%x_out(i,j) = &
-  !                 &0.5*(block(iblock)%x_grid(i,j-1) + block(iblock)%x_grid(i-1,j-1))
-  !            block(iblock)%y_out(i,j) = &
-  !                 &0.5*(block(iblock)%y_grid(i,j-1) + block(iblock)%y_grid(i-1,j-1))
-  !            block(iblock)%zbot_out(i,j) = &
-  !                 &0.5*(block(iblock)%zbot_grid(i,j-1) + block(iblock)%zbot_grid(i-1,j-1))
-  !         END DO
-  !      END IF
+    ! ditto for lateral ghost cells
 
-  !   END DO
-  ! END SUBROUTINE plot_geometry
+    IF (j_ghost .GT. 0) THEN
+       j = 1
+       DO i = 2, blk%xmax
+          IF (block_owns(blk, i, j)) THEN 
+             blk%x_out%current(i,j) = &
+                  &0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i-1,j))
+             blk%y_out%current(i,j) = &
+                  &0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i-1,j))
+             blk%zbot_out%current(i,j) = &
+                  &0.5*(blk%zbot_grid%current(i,j) + blk%zbot_grid%current(i-1,j))
+          END IF
+       END DO
+       j = blk%ymax + 1
+       DO i = 2, blk%xmax
+          IF (block_owns(blk, i, j)) THEN 
+             blk%x_out%current(i,j) = &
+                  &0.5*(blk%x_grid%current(i,j-1) + blk%x_grid%current(i-1,j-1))
+             blk%y_out%current(i,j) = &
+                  &0.5*(blk%y_grid%current(i,j-1) + blk%y_grid%current(i-1,j-1))
+             blk%zbot_out%current(i,j) = &
+                  &0.5*(blk%zbot_grid%current(i,j-1) + blk%zbot_grid%current(i-1,j-1))
+          END IF
+       END DO
+    END IF
+
+    CALL block_var_put(blk%x_out)
+    CALL block_var_put(blk%y_out)
+    CALL block_var_put(blk%zbot_out)
+    CALL ga_sync()
+    CALL block_var_get(blk%x_out)
+    CALL block_var_get(blk%y_out)
+    CALL block_var_get(blk%zbot_out)
+
+  END SUBROUTINE block_plot_geometry
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_geometry
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_geometry()
+
+    IMPLICIT NONE
+
+    INTEGER :: b
+
+    DO b = 1, max_blocks
+       CALL block_plot_geometry(block(b))
+    END DO
+
+  END SUBROUTINE plot_geometry
 
 
-END MODULE block_parallel_grid
+
+END MODULE block_grid
