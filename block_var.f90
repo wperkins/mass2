@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Dec 30 10:53:50 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan  1 08:15:56 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -48,7 +48,7 @@ MODULE block_variable
 
      ! local copies of global array; includes both owned and ghost;
      ! these use MASS2 array indexes; these may not all be required
-     DOUBLE PRECISION, ALLOCATABLE :: current(:,:)
+     DOUBLE PRECISION, POINTER :: current(:,:)
      DOUBLE PRECISION, POINTER :: star(:,:)
      DOUBLE PRECISION, POINTER :: old(:,:)
      DOUBLE PRECISION, POINTER :: oldold(:,:)
@@ -172,6 +172,9 @@ CONTAINS
     INTEGER :: imin, imax, jmin, jmax
 
     INTEGER :: myindex = BLK_VAR_CURRENT
+    LOGICAL :: doblocking = .TRUE.
+
+    DOUBLE PRECISION, POINTER :: tmp(:,:)
 
     IF (PRESENT(index)) myindex = index
 
@@ -187,20 +190,25 @@ CONTAINS
     jmin = var%base%jmin_used
     jmax = var%base%jmax_used
 
+    NULLIFY(tmp)
+
     SELECT CASE (myindex)
     CASE (BLK_VAR_CURRENT)
-       CALL nga_get(var%ga_handle, lo, hi, var%current(imin:imax, jmin:jmax), ld)
+       tmp => var%current
     CASE (BLK_VAR_STAR)
        IF (ASSOCIATED(var%star)) &
-            &CALL nga_get(var%ga_handle, lo, hi, var%star(imin:imax, jmin:jmax), ld)
+            &tmp => var%star
     CASE (BLK_VAR_OLD)
        IF (ASSOCIATED(var%old))&
-            &CALL nga_get(var%ga_handle, lo, hi, var%old(imin:imax, jmin:jmax), ld)
+            &tmp => var%old
     CASE (BLK_VAR_OLDOLD)
        IF (ASSOCIATED(var%oldold))&
-            &CALL nga_get(var%ga_handle, lo, hi, var%oldold(imin:imax, jmin:jmax), ld)
+            &tmp => var%oldold
     END SELECT
-
+    
+    IF (ASSOCIATED(tmp)) THEN
+       CALL nga_get(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
+    END IF
   END SUBROUTINE block_var_get
 
 
@@ -216,7 +224,7 @@ CONTAINS
 
     INTEGER :: lo(ndim), hi(ndim), ld(ndim-1)
     INTEGER :: imin, imax, jmin, jmax
-    DOUBLE PRECISION, ALLOCATABLE :: tmp(:,:)
+    DOUBLE PRECISION, POINTER :: tmp(:,:)
 
     INTEGER :: myindex = BLK_VAR_CURRENT
 
@@ -234,38 +242,63 @@ CONTAINS
     jmin = var%base%jmin_owned
     jmax = var%base%jmax_owned
 
+    NULLIFY(tmp)
     SELECT CASE (myindex)
     CASE (BLK_VAR_CURRENT)
-       CALL nga_put(var%ga_handle, lo, hi, var%current(imin:imax, jmin:jmax), ld)
+       tmp => var%current
     CASE (BLK_VAR_STAR)
        IF (ASSOCIATED(var%star)) &
-            &CALL nga_put(var%ga_handle, lo, hi, var%star(imin:imax, jmin:jmax), ld)
+            &tmp => var%star
     CASE (BLK_VAR_OLD)
        IF (ASSOCIATED(var%old))&
-            &CALL nga_put(var%ga_handle, lo, hi, var%old(imin:imax, jmin:jmax), ld)
+            &tmp => var%old
     CASE (BLK_VAR_OLDOLD)
        IF (ASSOCIATED(var%oldold))&
-            &CALL nga_put(var%ga_handle, lo, hi, var%oldold(imin:imax, jmin:jmax), ld)
+            &tmp => var%oldold
     END SELECT
 
-    ! ALLOCATE(tmp(ld(1), ld(2)))
-
-    ! CALL nga_put(var%ga_handle, lo, hi, tmp, ld)
-
-    ! SELECT CASE (myindex)
-    ! CASE (BLK_VAR_CURRENT)
-    !     var%current(imin:imax, jmin:jmax) = tmp(:,:)
-    ! CASE (BLK_VAR_STAR)
-    !    IF (ASSOCIATED(var%star)) var%star(imin:imax, jmin:jmax) = tmp(:,:)
-    ! CASE (BLK_VAR_OLD)
-    !    IF (ASSOCIATED(var%old)) var%old(imin:imax, jmin:jmax) = tmp(:,:)
-    ! CASE (BLK_VAR_OLDOLD)
-    !    IF (ASSOCIATED(var%oldold)) var%oldold(imin:imax, jmin:jmax) = tmp(:,:)
-    ! END SELECT
-
-    ! DEALLOCATE(tmp)
+    IF (ASSOCIATED(tmp))&
+         &CALL nga_put(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
 
   END SUBROUTINE block_var_put
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_initialize
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_initialize(var, val)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(INOUT) :: var
+    DOUBLE PRECISION, INTENT(IN) :: val
+
+    var%current = val
+    CALL block_var_iterate(var)
+    CALL block_var_timestep(var)
+    CALL block_var_timestep(var)
+
+  END SUBROUTINE block_var_initialize
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_init_window
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_init_window(var, val, imin, imax, jmin, jmax)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(INOUT) :: var
+    DOUBLE PRECISION, INTENT(IN) :: val
+    INTEGER, INTENT(IN) :: imin, imax, jmin, jmax
+
+    INTEGER :: i, j
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+       END DO
+    END DO
+    
+
+  END SUBROUTINE block_var_init_window
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_var_iterate

@@ -16,7 +16,7 @@ MODULE config
 
   INTEGER, PRIVATE, PARAMETER :: cfg_iounit=10
 
-  CHARACTER (LEN=80), PUBLIC, SAVE :: config_file_name = "mass1.cfg"
+  CHARACTER (LEN=80), PUBLIC, SAVE :: config_file_name = "mass2.cfg"
 
   CHARACTER (LEN=1024), PUBLIC :: config_file_version
   INTEGER, PUBLIC :: max_blocks

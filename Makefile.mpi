@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Dec 30 14:34:49 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Mon Jan  3 06:19:53 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -18,17 +18,25 @@ F90LINKER   = openmpif90
 GA_TARGET = MACX
 CC = openmpicc -Wall
 CXX = openmpic++ -Wall
-FC = openmpif90 -Wall 
+FC = openmpif90 -Wall
+ 
 GA = /home/d3g096/Projects/TE2THYS/src/GA/ga-4-3-2
 GA_FCFLAGS = -I$(GA)/include
 GA_FLIBS = -L$(GA)/lib/$(GA_TARGET) -lglobal -lma  -llinalg  -larmci -ltcgmsg-mpi  -lm
 
+GA = /Users/d3g096/ProjectStuff/MASS2/parallel
+GA_FCFLAGS = -I$(GA)/include
+GA_FLIBS = -L$(GA)/lib -lga -larmci -llapack -lf77blas -latlas -lm
+
 mass2_SOURCES = \
+	block_hydro_bc.f90 \
+	block_initialization.f90 \
 	block_var_base.f90 \
 	block_var.f90 \
 	block_parallel.f90 \
 	block_grid.f90 \
 	differencing.f90 \
+	distance.f90 \
 	hydro_bc.f90 \
 	mass2_config.f90 \
 	mass2_parallel.f90 \
@@ -54,7 +62,8 @@ clean::
 # dependancies for individual object files
 
 block_grid.o: block_grid.f90 block_parallel.o
-block_hydro_bc.o: block_hydro_bc.f90 block_parallel.o hydro_bc.o
+block_hydro_bc.o: block_hydro_bc.f90 block_parallel.o hydro_bc.o mass2_config.o
+block_initialization.o: block_initialization.f90 block_parallel.o mass2_config.o
 block_parallel.o: block_parallel.f90 block_var.o
 block_var.o: block_var.f90 block_var_base.o
 block_var_base.o: block_var_base.f90
@@ -82,3 +91,4 @@ TAGS: $(mass2_SOURCES) $(SOLVERSRC)
 	$(F90) $(FCFLAGS) -c $<
 .SUFFIXES: .f90
 
+%.o: %.mod

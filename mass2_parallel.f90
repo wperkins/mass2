@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Thu Dec 30 14:49:26 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan  1 09:57:08 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -20,6 +20,7 @@ PROGRAM mass2_parallel
   USE utility
   USE time_series
   USE block_parallel_grid
+  USE block_initialization
   USE config
 
   IMPLICIT NONE
@@ -50,7 +51,8 @@ PROGRAM mass2_parallel
 
   CALL read_config()
   CALL read_grid()
-  
+  CALL bc_init()
+  CALL initialize()
 
   CALL ga_sync()
 
@@ -105,7 +107,9 @@ END SUBROUTINE read_grid
 ! ----------------------------------------------------------------
 SUBROUTINE bc_init()
 
-  USE hydro_bc
+  USE utility
+  USE config
+  USE block_hydro_bc
 
   IMPLICIT NONE
 
@@ -117,17 +121,17 @@ SUBROUTINE bc_init()
   ! read hydrodynamics related stuff
   CALL allocate_block_bc(max_blocks)
 
-  CALL read_bcspecs(bcspec_iounit, max_blocks, block%xmax, block%ymax)
+  CALL read_bcspecs(max_blocks, block%xmax, block%ymax)
 
   CALL read_bc_tables
 
   ! now decipher which cells talk to each other in the block connections
   IF(max_blocks > 1)THEN
-     CALL set_block_connections(max_blocks, error_iounit, status_iounit)
+     CALL set_block_connections(max_blocks, utility_error_iounit, utility_status_iounit)
   END IF
 
-  !---------------------------------------------------------------------------------
-  ! IF(do_transport)THEN
+  IF(do_transport)THEN
+     CALL error_message('transport not implemented', fatal=.TRUE.)
   !    ! read species related stuff
   !    CALL allocate_scalar_block_bc(max_blocks)
   !    CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
@@ -148,8 +152,9 @@ SUBROUTINE bc_init()
   !       CALL check_transport_only_dat(start_time%time,end_time%time)
   !    END IF
 
-  ! END IF
+  END IF
 
+  ! FIXME
   ! ! read in met data from a file
   ! IF (source_need_met) THEN
   !    CALL read_met_data(weather_filename)

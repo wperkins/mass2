@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed Apr  7 09:09:05 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Sat Jan  1 10:41:20 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -15,7 +15,8 @@
 ! ----------------------------------------------------------------
 MODULE plot_cgns
 
-  USE accumulator
+  USE config
+  USE block_module
 
   IMPLICIT NONE
 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Dec 30 12:21:16 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan  1 08:27:54 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -65,7 +65,15 @@ MODULE block_module
   TYPE block_struct
      INTEGER :: index
      INTEGER :: xmax, ymax
+
+     ! this defines the distribution of all parallel variables for
+     ! this block
+
      TYPE (block_var_base), POINTER :: varbase
+
+     ! These are variables that having values need to be known over
+     ! multiple processors, either for computation or input/output
+
      TYPE (block_var), POINTER :: x_grid, y_grid, zbot_grid
      TYPE (block_var), POINTER :: x, y, zbot
      TYPE (block_var), POINTER :: x_out, y_out, zbot_out
@@ -76,6 +84,8 @@ MODULE block_module
      TYPE (block_var), POINTER :: uvel_p, vvel_p, u_cart, v_cart
      TYPE (block_var), POINTER :: froude_num, courant_num
      TYPE (block_var), POINTER :: mass_source
+
+     ! these values are only needed locally
 
      DOUBLE PRECISION, POINTER :: uflux(:,:)      ! east face flux for c.v.
      DOUBLE PRECISION, POINTER :: vflux(:,:)      ! north face flux for c.v.
@@ -92,16 +102,15 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: xsource(:,:)
 
 
-     ! These variables are used for transport; they hold hydrdynamic
-     ! values that are calculated before the transport calculations
-     ! begin
+     ! These local variables are used for transport; they hold
+     ! hydrdynamic values that are calculated before the transport
+     ! calculations begin
 
      DOUBLE PRECISION, POINTER :: k_e(:,:), k_w(:,:), k_n(:,:), k_s(:,:)
      DOUBLE PRECISION, POINTER :: depth_e(:,:), depth_w(:,:), depth_n(:,:), depth_s(:,:)
      DOUBLE PRECISION, POINTER :: flux_e(:,:), flux_w(:,:), flux_n(:,:), flux_s(:,:)
      DOUBLE PRECISION, POINTER :: diffu_e(:,:), diffu_w(:,:), diffu_n(:,:), diffu_s(:,:)
      DOUBLE PRECISION, POINTER :: pec_e(:,:), pec_w(:,:), pec_n(:,:), pec_s(:,:)
-     DOUBLE PRECISION, POINTER :: TDG_stuff(:,:)	! work array for output of TDG delP, %Sat
   
      TYPE (isdead_struct), POINTER :: isdead(:,:)
      TYPE (cell_type_struct), POINTER :: cell(:,:)
@@ -182,22 +191,120 @@ CONTAINS
 
     ! local variables that do not need to be shared with other processors
 
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    blk%uflux => block_array_owned(blk)
+    blk%vflux => block_array_owned(blk)
+    blk%dp => block_array_owned(blk)
+    blk%bedshear1 => block_array_owned(blk)
+    blk%bedshear2 => block_array_owned(blk)
+    blk%shear => block_array_owned(blk)
+    blk%windshear1 => block_array_owned(blk)
+    blk%windshear2 => block_array_owned(blk)
+    blk%apo => block_array_owned(blk)
+    blk%lud => block_array_owned(blk)
+    blk%lvd => block_array_owned(blk)
+    blk%xsource => block_array_owned(blk)
+    blk%k_e => block_array_owned(blk)
+    blk%k_w => block_array_owned(blk)
+    blk%k_n => block_array_owned(blk)
+    blk%k_s => block_array_owned(blk)
+    blk%depth_e => block_array_owned(blk)
+    blk%depth_w => block_array_owned(blk)
+    blk%depth_n => block_array_owned(blk)
+    blk%depth_s => block_array_owned(blk)
+    blk%flux_e => block_array_owned(blk)
+    blk%flux_w => block_array_owned(blk)
+    blk%flux_n => block_array_owned(blk)
+    blk%flux_s => block_array_owned(blk)
+    blk%diffu_e => block_array_owned(blk)
+    blk%diffu_w => block_array_owned(blk)
+    blk%diffu_n => block_array_owned(blk)
+    blk%diffu_s => block_array_owned(blk)
+    blk%pec_e => block_array_owned(blk)
+    blk%pec_w => block_array_owned(blk)
+    blk%pec_n => block_array_owned(blk)
+    blk%pec_s => block_array_owned(blk)
 
-    ALLOCATE(blk%uflux(imin:imax, jmin:jmax))
-    ALLOCATE(blk%vflux(imin:imax, jmin:jmax))
-    ALLOCATE(blk%dp(imin:imax, jmin:jmax))
-    ALLOCATE(blk%bedshear1(imin:imax, jmin:jmax))
-    ALLOCATE(blk%bedshear2(imin:imax, jmin:jmax))
-    ALLOCATE(blk%shear(imin:imax, jmin:jmax))
-    ALLOCATE(blk%windshear1(imin:imax, jmin:jmax))
-    ALLOCATE(blk%windshear2(imin:imax, jmin:jmax))
-    ALLOCATE(blk%apo(imin:imax, jmin:jmax))
-    ALLOCATE(blk%lud(imin:imax, jmin:jmax))
-    ALLOCATE(blk%lvd(imin:imax, jmin:jmax))
-    ALLOCATE(blk%xsource(imin:imax, jmin:jmax)) 
 
   END SUBROUTINE block_allocate_size
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_deallocate
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_deallocate(blk)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+
+    CALL block_var_deallocate(blk%x_grid)
+    CALL block_var_deallocate(blk%y_grid)
+    CALL block_var_deallocate(blk%zbot_grid)
+    CALL block_var_deallocate(blk%x)
+    CALL block_var_deallocate(blk%y)
+    CALL block_var_deallocate(blk%zbot)
+    CALL block_var_deallocate(blk%x_out)
+    CALL block_var_deallocate(blk%y_out)
+    CALL block_var_deallocate(blk%zbot_out)
+    CALL block_var_deallocate(blk%x_xsi)
+    CALL block_var_deallocate(blk%y_xsi)
+    CALL block_var_deallocate(blk%x_eta)
+    CALL block_var_deallocate(blk%y_eta)
+    CALL block_var_deallocate(blk%hp1)
+    CALL block_var_deallocate(blk%hp2)
+    CALL block_var_deallocate(blk%hu1)
+    CALL block_var_deallocate(blk%hu2)
+    CALL block_var_deallocate(blk%hv1)
+    CALL block_var_deallocate(blk%hv2)
+    CALL block_var_deallocate(blk%gp12)
+    CALL block_var_deallocate(blk%chezy)
+    CALL block_var_deallocate(blk%kx_diff)
+    CALL block_var_deallocate(blk%ky_diff)
+    CALL block_var_deallocate(blk%eddy)
+    CALL block_var_deallocate(blk%uvel)
+    CALL block_var_deallocate(blk%vvel)
+    CALL block_var_deallocate(blk%depth)
+    CALL block_var_deallocate(blk%wsel)
+    CALL block_var_deallocate(blk%u_cart)
+    CALL block_var_deallocate(blk%v_cart)
+    CALL block_var_deallocate(blk%u_cart)
+    CALL block_var_deallocate(blk%v_cart)
+
+    DEALLOCATE(blk%uflux)
+    DEALLOCATE(blk%vflux)
+    DEALLOCATE(blk%dp)
+    DEALLOCATE(blk%bedshear1)
+    DEALLOCATE(blk%bedshear2)
+    DEALLOCATE(blk%shear)
+    DEALLOCATE(blk%windshear1)
+    DEALLOCATE(blk%windshear2)
+    DEALLOCATE(blk%apo)
+    DEALLOCATE(blk%lud)
+    DEALLOCATE(blk%lvd)
+    DEALLOCATE(blk%xsource)
+    DEALLOCATE(blk%k_e)
+    DEALLOCATE(blk%k_w)
+    DEALLOCATE(blk%k_n)
+    DEALLOCATE(blk%k_s)
+    DEALLOCATE(blk%depth_e)
+    DEALLOCATE(blk%depth_w)
+    DEALLOCATE(blk%depth_n)
+    DEALLOCATE(blk%depth_s)
+    DEALLOCATE(blk%flux_e)
+    DEALLOCATE(blk%flux_w)
+    DEALLOCATE(blk%flux_n)
+    DEALLOCATE(blk%flux_s)
+    DEALLOCATE(blk%diffu_e)
+    DEALLOCATE(blk%diffu_w)
+    DEALLOCATE(blk%diffu_n)
+    DEALLOCATE(blk%diffu_s)
+    DEALLOCATE(blk%pec_e)
+    DEALLOCATE(blk%pec_w)
+    DEALLOCATE(blk%pec_n)
+    DEALLOCATE(blk%pec_s)
+
+
+  END SUBROUTINE block_deallocate
+
 
   ! ----------------------------------------------------------------
   ! FUNCTION block_buffer
@@ -237,6 +344,7 @@ CONTAINS
     CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
     ALLOCATE(block_array_owned(imin:imax, jmin:jmax))
+    block_array_owned = 0.0
 
     RETURN
 
@@ -257,6 +365,7 @@ CONTAINS
     CALL block_used_window(blk, imin, imax, jmin, jmax)
 
     ALLOCATE(block_array_used(imin:imax, jmin:jmax))
+    block_array_used = 0.0
 
     RETURN
 
@@ -271,12 +380,8 @@ CONTAINS
 
     TYPE (block_struct), INTENT(IN) :: blk
     INTEGER, INTENT(IN) :: i
-    INTEGER :: imin, imax
 
-    imin = blk%varbase%imin_owned
-    imax = blk%varbase%imax_owned
-
-    block_owns_i = ((imin .LE. i) .AND. (i .LE. imax))
+    block_owns_i = block_var_base_owns_i(blk%varbase, i)
   END FUNCTION block_owns_i
   
   ! ----------------------------------------------------------------
@@ -288,12 +393,8 @@ CONTAINS
 
     TYPE (block_struct), INTENT(IN) :: blk
     INTEGER, INTENT(IN) :: j
-    INTEGER :: jmin, jmax
 
-    jmin = blk%varbase%jmin_owned
-    jmax = blk%varbase%jmax_owned
-
-    block_owns_j = ((jmin .LE. j) .AND. (j .LE. jmax))
+    block_owns_j = block_var_base_owns_j(blk%varbase, j)
   END FUNCTION block_owns_j
 
   ! ----------------------------------------------------------------

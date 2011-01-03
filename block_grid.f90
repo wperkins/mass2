@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Wed Dec 22 15:05:31 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan  3 06:22:26 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -652,6 +652,101 @@ CONTAINS
 
 
   END SUBROUTINE block_metrics
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_geometry
+  ! This routine is used to compute the geometry of the output.  It is
+  ! intended to be the ONLY place where the coordinates of output data
+  ! are computed.  This routine exists so that output grids can remain
+  ! understandable even when the computation grid is complicated with
+  ! ghost cells, half cells, etc.
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_geometry()
+
+  !   USE globals
+  !   USE misc_vars, ONLY: i_ghost, j_ghost
+  !   IMPLICIT NONE
+
+  !   INTEGER :: iblock, i, j
+
+  !   DO iblock = 1, max_blocks
+
+  !                               ! without ghost cells, the output
+  !                               ! locations are the same as the
+  !                               ! computation locations
+
+  !      block(iblock)%x_out = block(iblock)%x
+  !      block(iblock)%y_out = block(iblock)%y
+  !      block(iblock)%zbot_out = block(iblock)%zbot
+
+  !                               ! with ghost cells at the up/down
+  !                               ! stream end, the output locations
+  !                               ! need to be interpolated at the block
+  !                               ! ends. The number of ghost cells in
+  !                               ! irrevalent, as long as there are
+  !                               ! ghost cells
+
+  !      IF (i_ghost .GT. 0) THEN
+  !         i = 1
+  !         block(iblock)%x_out(i,1) = block(iblock)%x_grid(i,1)
+  !         block(iblock)%y_out(i,1) = block(iblock)%y_grid(i,1)
+  !         block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i,1)
+  !         DO j = 2, block(iblock)%ymax
+  !            block(iblock)%x_out(i,j) = &
+  !                 &0.5*(block(iblock)%x_grid(i,j-1) + block(iblock)%x_grid(i,j))
+  !            block(iblock)%y_out(i,j) = &
+  !                 &0.5*(block(iblock)%y_grid(i,j-1) + block(iblock)%y_grid(i,j))
+  !            block(iblock)%zbot_out(i,j) = &
+  !                 &0.5*(block(iblock)%zbot_grid(i,j-1) + block(iblock)%zbot_grid(i,j))
+  !         END DO
+  !         j = block(iblock)%ymax + 1
+  !         block(iblock)%x_out(i,j) = block(iblock)%x_grid(i,j-1)
+  !         block(iblock)%y_out(i,j) = block(iblock)%y_grid(i,j-1)
+  !         block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i,j-1)
+          
+  !         i =  block(iblock)%xmax + 1
+  !         block(iblock)%x_out(i,1) = block(iblock)%x_grid(i-1,1)
+  !         block(iblock)%y_out(i,1) = block(iblock)%y_grid(i-1,1)
+  !         block(iblock)%zbot_out(i,1) = block(iblock)%zbot_grid(i-1,1)
+  !         DO j = 2, block(iblock)%ymax
+  !            block(iblock)%x_out(i,j) = &
+  !                 &0.5*(block(iblock)%x_grid(i-1,j-1) + block(iblock)%x_grid(i-1,j))
+  !            block(iblock)%y_out(i,j) = &
+  !                 &0.5*(block(iblock)%y_grid(i-1,j-1) + block(iblock)%y_grid(i-1,j))
+  !            block(iblock)%zbot_out(i,j) = &
+  !                 &0.5*(block(iblock)%zbot_grid(i-1,j-1) + block(iblock)%zbot_grid(i-1,j))
+  !         END DO
+  !         j = block(iblock)%ymax + 1
+  !         block(iblock)%x_out(i,j) = block(iblock)%x_grid(i-1,j-1)
+  !         block(iblock)%y_out(i,j) = block(iblock)%y_grid(i-1,j-1)
+  !         block(iblock)%zbot_out(i,j) = block(iblock)%zbot_grid(i-1,j-1)
+  !      END IF
+       
+  !                               ! ditto for lateral ghost cells
+
+  !      IF (j_ghost .GT. 0) THEN
+  !         j = 1
+  !         DO i = 2, block(iblock)%xmax
+  !            block(iblock)%x_out(i,j) = &
+  !                 &0.5*(block(iblock)%x_grid(i,j) + block(iblock)%x_grid(i-1,j))
+  !            block(iblock)%y_out(i,j) = &
+  !                 &0.5*(block(iblock)%y_grid(i,j) + block(iblock)%y_grid(i-1,j))
+  !            block(iblock)%zbot_out(i,j) = &
+  !                 &0.5*(block(iblock)%zbot_grid(i,j) + block(iblock)%zbot_grid(i-1,j))
+  !         END DO
+  !         j = block(iblock)%ymax + 1
+  !         DO i = 2, block(iblock)%xmax
+  !            block(iblock)%x_out(i,j) = &
+  !                 &0.5*(block(iblock)%x_grid(i,j-1) + block(iblock)%x_grid(i-1,j-1))
+  !            block(iblock)%y_out(i,j) = &
+  !                 &0.5*(block(iblock)%y_grid(i,j-1) + block(iblock)%y_grid(i-1,j-1))
+  !            block(iblock)%zbot_out(i,j) = &
+  !                 &0.5*(block(iblock)%zbot_grid(i,j-1) + block(iblock)%zbot_grid(i-1,j-1))
+  !         END DO
+  !      END IF
+
+  !   END DO
+  ! END SUBROUTINE plot_geometry
 
 
 END MODULE block_parallel_grid

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 20, 2010 by William A. Perkins
-! Last Change: Wed Dec 22 07:55:43 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan  1 08:29:11 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -135,6 +135,107 @@ CONTAINS
     RETURN
 
   END FUNCTION block_var_base_allocate
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_base_deallocate
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_base_deallocate(base)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), POINTER, INTENT(INOUT) :: base
+
+    LOGICAL :: ok
+
+    ok = ga_destroy(base%ga_handle)
+    DEALLOCATE(base)
+    NULLIFY(base)
+    RETURN
+
+  END SUBROUTINE block_var_base_deallocate
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_owns_i
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_owns_i(base, i)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: i
+
+    block_var_base_owns_i = (base%imin_owned .LE. i .AND. i .LE. base%imax_owned)
+  END FUNCTION block_var_base_owns_i
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_owns_j
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_owns_j(base, j)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: j
+
+    block_var_base_owns_j = (base%jmin_owned .LE. j .AND. j .LE. base%jmax_owned)
+  END FUNCTION block_var_base_owns_j
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_owns
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_owns(base, i, j)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: i, j
+
+    block_var_base_owns = (&
+         &block_var_base_owns_i(base, i) .AND. &
+         &block_var_base_owns_j(base, j))
+  END FUNCTION block_var_base_owns
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_uses_i
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_uses_i(base, i)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: i
+
+    block_var_base_uses_i = (base%imin_used .LE. i .AND. i .LE. base%imax_used)
+  END FUNCTION block_var_base_uses_i
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_uses_j
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_uses_j(base, j)
+
+    IMPLICIT NONE
+
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: j
+
+    block_var_base_uses_j = (base%jmin_used .LE. j .AND. j .LE. base%jmax_used)
+  END FUNCTION block_var_base_uses_j
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_var_base_uses
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_var_base_uses(base, i, j)
+
+    IMPLICIT NONE
+    TYPE (block_var_base), INTENT(IN) :: base
+    INTEGER, INTENT(IN) :: i, j
+
+    block_var_base_uses = (&
+         &block_var_base_uses_i(base, i) .AND. &
+         &block_var_base_uses_j(base, j))
+
+  END FUNCTION block_var_base_uses
+
 
 END MODULE block_variable_base
   

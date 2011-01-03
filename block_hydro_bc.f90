@@ -3,6 +3,7 @@
 ! ----------------------------------------------------------------
 MODULE block_hydro_bc
 
+  USE config
   USE block_module
   USE hydro_bc
 
@@ -68,7 +69,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   LOGICAL FUNCTION check_hydro_block_connection(bc, conbc)
 
-    USE misc_vars, ONLY: debug
     IMPLICIT NONE
 
     TYPE (bc_spec_struct), INTENT(INOUT) :: bc
@@ -141,20 +141,20 @@ CONTAINS
           ! this because the grid has not been
           ! read yet
 
-          x1 = block(bc%block)%x_grid(i, j)
-          y1 = block(bc%block)%y_grid(i, j)
-          x2 = block(conbc%block)%x_grid(coni, conj)
-          y2 = block(conbc%block)%y_grid(coni, conj)
+          x1 = block(bc%block)%x_grid%current(i, j)
+          y1 = block(bc%block)%y_grid%current(i, j)
+          x2 = block(conbc%block)%x_grid%current(coni, conj)
+          y2 = block(conbc%block)%y_grid%current(coni, conj)
 
           rdist = distance(x1, y1, x2, y2)
 
           SELECT CASE (bc%bc_loc)
           CASE ("US","DS")
-             x2 = block(bc%block)%x_grid(i, j+1)
-             y2 = block(bc%block)%y_grid(i, j+1)
+             x2 = block(bc%block)%x_grid%current(i, j+1)
+             y2 = block(bc%block)%y_grid%current(i, j+1)
           CASE ("LB","RB")
-             x2 = block(bc%block)%x_grid(i+1, j)
-             y2 = block(bc%block)%y_grid(i+1, j)
+             x2 = block(bc%block)%x_grid%current(i+1, j)
+             y2 = block(bc%block)%y_grid%current(i+1, j)
           END SELECT
 
           rdist = rdist/distance(x1, y1, x2, y2)
@@ -170,24 +170,24 @@ CONTAINS
           SELECT CASE (bc%bc_loc)
           CASE ("US","DS")
              j = bc%end_cell(n)
-             x1 = block(bc%block)%x_grid(i, j+1)
-             y1 = block(bc%block)%y_grid(i, j+1)
+             x1 = block(bc%block)%x_grid%current(i, j+1)
+             y1 = block(bc%block)%y_grid%current(i, j+1)
              conj = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid(coni, conj+1)
-             y2 = block(conbc%block)%y_grid(coni, conj+1)
+             x2 = block(conbc%block)%x_grid%current(coni, conj+1)
+             y2 = block(conbc%block)%y_grid%current(coni, conj+1)
           CASE ("LB","RB")
              i =  bc%end_cell(n)
-             x1 = block(bc%block)%x_grid(i+1, j)
-             y1 = block(bc%block)%y_grid(i+1, j)
+             x1 = block(bc%block)%x_grid%current(i+1, j)
+             y1 = block(bc%block)%y_grid%current(i+1, j)
              coni = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid(coni+1, conj)
-             y2 = block(conbc%block)%y_grid(coni+1, conj)
+             x2 = block(conbc%block)%x_grid%current(coni+1, conj)
+             y2 = block(conbc%block)%y_grid%current(coni+1, conj)
           END SELECT
 
           rdist = distance(x1, y1, x2, y2)
 
-          x2 = block(bc%block)%x_grid(i, j)
-          y2 = block(bc%block)%y_grid(i, j)
+          x2 = block(bc%block)%x_grid%current(i, j)
+          y2 = block(bc%block)%y_grid%current(i, j)
           rdist = rdist/distance(x1, y1, x2, y2)
 
           IF (rdist .GT. 0.01) THEN

@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Nov 12 07:15:42 2008 by William A. Perkins <d3g096@PE10588>
+Last Change: Mon Jan  3 06:18:00 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -229,17 +229,13 @@ On mac laptop:
     configure \
         --with-netcdf=/Users/d3g096/stuff \
         --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
-        --with-f90=gfortran-mp-4.3 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+        --with-f90=gfortran-mp-4.3 
 
     setenv FCFLAGS "-fno-second-underscore"
     configure \
         --with-netcdf=/Users/d3g096/stuff \
         --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
-        --with-f90=g95 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+        --with-f90=g95
 
 
 On bearflag:

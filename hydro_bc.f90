@@ -7,13 +7,13 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 30, 2010 by William A. Perkins
-! Last Change: Thu Dec 30 14:35:09 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Dec 31 09:38:31 2010 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
 ! MODULE hydro_bc_module
 ! ----------------------------------------------------------------
-MODULE hydro_bc_module
+MODULE hydro_bc
 
   USE utility
   USE table_boundary_conditions
@@ -48,7 +48,7 @@ MODULE hydro_bc_module
 
   TYPE(block_bc_struct), ALLOCATABLE :: block_bc(:)
   CHARACTER (LEN=80), PRIVATE :: bcspecs_name = "bcspecs.dat"
-
+  INTEGER, PARAMETER, PRIVATE :: bcspec_iounit = 18
 
 CONTAINS
 
@@ -76,13 +76,13 @@ CONTAINS
 
   !##########################################################################
   
-  SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
+  SUBROUTINE read_bcspecs(max_blocks, xmax, ymax)
 
     ! reads the bc spec file
     ! format: block#	bc_loc	bc_type	bc_kind	bc_extent	'connect_block OR filename' 'cell pairs'			
 
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: iounit, max_blocks, xmax(:), ymax(:)
+    INTEGER, INTENT(IN) :: max_blocks, xmax(:), ymax(:)
 
     INTEGER :: junk1, block, num_bc, con_block, cells(2*max_cell_values) = -999 
     INTEGER :: table_count = 0, num_cells, num_cell_pairs
@@ -93,13 +93,13 @@ CONTAINS
 
     INTEGER :: line, lerr, ierr, maxidx
 
-    CALL open_existing(bcspecs_name, iounit)
+    CALL open_existing(bcspecs_name, bcspec_iounit)
 
     ! first we need to count how many TABLE bc types 
 
     DO WHILE(.TRUE.)
 
-       READ(iounit,*,END=100)junk1,junk_char1,junk_char2
+       READ(bcspec_iounit,*,END=100)junk1,junk_char1,junk_char2
        SELECT CASE (junk_char2)
        CASE ("TABLE", "SOURCE", "SINK")
           max_tables = max_tables + 1
@@ -110,13 +110,13 @@ CONTAINS
 100 CALL allocate_table_bc(max_tables)
 
     ! now start over to fill and parse
-    REWIND(iounit)
+    REWIND(bcspec_iounit)
 
     line = 0
     ierr = 0
 
     DO WHILE(.TRUE.)
-       READ(iounit,*,END=200)block, bc_loc, bc_type, bc_kind, bc_extent
+       READ(bcspec_iounit,*,END=200)block, bc_loc, bc_type, bc_kind, bc_extent
        line = line + 1
        lerr = 0
 
@@ -175,7 +175,7 @@ CONTAINS
 
           ! reread BC specific information from the line
 
-          BACKSPACE(iounit)
+          BACKSPACE(bcspec_iounit)
 
           SELECT CASE(bc_type)
 
@@ -183,16 +183,16 @@ CONTAINS
 
              SELECT CASE(bc_extent)
              CASE("ALL")
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block
                 block_bc(block)%bc_spec(num_bc)%con_block = con_block
                 block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
                 block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
                 block_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
              CASE("PART")
                 cells = -999
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block,cells(:)
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,con_block,cells(:)
                 block_bc(block)%bc_spec(num_bc)%con_block = con_block
-                CALL set_bc_part(iounit, block_bc(block)%bc_spec(num_bc), &
+                CALL set_bc_part(bcspec_iounit, block_bc(block)%bc_spec(num_bc), &
                      &cells, maxidx, line, lerr)
                 ! num_cells = COUNT(cells /= -999)
                 ! num_cell_pairs = num_cells/2
@@ -204,13 +204,13 @@ CONTAINS
                 WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                      &": ", TRIM(bc_extent), "?"
                 CALL error_message(msg, fatal=.FALSE.)
-                READ (iounit, *)
+                READ (bcspec_iounit, *)
              END SELECT
 
           CASE("TABLE")
              SELECT CASE(bc_extent)
              CASE("ALL")
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name
                 table_count = table_count + 1 ! keep a running count of the number of tables
                 block_bc(block)%bc_spec(num_bc)%table_num = table_count
                 table_bc(table_count)%file_name = file_name ! associate file and table number
@@ -219,25 +219,25 @@ CONTAINS
                 block_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
              CASE("PART")
                 cells = -999
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name,cells(:)
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name,cells(:)
                 table_count = table_count + 1 ! keep a running count of the number of tables
                 block_bc(block)%bc_spec(num_bc)%table_num = table_count
                 table_bc(table_count)%file_name = file_name ! associate file and table number
-                CALL set_bc_part(iounit, block_bc(block)%bc_spec(num_bc), &
+                CALL set_bc_part(bcspec_iounit, block_bc(block)%bc_spec(num_bc), &
                      &cells, maxidx, line, lerr)
              CASE DEFAULT
                 lerr = lerr + 1
                 WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                      &": ", TRIM(bc_extent), "?"
                 CALL error_message(msg, fatal=.FALSE.)
-                READ (iounit, *)
+                READ (bcspec_iounit, *)
              END SELECT
 
           CASE ("SOURCE","SINK")
 
              cells = -999
 
-             READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name, cells
+             READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name, cells
              table_count = table_count + 1 ! keep a running count of the number of tables
              block_bc(block)%bc_spec(num_bc)%table_num = table_count
              table_bc(table_count)%file_name = file_name ! associate file and table number
@@ -256,12 +256,12 @@ CONTAINS
                 WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                      &": ", TRIM(bc_extent), "?"
                 CALL error_message(msg, fatal=.FALSE.)
-                READ (iounit, *)
+                READ (bcspec_iounit, *)
              END SELECT
 
           CASE ("WALL")
              cells = -999
-             READ(iounit,*)block,bc_loc,bc_type,bc_kind,junk1,cells(:)
+             READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,junk1,cells(:)
 
              ! the first number indicates the row
              ! (uvel) or column (vvel) cell 
@@ -295,14 +295,14 @@ CONTAINS
                      &": this should not happen (fix me!)"
                 CALL error_message(msg, fatal=.FALSE.)
              END SELECT
-             CALL set_bc_part(iounit, block_bc(block)%bc_spec(num_bc), &
+             CALL set_bc_part(bcspec_iounit, block_bc(block)%bc_spec(num_bc), &
                   &cells, maxidx, line, lerr)
           CASE ("DEAD")
 
              ! whatever is in bc_kind is not used
 
              cells = -999
-             READ(iounit,*)block,bc_loc,bc_type,bc_kind,cells(:)
+             READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,cells(:)
 
              !
              ! the dead zone is specified as a
@@ -318,28 +318,28 @@ CONTAINS
 
              SELECT CASE(bc_extent)
              CASE("ALL")
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent
                 block_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
                 block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
                 block_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
              CASE("PART")
                 cells = -999
-                READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,cells(:)
-                CALL set_bc_part(iounit, block_bc(block)%bc_spec(num_bc), &
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,cells(:)
+                CALL set_bc_part(bcspec_iounit, block_bc(block)%bc_spec(num_bc), &
                      &cells, maxidx, line, lerr)
              CASE DEFAULT
                 lerr = lerr + 1
                 WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                      &": ", TRIM(bc_extent), "?"
                 CALL error_message(msg, fatal=.FALSE.)
-                READ (iounit, *)
+                READ (bcspec_iounit, *)
              END SELECT
           CASE DEFAULT
              lerr = lerr + 1
              WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
                   &": ", TRIM(bc_type), "?"
              CALL error_message(msg, fatal=.FALSE.)
-             READ (iounit, *)
+             READ (bcspec_iounit, *)
           END SELECT
        END IF
        ierr = ierr + lerr
@@ -347,7 +347,7 @@ CONTAINS
 
 
 
-200 CLOSE(iounit)
+200 CLOSE(bcspec_iounit)
 
     IF (ierr .GT. 0) THEN
        WRITE(msg, *) TRIM(bcspecs_name), ": ", ierr, " errors"
@@ -476,4 +476,4 @@ CONTAINS
   END SUBROUTINE set_bc_area
 
 
-END MODULE hydro_bc_module
+END MODULE hydro_bc
