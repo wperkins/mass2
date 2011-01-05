@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Mon Jul 21 08:43:00 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Wed Jan  5 07:56:32 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -18,29 +18,30 @@ MODULE solver_module
 
   IMPLICIT NONE
 
+
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
-#include "finclude/petsc.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscmat.h"
-#include "finclude/petscpc.h"
-#include "finclude/petscksp.h"
-#include "finclude/petscsles.h"
 #include "finclude/petscsys.h"
-
+#include "finclude/petscdef.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscvec.h90"
+#include "finclude/petscmat.h"
+#include "finclude/petscmat.h90"
+#include "finclude/petscksp.h"
+#include "finclude/petscksp.h90"
 
                                 ! individual blocks need to have save
                                 ! matrices, vectors, and solver
                                 ! contexts for each equation solved
   TYPE petsc_save_rec
      LOGICAL :: built
-     Vec x,b,u
-     Mat A
-     SLES sles
+     Vec :: x,b,u
+     Mat :: A
+     KSP :: ksp
   END TYPE petsc_save_rec
 
   TYPE petsc_blk_rec
-     TYPE (petsc_save_rec) :: eq(4)
+     TYPE (petsc_save_rec) :: eq(NUM_SOLVE)
   END TYPE petsc_blk_rec
 
   TYPE (petsc_blk_rec), ALLOCATABLE, PRIVATE :: pinfo(:)
@@ -64,11 +65,12 @@ CONTAINS
     INTEGER :: ierr
     INTEGER :: iblock, imax, jmax, ieq, its
     CHARACTER (LEN=10) :: prefix
+    CHARACTER (LEN=1024) :: buf
     LOGICAL :: build
 
-    KSP ksp
-    PC pc
-    PetscReal rtol, atol, dtol
+    KSP :: ksp
+    PC :: pc
+    PetscReal :: rtol, atol, dtol
 
     dtol = 1e+04
 
@@ -76,6 +78,12 @@ CONTAINS
     ALLOCATE(pinfo(myblocks))
 
     CALL PetscInitialize(PETSC_NULL_CHARACTER,ierr)
+    CHKERRQ(ierr)
+
+    CALL PetscPopSignalHandler(ierr)
+    CHKERRQ(ierr)
+
+    CALL PetscGetVersion(buf, ierr)
     CHKERRQ(ierr)
 
     DO iblock = 1, myblocks
@@ -110,8 +118,9 @@ CONTAINS
                                 ! equation and another matrix that may
                                 ! store a preconditioner
 
-             CALL MatCreate(PETSC_COMM_WORLD,PETSC_DECIDE,PETSC_DECIDE,&
-                  &imax*jmax, imax*jmax, pinfo(iblock)%eq(ieq)%A, ierr)
+             CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
+             CHKERRQ(ierr)
+             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
              CHKERRQ(ierr)
              CALL MatSetFromOptions(pinfo(iblock)%eq(ieq)%A, ierr)
              CHKERRQ(ierr)
@@ -119,12 +128,15 @@ CONTAINS
                                 ! create vectors to hold the
                                 ! right-hand side and estimate
              
-             CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,imax*jmax,&
-                  &pinfo(iblock)%eq(ieq)%x,ierr)
+             CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
+             CHKERRQ(ierr)
+             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
              CHKERRQ(ierr)
              CALL VecSetFromOptions(pinfo(iblock)%eq(ieq)%x,ierr)
              CHKERRQ(ierr)
              CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%b,ierr)
+             CHKERRQ(ierr)
+             CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%u,ierr)
              CHKERRQ(ierr)
 
                                 ! create a solver context for this
@@ -144,35 +156,19 @@ CONTAINS
                 rtol = scalar_rtol
                 atol = scalar_atol
              END SELECT
+
              
-             CALL SLESCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%sles, ierr)
+             CALL KSPCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
              CHKERRQ(ierr)
-             CALL SLESAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%sles, prefix, ierr)
-             CHKERRQ(ierr)
-
-                                ! set preconditioner options that can
-                                ! be overridden by the command line
-             CALL SLESGetPC(pinfo(iblock)%eq(ieq)%sles, pc, ierr)
-             CHKERRQ(ierr)
-             CALL PCILUDTSetReuseFill(pc, PETSC_TRUE, ierr)
-             CHKERRQ(ierr)
-             CALL PCILUSetReuseOrdering(pc, PETSC_TRUE, ierr)
-             CHKERRQ(ierr)
-
-                                ! set solver options that can be
-                                ! overridden by the command line
-             CALL SLESGetKSP(pinfo(iblock)%eq(ieq)%sles, ksp, ierr)
-             CHKERRQ(ierr)
-             CALL KSPSetType(ksp, KSPBICG, ierr)
+             CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
              CHKERRQ(ierr)
              CALL KSPSetInitialGuessNonzero(ksp, PETSC_TRUE, ierr)
              CHKERRQ(ierr)
              CALL KSPSetTolerances(ksp, rtol, atol, dtol, its, ierr)
              CHKERRQ(ierr)
-
                                 ! set options from the command line
                                 ! (does PC and KSP too)
-             CALL SLESSetFromOptions(pinfo(iblock)%eq(ieq)%sles, ierr)
+             CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
              CHKERRQ(ierr)
           END IF
        END DO
@@ -258,21 +254,26 @@ CONTAINS
 
     ! WRITE(*,*) "Solver: values assembled"
 
-    call MatAssemblyBegin(pinfo(iblock)%eq(ieq)%A,MAT_FINAL_ASSEMBLY,ierr)
+    CALL MatAssemblyBegin(pinfo(iblock)%eq(ieq)%A,MAT_FINAL_ASSEMBLY,ierr)
     CHKERRQ(ierr)
-    call MatAssemblyEnd(pinfo(iblock)%eq(ieq)%A,MAT_FINAL_ASSEMBLY,ierr)
+    CALL MatAssemblyEnd(pinfo(iblock)%eq(ieq)%A,MAT_FINAL_ASSEMBLY,ierr)
+    CHKERRQ(ierr)
+    CALL VecAssemblyBegin(pinfo(iblock)%eq(ieq)%x, ierr)
+    CHKERRQ(ierr)
+    CALL VecAssemblyEnd(pinfo(iblock)%eq(ieq)%x, ierr)
+    CHKERRQ(ierr)
+    CALL VecAssemblyBegin(pinfo(iblock)%eq(ieq)%b, ierr)
+    CHKERRQ(ierr)
+    CALL VecAssemblyEnd(pinfo(iblock)%eq(ieq)%b, ierr)
     CHKERRQ(ierr)
 
     ! WRITE(*,*) "Solver: Matrix assembled"
 
-    call SLESSetOperators(pinfo(iblock)%eq(ieq)%sles,&
+    call KSPSetOperators(pinfo(iblock)%eq(ieq)%ksp,&
          &pinfo(iblock)%eq(ieq)%A,pinfo(iblock)%eq(ieq)%A,&
          &SAME_NONZERO_PATTERN, ierr)
     CHKERRQ(ierr)
-    call SLESSetUp(pinfo(iblock)%eq(ieq)%sles, &
-         &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, ierr)
-    CHKERRQ(ierr)
-    call SLESSolve(pinfo(iblock)%eq(ieq)%sles, &
+    call KSPSolve(pinfo(iblock)%eq(ieq)%ksp, &
          &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, its, ierr)
     CHKERRQ(ierr)
 
@@ -310,13 +311,15 @@ CONTAINS
     DO iblock = 1, myblocks
        DO ieq = 1, 4
           IF (pinfo(iblock)%eq(ieq)%built) THEN
-             CALL SLESDestroy(pinfo(iblock)%eq(ieq)%sles, ierr)
+             CALL KSPDestroy(pinfo(iblock)%eq(ieq)%ksp, ierr)
              CHKERRQ(ierr)
              CALL MatDestroy(pinfo(iblock)%eq(ieq)%A, ierr)
              CHKERRQ(ierr)
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%x, ierr)
              CHKERRQ(ierr)
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%b, ierr)
+             CHKERRQ(ierr)
+             CALL VecDestroy(pinfo(iblock)%eq(ieq)%u, ierr)
              CHKERRQ(ierr)
           END IF
        END DO
