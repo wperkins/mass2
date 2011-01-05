@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jan  5 07:56:32 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 09:20:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -68,8 +68,6 @@ CONTAINS
     CHARACTER (LEN=1024) :: buf
     LOGICAL :: build
 
-    KSP :: ksp
-    PC :: pc
     PetscReal :: rtol, atol, dtol
 
     dtol = 1e+04
@@ -81,9 +79,6 @@ CONTAINS
     CHKERRQ(ierr)
 
     CALL PetscPopSignalHandler(ierr)
-    CHKERRQ(ierr)
-
-    CALL PetscGetVersion(buf, ierr)
     CHKERRQ(ierr)
 
     DO iblock = 1, myblocks
@@ -120,8 +115,10 @@ CONTAINS
 
              CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
              CHKERRQ(ierr)
-             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
+             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATSEQAIJ, ierr)
              CHKERRQ(ierr)
+             CALL MatSetSizes(pinfo(iblock)%eq(ieq)%A, imax*jmax, imax*jmax, &
+                  &PETSC_DETERMINE, PETSC_DETERMINE, ierr)
              CALL MatSetFromOptions(pinfo(iblock)%eq(ieq)%A, ierr)
              CHKERRQ(ierr)
     
@@ -130,8 +127,13 @@ CONTAINS
              
              CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
              CHKERRQ(ierr)
-             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
+             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECSEQ, ierr)
              CHKERRQ(ierr)
+
+             ! FIXME: wrong sizes
+             CALL VecSetSizes(pinfo(iblock)%eq(ieq)%x, imax*jmax, PETSC_DETERMINE, ierr)
+             CHKERRQ(ierr)
+             
              CALL VecSetFromOptions(pinfo(iblock)%eq(ieq)%x,ierr)
              CHKERRQ(ierr)
              CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%b,ierr)
@@ -162,10 +164,16 @@ CONTAINS
              CHKERRQ(ierr)
              CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
              CHKERRQ(ierr)
-             CALL KSPSetInitialGuessNonzero(ksp, PETSC_TRUE, ierr)
+             CALL KSPSetInitialGuessNonzero(pinfo(iblock)%eq(ieq)%ksp, PETSC_TRUE, ierr)
              CHKERRQ(ierr)
-             CALL KSPSetTolerances(ksp, rtol, atol, dtol, its, ierr)
+             CALL KSPSetTolerances(pinfo(iblock)%eq(ieq)%ksp, rtol, atol, dtol, its, ierr)
              CHKERRQ(ierr)
+             CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
+             CHKERRQ(ierr)
+             CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
+                  &PETSC_NULL, PETSC_NULL, ierr);
+             CHKERRQ(ierr)
+
                                 ! set options from the command line
                                 ! (does PC and KSP too)
              CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
@@ -274,7 +282,7 @@ CONTAINS
          &SAME_NONZERO_PATTERN, ierr)
     CHKERRQ(ierr)
     call KSPSolve(pinfo(iblock)%eq(ieq)%ksp, &
-         &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, its, ierr)
+         &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, ierr)
     CHKERRQ(ierr)
 
     ! WRITE(*,*) "Solver: Solution complete"

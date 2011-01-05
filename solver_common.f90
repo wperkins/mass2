@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created June  5, 2003 by William A. Perkins
-! Last Change: Mon Aug 25 10:40:37 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Jan  4 07:52:20 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -25,6 +25,7 @@ MODULE solver_common
                                 ! solved, and are used to signal the
                                 ! reuse of solver information if
                                 ! applicable
+  INTEGER, PARAMETER, PUBLIC :: NUM_SOLVE = 4
   INTEGER, PARAMETER, PUBLIC :: &
        & SOLVE_U = 1, SOLVE_V = 2, SOLVE_DP = 3, SOLVE_SCALAR = 4
 
@@ -46,8 +47,8 @@ MODULE solver_common
                                 ! Tolerances used for non-TDMA
                                 ! solvers: rsol = relative tolerance,
                                 ! asol = absolute tolerance
-  DOUBLE PRECISION, PUBLIC :: scalar_rtol = 1.0d-03, scalar_atol = 0.0
-  DOUBLE PRECISION, PUBLIC :: depth_rtol = 1.0d-02, depth_atol = 0.0
+  DOUBLE PRECISION, PUBLIC :: scalar_rtol = 1.0d-03, scalar_atol = 1.0d-12
+  DOUBLE PRECISION, PUBLIC :: depth_rtol = 1.0d-02, depth_atol = 1.0d-12
   
 END MODULE solver_common
 
