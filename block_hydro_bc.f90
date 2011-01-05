@@ -1,5 +1,7 @@
 ! ----------------------------------------------------------------
 ! MODULE block_hydro_bc
+!
+! Routines to apply boundary condi 
 ! ----------------------------------------------------------------
 MODULE block_hydro_bc
 
@@ -12,56 +14,6 @@ MODULE block_hydro_bc
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
 CONTAINS
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE set_block_connections
-  ! ----------------------------------------------------------------
-  SUBROUTINE set_block_connections(max_blocks, error_iounit, status_iounit)
-
-    IMPLICIT NONE
-
-    INTEGER :: max_blocks, error_iounit, status_iounit
-    INTEGER :: block,num_bc,con_block, i, ierr
-    LOGICAL :: bcfound
-    CHARACTER (LEN=1024) :: msg
-
-    ierr = 0
-
-    DO block = 1, max_blocks
-
-       DO num_bc = 1, block_bc(block)%num_bc
-          IF(block_bc(block)%bc_spec(num_bc)%bc_type == "BLOCK")THEN
-             con_block = block_bc(block)%bc_spec(num_bc)%con_block
-             bcfound = .FALSE.
-             DO i=1,block_bc(con_block)%num_bc
-                IF(block_bc(con_block)%bc_spec(i)%con_block .EQ. block) THEN
-                   bcfound = check_hydro_block_connection(&
-                        &block_bc(block)%bc_spec(num_bc),&
-                        &block_bc(con_block)%bc_spec(i))
-                END IF
-             END DO
-             IF (.NOT. bcfound) THEN
-                WRITE (msg, *) 'No match for BC connecting block ', block, &
-                     &' to ', con_block, ': ',&
-                     &TRIM(block_bc(block)%bc_spec(num_bc)%bc_type), ' ',&
-                     &TRIM(block_bc(block)%bc_spec(num_bc)%bc_loc), ' ',&
-                     &TRIM(block_bc(block)%bc_spec(num_bc)%bc_kind), ' ',&
-                     &TRIM(block_bc(block)%bc_spec(num_bc)%bc_extent), ' '
-                CALL error_message(msg, FATAL=.FALSE.)
-                ierr = ierr + 1
-             END IF
-          END IF
-       END DO
-
-    END DO
-
-    IF (ierr .GT. 0) THEN
-       CALL error_message('Block connection errors. Unable to continue.', fatal = .TRUE.)
-    END IF
-
-
-  END SUBROUTINE set_block_connections
-
 
   ! ----------------------------------------------------------------
   ! LOGICAL FUNCTION check_hydro_block_connection
@@ -232,6 +184,251 @@ CONTAINS
 
 
   END FUNCTION check_hydro_block_connection
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE set_block_connections
+  ! ----------------------------------------------------------------
+  SUBROUTINE set_block_connections(max_blocks, error_iounit, status_iounit)
+
+    IMPLICIT NONE
+
+    INTEGER :: max_blocks, error_iounit, status_iounit
+    INTEGER :: iblk,num_bc,con_block, i, ierr
+    LOGICAL :: bcfound
+    CHARACTER (LEN=1024) :: msg
+
+    ierr = 0
+
+    DO iblk = 1, max_blocks
+
+       DO num_bc = 1, block_bc(iblk)%num_bc
+          IF(block_bc(iblk)%bc_spec(num_bc)%bc_type == "BLOCK")THEN
+             con_block = block_bc(iblk)%bc_spec(num_bc)%con_block
+             bcfound = .FALSE.
+             DO i=1,block_bc(con_block)%num_bc
+                IF(block_bc(con_block)%bc_spec(i)%con_block .EQ. iblk) THEN
+                   bcfound = check_hydro_block_connection(&
+                        &block_bc(iblk)%bc_spec(num_bc),&
+                        &block_bc(con_block)%bc_spec(i))
+                END IF
+             END DO
+             IF (.NOT. bcfound) THEN
+                WRITE (msg, *) 'No match for BC connecting block ', iblk, &
+                     &' to ', con_block, ': ',&
+                     &TRIM(block_bc(iblk)%bc_spec(num_bc)%bc_type), ' ',&
+                     &TRIM(block_bc(iblk)%bc_spec(num_bc)%bc_loc), ' ',&
+                     &TRIM(block_bc(iblk)%bc_spec(num_bc)%bc_kind), ' ',&
+                     &TRIM(block_bc(iblk)%bc_spec(num_bc)%bc_extent), ' '
+                CALL error_message(msg, FATAL=.FALSE.)
+                ierr = ierr + 1
+             END IF
+          END IF
+       END DO
+
+    END DO
+
+    IF (ierr .GT. 0) THEN
+       CALL error_message('Block connection errors. Unable to continue.', fatal = .TRUE.)
+    END IF
+
+
+  END SUBROUTINE set_block_connections
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE fillghost
+  ! ----------------------------------------------------------------
+  SUBROUTINE fillghost(iblock)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iblock
+    INTEGER :: i, ibeg, iend, coni, conibeg, coniend
+    INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
+    INTEGER :: k, con_block
+    INTEGER :: ig, jg
+    INTEGER :: num_bc, cells, concells, ifcells, jfcells
+
+    ! cell-centered quantities
+    ! for extrapolated cells, use
+    ! parameters from the neighboring real
+    ! cell (metrics are computed elsewhere)
+
+
+    DO ig = 1, nghost
+       IF (block_owns_i(block(iblock), 2-ig)) THEN
+          block(iblock)%eddy%current(2-ig,:) = block(iblock)%eddy%current(2,:)
+          block(iblock)%kx_diff%current(2-ig,:) = block(iblock)%kx_diff%current(2,:)
+          block(iblock)%ky_diff%current(2-ig,:) = block(iblock)%ky_diff%current(2,:)
+          block(iblock)%chezy%current(2-ig,:) = block(iblock)%chezy%current(2,:)
+       END IF
+       IF (block_owns_i(block(iblock), block(iblock)%xmax+ig)) THEN
+          block(iblock)%eddy%current(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%eddy%current(block(iblock)%xmax,:)
+          block(iblock)%kx_diff%current(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%kx_diff%current(block(iblock)%xmax,:)
+          block(iblock)%ky_diff%current(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%ky_diff%current(block(iblock)%xmax,:)
+          block(iblock)%chezy%current(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%chezy%current(block(iblock)%xmax,:)
+       END IF
+    END DO
+    DO jg = 1, nghost 
+       IF (block_owns_j(block(iblock), 2-jg)) THEN
+          block(iblock)%eddy%current(:, 2-jg) = block(iblock)%eddy%current(:,2)
+          block(iblock)%kx_diff%current(:, 2-jg) = block(iblock)%kx_diff%current(:,2)
+          block(iblock)%ky_diff%current(:, 2-jg) = block(iblock)%ky_diff%current(:,2)
+          block(iblock)%chezy%current(:, 2-jg) = block(iblock)%chezy%current(:,2)
+       END IF
+       IF (block_owns_j(block(iblock), block(iblock)%ymax+ig)) THEN
+          block(iblock)%eddy%current(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%eddy%current(:,block(iblock)%ymax)
+          block(iblock)%kx_diff%current(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%kx_diff%current(:,block(iblock)%ymax)
+          block(iblock)%ky_diff%current(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%ky_diff%current(:,block(iblock)%ymax)
+          block(iblock)%chezy%current(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%chezy%current(:,block(iblock)%ymax)
+       END IF
+    END DO
+
+    CALL block_var_put(block(iblock)%eddy)
+    CALL block_var_put(block(iblock)%kx_diff)
+    CALL block_var_put(block(iblock)%ky_diff)
+    CALL block_var_put(block(iblock)%chezy)
+    CALL ga_sync()
+    CALL block_var_get(block(iblock)%eddy)
+    CALL block_var_get(block(iblock)%kx_diff)
+    CALL block_var_get(block(iblock)%ky_diff)
+    CALL block_var_get(block(iblock)%chezy)
+
+    ! copy ghost cell metrics and
+    ! parameters from connecting block
+
+    ! FIXME: block connections
+
+    DO num_bc = 1, block_bc(iblock)%num_bc
+
+       SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type) 
+       CASE ("BLOCK")
+          con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
+
+          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+             CASE("US")
+                ibeg = 2 - nghost
+                iend = ibeg + (nghost - 1)
+                coniend = block(con_block)%xmax
+                conibeg = coniend - (nghost - 1)
+                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+                cells = jend - jbeg + 1
+                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+                conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+                concells = conjend - conjbeg + 1
+             CASE ("DS")
+                iend = block(iblock)%xmax + nghost
+                ibeg = iend - (nghost - 1)
+                conibeg = 2
+                coniend = conibeg + (nghost - 1)
+                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+                cells = jend - jbeg + 1
+                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+                conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+                concells = conjend - conjbeg + 1
+             CASE ("RB")
+                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+                cells = iend - ibeg + 1
+                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+                concells = coniend - conibeg + 1
+                jbeg = 2 - nghost
+                jend = jbeg + (nghost - 1)
+                conjend = block(con_block)%ymax + nghost
+                conjbeg = conjend - (nghost - 1)
+             CASE ("LB")
+                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
+                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
+                cells = iend - ibeg + 1
+                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
+                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
+                concells = coniend - conibeg + 1
+                jbeg = block(iblock)%ymax + nghost
+                jend = jbeg + (nghost - 1)
+                conjbeg = 2 
+                conjend = conjbeg + (nghost - 1)
+             CASE DEFAULT
+                ! FIXME: should never happen  need to crash here
+             END SELECT
+
+             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+             CASE ("US", "DS")
+                ifcells = 1
+                IF (cells .GE. concells) THEN
+                   jfcells = cells/concells
+                ELSE 
+                   jfcells = concells/cells
+                END IF
+             CASE ("LB", "RB")
+                IF (cells .GE. concells) THEN
+                   ifcells = cells/concells
+                ELSE 
+                   ifcells = concells/cells
+                END IF
+                jfcells = 1
+             END SELECT
+
+
+             ! FIXME: block connections
+             IF (cells .EQ. concells) THEN
+
+                coni = conibeg
+                DO i = ibeg, iend
+                   conj = conjbeg
+                   DO j = jbeg, jend
+
+!!$                      block(iblock)%hp1(i,j) = block(con_block)%hp1(coni,conj)
+!!$                      block(iblock)%hp2(i,j) = block(con_block)%hp2(coni,conj)
+!!$                      block(iblock)%hv1(i,j-1) = block(con_block)%hv1(coni,conj-1)
+!!$                      block(iblock)%hv2(i,j-1) = block(con_block)%hv2(coni,conj-1)
+!!$                      block(iblock)%hv1(i,j) = block(con_block)%hv1(coni,conj)
+!!$                      block(iblock)%hv2(i,j) = block(con_block)%hv2(coni,conj)
+!!$
+!!$                      ! do not copy hu1,hu2 - they are calculated
+!!$
+!!$                      block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
+!!$                      block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
+!!$
+!!$                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+!!$                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+!!$                      block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+!!$                      block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                      conj = conj + 1
+                   END DO
+                   coni = coni + 1
+                END DO
+
+             ELSE 
+
+                DO i = ibeg, iend
+                   coni = conibeg + (i - ibeg)/ifcells
+                   DO j = jbeg, jend
+                      conj = conjbeg + (j - jbeg)/jfcells
+                      ! do not copy metrics, they are calculated
+!!$                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+!!$                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+!!$                      block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+!!$                      block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                   END DO
+                END DO
+
+             END IF
+          END DO
+       END SELECT
+    END DO
+
+  END SUBROUTINE fillghost
 
 
 END MODULE block_hydro_bc

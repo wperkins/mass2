@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Jan  5 07:37:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Jan  5 08:03:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -73,8 +73,8 @@ FLIBS = $(GA_FLIBS) $(CGNS_FLIBS) $(PETSC_FLIBS)
 mass2.mpi: $(mass2_OBJS)
 	$(F90LINKER) $(LDFLAGS) -o $@ $(mass2_OBJS) $(mass2_LIBS) $(FLIBS)
 
-# solver_test: $(solver_test_OBJS)
-# 	$(F90LINKER) $(LDFLAGS) -o $@ $(solver_test_OBJS) $(FLIBS)
+solver_test: $(solver_test_OBJS)
+	$(F90LINKER) $(LDFLAGS) -o $@ $(solver_test_OBJS) $(FLIBS)
 
 clean::
 	rm -f mass2.mpi
@@ -97,7 +97,7 @@ plot_cgns.o: plot_cgns.f90 block_parallel.o
 plot_output.o: plot_output.f90 plot_cgns.o mass2_config.o block_parallel.o
 solver_common.o: solver_common.f90
 solver_petsc.o: solver_petsc.F90 solver_common.o
-solver_test.o: solver_test.F90 solver_common.o solver_petsc.o
+solver_test.o: solver_test.f90 solver_common.o solver_petsc.o
 table_bc_module.o: table_bc_module.f90 
 
 clean::

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 14:08:49 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 07:35:06 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -74,25 +74,52 @@ MODULE block_module
      ! These are variables that having values need to be known over
      ! multiple processors, either for computation or input/output
 
-     TYPE (block_var), POINTER :: x_grid, y_grid, zbot_grid
-     TYPE (block_var), POINTER :: x, y, zbot
-     TYPE (block_var), POINTER :: x_out, y_out, zbot_out
-     TYPE (block_var), POINTER :: x_xsi, y_xsi, x_eta, y_eta
-     TYPE (block_var), POINTER :: hp1, hp2, hv1, hv2, hu1, hu2, gp12
-     TYPE (block_var), POINTER :: eddy, kx_diff, ky_diff, chezy
-     TYPE (block_var), POINTER :: uvel, vvel, depth, wsel
-     TYPE (block_var), POINTER :: uvel_p, vvel_p, u_cart, v_cart
-     TYPE (block_var), POINTER :: vmag, froude_num, courant_num
+     TYPE (block_var), POINTER :: x_grid
+     TYPE (block_var), POINTER :: y_grid
+     TYPE (block_var), POINTER :: zbot_grid
+     TYPE (block_var), POINTER :: x
+     TYPE (block_var), POINTER :: y
+     TYPE (block_var), POINTER :: zbot
+     TYPE (block_var), POINTER :: x_out
+     TYPE (block_var), POINTER :: y_out
+     TYPE (block_var), POINTER :: zbot_out
+     TYPE (block_var), POINTER :: x_xsi
+     TYPE (block_var), POINTER :: y_xsi
+     TYPE (block_var), POINTER :: x_eta
+     TYPE (block_var), POINTER :: y_eta
+     TYPE (block_var), POINTER :: hp1
+     TYPE (block_var), POINTER :: hp2
+     TYPE (block_var), POINTER :: hv1
+     TYPE (block_var), POINTER :: hv2
+     TYPE (block_var), POINTER :: hu1
+     TYPE (block_var), POINTER :: hu2
+     TYPE (block_var), POINTER :: gp12
+     TYPE (block_var), POINTER :: eddy
+     TYPE (block_var), POINTER :: kx_diff
+     TYPE (block_var), POINTER :: ky_diff
+     TYPE (block_var), POINTER :: chezy
+     TYPE (block_var), POINTER :: uvel
+     TYPE (block_var), POINTER :: vvel
+     TYPE (block_var), POINTER :: depth
+     TYPE (block_var), POINTER :: wsel
+     TYPE (block_var), POINTER :: uvel_p
+     TYPE (block_var), POINTER :: vvel_p
+     TYPE (block_var), POINTER :: u_cart
+     TYPE (block_var), POINTER :: v_cart
+     TYPE (block_var), POINTER :: vmag
+     TYPE (block_var), POINTER :: froude_num
+     TYPE (block_var), POINTER :: courant_num
      TYPE (block_var), POINTER :: mass_source
-     TYPE (block_var), POINTER :: uflux, vflux
+     TYPE (block_var), POINTER :: uflux
+     TYPE (block_var), POINTER :: vflux
 
      ! these values are only needed locally
 
-     DOUBLE PRECISION, POINTER :: dp(:,:)			! d' depth correction field
-     DOUBLE PRECISION, POINTER :: bedshear1(:,:)		! bed shear stress in xsi direction
-     DOUBLE PRECISION, POINTER :: bedshear2(:,:)		! bed shear stress in eta direction
-     DOUBLE PRECISION, POINTER :: windshear1(:,:)	! wind shear stress in xsi direction
-     DOUBLE PRECISION, POINTER :: windshear2(:,:)	! wind shear stress in eta direction
+     DOUBLE PRECISION, POINTER :: dp(:,:) ! d' depth correction field
+     DOUBLE PRECISION, POINTER :: bedshear1(:,:) ! bed shear stress in xsi direction
+     DOUBLE PRECISION, POINTER :: bedshear2(:,:) ! bed shear stress in eta direction
+     DOUBLE PRECISION, POINTER :: windshear1(:,:) ! wind shear stress in xsi direction
+     DOUBLE PRECISION, POINTER :: windshear2(:,:) ! wind shear stress in eta direction
      DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
      DOUBLE PRECISION, POINTER :: apo(:,:)
      DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
