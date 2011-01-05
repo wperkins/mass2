@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jan  5 09:20:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 09:34:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -27,6 +27,8 @@ MODULE solver_module
 #include "finclude/petscvec.h90"
 #include "finclude/petscmat.h"
 #include "finclude/petscmat.h90"
+#include "finclude/petscpc.h"
+#include "finclude/petscpc.h90"
 #include "finclude/petscksp.h"
 #include "finclude/petscksp.h90"
 
@@ -68,6 +70,7 @@ CONTAINS
     CHARACTER (LEN=1024) :: buf
     LOGICAL :: build
 
+    PC :: pc
     PetscReal :: rtol, atol, dtol
 
     dtol = 1e+04
@@ -115,7 +118,7 @@ CONTAINS
 
              CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
              CHKERRQ(ierr)
-             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATSEQAIJ, ierr)
+             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
              CHKERRQ(ierr)
              CALL MatSetSizes(pinfo(iblock)%eq(ieq)%A, imax*jmax, imax*jmax, &
                   &PETSC_DETERMINE, PETSC_DETERMINE, ierr)
@@ -127,7 +130,7 @@ CONTAINS
              
              CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
              CHKERRQ(ierr)
-             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECSEQ, ierr)
+             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
              CHKERRQ(ierr)
 
              ! FIXME: wrong sizes
@@ -172,6 +175,14 @@ CONTAINS
              CHKERRQ(ierr)
              CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
                   &PETSC_NULL, PETSC_NULL, ierr);
+             CHKERRQ(ierr)
+
+             ! need to change the preconditioner, since the default
+             ! (ILU) does not work with MATMPIAIJ matrixes
+
+             CALL KSPGetPC(pinfo(iblock)%eq(ieq)%ksp, pc, ierr)
+             CHKERRQ(ierr)
+             CALL PCSetType(pc, PCASM, ierr)
              CHKERRQ(ierr)
 
                                 ! set options from the command line
