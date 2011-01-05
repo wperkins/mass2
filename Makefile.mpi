@@ -1,6 +1,5 @@
 # -*- makefile -*----------------------------------------------
 # file: Makefile.mpi
-# Makefile for MASS2 on Linux Ix86 with the Intel compiler
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Battelle Memorial Institute
@@ -8,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Mon Jan  3 14:08:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Jan  5 07:37:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -30,6 +29,10 @@ GA_FCFLAGS = -I$(GA)/include
 GA_FLIBS = -L$(GA)/lib -lga -larmci -llapack -lf77blas -latlas -lm
 CGNS_FCFLAGS = -I/opt/local/include
 CGNS_FLIBS = -L/opt/local/lib -lcgns
+PETSC_DIR = /home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7
+PETSC_ARCH = darwin9.8.0-c-opt
+PETSC_FCFLAGS = -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(PETSC_DIR)/include
+PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
 
 mass2_SOURCES = \
 	block_hydro.f90 \
@@ -52,16 +55,26 @@ mass2_SOURCES = \
 mass2_OBJS = $(mass2_SOURCES:%.f90=%.o)
 mass2_LIBS = time_series/libts.a
 
-FCFLAGS = -g -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) -xf95-cpp-input
+solver_test_SOURCES = \
+	solver_test.f90 \
+	solver_common.f90 \
+	solver_petsc.f90
+solver_test_OBJS = $(solver_test_SOURCES:%.f90=%.o)
+
+
+FCFLAGS = -g -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
 F90FLAGS = $(FLAGS)
 LDFLAGS = $(FLAGS) 
 FFLAGS = $(FLAGS)
 
 LIBS =
-FLIBS = $(GA_FLIBS) $(CGNS_FLIBS)
+FLIBS = $(GA_FLIBS) $(CGNS_FLIBS) $(PETSC_FLIBS)
 
 mass2.mpi: $(mass2_OBJS)
 	$(F90LINKER) $(LDFLAGS) -o $@ $(mass2_OBJS) $(mass2_LIBS) $(FLIBS)
+
+# solver_test: $(solver_test_OBJS)
+# 	$(F90LINKER) $(LDFLAGS) -o $@ $(solver_test_OBJS) $(FLIBS)
 
 clean::
 	rm -f mass2.mpi
@@ -83,6 +96,8 @@ mass2_parallel.o: mass2_parallel.f90 block_grid.o mass2_config.o
 plot_cgns.o: plot_cgns.f90 block_parallel.o
 plot_output.o: plot_output.f90 plot_cgns.o mass2_config.o block_parallel.o
 solver_common.o: solver_common.f90
+solver_petsc.o: solver_petsc.F90 solver_common.o
+solver_test.o: solver_test.F90 solver_common.o solver_petsc.o
 table_bc_module.o: table_bc_module.f90 
 
 clean::
@@ -100,6 +115,9 @@ TAGS: $(mass2_SOURCES) $(SOLVERSRC)
 	$(F77) $(FCFLAGS) -c $<
 .f90.o:
 	$(F90) $(FCFLAGS) -c $<
-.SUFFIXES: .f90
+.F90.o:
+	$(F90) $(FCFLAGS) -c $<
+
+.SUFFIXES: .f90 .F90
 
 %.o: %.mod
