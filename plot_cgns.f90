@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Jan  3 14:51:10 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 12:00:29 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -216,26 +216,26 @@ CONTAINS
 
     IF (docoord) THEN
        IF (plot_cgns_docell) THEN
-          CALL block_collect(blk, blk%x_grid)
+          CALL block_collect(blk, blk%bv_x_grid)
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateX', &
                & blk%buffer(1:size(1), 1:size(2)))
-          CALL block_collect(blk, blk%y_grid)
+          CALL block_collect(blk, blk%bv_y_grid)
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateY', &
                & blk%buffer(1:size(1), 1:size(2)))
           IF (.NOT. do2D) THEN
-             CALL block_collect(blk, blk%zbot_grid)
+             CALL block_collect(blk, blk%bv_zbot_grid)
              CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
                   & blk%buffer(1:size(1), 1:size(2)))
           END IF
        ELSE 
-          CALL block_collect(blk, blk%x_out)
+          CALL block_collect(blk, blk%bv_x_out)
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateX', &
                & blk%buffer(1:size(1), 1:size(2)))
-          CALL block_collect(blk, blk%y_out)
+          CALL block_collect(blk, blk%bv_y_out)
           CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateY', &
                & blk%buffer(1:size(1), 1:size(2)))
           IF (.NOT. do2D) THEN
-             CALL block_collect(blk, blk%zbot_out)
+             CALL block_collect(blk, blk%bv_zbot_out)
              CALL plot_cgns_write_coord(fileidx, baseidx, zoneidx, size, 'CoordinateZ', &
                   & blk%buffer(1:size(1), 1:size(2)))
           END IF
@@ -244,13 +244,13 @@ CONTAINS
        CALL cg_discrete_write_f(fileidx, baseidx, zoneidx, "GridMetrics", ddataidx, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write descrete data", fatal=.TRUE.)
     
-       CALL block_collect(blk, blk%hp1)
+       CALL block_collect(blk, blk%bv_hp1)
        CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp1", &
             &blk%buffer(1:size(1), 1:size(2)))
-       CALL block_collect(blk, blk%hp2)
+       CALL block_collect(blk, blk%bv_hp2)
        CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp2", &
             &blk%buffer(1:size(1), 1:size(2)))
-       CALL block_collect(blk, blk%gp12)
+       CALL block_collect(blk, blk%bv_gp12)
        CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "gp12", &
             &blk%buffer(1:size(1), 1:size(2)))
     END IF
@@ -416,21 +416,21 @@ CONTAINS
 
                                 ! average u_cart
 
-          CALL block_collect(block(iblock), block(iblock)%u_cart)
+          CALL block_collect(block(iblock), block(iblock)%bv_u_cart)
           CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                &block(iblock)%buffer, &
                &'VelocityX', 'Eastward Velocity', 'feet/second')
 
                                 ! average v_cart
 
-          CALL block_collect(block(iblock), block(iblock)%v_cart)
+          CALL block_collect(block(iblock), block(iblock)%bv_v_cart)
           CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                &block(iblock)%buffer, &
                &'VelocityY', 'Northward Velocity', 'feet/second')
 
                                 ! average depth
 
-          CALL block_collect(block(iblock), block(iblock)%depth)
+          CALL block_collect(block(iblock), block(iblock)%bv_depth)
           CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                &block(iblock)%buffer, &
                &'depth', 'Water Depth', 'feet')
@@ -439,21 +439,21 @@ CONTAINS
 
                                 ! average u
 
-             CALL block_collect(block(iblock), block(iblock)%uvel_p)
+             CALL block_collect(block(iblock), block(iblock)%bv_uvel_p)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridVelocityXi', 'Longitudinal Velocity', 'feet/second')
 
                                 ! average v
 
-             CALL block_collect(block(iblock), block(iblock)%vvel_p)
+             CALL block_collect(block(iblock), block(iblock)%bv_vvel_p)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridVelocityEta', 'Lateral Velocity', 'feet/second')
 
                                 ! average wsel
 
-             CALL block_collect(block(iblock), block(iblock)%wsel)
+             CALL block_collect(block(iblock), block(iblock)%bv_wsel)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'wsel', 'Water Surface Elevation', 'feet')
@@ -461,7 +461,7 @@ CONTAINS
 
                                 ! average velocity magnitude
 
-             CALL block_collect(block(iblock), block(iblock)%vmag)
+             CALL block_collect(block(iblock), block(iblock)%bv_vmag)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'VelocityMagnitude', 'Velocity Magnitude', 'feet/second')
@@ -474,21 +474,21 @@ CONTAINS
 
                                 ! Froude number
 
-             CALL block_collect(block(iblock), block(iblock)%froude_num)
+             CALL block_collect(block(iblock), block(iblock)%bv_froude_num)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'FroudeNumber', 'Froude Number', 'none')
 
                                 ! Courant number
 
-             CALL block_collect(block(iblock), block(iblock)%courant_num)
+             CALL block_collect(block(iblock), block(iblock)%bv_courant_num)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'CourantNumber', 'Courant Number', 'none')
 
                                 ! Eddy Viscosity
 
-             CALL block_collect(block(iblock), block(iblock)%eddy)
+             CALL block_collect(block(iblock), block(iblock)%bv_eddy)
              CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                   &block(iblock)%buffer, &
                   &'KinematicEddyViscosity', 'Kinematic Eddy Viscosity', 'feet^2/second')
@@ -496,14 +496,14 @@ CONTAINS
 
                                 ! average u
 
-             CALL block_collect(block(iblock), block(iblock)%uflux)
+             CALL block_collect(block(iblock), block(iblock)%bv_uflux)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridFluxXi', 'Longitudinal Flux', 'feet^3/second')
 
                                 ! average v
 
-             CALL block_collect(block(iblock), block(iblock)%vflux)
+             CALL block_collect(block(iblock), block(iblock)%bv_vflux)
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridFluxEta', 'Lateral Flux', 'feet^3/second')

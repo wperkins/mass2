@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Wed Jan  5 08:03:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Jan  5 12:24:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -92,8 +92,8 @@ diffenencing.o: differencing.f90
 hydro_bc.o: hydro_bc.f90 table_bc_module.o mass2_config.o
 globals.o: globals.f90 
 mass2_config.o: mass2_config.f90 differencing.o solver_common.o block_var_base.o
-mass2_parallel.o: mass2_parallel.f90 block_grid.o mass2_config.o
-plot_cgns.o: plot_cgns.f90 block_parallel.o
+mass2_parallel.o: mass2_parallel.f90 block_grid.o mass2_config.o plot_output.o
+plot_cgns.o: plot_cgns.f90 block_grid.o mass2_config.o
 plot_output.o: plot_output.f90 plot_cgns.o mass2_config.o block_parallel.o
 solver_common.o: solver_common.f90
 solver_petsc.o: solver_petsc.F90 solver_common.o

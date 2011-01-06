@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Sat Jan  1 08:08:07 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Wed Jan  5 11:43:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -34,28 +34,25 @@ CONTAINS
 
     TYPE (block_struct), INTENT(INOUT) :: blk
 
-    CALL block_var_initialize(blk%uvel, uvel_initial)
-    CALL block_var_initialize(blk%vvel, vvel_initial)
+    CALL block_var_initialize(blk%bv_uvel, uvel_initial)
+    CALL block_var_initialize(blk%bv_vvel, vvel_initial)
 
     IF (.NOT. read_initial_profile) THEN
        IF(given_initial_wsel)THEN
-          blk%depth%current = wsel_or_depth_initial - blk%zbot%current
+          blk%depth = wsel_or_depth_initial - blk%zbot
        ELSE
-          blk%depth%current = wsel_or_depth_initial
+          blk%depth = wsel_or_depth_initial
        ENDIF
        IF (do_wetdry) THEN
-          WHERE (blk%depth%current .LE. dry_zero_depth) 
-             blk%depth%current = dry_zero_depth
+          WHERE (blk%depth .LE. dry_zero_depth) 
+             blk%depth = dry_zero_depth
           END WHERE
        END IF
-       CALL block_var_iterate(blk%depth)
-       CALL block_var_timestep(blk%depth)
-       CALL block_var_timestep(blk%depth)
+       CALL block_var_iterate(blk%bv_depth)
+       CALL block_var_timestep(blk%bv_depth)
+       CALL block_var_timestep(blk%bv_depth)
 
-       blk%wsel%current = blk%depth%current + blk%zbot%current
-       CALL block_var_iterate(blk%wsel)
-       CALL block_var_timestep(blk%wsel)
-       CALL block_var_timestep(blk%wsel)
+       blk%wsel = blk%depth + blk%zbot
 
     END IF
 
@@ -65,10 +62,10 @@ CONTAINS
        CALL error_message('transport initialization not implemented', fatal=.TRUE.)
     END IF
 
-    CALL block_var_initialize(blk%eddy, eddy_default)
-    CALL block_var_initialize(blk%kx_diff,  kx_diff_default)
-    CALL block_var_initialize(blk%ky_diff, ky_diff_default)
-    CALL block_var_initialize(blk%chezy, chezy_con_default)
+    CALL block_var_initialize(blk%bv_eddy, eddy_default)
+    CALL block_var_initialize(blk%bv_kx_diff,  kx_diff_default)
+    CALL block_var_initialize(blk%bv_ky_diff, ky_diff_default)
+    CALL block_var_initialize(blk%bv_chezy, chezy_con_default)
 
   END SUBROUTINE block_initialize
 
@@ -157,31 +154,31 @@ CONTAINS
 !     END IF
 
     DO iblock = 1, max_blocks
-       CALL block_var_put(block(iblock)%uvel, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%uvel, BLK_VAR_STAR)
-       CALL block_var_put(block(iblock)%vvel, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%vvel, BLK_VAR_STAR)
-       CALL block_var_put(block(iblock)%depth, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%depth, BLK_VAR_STAR)
-       CALL block_var_put(block(iblock)%wsel, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%wsel, BLK_VAR_STAR)
-       CALL block_var_put(block(iblock)%eddy, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%kx_diff, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%ky_diff, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%chezy, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_wsel, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_wsel, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_eddy, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
+       CALL block_var_put(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
        CALL ga_sync()
-       CALL block_var_get(block(iblock)%uvel, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%uvel, BLK_VAR_STAR)
-       CALL block_var_get(block(iblock)%vvel, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%vvel, BLK_VAR_STAR)
-       CALL block_var_get(block(iblock)%depth, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%depth, BLK_VAR_STAR)
-       CALL block_var_get(block(iblock)%wsel, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%wsel, BLK_VAR_STAR)
-       CALL block_var_get(block(iblock)%eddy, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%kx_diff, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%ky_diff, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%chezy, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_STAR)
+       CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_STAR)
+       CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_STAR)
+       CALL block_var_get(block(iblock)%bv_wsel, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_wsel, BLK_VAR_STAR)
+       CALL block_var_get(block(iblock)%bv_eddy, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
+       CALL block_var_get(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
     END DO
 
   END SUBROUTINE initialize

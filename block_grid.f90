@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 13:41:44 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 11:45:43 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -70,17 +70,17 @@ CONTAINS
     jmax = MIN(jmax, ny)
     
 
-    blk%x_grid%current(imin:imax, jmin:jmax) = x(imin:imax, jmin:jmax)
-    blk%y_grid%current(imin:imax, jmin:jmax) = y(imin:imax, jmin:jmax)
-    blk%zbot_grid%current(imin:imax, jmin:jmax) = z(imin:imax, jmin:jmax)
+    blk%x_grid(imin:imax, jmin:jmax) = x(imin:imax, jmin:jmax)
+    blk%y_grid(imin:imax, jmin:jmax) = y(imin:imax, jmin:jmax)
+    blk%zbot_grid(imin:imax, jmin:jmax) = z(imin:imax, jmin:jmax)
     
-    CALL block_var_put(blk%x_grid, BLK_VAR_CURRENT)
-    CALL block_var_put(blk%y_grid, BLK_VAR_CURRENT)
-    CALL block_var_put(blk%zbot_grid, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_x_grid, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_y_grid, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_zbot_grid, BLK_VAR_CURRENT)
     CALL ga_sync()
-    CALL block_var_get(blk%x_grid, BLK_VAR_CURRENT)
-    CALL block_var_get(blk%y_grid, BLK_VAR_CURRENT)
-    CALL block_var_get(blk%zbot_grid, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_x_grid, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_y_grid, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_zbot_grid, BLK_VAR_CURRENT)
 
     ! CALL ga_print(blk%y_grid%ga_handle)
 
@@ -128,29 +128,29 @@ CONTAINS
        i = 1 - ig
        IF (imin .LE. i .AND. i .LE. imax) THEN
           DO j = jmin, jmax
-             x = blk%x_grid%current(i+1,j) - &
-                  &(blk%x_grid%current(i+2,j) - blk%x_grid%current(i+1,j))
-             y = blk%y_grid%current(i+1,j) - &
-                  &(blk%y_grid%current(i+2,j) - blk%y_grid%current(i+1,j))
-             z = blk%zbot_grid%current(i+1,j) - &
-                  &(blk%zbot_grid%current(i+2,j) - blk%zbot_grid%current(i+1,j))
-             blk%x_grid%current(i,j) = x
-             blk%y_grid%current(i,j) = y
-             blk%zbot_grid%current(i,j) = z
+             x = blk%x_grid(i+1,j) - &
+                  &(blk%x_grid(i+2,j) - blk%x_grid(i+1,j))
+             y = blk%y_grid(i+1,j) - &
+                  &(blk%y_grid(i+2,j) - blk%y_grid(i+1,j))
+             z = blk%zbot_grid(i+1,j) - &
+                  &(blk%zbot_grid(i+2,j) - blk%zbot_grid(i+1,j))
+             blk%x_grid(i,j) = x
+             blk%y_grid(i,j) = y
+             blk%zbot_grid(i,j) = z
           END DO
        END IF
        i = blk%xmax + ig
        IF (imin .LE. i .AND. i .LE. imax) THEN
           DO j = jmin, jmax
-             x = blk%x_grid%current(i-1,j) - &
-                  &(blk%x_grid%current(i-2,j) - blk%x_grid%current(i-1,j))
-             y = blk%y_grid%current(i-1,j) - &
-                  &(blk%y_grid%current(i-2,j) - blk%y_grid%current(i-1,j))
-             z = blk%zbot_grid%current(i-1,j) - &
-                  &(blk%zbot_grid%current(i-2,j) - blk%zbot_grid%current(i-1,j))
-             blk%x_grid%current(i,j) = x
-             blk%y_grid%current(i,j) = y
-             blk%zbot_grid%current(i,j) = z
+             x = blk%x_grid(i-1,j) - &
+                  &(blk%x_grid(i-2,j) - blk%x_grid(i-1,j))
+             y = blk%y_grid(i-1,j) - &
+                  &(blk%y_grid(i-2,j) - blk%y_grid(i-1,j))
+             z = blk%zbot_grid(i-1,j) - &
+                  &(blk%zbot_grid(i-2,j) - blk%zbot_grid(i-1,j))
+             blk%x_grid(i,j) = x
+             blk%y_grid(i,j) = y
+             blk%zbot_grid(i,j) = z
           END DO
        END IF
     END DO
@@ -164,53 +164,53 @@ CONTAINS
        j = 1 - ig
        IF (jmin .LE. j .AND. j .LE. jmax) THEN
           DO i = imin, imax
-             x = blk%x_grid%current(i,j+1) - &
-                  &(blk%x_grid%current(i,j+2) - blk%x_grid%current(i,j+1))
-             y = blk%y_grid%current(i,j+1) - &
-                  &(blk%y_grid%current(i,j+2) - blk%y_grid%current(i,j+1))
-             z = blk%zbot_grid%current(i,j+1) - &
-                  &(blk%zbot_grid%current(i,j+2) - blk%zbot_grid%current(i,j+1))
-             blk%x_grid%current(i,j) = x
-             blk%y_grid%current(i,j) = y
-             blk%zbot_grid%current(i,j) = z
+             x = blk%x_grid(i,j+1) - &
+                  &(blk%x_grid(i,j+2) - blk%x_grid(i,j+1))
+             y = blk%y_grid(i,j+1) - &
+                  &(blk%y_grid(i,j+2) - blk%y_grid(i,j+1))
+             z = blk%zbot_grid(i,j+1) - &
+                  &(blk%zbot_grid(i,j+2) - blk%zbot_grid(i,j+1))
+             blk%x_grid(i,j) = x
+             blk%y_grid(i,j) = y
+             blk%zbot_grid(i,j) = z
           END DO
        END IF
        j = blk%ymax + ig
        IF (jmin .LE. j .AND. j .LE. jmax) THEN
           DO i = imin, imax
-             x = blk%x_grid%current(i,j-1) - &
-                  &(blk%x_grid%current(i,j-2) - blk%x_grid%current(i,j-1))
-             y = blk%y_grid%current(i,j-1) - &
-                  &(blk%y_grid%current(i,j-2) - blk%y_grid%current(i,j-1))
-             z = blk%zbot_grid%current(i,j-1) - &
-                  &(blk%zbot_grid%current(i,j-2) - blk%zbot_grid%current(i,j-1))
-             blk%x_grid%current(i,j) = x
-             blk%y_grid%current(i,j) = y
-             blk%zbot_grid%current(i,j) = z
+             x = blk%x_grid(i,j-1) - &
+                  &(blk%x_grid(i,j-2) - blk%x_grid(i,j-1))
+             y = blk%y_grid(i,j-1) - &
+                  &(blk%y_grid(i,j-2) - blk%y_grid(i,j-1))
+             z = blk%zbot_grid(i,j-1) - &
+                  &(blk%zbot_grid(i,j-2) - blk%zbot_grid(i,j-1))
+             blk%x_grid(i,j) = x
+             blk%y_grid(i,j) = y
+             blk%zbot_grid(i,j) = z
           END DO
        END IF
     END DO
 
     ! update global arrays and make local copies current on all processors
 
-    CALL block_var_put(blk%x_grid)
-    CALL block_var_put(blk%y_grid)
-    CALL block_var_put(blk%zbot_grid)
+    CALL block_var_put(blk%bv_x_grid)
+    CALL block_var_put(blk%bv_y_grid)
+    CALL block_var_put(blk%bv_zbot_grid)
     CALL ga_sync()
-    CALL block_var_get(blk%x_grid)
-    CALL block_var_get(blk%y_grid)
-    CALL block_var_get(blk%zbot_grid)
+    CALL block_var_get(blk%bv_x_grid)
+    CALL block_var_get(blk%bv_y_grid)
+    CALL block_var_get(blk%bv_zbot_grid)
     ! CALL ga_print(blk%y_grid%ga_handle)
 
     CALL block_extrap_ghost_corners(blk)
 
-    CALL block_var_put(blk%x_grid)
-    CALL block_var_put(blk%y_grid)
-    CALL block_var_put(blk%zbot_grid)
+    CALL block_var_put(blk%bv_x_grid)
+    CALL block_var_put(blk%bv_y_grid)
+    CALL block_var_put(blk%bv_zbot_grid)
     CALL ga_sync()
-    CALL block_var_get(blk%x_grid)
-    CALL block_var_get(blk%y_grid)
-    CALL block_var_get(blk%zbot_grid)
+    CALL block_var_get(blk%bv_x_grid)
+    CALL block_var_get(blk%bv_y_grid)
+    CALL block_var_get(blk%bv_zbot_grid)
     ! CALL ga_print(blk%y_grid%ga_handle)
 
   END SUBROUTINE block_extrap_ghost
@@ -261,33 +261,33 @@ CONTAINS
     j1 = j + joff
     j2 = j + 2*joff
 
-    IF (blk%x_grid%current(i, j2) .NE. blk%x_grid%current(i, j1)) THEN
-       mi = (blk%y_grid%current(i, j2) - blk%y_grid%current(i, j1))/&
-            &(blk%x_grid%current(i, j2) - blk%x_grid%current(i, j1))
-       bi = blk%y_grid%current(i, j2) - mi*blk%x_grid%current(i, j2)
+    IF (blk%x_grid(i, j2) .NE. blk%x_grid(i, j1)) THEN
+       mi = (blk%y_grid(i, j2) - blk%y_grid(i, j1))/&
+            &(blk%x_grid(i, j2) - blk%x_grid(i, j1))
+       bi = blk%y_grid(i, j2) - mi*blk%x_grid(i, j2)
     END IF
 
-    IF (blk%x_grid%current(i2, j) .NE. blk%x_grid%current(i1, j)) THEN
-       mj = (blk%y_grid%current(i2, j) - blk%y_grid%current(i1, j))/&
-            &(blk%x_grid%current(i2, j) - blk%x_grid%current(i1, j))
-       bj = blk%y_grid%current(i2, j) - mj*blk%x_grid%current(i2, j)
+    IF (blk%x_grid(i2, j) .NE. blk%x_grid(i1, j)) THEN
+       mj = (blk%y_grid(i2, j) - blk%y_grid(i1, j))/&
+            &(blk%x_grid(i2, j) - blk%x_grid(i1, j))
+       bj = blk%y_grid(i2, j) - mj*blk%x_grid(i2, j)
     END IF
 
-    IF (blk%x_grid%current(i, j2) .EQ. blk%x_grid%current(i, j1)) THEN
-       blk%x_grid%current(i, j) = blk%x_grid%current(i, j2)
-       blk%y_grid%current(i, j) = mj*blk%x_grid%current(i, j) + bj
-    ELSE IF (blk%x_grid%current(i2, j) .EQ. blk%x_grid%current(i1, j)) THEN
-       blk%x_grid%current(i, j) = blk%x_grid%current(i2, j)
-       blk%y_grid%current(i, j) = mi*blk%x_grid%current(i, j) + bi
+    IF (blk%x_grid(i, j2) .EQ. blk%x_grid(i, j1)) THEN
+       blk%x_grid(i, j) = blk%x_grid(i, j2)
+       blk%y_grid(i, j) = mj*blk%x_grid(i, j) + bj
+    ELSE IF (blk%x_grid(i2, j) .EQ. blk%x_grid(i1, j)) THEN
+       blk%x_grid(i, j) = blk%x_grid(i2, j)
+       blk%y_grid(i, j) = mi*blk%x_grid(i, j) + bi
     ELSE 
-       blk%y_grid%current(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
-       blk%x_grid%current(i, j) = (blk%y_grid%current(i, j) - bj)/mj
+       blk%y_grid(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
+       blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
     END IF
 
-    zi = blk%zbot_grid%current(i,j1) - (blk%zbot_grid%current(i,j2) - blk%zbot_grid%current(i,j1))
-    zj = blk%zbot_grid%current(i1,j) - (blk%zbot_grid%current(i2,j) - blk%zbot_grid%current(i1,j))
+    zi = blk%zbot_grid(i,j1) - (blk%zbot_grid(i,j2) - blk%zbot_grid(i,j1))
+    zj = blk%zbot_grid(i1,j) - (blk%zbot_grid(i2,j) - blk%zbot_grid(i1,j))
 
-    blk%zbot_grid%current(i,j) = 0.5*(zi+zj)
+    blk%zbot_grid(i,j) = 0.5*(zi+zj)
 
   END SUBROUTINE block_extrap_1_corner
 
@@ -334,11 +334,11 @@ CONTAINS
        nj = jmax - jmin + 1
 
        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
-       CALL block_var_all(block(iblk)%x_grid, block(iblk)%buffer)
+       CALL block_var_all(block(iblk)%bv_x_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%y_grid, block(iblk)%buffer)
+       CALL block_var_all(block(iblk)%bv_y_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%zbot_grid, block(iblk)%buffer)
+       CALL block_var_all(block(iblk)%bv_zbot_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
 
     END DO
@@ -367,12 +367,12 @@ CONTAINS
 
     DO i = imin, imax
        DO j = jmin, jmax
-          blk%x%current(i,j) = 0.25*(blk%x_grid%current(i,j)+blk%x_grid%current(i-1,j)+&
-               & blk%x_grid%current(i,j-1)+blk%x_grid%current(i-1,j-1))
-          blk%y%current(i,j) = 0.25*(blk%y_grid%current(i,j)+blk%y_grid%current(i-1,j)+&
-               & blk%y_grid%current(i,j-1)+blk%y_grid%current(i-1,j-1))
-          blk%zbot%current(i,j) = 0.25*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i-1,j)+&
-               & blk%zbot_grid%current(i,j-1)+blk%zbot_grid%current(i-1,j-1))
+          blk%x(i,j) = 0.25*(blk%x_grid(i,j)+blk%x_grid(i-1,j)+&
+               & blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
+          blk%y(i,j) = 0.25*(blk%y_grid(i,j)+blk%y_grid(i-1,j)+&
+               & blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
+          blk%zbot(i,j) = 0.25*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j)+&
+               & blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
        END DO
     END DO
 
@@ -387,36 +387,36 @@ CONTAINS
     i=i_index_min
     IF (block_owns_i(blk, i)) THEN
        DO j= jmin, jmax
-          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j)+blk%x_grid%current(i,j-1))
-          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j)+blk%y_grid%current(i,j-1))
-          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i,j-1))
+          blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i,j-1))
+          blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i,j-1))
+          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i,j-1))
        END DO
     END IF
 
     i= blk%xmax+i_index_extra
     IF (block_owns_i(blk, i)) THEN
        DO j= jmin, jmax
-          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i-1,j)+blk%x_grid%current(i-1,j-1))
-          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i-1,j)+blk%y_grid%current(i-1,j-1))
-          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i-1,j)+blk%zbot_grid%current(i-1,j-1))
+          blk%x(i,j) = 0.5*(blk%x_grid(i-1,j)+blk%x_grid(i-1,j-1))
+          blk%y(i,j) = 0.5*(blk%y_grid(i-1,j)+blk%y_grid(i-1,j-1))
+          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i-1,j)+blk%zbot_grid(i-1,j-1))
        END DO
     END IF
 
     j=j_index_min
     IF (block_owns_j(blk, j)) THEN
        DO i = imin, imax
-          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j)+blk%x_grid%current(i-1,j))
-          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j)+blk%y_grid%current(i-1,j))
-          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j)+blk%zbot_grid%current(i-1,j))
+          blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i-1,j))
+          blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i-1,j))
+          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j))
        END DO
     END IF
 
     j= blk%ymax+j_index_extra
     IF (block_owns_j(blk, j)) THEN
        DO i = imin, imax
-          blk%x%current(i,j) = 0.5*(blk%x_grid%current(i,j-1)+blk%x_grid%current(i-1,j-1))
-          blk%y%current(i,j) = 0.5*(blk%y_grid%current(i,j-1)+blk%y_grid%current(i-1,j-1))
-          blk%zbot%current(i,j) = 0.5*(blk%zbot_grid%current(i,j-1)+blk%zbot_grid%current(i-1,j-1))
+          blk%x(i,j) = 0.5*(blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
+          blk%y(i,j) = 0.5*(blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
+          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
        END DO
     END IF
 
@@ -433,19 +433,19 @@ CONTAINS
        i = ivec(idx)
        j = jvec(idx)
        IF (block_owns(blk, i, j)) THEN
-          blk%x%current(i,j) = blk%x_grid%current(ivec2(idx),jvec2(idx))
-          blk%y%current(i,j) = blk%y_grid%current(ivec2(idx),jvec2(idx))
-          blk%zbot%current(i,j) = blk%zbot_grid%current(ivec2(idx),jvec2(idx))
+          blk%x(i,j) = blk%x_grid(ivec2(idx),jvec2(idx))
+          blk%y(i,j) = blk%y_grid(ivec2(idx),jvec2(idx))
+          blk%zbot(i,j) = blk%zbot_grid(ivec2(idx),jvec2(idx))
        END IF
     END DO
 
-    CALL block_var_put(blk%x)
-    CALL block_var_put(blk%y)
-    CALL block_var_put(blk%zbot)
+    CALL block_var_put(blk%bv_x)
+    CALL block_var_put(blk%bv_y)
+    CALL block_var_put(blk%bv_zbot)
     CALL ga_sync()
-    CALL block_var_get(blk%x)
-    CALL block_var_get(blk%y)
-    CALL block_var_get(blk%zbot)
+    CALL block_var_get(blk%bv_x)
+    CALL block_var_get(blk%bv_y)
+    CALL block_var_get(blk%bv_zbot)
     
   END SUBROUTINE block_interp_grid
 
@@ -471,26 +471,26 @@ CONTAINS
 
     ! metric coeff. 2 on the u face of the c.v.
 
-    blk%hu2%current = 1.0e-20            ! bogus nonzero value
+    blk%hu2 = 1.0e-20            ! bogus nonzero value
     DO i=imin, imax-1
        DO j=jmin+1, jmax-1
           IF (block_owns(blk, i, j)) THEN
-             blk%hu2%current(i,j) = & 
-                  SQRT((blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1))**2 + &
-                  (blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1))**2)
+             blk%hu2(i,j) = & 
+                  SQRT((blk%x_grid(i,j) - blk%x_grid(i,j-1))**2 + &
+                  (blk%y_grid(i,j) - blk%y_grid(i,j-1))**2)
           END IF
        END DO
     END DO
 
     ! metric coeff 1 on the u face of the c.v.
 
-    blk%hu1%current = 1.0e-20            ! bogus nonzero value
+    blk%hu1 = 1.0e-20            ! bogus nonzero value
     DO i=imin+1, imax-i_index_extra
        DO j=jmin, jmax
           IF (block_owns(blk, i, j)) THEN
-             blk%hu1%current(i,j) = &
-                  SQRT((blk%x%current(i+1,j) - blk%x%current(i,j))**2 + &
-                  (blk%y%current(i+1,j) - blk%y%current(i,j))**2)
+             blk%hu1(i,j) = &
+                  SQRT((blk%x(i+1,j) - blk%x(i,j))**2 + &
+                  (blk%y(i+1,j) - blk%y(i,j))**2)
           END IF
        END DO
     END DO
@@ -500,17 +500,17 @@ CONTAINS
     i=imin
     DO j=jmin, jmax
        IF (block_owns(blk, i, j)) THEN
-          blk%hu1%current(i,j) = &
-               SQRT(((blk%x%current(i+1,j) - blk%x%current(i,j)))**2 + &
-               ((blk%y%current(i+1,j) - blk%y%current(i,j)))**2)
+          blk%hu1(i,j) = &
+               SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
+               ((blk%y(i+1,j) - blk%y(i,j)))**2)
        END IF
     END DO
     i=imax-1
     DO j=jmin, jmax
        IF (block_owns(blk, i, j)) THEN
-          blk%hu1%current(i,j) = &
-               SQRT(((blk%x%current(i+1,j) - blk%x%current(i,j)))**2 + &
-               ((blk%y%current(i+1,j) - blk%y%current(i,j)))**2)
+          blk%hu1(i,j) = &
+               SQRT(((blk%x(i+1,j) - blk%x(i,j)))**2 + &
+               ((blk%y(i+1,j) - blk%y(i,j)))**2)
        END IF
     END DO
 
@@ -519,9 +519,9 @@ CONTAINS
     DO i=imin+1, imax-1
        DO j=jmin, jmax - 1
           IF (block_owns(blk, i, j)) THEN
-             blk%hv1%current(i,j) = &
-                  SQRT((blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j))**2 + &
-                  (blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j))**2) 
+             blk%hv1(i,j) = &
+                  SQRT((blk%x_grid(i,j) - blk%x_grid(i-1,j))**2 + &
+                  (blk%y_grid(i,j) - blk%y_grid(i-1,j))**2) 
           END IF
        END DO
     END DO
@@ -531,9 +531,9 @@ CONTAINS
     DO i=imin, imax
        DO j=jmin+1, jmax - 1
           IF (block_owns(blk, i, j)) THEN
-             blk%hv2%current(i,j) = &
-                  SQRT((blk%x%current(i,j+1) - blk%x%current(i,j))**2 + &
-                  (blk%y%current(i,j+1) - blk%y%current(i,j))**2)
+             blk%hv2(i,j) = &
+                  SQRT((blk%x(i,j+1) - blk%x(i,j))**2 + &
+                  (blk%y(i,j+1) - blk%y(i,j))**2)
           END IF
        END DO
     END DO
@@ -543,17 +543,17 @@ CONTAINS
     j = jmin
     DO i=imin+1, imax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%hv2%current(i,j) = &
-               SQRT(((blk%x%current(i,j+1) - blk%x%current(i,j)))**2 + &
-               ((blk%y%current(i,j+1) - blk%y%current(i,j)))**2)
+          blk%hv2(i,j) = &
+               SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
+               ((blk%y(i,j+1) - blk%y(i,j)))**2)
        END IF
     END DO
     j = jmax - 1
     DO i=imin+1, imax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%hv2%current(i,j) = &
-               SQRT(((blk%x%current(i,j+1) - blk%x%current(i,j)))**2 + &
-               ((blk%y%current(i,j+1) - blk%y%current(i,j)))**2)
+          blk%hv2(i,j) = &
+               SQRT(((blk%x(i,j+1) - blk%x(i,j)))**2 + &
+               ((blk%y(i,j+1) - blk%y(i,j)))**2)
        END IF
     END DO
 
@@ -562,90 +562,90 @@ CONTAINS
     DO i = imin+1, imax-1
        DO j=jmin+1, jmax-1
           IF (block_owns(blk, i, j)) THEN
-             blk%x_eta%current(i,j) = 0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i-1,j) & 
-                  - blk%x_grid%current(i,j-1) - blk%x_grid%current(i-1,j-1))
-             blk%y_eta%current(i,j) = 0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i-1,j) & 
-                  - blk%y_grid%current(i,j-1) - blk%y_grid%current(i-1,j-1))
-             blk%x_xsi%current(i,j) = 0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i,j-1) & 
-                  - blk%x_grid%current(i-1,j) - blk%x_grid%current(i-1,j-1))
-             blk%y_xsi%current(i,j) = 0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i,j-1) & 
-                  - blk%y_grid%current(i-1,j) - blk%y_grid%current(i-1,j-1))
+             blk%x_eta(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i-1,j) & 
+                  - blk%x_grid(i,j-1) - blk%x_grid(i-1,j-1))
+             blk%y_eta(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i-1,j) & 
+                  - blk%y_grid(i,j-1) - blk%y_grid(i-1,j-1))
+             blk%x_xsi(i,j) = 0.5*(blk%x_grid(i,j) + blk%x_grid(i,j-1) & 
+                  - blk%x_grid(i-1,j) - blk%x_grid(i-1,j-1))
+             blk%y_xsi(i,j) = 0.5*(blk%y_grid(i,j) + blk%y_grid(i,j-1) & 
+                  - blk%y_grid(i-1,j) - blk%y_grid(i-1,j-1))
           END IF
        END DO
     END DO
     i=imin
     DO j=jmin+1, jmax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_eta%current(i,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1)
-          blk%y_eta%current(i,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1)
+          blk%x_eta(i,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
+          blk%y_eta(i,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
        END IF
     END DO
     i=imax-1
     DO j=jmin+1, jmax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_eta%current(i+1,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i,j-1)
-          blk%y_eta%current(i+1,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i,j-1)
+          blk%x_eta(i+1,j) = blk%x_grid(i,j) - blk%x_grid(i,j-1)
+          blk%y_eta(i+1,j) = blk%y_grid(i,j) - blk%y_grid(i,j-1)
        END IF
     END DO
     j = jmin
     DO i=imin+1, imax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_xsi%current(i,j) = blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j)
-          blk%y_xsi%current(i,j) = blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j)
+          blk%x_xsi(i,j) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
+          blk%y_xsi(i,j) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
        END IF
     END DO
     j=jmax-1
     DO i=imin+1, imax-1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_xsi%current(i,j+1) = blk%x_grid%current(i,j) - blk%x_grid%current(i-1,j)
-          blk%y_xsi%current(i,j+1) = blk%y_grid%current(i,j) - blk%y_grid%current(i-1,j)
+          blk%x_xsi(i,j+1) = blk%x_grid(i,j) - blk%x_grid(i-1,j)
+          blk%y_xsi(i,j+1) = blk%y_grid(i,j) - blk%y_grid(i-1,j)
        END IF
     END DO
 
     IF (block_owns_i(blk, imin)) THEN
-       blk%x_xsi%current(imin,:) = blk%x_xsi%current(imin+1,:)
-       blk%y_xsi%current(imin,:) = blk%y_xsi%current(imin+1,:)
+       blk%x_xsi(imin,:) = blk%x_xsi(imin+1,:)
+       blk%y_xsi(imin,:) = blk%y_xsi(imin+1,:)
     END IF
     IF (block_owns_i(blk, imax)) THEN 
-       blk%x_xsi%current(imax,:) = blk%x_xsi%current(imax-1,:)
-       blk%y_xsi%current(imax,:) = blk%y_xsi%current(imax-1,:)
+       blk%x_xsi(imax,:) = blk%x_xsi(imax-1,:)
+       blk%y_xsi(imax,:) = blk%y_xsi(imax-1,:)
     END IF
     IF (block_owns_j(blk, jmin)) THEN
-       blk%x_eta%current(:,jmin) = blk%x_eta%current(:,jmin+1)
-       blk%y_eta%current(:,jmin) = blk%y_eta%current(:,jmin+1)
+       blk%x_eta(:,jmin) = blk%x_eta(:,jmin+1)
+       blk%y_eta(:,jmin) = blk%y_eta(:,jmin+1)
     END IF
     IF (block_owns_j(blk, jmax)) THEN
-       blk%x_eta%current(:,jmax) = blk%x_eta%current(:,jmax-1)
-       blk%y_eta%current(:,jmax) = blk%y_eta%current(:,jmax-1)
+       blk%x_eta(:,jmax) = blk%x_eta(:,jmax-1)
+       blk%y_eta(:,jmax) = blk%y_eta(:,jmax-1)
     END IF
 
-    blk%hp1%current = SQRT(blk%x_xsi%current**2 + blk%y_xsi%current**2)
-    blk%hp2%current = SQRT(blk%x_eta%current**2 + blk%y_eta%current**2)
+    blk%hp1 = SQRT(blk%x_xsi**2 + blk%y_xsi**2)
+    blk%hp2 = SQRT(blk%x_eta**2 + blk%y_eta**2)
 
     ! compute nonorthogonal part of the metric tensor as a check on grid quality
 
-    blk%gp12%current = blk%x_xsi%current*blk%x_eta%current + &
-         &blk%y_xsi%current*blk%y_eta%current
+    blk%gp12 = blk%x_xsi*blk%x_eta + &
+         &blk%y_xsi*blk%y_eta
 
-    CALL block_var_put(blk%hp1)
-    CALL block_var_put(blk%hp2)
-    CALL block_var_put(blk%hu1)
-    CALL block_var_put(blk%hv2)
-    CALL block_var_put(blk%gp12)
-    CALL block_var_put(blk%x_xsi)
-    CALL block_var_put(blk%y_xsi)
-    CALL block_var_put(blk%x_eta)
-    CALL block_var_put(blk%y_eta)
+    CALL block_var_put(blk%bv_hp1)
+    CALL block_var_put(blk%bv_hp2)
+    CALL block_var_put(blk%bv_hu1)
+    CALL block_var_put(blk%bv_hv2)
+    CALL block_var_put(blk%bv_gp12)
+    CALL block_var_put(blk%bv_x_xsi)
+    CALL block_var_put(blk%bv_y_xsi)
+    CALL block_var_put(blk%bv_x_eta)
+    CALL block_var_put(blk%bv_y_eta)
     CALL ga_sync()
-    CALL block_var_get(blk%hp1)
-    CALL block_var_get(blk%hp2)
-    CALL block_var_get(blk%hu1)
-    CALL block_var_get(blk%hv2)
-    CALL block_var_get(blk%gp12)
-    CALL block_var_get(blk%x_xsi)
-    CALL block_var_get(blk%y_xsi)
-    CALL block_var_get(blk%x_eta)
-    CALL block_var_get(blk%y_eta)
+    CALL block_var_get(blk%bv_hp1)
+    CALL block_var_get(blk%bv_hp2)
+    CALL block_var_get(blk%bv_hu1)
+    CALL block_var_get(blk%bv_hv2)
+    CALL block_var_get(blk%bv_gp12)
+    CALL block_var_get(blk%bv_x_xsi)
+    CALL block_var_get(blk%bv_y_xsi)
+    CALL block_var_get(blk%bv_x_eta)
+    CALL block_var_get(blk%bv_y_eta)
 
 
   END SUBROUTINE block_metrics
@@ -668,9 +668,9 @@ CONTAINS
     ! without ghost cells, the output locations are the same as the
     ! computation locations
 
-    blk%x_out%current = blk%x%current
-    blk%y_out%current = blk%y%current
-    blk%zbot_out%current = blk%zbot%current
+    blk%x_out = blk%x
+    blk%y_out = blk%y
+    blk%zbot_out = blk%zbot
 
     ! with ghost cells at the up/down stream end, the output
     ! locations need to be interpolated at the block ends. The
@@ -680,48 +680,48 @@ CONTAINS
     IF (i_ghost .GT. 0) THEN
        i = 1
        IF (block_owns(blk, i, 1)) THEN
-          blk%x_out%current(i,1) = blk%x_grid%current(i,1)
-          blk%y_out%current(i,1) = blk%y_grid%current(i,1)
-          blk%zbot_out%current(i,1) = blk%zbot_grid%current(i,1)
+          blk%x_out(i,1) = blk%x_grid(i,1)
+          blk%y_out(i,1) = blk%y_grid(i,1)
+          blk%zbot_out(i,1) = blk%zbot_grid(i,1)
        END IF
        DO j = 2, blk%ymax
           IF (block_owns(blk, i, j)) THEN
-             blk%x_out%current(i,j) = &
-                  &0.5*(blk%x_grid%current(i,j-1) + blk%x_grid%current(i,j))
-             blk%y_out%current(i,j) = &
-                  &0.5*(blk%y_grid%current(i,j-1) + blk%y_grid%current(i,j))
-             blk%zbot_out%current(i,j) = &
-                  &0.5*(blk%zbot_grid%current(i,j-1) + blk%zbot_grid%current(i,j))
+             blk%x_out(i,j) = &
+                  &0.5*(blk%x_grid(i,j-1) + blk%x_grid(i,j))
+             blk%y_out(i,j) = &
+                  &0.5*(blk%y_grid(i,j-1) + blk%y_grid(i,j))
+             blk%zbot_out(i,j) = &
+                  &0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i,j))
           END IF
        END DO
        j = blk%ymax + 1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_out%current(i,j) = blk%x_grid%current(i,j-1)
-          blk%y_out%current(i,j) = blk%y_grid%current(i,j-1)
-          blk%zbot_out%current(i,j) = blk%zbot_grid%current(i,j-1)
+          blk%x_out(i,j) = blk%x_grid(i,j-1)
+          blk%y_out(i,j) = blk%y_grid(i,j-1)
+          blk%zbot_out(i,j) = blk%zbot_grid(i,j-1)
        END IF
 
        i =  blk%xmax + 1
        IF (block_owns(blk, i, 1)) THEN
-          blk%x_out%current(i,1) = blk%x_grid%current(i-1,1)
-          blk%y_out%current(i,1) = blk%y_grid%current(i-1,1)
-          blk%zbot_out%current(i,1) = blk%zbot_grid%current(i-1,1)
+          blk%x_out(i,1) = blk%x_grid(i-1,1)
+          blk%y_out(i,1) = blk%y_grid(i-1,1)
+          blk%zbot_out(i,1) = blk%zbot_grid(i-1,1)
        END IF
        DO j = 2, blk%ymax
           IF (block_owns(blk, i, j)) THEN
-             blk%x_out%current(i,j) = &
-                  &0.5*(blk%x_grid%current(i-1,j-1) + blk%x_grid%current(i-1,j))
-             blk%y_out%current(i,j) = &
-                  &0.5*(blk%y_grid%current(i-1,j-1) + blk%y_grid%current(i-1,j))
-             blk%zbot_out%current(i,j) = &
-                  &0.5*(blk%zbot_grid%current(i-1,j-1) + blk%zbot_grid%current(i-1,j))
+             blk%x_out(i,j) = &
+                  &0.5*(blk%x_grid(i-1,j-1) + blk%x_grid(i-1,j))
+             blk%y_out(i,j) = &
+                  &0.5*(blk%y_grid(i-1,j-1) + blk%y_grid(i-1,j))
+             blk%zbot_out(i,j) = &
+                  &0.5*(blk%zbot_grid(i-1,j-1) + blk%zbot_grid(i-1,j))
           END IF
        END DO
        j = blk%ymax + 1
        IF (block_owns(blk, i, j)) THEN
-          blk%x_out%current(i,j) = blk%x_grid%current(i-1,j-1)
-          blk%y_out%current(i,j) = blk%y_grid%current(i-1,j-1)
-          blk%zbot_out%current(i,j) = blk%zbot_grid%current(i-1,j-1)
+          blk%x_out(i,j) = blk%x_grid(i-1,j-1)
+          blk%y_out(i,j) = blk%y_grid(i-1,j-1)
+          blk%zbot_out(i,j) = blk%zbot_grid(i-1,j-1)
        END IF
     END IF
 
@@ -731,34 +731,34 @@ CONTAINS
        j = 1
        DO i = 2, blk%xmax
           IF (block_owns(blk, i, j)) THEN 
-             blk%x_out%current(i,j) = &
-                  &0.5*(blk%x_grid%current(i,j) + blk%x_grid%current(i-1,j))
-             blk%y_out%current(i,j) = &
-                  &0.5*(blk%y_grid%current(i,j) + blk%y_grid%current(i-1,j))
-             blk%zbot_out%current(i,j) = &
-                  &0.5*(blk%zbot_grid%current(i,j) + blk%zbot_grid%current(i-1,j))
+             blk%x_out(i,j) = &
+                  &0.5*(blk%x_grid(i,j) + blk%x_grid(i-1,j))
+             blk%y_out(i,j) = &
+                  &0.5*(blk%y_grid(i,j) + blk%y_grid(i-1,j))
+             blk%zbot_out(i,j) = &
+                  &0.5*(blk%zbot_grid(i,j) + blk%zbot_grid(i-1,j))
           END IF
        END DO
        j = blk%ymax + 1
        DO i = 2, blk%xmax
           IF (block_owns(blk, i, j)) THEN 
-             blk%x_out%current(i,j) = &
-                  &0.5*(blk%x_grid%current(i,j-1) + blk%x_grid%current(i-1,j-1))
-             blk%y_out%current(i,j) = &
-                  &0.5*(blk%y_grid%current(i,j-1) + blk%y_grid%current(i-1,j-1))
-             blk%zbot_out%current(i,j) = &
-                  &0.5*(blk%zbot_grid%current(i,j-1) + blk%zbot_grid%current(i-1,j-1))
+             blk%x_out(i,j) = &
+                  &0.5*(blk%x_grid(i,j-1) + blk%x_grid(i-1,j-1))
+             blk%y_out(i,j) = &
+                  &0.5*(blk%y_grid(i,j-1) + blk%y_grid(i-1,j-1))
+             blk%zbot_out(i,j) = &
+                  &0.5*(blk%zbot_grid(i,j-1) + blk%zbot_grid(i-1,j-1))
           END IF
        END DO
     END IF
 
-    CALL block_var_put(blk%x_out)
-    CALL block_var_put(blk%y_out)
-    CALL block_var_put(blk%zbot_out)
+    CALL block_var_put(blk%bv_x_out)
+    CALL block_var_put(blk%bv_y_out)
+    CALL block_var_put(blk%bv_zbot_out)
     CALL ga_sync()
-    CALL block_var_get(blk%x_out)
-    CALL block_var_get(blk%y_out)
-    CALL block_var_get(blk%zbot_out)
+    CALL block_var_get(blk%bv_x_out)
+    CALL block_var_get(blk%bv_y_out)
+    CALL block_var_get(blk%bv_zbot_out)
 
   END SUBROUTINE block_plot_geometry
 

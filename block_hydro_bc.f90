@@ -93,20 +93,20 @@ CONTAINS
           ! this because the grid has not been
           ! read yet
 
-          x1 = block(bc%block)%x_grid%current(i, j)
-          y1 = block(bc%block)%y_grid%current(i, j)
-          x2 = block(conbc%block)%x_grid%current(coni, conj)
-          y2 = block(conbc%block)%y_grid%current(coni, conj)
+          x1 = block(bc%block)%x_grid(i, j)
+          y1 = block(bc%block)%y_grid(i, j)
+          x2 = block(conbc%block)%x_grid(coni, conj)
+          y2 = block(conbc%block)%y_grid(coni, conj)
 
           rdist = distance(x1, y1, x2, y2)
 
           SELECT CASE (bc%bc_loc)
           CASE ("US","DS")
-             x2 = block(bc%block)%x_grid%current(i, j+1)
-             y2 = block(bc%block)%y_grid%current(i, j+1)
+             x2 = block(bc%block)%x_grid(i, j+1)
+             y2 = block(bc%block)%y_grid(i, j+1)
           CASE ("LB","RB")
-             x2 = block(bc%block)%x_grid%current(i+1, j)
-             y2 = block(bc%block)%y_grid%current(i+1, j)
+             x2 = block(bc%block)%x_grid(i+1, j)
+             y2 = block(bc%block)%y_grid(i+1, j)
           END SELECT
 
           rdist = rdist/distance(x1, y1, x2, y2)
@@ -122,24 +122,24 @@ CONTAINS
           SELECT CASE (bc%bc_loc)
           CASE ("US","DS")
              j = bc%end_cell(n)
-             x1 = block(bc%block)%x_grid%current(i, j+1)
-             y1 = block(bc%block)%y_grid%current(i, j+1)
+             x1 = block(bc%block)%x_grid(i, j+1)
+             y1 = block(bc%block)%y_grid(i, j+1)
              conj = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid%current(coni, conj+1)
-             y2 = block(conbc%block)%y_grid%current(coni, conj+1)
+             x2 = block(conbc%block)%x_grid(coni, conj+1)
+             y2 = block(conbc%block)%y_grid(coni, conj+1)
           CASE ("LB","RB")
              i =  bc%end_cell(n)
-             x1 = block(bc%block)%x_grid%current(i+1, j)
-             y1 = block(bc%block)%y_grid%current(i+1, j)
+             x1 = block(bc%block)%x_grid(i+1, j)
+             y1 = block(bc%block)%y_grid(i+1, j)
              coni = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid%current(coni+1, conj)
-             y2 = block(conbc%block)%y_grid%current(coni+1, conj)
+             x2 = block(conbc%block)%x_grid(coni+1, conj)
+             y2 = block(conbc%block)%y_grid(coni+1, conj)
           END SELECT
 
           rdist = distance(x1, y1, x2, y2)
 
-          x2 = block(bc%block)%x_grid%current(i, j)
-          y2 = block(bc%block)%y_grid%current(i, j)
+          x2 = block(bc%block)%x_grid(i, j)
+          y2 = block(bc%block)%y_grid(i, j)
           rdist = rdist/distance(x1, y1, x2, y2)
 
           IF (rdist .GT. 0.01) THEN
@@ -256,50 +256,50 @@ CONTAINS
 
     DO ig = 1, nghost
        IF (block_owns_i(block(iblock), 2-ig)) THEN
-          block(iblock)%eddy%current(2-ig,:) = block(iblock)%eddy%current(2,:)
-          block(iblock)%kx_diff%current(2-ig,:) = block(iblock)%kx_diff%current(2,:)
-          block(iblock)%ky_diff%current(2-ig,:) = block(iblock)%ky_diff%current(2,:)
-          block(iblock)%chezy%current(2-ig,:) = block(iblock)%chezy%current(2,:)
+          block(iblock)%eddy(2-ig,:) = block(iblock)%eddy(2,:)
+          block(iblock)%kx_diff(2-ig,:) = block(iblock)%kx_diff(2,:)
+          block(iblock)%ky_diff(2-ig,:) = block(iblock)%ky_diff(2,:)
+          block(iblock)%chezy(2-ig,:) = block(iblock)%chezy(2,:)
        END IF
        IF (block_owns_i(block(iblock), block(iblock)%xmax+ig)) THEN
-          block(iblock)%eddy%current(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%eddy%current(block(iblock)%xmax,:)
-          block(iblock)%kx_diff%current(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%kx_diff%current(block(iblock)%xmax,:)
-          block(iblock)%ky_diff%current(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%ky_diff%current(block(iblock)%xmax,:)
-          block(iblock)%chezy%current(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%chezy%current(block(iblock)%xmax,:)
+          block(iblock)%eddy(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%eddy(block(iblock)%xmax,:)
+          block(iblock)%kx_diff(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%kx_diff(block(iblock)%xmax,:)
+          block(iblock)%ky_diff(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%ky_diff(block(iblock)%xmax,:)
+          block(iblock)%chezy(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%chezy(block(iblock)%xmax,:)
        END IF
     END DO
     DO jg = 1, nghost 
        IF (block_owns_j(block(iblock), 2-jg)) THEN
-          block(iblock)%eddy%current(:, 2-jg) = block(iblock)%eddy%current(:,2)
-          block(iblock)%kx_diff%current(:, 2-jg) = block(iblock)%kx_diff%current(:,2)
-          block(iblock)%ky_diff%current(:, 2-jg) = block(iblock)%ky_diff%current(:,2)
-          block(iblock)%chezy%current(:, 2-jg) = block(iblock)%chezy%current(:,2)
+          block(iblock)%eddy(:, 2-jg) = block(iblock)%eddy(:,2)
+          block(iblock)%kx_diff(:, 2-jg) = block(iblock)%kx_diff(:,2)
+          block(iblock)%ky_diff(:, 2-jg) = block(iblock)%ky_diff(:,2)
+          block(iblock)%chezy(:, 2-jg) = block(iblock)%chezy(:,2)
        END IF
        IF (block_owns_j(block(iblock), block(iblock)%ymax+ig)) THEN
-          block(iblock)%eddy%current(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%eddy%current(:,block(iblock)%ymax)
-          block(iblock)%kx_diff%current(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%kx_diff%current(:,block(iblock)%ymax)
-          block(iblock)%ky_diff%current(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%ky_diff%current(:,block(iblock)%ymax)
-          block(iblock)%chezy%current(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%chezy%current(:,block(iblock)%ymax)
+          block(iblock)%eddy(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%eddy(:,block(iblock)%ymax)
+          block(iblock)%kx_diff(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%kx_diff(:,block(iblock)%ymax)
+          block(iblock)%ky_diff(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%ky_diff(:,block(iblock)%ymax)
+          block(iblock)%chezy(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%chezy(:,block(iblock)%ymax)
        END IF
     END DO
 
-    CALL block_var_put(block(iblock)%eddy)
-    CALL block_var_put(block(iblock)%kx_diff)
-    CALL block_var_put(block(iblock)%ky_diff)
-    CALL block_var_put(block(iblock)%chezy)
+    CALL block_var_put(block(iblock)%bv_eddy)
+    CALL block_var_put(block(iblock)%bv_kx_diff)
+    CALL block_var_put(block(iblock)%bv_ky_diff)
+    CALL block_var_put(block(iblock)%bv_chezy)
     CALL ga_sync()
-    CALL block_var_get(block(iblock)%eddy)
-    CALL block_var_get(block(iblock)%kx_diff)
-    CALL block_var_get(block(iblock)%ky_diff)
-    CALL block_var_get(block(iblock)%chezy)
+    CALL block_var_get(block(iblock)%bv_eddy)
+    CALL block_var_get(block(iblock)%bv_kx_diff)
+    CALL block_var_get(block(iblock)%bv_ky_diff)
+    CALL block_var_get(block(iblock)%bv_chezy)
 
     ! copy ghost cell metrics and
     ! parameters from connecting block

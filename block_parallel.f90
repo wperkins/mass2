@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Wed Jan  5 07:35:06 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 15:36:03 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -71,47 +71,98 @@ MODULE block_module
 
      TYPE (block_var_base), POINTER :: varbase
 
-     ! These are variables that having values need to be known over
-     ! multiple processors, either for computation or input/output
+     DOUBLE PRECISION, POINTER :: x_grid(:,:)
+     DOUBLE PRECISION, POINTER :: y_grid(:,:)
+     DOUBLE PRECISION, POINTER :: zbot_grid(:,:)
+     DOUBLE PRECISION, POINTER :: x(:,:)
+     DOUBLE PRECISION, POINTER :: y(:,:)
+     DOUBLE PRECISION, POINTER :: zbot(:,:)
+     DOUBLE PRECISION, POINTER :: x_out(:,:)
+     DOUBLE PRECISION, POINTER :: y_out(:,:)
+     DOUBLE PRECISION, POINTER :: zbot_out(:,:)
+     DOUBLE PRECISION, POINTER :: x_xsi(:,:)
+     DOUBLE PRECISION, POINTER :: y_xsi(:,:)
+     DOUBLE PRECISION, POINTER :: x_eta(:,:)
+     DOUBLE PRECISION, POINTER :: y_eta(:,:)
+     DOUBLE PRECISION, POINTER :: hp1(:,:)
+     DOUBLE PRECISION, POINTER :: hp2(:,:)
+     DOUBLE PRECISION, POINTER :: hv1(:,:)
+     DOUBLE PRECISION, POINTER :: hv2(:,:)
+     DOUBLE PRECISION, POINTER :: hu1(:,:)
+     DOUBLE PRECISION, POINTER :: hu2(:,:)
+     DOUBLE PRECISION, POINTER :: gp12(:,:)
+     DOUBLE PRECISION, POINTER :: eddy(:,:)
+     DOUBLE PRECISION, POINTER :: kx_diff(:,:)
+     DOUBLE PRECISION, POINTER :: ky_diff(:,:)
+     DOUBLE PRECISION, POINTER :: chezy(:,:)
 
-     TYPE (block_var), POINTER :: x_grid
-     TYPE (block_var), POINTER :: y_grid
-     TYPE (block_var), POINTER :: zbot_grid
-     TYPE (block_var), POINTER :: x
-     TYPE (block_var), POINTER :: y
-     TYPE (block_var), POINTER :: zbot
-     TYPE (block_var), POINTER :: x_out
-     TYPE (block_var), POINTER :: y_out
-     TYPE (block_var), POINTER :: zbot_out
-     TYPE (block_var), POINTER :: x_xsi
-     TYPE (block_var), POINTER :: y_xsi
-     TYPE (block_var), POINTER :: x_eta
-     TYPE (block_var), POINTER :: y_eta
-     TYPE (block_var), POINTER :: hp1
-     TYPE (block_var), POINTER :: hp2
-     TYPE (block_var), POINTER :: hv1
-     TYPE (block_var), POINTER :: hv2
-     TYPE (block_var), POINTER :: hu1
-     TYPE (block_var), POINTER :: hu2
-     TYPE (block_var), POINTER :: gp12
-     TYPE (block_var), POINTER :: eddy
-     TYPE (block_var), POINTER :: kx_diff
-     TYPE (block_var), POINTER :: ky_diff
-     TYPE (block_var), POINTER :: chezy
-     TYPE (block_var), POINTER :: uvel
-     TYPE (block_var), POINTER :: vvel
-     TYPE (block_var), POINTER :: depth
-     TYPE (block_var), POINTER :: wsel
-     TYPE (block_var), POINTER :: uvel_p
-     TYPE (block_var), POINTER :: vvel_p
-     TYPE (block_var), POINTER :: u_cart
-     TYPE (block_var), POINTER :: v_cart
-     TYPE (block_var), POINTER :: vmag
-     TYPE (block_var), POINTER :: froude_num
-     TYPE (block_var), POINTER :: courant_num
-     TYPE (block_var), POINTER :: mass_source
-     TYPE (block_var), POINTER :: uflux
-     TYPE (block_var), POINTER :: vflux
+
+     DOUBLE PRECISION, POINTER :: uvel(:,:)
+     DOUBLE PRECISION, POINTER :: uvelstar(:,:)
+     DOUBLE PRECISION, POINTER :: uvelold(:,:)
+     DOUBLE PRECISION, POINTER :: uveloldold(:,:)
+     DOUBLE PRECISION, POINTER :: vvel(:,:)
+     DOUBLE PRECISION, POINTER :: vvelstar(:,:)
+     DOUBLE PRECISION, POINTER :: vvelold(:,:)
+     DOUBLE PRECISION, POINTER :: vveloldold(:,:)
+     DOUBLE PRECISION, POINTER :: depth(:,:)
+     DOUBLE PRECISION, POINTER :: depthstar(:,:)
+     DOUBLE PRECISION, POINTER :: depthold(:,:)
+     DOUBLE PRECISION, POINTER :: deptholdold(:,:)
+     DOUBLE PRECISION, POINTER :: wsel(:,:)
+     DOUBLE PRECISION, POINTER :: uvel_p(:,:)
+     DOUBLE PRECISION, POINTER :: vvel_p(:,:)
+     DOUBLE PRECISION, POINTER :: u_cart(:,:)
+     DOUBLE PRECISION, POINTER :: v_cart(:,:)
+     DOUBLE PRECISION, POINTER :: vmag(:,:)
+     DOUBLE PRECISION, POINTER :: froude_num(:,:)
+     DOUBLE PRECISION, POINTER :: courant_num(:,:)
+     DOUBLE PRECISION, POINTER :: mass_source(:,:)
+     DOUBLE PRECISION, POINTER :: uflux(:,:)
+     DOUBLE PRECISION, POINTER :: vflux(:,:)
+
+     ! These are managers for the above variables having values that
+     ! need to be known over multiple processors, either for
+     ! computation or input/output
+
+     TYPE (block_var), POINTER :: bv_x_grid
+     TYPE (block_var), POINTER :: bv_y_grid
+     TYPE (block_var), POINTER :: bv_zbot_grid
+     TYPE (block_var), POINTER :: bv_x
+     TYPE (block_var), POINTER :: bv_y
+     TYPE (block_var), POINTER :: bv_zbot
+     TYPE (block_var), POINTER :: bv_x_out
+     TYPE (block_var), POINTER :: bv_y_out
+     TYPE (block_var), POINTER :: bv_zbot_out
+     TYPE (block_var), POINTER :: bv_x_xsi
+     TYPE (block_var), POINTER :: bv_y_xsi
+     TYPE (block_var), POINTER :: bv_x_eta
+     TYPE (block_var), POINTER :: bv_y_eta
+     TYPE (block_var), POINTER :: bv_hp1
+     TYPE (block_var), POINTER :: bv_hp2
+     TYPE (block_var), POINTER :: bv_hv1
+     TYPE (block_var), POINTER :: bv_hv2
+     TYPE (block_var), POINTER :: bv_hu1
+     TYPE (block_var), POINTER :: bv_hu2
+     TYPE (block_var), POINTER :: bv_gp12
+     TYPE (block_var), POINTER :: bv_eddy
+     TYPE (block_var), POINTER :: bv_kx_diff
+     TYPE (block_var), POINTER :: bv_ky_diff
+     TYPE (block_var), POINTER :: bv_chezy
+     TYPE (block_var), POINTER :: bv_uvel
+     TYPE (block_var), POINTER :: bv_vvel
+     TYPE (block_var), POINTER :: bv_depth
+     TYPE (block_var), POINTER :: bv_wsel
+     TYPE (block_var), POINTER :: bv_uvel_p
+     TYPE (block_var), POINTER :: bv_vvel_p
+     TYPE (block_var), POINTER :: bv_u_cart
+     TYPE (block_var), POINTER :: bv_v_cart
+     TYPE (block_var), POINTER :: bv_vmag
+     TYPE (block_var), POINTER :: bv_froude_num
+     TYPE (block_var), POINTER :: bv_courant_num
+     TYPE (block_var), POINTER :: bv_mass_source
+     TYPE (block_var), POINTER :: bv_uflux
+     TYPE (block_var), POINTER :: bv_vflux
 
      ! these values are only needed locally
 
@@ -177,57 +228,111 @@ CONTAINS
 
     ! grid coordinates, in their various forms
 
-    blk%x_grid => block_var_allocate("x_grid", blk%varbase, const=.TRUE.)
-    blk%y_grid => block_var_allocate("y_grid", blk%varbase, const=.TRUE.)
-    blk%zbot_grid => block_var_allocate("zbot_grid", blk%varbase, const=.TRUE.)
-    blk%x => block_var_allocate("x", blk%varbase, const=.TRUE.)
-    blk%y => block_var_allocate("y", blk%varbase, const=.TRUE.)
-    blk%zbot => block_var_allocate("zbot", blk%varbase, const=.TRUE.)
-    blk%x_out => block_var_allocate("x_out", blk%varbase, const=.TRUE.)
-    blk%y_out => block_var_allocate("y_out", blk%varbase, const=.TRUE.)
-    blk%zbot_out => block_var_allocate("zbot_out", blk%varbase, const=.TRUE.)
+    blk%bv_x_grid => block_var_allocate("x_grid", blk%varbase, const=.TRUE.)
+    blk%bv_y_grid => block_var_allocate("y_grid", blk%varbase, const=.TRUE.)
+    blk%bv_zbot_grid => block_var_allocate("zbot_grid", blk%varbase, const=.TRUE.)
+    blk%bv_x => block_var_allocate("x", blk%varbase, const=.TRUE.)
+    blk%bv_y => block_var_allocate("y", blk%varbase, const=.TRUE.)
+    blk%bv_zbot => block_var_allocate("zbot", blk%varbase, const=.TRUE.)
+    blk%bv_x_out => block_var_allocate("x_out", blk%varbase, const=.TRUE.)
+    blk%bv_y_out => block_var_allocate("y_out", blk%varbase, const=.TRUE.)
+    blk%bv_zbot_out => block_var_allocate("zbot_out", blk%varbase, const=.TRUE.)
 
     ! grid metrics
 
-    blk%x_xsi => block_var_allocate("x_xsi", blk%varbase, const=.TRUE.)
-    blk%y_xsi => block_var_allocate("y_xsi", blk%varbase, const=.TRUE.)
-    blk%x_eta => block_var_allocate("x_eta", blk%varbase, const=.TRUE.)
-    blk%y_eta => block_var_allocate("y_eta", blk%varbase, const=.TRUE.)
-    blk%hp1 => block_var_allocate("hp1", blk%varbase, const=.TRUE.)
-    blk%hp2 => block_var_allocate("hp2", blk%varbase, const=.TRUE.)
-    blk%hu1 => block_var_allocate("hu1", blk%varbase, const=.TRUE.)
-    blk%hu2 => block_var_allocate("hu2", blk%varbase, const=.TRUE.)
-    blk%hv1 => block_var_allocate("hv1", blk%varbase, const=.TRUE.)
-    blk%hv2 => block_var_allocate("hv2", blk%varbase, const=.TRUE.)
-    blk%gp12 => block_var_allocate("gp12", blk%varbase, const=.TRUE.)
+    blk%bv_x_xsi => block_var_allocate("x_xsi", blk%varbase, const=.TRUE.)
+    blk%bv_y_xsi => block_var_allocate("y_xsi", blk%varbase, const=.TRUE.)
+    blk%bv_x_eta => block_var_allocate("x_eta", blk%varbase, const=.TRUE.)
+    blk%bv_y_eta => block_var_allocate("y_eta", blk%varbase, const=.TRUE.)
+    blk%bv_hp1 => block_var_allocate("hp1", blk%varbase, const=.TRUE.)
+    blk%bv_hp2 => block_var_allocate("hp2", blk%varbase, const=.TRUE.)
+    blk%bv_hu1 => block_var_allocate("hu1", blk%varbase, const=.TRUE.)
+    blk%bv_hu2 => block_var_allocate("hu2", blk%varbase, const=.TRUE.)
+    blk%bv_hv1 => block_var_allocate("hv1", blk%varbase, const=.TRUE.)
+    blk%bv_hv2 => block_var_allocate("hv2", blk%varbase, const=.TRUE.)
+    blk%bv_gp12 => block_var_allocate("gp12", blk%varbase, const=.TRUE.)
 
     ! simulation coefficients that can vary spatially
 
-    blk%chezy => block_var_allocate("chezy", blk%varbase, const=.TRUE.)
-    blk%kx_diff => block_var_allocate("kx_diff", blk%varbase, const=.TRUE.)
-    blk%ky_diff => block_var_allocate("ky_diff", blk%varbase, const=.TRUE.)
-    blk%eddy => block_var_allocate("eddy", blk%varbase, const=.TRUE.)
+    blk%bv_chezy => block_var_allocate("chezy", blk%varbase, const=.TRUE.)
+    blk%bv_kx_diff => block_var_allocate("kx_diff", blk%varbase, const=.TRUE.)
+    blk%bv_ky_diff => block_var_allocate("ky_diff", blk%varbase, const=.TRUE.)
+    blk%bv_eddy => block_var_allocate("eddy", blk%varbase, const=.TRUE.)
 
     ! hydrodynamic variables
 
-    blk%uvel => block_var_allocate("uvel", blk%varbase, const=.FALSE.)
-    blk%vvel => block_var_allocate("vvel", blk%varbase, const=.FALSE.)
-    blk%depth => block_var_allocate("depth", blk%varbase, const=.FALSE.)
-    blk%wsel => block_var_allocate("wsel", blk%varbase, const=.TRUE.)
+    blk%bv_uvel => block_var_allocate("uvel", blk%varbase, const=.FALSE.)
+    blk%bv_vvel => block_var_allocate("vvel", blk%varbase, const=.FALSE.)
+    blk%bv_depth => block_var_allocate("depth", blk%varbase, const=.FALSE.)
+    blk%bv_wsel => block_var_allocate("wsel", blk%varbase, const=.TRUE.)
 
-    blk%uvel_p => block_var_allocate("uvel_p", blk%varbase, const=.TRUE.)
-    blk%vvel_p => block_var_allocate("vvel_p", blk%varbase, const=.TRUE.)
-    blk%u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
-    blk%v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
+    blk%bv_uvel_p => block_var_allocate("uvel_p", blk%varbase, const=.TRUE.)
+    blk%bv_vvel_p => block_var_allocate("vvel_p", blk%varbase, const=.TRUE.)
+    blk%bv_u_cart => block_var_allocate("u_cart", blk%varbase, const=.TRUE.)
+    blk%bv_v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
 
-    blk%vmag => block_var_allocate("vmag", blk%varbase, const=.TRUE.)
-    blk%froude_num => block_var_allocate("froude_num", blk%varbase, const=.TRUE.)
-    blk%courant_num => block_var_allocate("courant_num", blk%varbase, const=.TRUE.)
+    blk%bv_vmag => block_var_allocate("vmag", blk%varbase, const=.TRUE.)
+    blk%bv_froude_num => block_var_allocate("froude_num", blk%varbase, const=.TRUE.)
+    blk%bv_courant_num => block_var_allocate("courant_num", blk%varbase, const=.TRUE.)
+    blk%bv_mass_source => block_var_allocate("mass_source", blk%varbase, const=.TRUE.)
 
-    blk%uflux => block_var_allocate("u_flux", blk%varbase, const=.TRUE.)
-    blk%vflux => block_var_allocate("v_flux", blk%varbase, const=.TRUE.)
+    blk%bv_uflux => block_var_allocate("u_flux", blk%varbase, const=.TRUE.)
+    blk%bv_vflux => block_var_allocate("v_flux", blk%varbase, const=.TRUE.)
 
-    ! local variables that do not need to be shared with other processors
+    ! local variables that need to be shared with other processors
+    ! point at the arrays allocated as part of a block_var
+
+    blk%x_grid => blk%bv_x_grid%current
+    blk%y_grid => blk%bv_y_grid%current
+    blk%zbot_grid => blk%bv_zbot_grid%current
+    blk%x => blk%bv_x%current
+    blk%y => blk%bv_y%current
+    blk%zbot => blk%bv_zbot%current
+    blk%x_out => blk%bv_x_out%current
+    blk%y_out => blk%bv_y_out%current
+    blk%zbot_out => blk%bv_zbot_out%current
+    blk%x_xsi => blk%bv_x_xsi%current
+    blk%y_xsi => blk%bv_y_xsi%current
+    blk%x_eta => blk%bv_x_eta%current
+    blk%y_eta => blk%bv_y_eta%current
+    blk%hp1 => blk%bv_hp1%current
+    blk%hp2 => blk%bv_hp2%current
+    blk%hv1 => blk%bv_hv1%current
+    blk%hv2 => blk%bv_hv2%current
+    blk%hu1 => blk%bv_hu1%current
+    blk%hu2 => blk%bv_hu2%current
+    blk%gp12 => blk%bv_gp12%current
+    blk%eddy => blk%bv_eddy%current
+    blk%kx_diff => blk%bv_kx_diff%current
+    blk%ky_diff => blk%bv_ky_diff%current
+    blk%chezy => blk%bv_chezy%current
+
+    blk%uvel => blk%bv_uvel%current
+    blk%uvelstar => blk%bv_uvel%star
+    blk%uvelold => blk%bv_uvel%old
+    blk%uveloldold => blk%bv_uvel%oldold
+    blk%vvel => blk%bv_vvel%current
+    blk%vvelstar => blk%bv_vvel%star
+    blk%vvelold => blk%bv_vvel%old
+    blk%vveloldold => blk%bv_vvel%oldold
+    blk%depth => blk%bv_depth%current
+    blk%depthstar => blk%bv_depth%star
+    blk%depthold => blk%bv_depth%old
+    blk%deptholdold => blk%bv_depth%oldold
+    blk%wsel => blk%bv_wsel%current
+    blk%uvel_p => blk%bv_uvel_p%current
+    blk%vvel_p => blk%bv_vvel_p%current
+    blk%u_cart => blk%bv_u_cart%current
+    blk%v_cart => blk%bv_v_cart%current
+    blk%vmag => blk%bv_vmag%current
+    blk%froude_num => blk%bv_froude_num%current
+    blk%courant_num => blk%bv_courant_num%current
+    blk%mass_source => blk%bv_mass_source%current
+    blk%uflux => blk%bv_uflux%current
+    blk%vflux => blk%bv_vflux%current
+
+    ! these are not shared with other processors, so the "owned"
+    ! window will do
 
     blk%dp => block_array_owned(blk)
     blk%bedshear1 => block_array_owned(blk)
@@ -262,6 +367,7 @@ CONTAINS
 
     blk%buffer => block_buffer(blk)
 
+
   END SUBROUTINE block_allocate_size
 
   ! ----------------------------------------------------------------
@@ -273,41 +379,45 @@ CONTAINS
 
     TYPE (block_struct), INTENT(INOUT) :: blk
 
-    CALL block_var_deallocate(blk%x_grid)
-    CALL block_var_deallocate(blk%y_grid)
-    CALL block_var_deallocate(blk%zbot_grid)
-    CALL block_var_deallocate(blk%x)
-    CALL block_var_deallocate(blk%y)
-    CALL block_var_deallocate(blk%zbot)
-    CALL block_var_deallocate(blk%x_out)
-    CALL block_var_deallocate(blk%y_out)
-    CALL block_var_deallocate(blk%zbot_out)
-    CALL block_var_deallocate(blk%x_xsi)
-    CALL block_var_deallocate(blk%y_xsi)
-    CALL block_var_deallocate(blk%x_eta)
-    CALL block_var_deallocate(blk%y_eta)
-    CALL block_var_deallocate(blk%hp1)
-    CALL block_var_deallocate(blk%hp2)
-    CALL block_var_deallocate(blk%hu1)
-    CALL block_var_deallocate(blk%hu2)
-    CALL block_var_deallocate(blk%hv1)
-    CALL block_var_deallocate(blk%hv2)
-    CALL block_var_deallocate(blk%gp12)
-    CALL block_var_deallocate(blk%chezy)
-    CALL block_var_deallocate(blk%kx_diff)
-    CALL block_var_deallocate(blk%ky_diff)
-    CALL block_var_deallocate(blk%eddy)
-    CALL block_var_deallocate(blk%uvel)
-    CALL block_var_deallocate(blk%vvel)
-    CALL block_var_deallocate(blk%depth)
-    CALL block_var_deallocate(blk%wsel)
-    CALL block_var_deallocate(blk%u_cart)
-    CALL block_var_deallocate(blk%v_cart)
-    CALL block_var_deallocate(blk%u_cart)
-    CALL block_var_deallocate(blk%v_cart)
+    CALL block_var_deallocate(blk%bv_x_grid)
+    CALL block_var_deallocate(blk%bv_y_grid)
+    CALL block_var_deallocate(blk%bv_zbot_grid)
+    CALL block_var_deallocate(blk%bv_x)
+    CALL block_var_deallocate(blk%bv_y)
+    CALL block_var_deallocate(blk%bv_zbot)
+    CALL block_var_deallocate(blk%bv_x_out)
+    CALL block_var_deallocate(blk%bv_y_out)
+    CALL block_var_deallocate(blk%bv_zbot_out)
+    CALL block_var_deallocate(blk%bv_x_xsi)
+    CALL block_var_deallocate(blk%bv_y_xsi)
+    CALL block_var_deallocate(blk%bv_x_eta)
+    CALL block_var_deallocate(blk%bv_y_eta)
+    CALL block_var_deallocate(blk%bv_hp1)
+    CALL block_var_deallocate(blk%bv_hp2)
+    CALL block_var_deallocate(blk%bv_hu1)
+    CALL block_var_deallocate(blk%bv_hu2)
+    CALL block_var_deallocate(blk%bv_hv1)
+    CALL block_var_deallocate(blk%bv_hv2)
+    CALL block_var_deallocate(blk%bv_gp12)
+    CALL block_var_deallocate(blk%bv_chezy)
+    CALL block_var_deallocate(blk%bv_kx_diff)
+    CALL block_var_deallocate(blk%bv_ky_diff)
+    CALL block_var_deallocate(blk%bv_eddy)
+    CALL block_var_deallocate(blk%bv_uvel)
+    CALL block_var_deallocate(blk%bv_vvel)
+    CALL block_var_deallocate(blk%bv_depth)
+    CALL block_var_deallocate(blk%bv_wsel)
+    CALL block_var_deallocate(blk%bv_u_cart)
+    CALL block_var_deallocate(blk%bv_v_cart)
+    CALL block_var_deallocate(blk%bv_u_cart)
+    CALL block_var_deallocate(blk%bv_v_cart)
+    CALL block_var_deallocate(blk%bv_vmag)
+    CALL block_var_deallocate(blk%bv_froude_num)
+    CALL block_var_deallocate(blk%bv_courant_num)
+    CALL block_var_deallocate(blk%bv_mass_source)
+    CALL block_var_deallocate(blk%bv_uflux)
+    CALL block_var_deallocate(blk%bv_vflux)
 
-    DEALLOCATE(blk%uflux)
-    DEALLOCATE(blk%vflux)
     DEALLOCATE(blk%dp)
     DEALLOCATE(blk%bedshear1)
     DEALLOCATE(blk%bedshear2)
