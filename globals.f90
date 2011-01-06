@@ -7,13 +7,15 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Wed Jan  5 21:50:35 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Thu Jan  6 07:35:13 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
 ! MODULE globals
 ! ----------------------------------------------------------------
 MODULE globals
+
+  USE date_time
 
   IMPLICIT NONE
 
@@ -51,6 +53,8 @@ MODULE globals
 
   LOGICAL, PUBLIC, SAVE :: update_depth = .TRUE.
   DOUBLE PRECISION, SAVE :: wind_speed, wind_drag_coeff
+
+  TYPE(datetime_struct), PUBLIC, SAVE :: current_time
 
 CONTAINS
 

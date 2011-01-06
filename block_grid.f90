@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Wed Jan  5 11:45:43 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan  6 09:48:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -387,36 +387,60 @@ CONTAINS
     i=i_index_min
     IF (block_owns_i(blk, i)) THEN
        DO j= jmin, jmax
-          blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i,j-1))
-          blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i,j-1))
-          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i,j-1))
+          IF (j .GT. j_index_min) THEN 
+             blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i,j-1))
+             blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i,j-1))
+             blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i,j-1))
+          ELSE 
+             blk%x(i,j) = blk%x_grid(i,j)
+             blk%y(i,j) = blk%y_grid(i,j)
+             blk%zbot(i,j) = blk%zbot_grid(i,j)
+          END IF
        END DO
     END IF
 
     i= blk%xmax+i_index_extra
     IF (block_owns_i(blk, i)) THEN
        DO j= jmin, jmax
-          blk%x(i,j) = 0.5*(blk%x_grid(i-1,j)+blk%x_grid(i-1,j-1))
-          blk%y(i,j) = 0.5*(blk%y_grid(i-1,j)+blk%y_grid(i-1,j-1))
-          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i-1,j)+blk%zbot_grid(i-1,j-1))
+          IF (j .GT. j_index_min) THEN 
+             blk%x(i,j) = 0.5*(blk%x_grid(i-1,j)+blk%x_grid(i-1,j-1))
+             blk%y(i,j) = 0.5*(blk%y_grid(i-1,j)+blk%y_grid(i-1,j-1))
+             blk%zbot(i,j) = 0.5*(blk%zbot_grid(i-1,j)+blk%zbot_grid(i-1,j-1))
+          ELSE 
+             blk%x(i,j) = blk%x_grid(i-1,j)
+             blk%y(i,j) = blk%y_grid(i-1,j)
+             blk%zbot(i,j) = blk%zbot_grid(i-1,j)
+          END IF
        END DO
     END IF
 
     j=j_index_min
     IF (block_owns_j(blk, j)) THEN
        DO i = imin, imax
-          blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i-1,j))
-          blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i-1,j))
-          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j))
+          IF (i .GT. i_index_min) THEN
+             blk%x(i,j) = 0.5*(blk%x_grid(i,j)+blk%x_grid(i-1,j))
+             blk%y(i,j) = 0.5*(blk%y_grid(i,j)+blk%y_grid(i-1,j))
+             blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j)+blk%zbot_grid(i-1,j))
+          ELSE 
+             blk%x(i,j) = blk%x_grid(i,j)
+             blk%y(i,j) = blk%y_grid(i,j)
+             blk%zbot(i,j) = blk%zbot_grid(i,j)
+          END IF
        END DO
     END IF
 
     j= blk%ymax+j_index_extra
     IF (block_owns_j(blk, j)) THEN
        DO i = imin, imax
-          blk%x(i,j) = 0.5*(blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
-          blk%y(i,j) = 0.5*(blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
-          blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
+          IF (i .GT. i_index_min) THEN
+             blk%x(i,j) = 0.5*(blk%x_grid(i,j-1)+blk%x_grid(i-1,j-1))
+             blk%y(i,j) = 0.5*(blk%y_grid(i,j-1)+blk%y_grid(i-1,j-1))
+             blk%zbot(i,j) = 0.5*(blk%zbot_grid(i,j-1)+blk%zbot_grid(i-1,j-1))
+          ELSE 
+             blk%x(i,j) = blk%x_grid(i,j-1)
+             blk%y(i,j) = blk%y_grid(i,j-1)
+             blk%zbot(i,j) = blk%zbot_grid(i,j-1)
+          END IF
        END DO
     END IF
 

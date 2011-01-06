@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Jan  3 15:31:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan  6 09:00:02 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -77,6 +77,7 @@ SUBROUTINE read_grid()
   IMPLICIT NONE
 
   INTEGER :: b
+  INTEGER :: imax, jmax
 
   IF (max_blocks .GT. 1) THEN
      CALL error_message("Only one block allowed right now", fatal=.TRUE.)
@@ -99,7 +100,11 @@ SUBROUTINE read_grid()
   END DO
 
   CALL block_distribution_report()
-  
+
+  imax = MAXVAL(block(:)%xmax) + 1
+  jmax = MAXVAL(block(:)%ymax) + 1
+
+  ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
 
 END SUBROUTINE read_grid
 

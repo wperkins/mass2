@@ -430,5 +430,809 @@ CONTAINS
 
   END SUBROUTINE fillghost
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE default_hydro_bc
+  ! ----------------------------------------------------------------
+  SUBROUTINE default_hydro_bc(blk)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct) :: blk
+    INTEGER :: x_beg, y_beg, x_end, y_end, i, j, ig
+
+    CALL block_owned_window(blk, x_beg, x_end, y_beg, y_end)
+
+    blk%cell(x_beg,:)%xtype = CELL_BOUNDARY_TYPE
+    blk%cell(x_beg,:)%xbctype = FLOWBC_NONE
+    blk%cell(x_end,:)%xtype = CELL_BOUNDARY_TYPE
+    blk%cell(x_end,:)%xbctype = FLOWBC_NONE
+    blk%cell(:,y_beg)%ytype = CELL_BOUNDARY_TYPE
+    blk%cell(:,y_beg)%ybctype = FLOWBC_NONE
+    blk%cell(:,y_end)%ytype = CELL_BOUNDARY_TYPE
+    blk%cell(:,y_end)%ybctype = FLOWBC_NONE
+
+    DO ig = 1, nghost
+
+       i = x_beg - ig
+       IF (block_owns_i(blk, i)) THEN
+          blk%uvel(i,:) = 0.0
+          blk%vvel(i,:) = blk%vvel(x_beg,:)
+          CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+          blk%eddy(i,:) = blk%eddy(x_beg,:)
+       END IF
+
+       i = blk%xmax + ig
+       IF (block_owns_i(blk, i)) THEN
+          blk%uvel(i,:) = 0.0
+          blk%vvel(i,:) = blk%vvel(x_end,:)
+          CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+          blk%eddy(i,:) = blk%eddy(x_end,:)
+       END IF
+
+       CALL block_var_put(blk%bv_uvel)
+       CALL block_var_put(blk%bv_vvel)
+       CALL ga_sync()
+       CALL block_var_get(blk%bv_uvel)
+       CALL block_var_get(blk%bv_vvel)
+
+       j = y_beg - ig
+       IF (block_owns_j(blk, j)) THEN
+          blk%uvel(:,j) = blk%uvel(:,y_beg)
+          blk%vvel(:,j) = 0.0
+          CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+          blk%eddy(:,j) = blk%eddy(:,y_beg)
+       END IF
+
+       IF (block_owns_j(blk, j)) THEN
+          j = blk%ymax + ig
+          blk%uvel(:,j) = blk%uvel(:,y_end)
+          blk%vvel(:,j) = 0.0
+          CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+          blk%eddy(:,j) = blk%eddy(:,y_end)
+       END IF
+
+       CALL block_var_put(blk%bv_uvel)
+       CALL block_var_put(blk%bv_vvel)
+       CALL ga_sync()
+       CALL block_var_get(blk%bv_uvel)
+       CALL block_var_get(blk%bv_vvel)
+
+    END DO
+
+    CALL block_var_put(blk%bv_eddy)
+    CALL ga_sync()
+    CALL block_var_put(blk%bv_eddy)
+
+    blk%isdead(:,:)%u = .FALSE.
+    blk%isdead(:,:)%v = .FALSE.
+    blk%isdead(:,:)%p = .FALSE.
+    blk%xsource = 0.0
+
+  END SUBROUTINE default_hydro_bc
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE extrapolate_udepth
+  ! ----------------------------------------------------------------
+  SUBROUTINE extrapolate_udepth(blk, i, jmin, jmax, level)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct) :: blk
+    INTEGER, INTENT(IN) :: i, jmin, jmax
+    LOGICAL, INTENT(IN), OPTIONAL :: level
+
+    INTEGER :: ioff
+    LOGICAL :: dolvl
+
+    ioff = 1                      ! by default, do the upstream end.
+    IF (i .GE. 2) ioff = -1
+
+    dolvl = .TRUE.
+    IF (PRESENT(level)) dolvl = level
+
+    IF (block_owns_i(blk, i)) THEN
+       IF (dolvl) THEN
+          ! by level w.s. elevation
+          
+          blk%depth(i,jmin:jmax) = (blk%depth(i+ioff,jmin:jmax) +&
+               & blk%zbot(i+ioff,jmin:jmax)) - blk%zbot(i,jmin:jmax)
+       ELSE 
+          ! true linear extrapolation of w.s. elevation
+          
+          blk%depth(i,jmin:jmax) = (&
+               &(blk%depth(i+ioff,jmin:jmax) + blk%zbot(i+ioff,jmin:jmax)) - &
+               &(blk%depth(i+2*ioff,jmin:jmax) + blk%zbot(i+2*ioff,jmin:jmax)))*&
+               &blk%hu1(i,jmin:jmax)/blk%hu1(i+ioff,jmin:jmax) + &
+               &(blk%depth(i+ioff,jmin:jmax) + blk%zbot(i+ioff,jmin:jmax)) - &
+               &blk%zbot(i,jmin:jmax)
+       END IF
+
+       IF (do_wetdry) THEN
+          WHERE (blk%depth(i,jmin:jmax) .LT. dry_zero_depth) &
+               &blk%depth(i,jmin:jmax) = dry_zero_depth
+       END IF
+    END IF
+  END SUBROUTINE extrapolate_udepth
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE extrapolate_vdepth
+  ! ----------------------------------------------------------------
+  SUBROUTINE extrapolate_vdepth(blk, imin, imax, j, level)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct) :: blk
+    INTEGER, INTENT(IN) :: imin, imax, j
+    LOGICAL, INTENT(IN), OPTIONAL :: level
+
+    INTEGER :: joff
+    LOGICAL :: dolvl
+
+    joff = 1                      ! by default, do the upstream end.
+    IF (j .GE. 2) joff = -1
+
+    dolvl = .TRUE.
+    IF (PRESENT(level)) dolvl = level
+
+    IF (block_owns_j(blk, j)) THEN
+       IF (dolvl) THEN
+          ! by level w.s. elevation
+          
+          blk%depth(imin:imax,j) = (blk%depth(imin:imax,j+joff) +&
+               & blk%zbot(imin:imax,j+joff)) - blk%zbot(imin:imax,j)
+       ELSE 
+          ! true linear extrapolation of w.s. elevation
+          
+          blk%depth(imin:imax,j) = (&
+               &(blk%depth(imin:imax,j+joff) + blk%zbot(imin:imax,j+joff)) - &
+               &(blk%depth(imin:imax,j+2*joff) + blk%zbot(imin:imax,j+2*joff)))*&
+               &blk%hv2(imin:imax,j)/blk%hv2(imin:imax,j+joff) + &
+               &(blk%depth(imin:imax,j+joff) + blk%zbot(imin:imax,j+joff)) - &
+               &blk%zbot(imin:imax,j)
+       END IF
+       
+       IF (do_wetdry) THEN
+          WHERE (blk%depth(imin:imax,j) .LT. dry_zero_depth) &
+               &blk%depth(imin:imax,j) = dry_zero_depth
+       END IF
+    END IF
+  END SUBROUTINE extrapolate_vdepth
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE apply_hydro_bc
+  ! ----------------------------------------------------------------
+  SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct) :: blk
+    TYPE (bc_spec_struct) :: bc
+    LOGICAL, INTENT(IN) :: dsonly
+    LOGICAL, INTENT(INOUT) :: ds_flux_given
+
+    INTEGER :: x_end, y_end, i, j, k, jj, ii
+    INTEGER :: i_beg, i_end, j_beg, j_end
+    DOUBLE PRECISION :: input_total
+
+    CHARACTER (LEN=1024) :: buf
+
+    x_end = blk%xmax
+    y_end = blk%ymax
+
+    ! set default boundary conditions (zero flux)
+
+    IF (.NOT. dsonly) ds_flux_given = .FALSE.
+
+
+    ! Get boundary condition values from the table. 
+
+    SELECT CASE(bc%bc_type)
+    CASE("TABLE")
+
+       SELECT CASE (bc%bc_kind)
+       CASE ("ELEVELO")
+          CALL table_interp(current_time%time, bc%table_num, table_input, &
+               &2*bc%num_cell_pairs)
+       CASE DEFAULT
+          CALL table_interp(current_time%time, bc%table_num, table_input, &
+               &bc%num_cell_pairs)
+       END SELECT
+    CASE ("SOURCE", "SINK")
+       CALL table_interp(current_time%time,&
+            & bc%table_num,&
+            & table_input, 1)
+
+    CASE ("BLOCK")
+
+       ! FIXME: CALL fillghost_hydro(blk, block(bc%con_block), bc)
+       RETURN
+
+    END SELECT
+
+    ! Assign values to specified boundary
+
+    SELECT CASE(bc%bc_loc)
+
+       ! ----------------------------------------------------------------
+       ! UPSTREAM (US)
+       ! ----------------------------------------------------------------
+    CASE("US")
+       i=1
+       SELECT CASE(bc%bc_type)
+       CASE("TABLE")
+
+          SELECT CASE(bc%bc_kind)
+          CASE("FLUX")
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end = bc%end_cell(j)+1
+                ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level=.FALSE.)
+                CALL compute_uflow_area(blk, i, j_beg, j_end, inlet_area, input_total)
+                DO jj = j_beg, j_end
+                   IF (inlet_area(jj) .GT. 0.0) THEN
+                      blk%uvel(i,jj) = table_input(j)/input_total
+                      IF (blk%uvel(i,jj) .GT. 0) THEN
+                         blk%vvel(i, jj-1) = 0.0
+                         blk%vvel(i, jj) = 0.0
+                      ELSE 
+                         blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                         blk%vvel(i, jj) = blk%vvel(i+1, jj)
+                      END IF
+                   ELSE 
+                      blk%uvel(i,jj) = 0.0
+                      blk%vvel(i,jj-1) = blk%vvel(i+1, jj-1)
+                      blk%vvel(i,jj) = blk%vvel(i+1, jj)
+                   END IF
+                END DO
+                blk%uvelstar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%uvelold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
+                blk%vvelstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+                blk%vvelold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+                blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_FLOW
+                IF (dsonly) blk%lud(i+1,j) = 0.0
+             END DO
+
+          CASE("VELO")
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end = bc%end_cell(j)+1
+                ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level=.FALSE.)
+                DO jj = j_beg, j_end
+                   blk%uvel(i,jj) = table_input(j)
+                   IF (blk%uvel(i,jj) .GT. 0.0) THEN
+                      blk%vvel(i, jj-1) = 0.0
+                      blk%vvel(i, jj) = 0.0
+                   ELSE 
+                      blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                      blk%vvel(i, jj) = blk%vvel(i+1, jj)
+                   END IF
+                END DO
+                blk%uvelstar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%uvelold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
+                blk%vvelstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+                blk%vvelold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+                blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_VEL
+                IF (dsonly) blk%lud(i+1,j) = 0.0
+             END DO
+
+          CASE("ELEV")
+             IF (dsonly) RETURN
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end = bc%end_cell(j)+1
+                DO jj = j_beg, j_end
+                   blk%dp(i,jj) = 0.0
+                   blk%depth(i,jj) = 2*table_input(j) - &
+                        &(blk%depth(i+1,jj) + blk%zbot(i+1,jj)) - blk%zbot(i,jj)
+                   IF (do_wetdry) blk%depth(i,jj) =  &
+                        &MAX(blk%depth(i,jj), dry_zero_depth)
+                END DO
+                blk%depthstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%uvel(i,j_beg:j_end) = blk%uvel(i+1,j_beg:j_end)
+                blk%vvel(i,j_beg-1:j_end) = blk%vvel(i+1,j_beg-1:j_end)
+                blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_ELEV
+             END DO
+          CASE ("ELEVELO")
+             IF (dsonly) RETURN
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end = bc%end_cell(j)+1
+                DO jj = j_beg, j_end
+                   blk%depth(i,jj) = 2*table_input(j*2-1) - &
+                        &(blk%depth(i+1,jj) + blk%zbot(i+1,jj)) - blk%zbot(i,jj)
+                   blk%uvel(i,jj) = table_input(j*2)
+                   IF (blk%uvel(i,jj) .GT. 0.0) THEN
+                      blk%vvel(i, jj-1) = 0.0
+                      blk%vvel(i,jj) = 0.0
+                   ELSE
+                      blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
+                      blk%vvel(i,jj) = blk%vvel(i+1,jj)
+                   END IF
+                END DO
+                blk%depthstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%uvelstar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%uvelold(i,j_beg:j_end) =  blk%uvel(i,j_beg:j_end)
+                blk%vvelstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+                blk%vvelold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+                blk%cell(i+1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i+1,j_beg:j_end)%xbctype = FLOWBC_BOTH
+             END DO
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+       CASE ("ZEROG")
+          GOTO 100
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+
+       ! ----------------------------------------------------------------
+       ! DOWNSTREAM (DS)
+       ! ----------------------------------------------------------------
+    CASE("DS")
+       i = x_end+1
+       SELECT CASE(bc%bc_type)
+       CASE("TABLE")
+
+          SELECT CASE(bc%bc_kind)
+
+             !--------------------------------------------------------------------------
+             !*** reusing inlet_area and inlet_flow variables here for outlet conditions
+
+          CASE("FLUX") ! can specify the outflow discharge; need to convert to velocity
+             ds_flux_given = .TRUE.
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end = bc%end_cell(j)+1
+
+                ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
+                CALL compute_uflow_area(blk, i, j_beg, j_end, inlet_area, input_total)
+
+                DO jj=j_beg, j_end
+                   IF (inlet_area(jj) .GT. 0.0) THEN
+                      blk%uvel(i,jj) =  table_input(j)/input_total
+                   ELSE 
+                      blk%uvel(i,jj) = 0.0
+                   END IF
+                END DO
+                blk%uvelstar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%uvelold(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
+                blk%vvelstar(i,j_beg:j_end) = blk%vvel(i,j_beg:j_end)
+                blk%vvelold(i,j_beg:j_end)  = blk%vvel(i,j_beg:j_end)
+                blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_FLOW
+                IF (dsonly) blk%lud(i-1,j_beg:j_end) = 0.0
+             END DO
+
+          CASE("VELO") ! can specifiy the velocity (e.g, zero flow)
+             ds_flux_given = .TRUE.
+
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end	 = bc%end_cell(j)+1
+                ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
+                blk%uvel(i,j_beg:j_end) = table_input(j)
+                blk%uvelstar(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%uvelold(i,j_beg:j_end) = blk%uvel(i,j_beg:j_end)
+                blk%vvel(i, j_beg-1:j_end) =  blk%vvel(i-1, j_beg-1:j_end)
+                blk%vvelstar(i,j_beg-1:j_end) = blk%vvel(i,j_beg-1:j_end)
+                blk%vvelold(i,j_beg-1:j_end)  = blk%vvel(i,j_beg-1:j_end)
+                blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_VEL
+                IF (dsonly) blk%lud(i-1,j_beg:j_end) = 0.0
+             END DO
+
+          CASE("ELEV")
+             IF (dsonly) RETURN
+             DO j=1,bc%num_cell_pairs
+                j_beg = bc%start_cell(j)+1
+                j_end	 = bc%end_cell(j)+1
+                DO jj = j_beg, j_end
+                   blk%dp(i,jj) = 0.0
+                   blk%depth(i,jj) = 2*table_input(j) - &
+                        &(blk%depth(i-1,jj) + blk%zbot(i-1,jj)) - blk%zbot(i,jj)
+                   ! blk%depth(i,jj) = table_input(j) - blk%zbot(i,jj)
+                   IF (do_wetdry) blk%depth(i,jj) =  &
+                        &MAX(blk%depth(i,jj), dry_zero_depth)
+                END DO
+                blk%depthstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
+                blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
+                blk%vvel(i, j_beg-1:j_end) = blk%vvel(i-1, j_beg-1:j_end)
+                blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+                blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_ELEV
+             END DO
+          CASE ("ELEVELO")
+             GOTO 100
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+
+       CASE ("ZEROG")
+          DO j=1,bc%num_cell_pairs
+             j_beg = bc%start_cell(j)+1
+             j_end = bc%end_cell(j)+1
+             ! CALL extrapolate_udepth(blk, i, j_beg, j_end, level = .FALSE.)
+             blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
+             blk%vvel(i, j_beg:j_end) = blk%vvel(i-1, j_beg:j_end)
+             blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
+             blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_ZEROG
+          END DO
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+
+       ! ----------------------------------------------------------------
+       ! RIGHT BANK (RB)
+       ! ----------------------------------------------------------------
+    CASE("RB")
+       j = 1
+       SELECT CASE(bc%bc_type)
+       CASE("TABLE")
+          SELECT CASE(bc%bc_kind)
+          CASE("FLUX")
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end = bc%end_cell(k)+1
+                ! CALL extrapolate_vdepth(blk, i_beg, i_end, j, level=.FALSE.)
+                CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, input_total)
+                DO ii = i_beg, i_end
+                   IF (inlet_area(ii) .GT. 0.0) THEN
+                      blk%vvel(ii,j) = table_input(k)/input_total
+                      IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                         blk%uvel(ii,j) = 0.0
+                      ELSE
+                         blk%uvel(ii,j) =  blk%uvel(ii,j+1)
+                      END IF
+                   ELSE 
+                      blk%vvel(ii,j) = 0.0
+                      blk%uvel(ii,j) = blk%uvel(ii,j+1)
+                   END IF
+                END DO
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_FLOW
+             END DO
+          CASE("VELO")
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end = bc%end_cell(k)+1
+                CALL extrapolate_vdepth(blk, i_beg, i_end, j, level = .FALSE.)
+                DO ii = i_beg, i_end
+                   blk%vvel(ii,j) = table_input(k)
+                   IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                      blk%uvel(ii,j) = 0.0
+                   ELSE 
+                      blk%uvel(ii,j) = blk%uvel(ii,j+1)
+                   END IF
+                END DO
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_VEL
+             END DO
+          CASE("ELEV")
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end = bc%end_cell(k)+1
+                DO ii = i_beg, i_end
+                   blk%dp(ii,j) = 0.0
+                   blk%depth(ii,j) = 2*table_input(k) - &
+                        &(blk%depth(ii,j+1) + blk%zbot(ii,j+1)) - blk%zbot(ii,j)
+                   IF (do_wetdry) blk%depth(ii,j) =  &
+                        &MAX(blk%depth(ii,j), dry_zero_depth)
+                END DO
+                blk%depthstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j+1)
+                blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j+1)
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_ELEV
+             END DO
+
+          CASE ("ELEVELO")
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end = bc%end_cell(k)+1
+                DO ii = i_beg, i_end
+                   blk%depth(ii,j) = 2*table_input(k*2-1) - &
+                        &(blk%depth(i,j+1) + blk%zbot(ii,j+1)) - blk%zbot(ii,j)
+                   blk%vvel(ii,j) = table_input(k*2)
+                END DO
+                blk%depthstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j+1)
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j+1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j+1)%ybctype = FLOWBC_BOTH
+             END DO
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+
+       ! ----------------------------------------------------------------
+       ! LEFT BANK (LB)
+       ! ----------------------------------------------------------------
+    CASE("LB")
+       j = y_end + 1
+       SELECT CASE(bc%bc_type)
+       CASE("TABLE")
+          SELECT CASE(bc%bc_kind)
+
+          CASE("FLUX")
+
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end = bc%end_cell(k)+1
+                CALL extrapolate_vdepth(blk, i_beg, i_end, j, level=.FALSE.)
+                CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, input_total)
+                DO ii = i_beg, i_end
+                   IF (inlet_area(ii) .GT. 0.0) THEN
+                      blk%vvel(ii,j) = table_input(k)/input_total
+                      IF (blk%vvel(ii,j) .LT. 0.0) THEN
+                         blk%uvel(ii,j) = 0.0
+                      ELSE 
+                         blk%uvel(ii,j) = blk%uvel(ii,j-1)
+                      END IF
+                   ELSE 
+                      blk%vvel(ii,j) = 0.0
+                   END IF
+                END DO
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_FLOW
+             END DO
+
+          CASE("VELO")
+
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end	 = bc%end_cell(k)+1
+                CALL extrapolate_vdepth(blk, i_beg, j_end, j, level = .FALSE.)
+                DO ii = i_beg, i_end
+                   blk%vvel(ii, j) = table_input(k)
+                   IF (blk%vvel(ii, j) .LT. 0.0) THEN
+                      blk%uvel(ii, j) = 0.0
+                   ELSE 
+                      blk%uvel(ii, j) = blk%uvel(ii, j-1)
+                   END IF
+                END DO
+                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%uvelold(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
+                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
+                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
+                blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_VEL
+             END DO
+
+          CASE("ELEV")
+             DO k=1,bc%num_cell_pairs
+                i_beg = bc%start_cell(k)+1
+                i_end	 = bc%end_cell(k)+1
+                DO ii = i_beg, i_end
+                   blk%dp(ii,j) = 0.0
+                   blk%depth(ii,j) = 2*table_input(k) - &
+                        &(blk%depth(ii,j-1) + blk%zbot(ii,j-1)) - blk%zbot(ii,j)
+                   ! blk%depth(ii,j) = table_input(k) - blk%zbot(ii,j)
+                   IF (do_wetdry) blk%depth(ii,j) =  &
+                        &MAX(blk%depth(ii,j), dry_zero_depth)
+                END DO
+                blk%depthstar(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%depthold(i_beg:i_end,j) = blk%depth(i_beg:i_end,j)
+                blk%uvel(i_beg-1:i_end,j) = blk%uvel(i_beg-1:i_end,j-1)
+                blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j-1)
+                blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+                blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_ELEV
+             END DO
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+       CASE ("ZEROG")
+          DO k=1,bc%num_cell_pairs
+             i_beg = bc%start_cell(j)+1
+             i_end = bc%end_cell(j)+1
+             CALL extrapolate_vdepth(blk, i_beg, i_end, j, level = .FALSE.)
+             blk%uvel(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j-1)
+             blk%vvel(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j-1)
+             blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
+             blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_ZEROG
+          END DO
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+
+    CASE ("IN") 
+       IF (dsonly) RETURN
+       SELECT CASE(bc%bc_type)
+
+       CASE ("SOURCE", "SINK")
+
+          ! if this is labeled as a "SINK"
+          ! negate whatever is in the table
+
+          SELECT  CASE(bc%bc_type)
+          CASE ("SINK") 
+             table_input = -table_input
+          END SELECT
+
+          ! an "ALL" extent applies to the
+          ! entire block (it would be nice to do
+          ! this when the bcspecs are read
+
+          SELECT CASE (bc%bc_extent)
+          CASE ("ALL")
+             bc%start_cell(1) = 1
+             bc%end_cell(1) = x_end - 1
+             bc%start_cell(2) = 1
+             bc%end_cell(2) = y_end - 1
+          END SELECT
+
+          SELECT CASE (bc%bc_kind)
+          CASE("FLUX")
+
+             ! if the source is a flux, we find the
+             ! total area over which it applies
+
+             input_total = 0.0
+             DO i = bc%start_cell(1), bc%end_cell(1)
+                DO j =  bc%start_cell(2), bc%end_cell(2)
+                   IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
+                        &input_total = input_total + blk%hp1(i+1,j+1)*blk%hp2(i+1,j+1)
+                END DO
+             END DO
+          CASE ("VELO")
+             ! if a rate is specified, do not alter
+             ! the table value
+             input_total = 1.0
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+
+          DO i = bc%start_cell(1), bc%end_cell(1)
+             DO j = bc%start_cell(2), bc%end_cell(2)
+                IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
+                     &blk%xsource(i+1, j+1) = table_input(1)/input_total
+             END DO
+          END DO
+
+
+       CASE ("WALL")
+          SELECT CASE(bc%bc_kind)
+
+             ! a UVEL wall blocks the longitudinal
+             ! flow at the upstream edge of the
+             ! specified cells.
+          CASE ("UVEL")
+
+             i = bc%con_block
+             DO k = 1, bc%num_cell_pairs
+                DO j = bc%start_cell(k),bc%end_cell(k)
+                   blk%isdead(i,j+1)%u = .TRUE.
+                END DO
+             END DO
+
+          CASE ("VVEL")
+
+             j = bc%con_block + 1
+             DO k = 1, bc%num_cell_pairs
+                DO i = bc%start_cell(k),bc%end_cell(k)
+                   blk%isdead(i+1,j)%v = .TRUE.
+                END DO
+             END DO
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
+
+       CASE ("DEAD")
+
+          DO i = bc%start_cell(1), bc%end_cell(1)
+             DO j = bc%start_cell(2), bc%end_cell(2)
+                blk%isdead(i+1, j+1)%p = .TRUE.
+                blk%isdead(i  , j+1)%u = .TRUE.
+                blk%isdead(i+1, j+1)%u = .TRUE.
+                blk%isdead(i+1, j  )%v = .TRUE.
+                blk%isdead(i+1, j+1)%v = .TRUE.
+             END DO
+          END DO
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+    CASE DEFAULT
+       GOTO 100
+    END SELECT
+
+    RETURN
+100 CONTINUE
+    WRITE(buf,*) " apply_hydro_bc: cannot handle: ", &
+         &TRIM(bc%bc_loc), " ", TRIM(bc%bc_type), " ", &
+         &TRIM(bc%bc_kind), " "
+    CALL error_message(buf, fatal=.TRUE.)
+  END SUBROUTINE apply_hydro_bc
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE compute_uflow_area
+  ! ----------------------------------------------------------------
+  SUBROUTINE compute_uflow_area(blk, i, jmin, jmax, area, total)
+
+    IMPLICIT NONE
+    TYPE (block_struct) :: blk
+    INTEGER, INTENT(IN) :: i, jmin, jmax
+    DOUBLE PRECISION, INTENT(OUT) :: area(:), total
+
+    INTEGER :: ioff, j
+    DOUBLE PRECISION :: d, w
+
+    ioff = 1                      ! by default, do the upstream end.
+    IF (i .GE. 2) ioff = -1
+
+    area = 0.0
+    DO j = jmin, jmax
+       d = 0.5*(blk%depth(i,j) + blk%depth(i+ioff,j))
+       w = blk%hu2(i,j)
+       IF (do_wetdry .AND. blk%depth(i,j) .LE. dry_depth) THEN
+          area(j) = 0.0
+       ELSE 
+          area(j) = d*w
+       END IF
+    END DO
+    total = SUM(area)
+  END SUBROUTINE compute_uflow_area
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE compute_vflow_area
+  ! ----------------------------------------------------------------
+  SUBROUTINE compute_vflow_area(blk, imin, imax, j, area, total)
+
+    IMPLICIT NONE
+    TYPE (block_struct) :: blk
+    INTEGER, INTENT(IN) :: imin, imax, j
+    DOUBLE PRECISION, INTENT(OUT) :: area(:), total
+
+    INTEGER :: joff, i
+    DOUBLE PRECISION :: d, w
+
+    joff = 1                      ! by default, do the right bank
+    IF (j .GE. 2) joff = -1
+
+    area = 0.0
+    DO i = imin, imax
+       w = blk%hv1(i,j)
+       d = 0.5*(blk%depth(i,j) + blk%depth(i,j+joff))
+       IF (do_wetdry .AND. d .LE. dry_depth) THEN
+          area(i) = 0.0
+       ELSE 
+          area(i) = d*w
+       END IF
+    END DO
+    total = SUM(area)
+  END SUBROUTINE compute_vflow_area
+
 
 END MODULE block_hydro_bc

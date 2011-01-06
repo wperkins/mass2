@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Wed Jan  5 21:52:40 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Thu Jan  6 08:21:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -18,7 +18,9 @@
 ! ----------------------------------------------------------------
 MODULE hydro_solve
 
+  USE config
   USE block_hydro
+  USE block_hydro_bc
   USE differencing
   USE solver_module
 
@@ -27,6 +29,148 @@ MODULE hydro_solve
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
 CONTAINS
+
+  !#################################################################################
+  !---------------------------------------------------------------------------------
+  !
+  ! SOLUTION OF THE MOMENTUM, DEPTH CORRECTION, AND SCALAR TRANSPORT EQUATIONS
+  !
+  !---------------------------------------------------------------------------------
+  SUBROUTINE hydro()
+
+    IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
+
+    INTEGER :: x_beg, y_beg, x_end, y_end, num_bc, i, j
+    LOGICAL :: alldry
+    DOUBLE PRECISION :: apo(1), maxx_mass
+    LOGICAL :: ds_flux_given
+    INTEGER :: iblock
+    INTEGER :: iteration
+
+    INTEGER :: imin, imax, jmin, jmax
+
+    ! Assign U,V,D BCs for this time
+    ! set U boundary conditions for this time
+
+    !----------------------------------------------------------------------------
+    ! iteration loop at a fixed time using prescribed U (or Discharge),V,D BCs
+
+    DO iteration = 1,number_hydro_iterations
+
+       !**** BLOCK LOOP HERE *****
+       DO iblock = 1,max_blocks 
+
+          CALL block_owned_window(block(iblock), imin, imax, jmin, jmax)
+
+          ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
+
+          CALL default_hydro_bc(block(iblock))
+
+          ! loop over the total number of bc specifications
+          DO num_bc = 1, block_bc(iblock)%num_bc
+             CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
+                  &.FALSE., ds_flux_given)
+          END DO
+          !-------------------------------------------------------------------------
+
+
+          x_beg = 2
+          y_beg = 2
+          x_end = block(iblock)%xmax
+          y_end = block(iblock)%ymax
+
+          ! Turn off cells that are dry, and
+          ! check to see if the entire block is
+          ! dry.  If it is, there is really no
+          ! point in doing these calculations.
+
+          alldry = .FALSE.
+          IF (do_wetdry) THEN
+             alldry = .TRUE.
+             DO i=1,x_end+1
+                DO j=1,y_end+1
+                   IF (block_uses(block(iblock), i, j)) THEN
+                      IF (block(iblock)%isdry(i,j)) THEN
+                         block(iblock)%isdead(i  , j  )%p = .TRUE.
+                         IF (block_uses(block(iblock), i-1, j)) &
+                              &block(iblock)%isdead(i-1, j  )%u = .TRUE.
+                         block(iblock)%isdead(i  , j  )%u = .TRUE.
+                         IF (block_uses(block(iblock), i, j-1)) &
+                              &block(iblock)%isdead(i  , j-1)%v = .TRUE.
+                         block(iblock)%isdead(i  , j  )%v = .TRUE.
+                      ELSE 
+                         alldry = .FALSE.
+                      END IF
+                   END IF
+                END DO
+             END DO
+          END IF
+
+          CALL uvel_solve(block(iblock), delta_t)
+
+          CALL vvel_solve(block(iblock), delta_t)
+
+          CALL depth_solve(block(iblock), delta_t)
+
+!!$          IF(debug)THEN
+!!$             WRITE(output_iounit,*)"U* Velocity (before depth correction)"
+!!$             DO i=1,block(iblock)%xmax
+!!$                WRITE(output_iounit,1000)block(iblock)%ustar(i,:)
+!!$                WRITE(output_iounit,*)
+!!$             END DO
+!!$
+!!$             WRITE(output_iounit,*)" V* Velocity (before depth correction)"
+!!$             DO i=1,block(iblock)%xmax
+!!$                WRITE(output_iounit,1000)block(iblock)%vstar(i,:)
+!!$                WRITE(output_iounit,*)
+!!$             END DO
+!!$          ENDIF
+!!$1000      FORMAT(50(f12.4,2x))
+
+          CALL correct_velocity(block(iblock))
+
+          CALL depth_check(block(iblock), current_time%date_string, current_time%time_string)
+
+          IF (do_wetdry .AND. iterate_wetdry)&
+               &CALL check_wetdry(block(iblock))
+
+          ! Calculate bed shear stress here if it is needed for eddy
+          ! viscosity calculation
+          CALL bedshear(block(iblock))
+
+          ! If specified, compute eddy viscosity
+          IF (do_calc_eddy) THEN
+             CALL calc_eddy_viscosity(block(iblock))
+          END IF
+
+       END DO		! block loop end
+
+       !-----------------------------------------------------------------------------------
+       ! check to see if mass source has been reduced below tolerance and break out of loop
+
+       maxx_mass = 0
+
+       DO iblock=1,max_blocks
+          apo(1) = SUM(ABS(block(iblock)%mass_source(imin:imax, jmin:jmax)))
+          CALL ga_dgop(MT_DBL, apo, '+')
+          IF(apo(1) >= maxx_mass) maxx_mass = apo(1)
+       END DO
+       IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
+
+       !------------------------------------------------------------------------
+
+    END DO    ! internal time iteration loop for momentum, depth correction equations
+
+    IF (do_wetdry .AND. .NOT. iterate_wetdry) THEN
+       DO iblock = 1, max_blocks
+          CALL check_wetdry(block(iblock))
+       END DO
+    END IF
+
+  END SUBROUTINE hydro
 
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION harmonic
@@ -46,16 +190,17 @@ CONTAINS
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE uvel_solve
+  ! (Collective)
   ! ----------------------------------------------------------------
-  SUBROUTINE uvel_solve(blkidx, blk, delta_t)
+  SUBROUTINE uvel_solve(blk, delta_t)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blkidx
     TYPE(block_struct), INTENT(INOUT) :: blk
     DOUBLE PRECISION, INTENT(IN) :: delta_t
 
 
+    INTEGER :: blkidx
 
     DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
     DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
@@ -93,6 +238,7 @@ CONTAINS
          &bp(1:blk%xmax + 1, 1:blk%ymax + 1), &
          &source(1:blk%xmax + 1, 1:blk%ymax + 1)
 
+    blkidx = blk%index
     CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
     x_beg = 2
@@ -375,24 +521,29 @@ CONTAINS
        END DO
     END DO
 
-    junk =  solver(blkidx, SOLVE_U, x_beg, x_end, y_beg, y_end, scalar_sweep, &
-         &ap(x_beg:x_end, y_beg:y_end), aw(x_beg:x_end, y_beg:y_end), &
-         &ae(x_beg:x_end, y_beg:y_end), as(x_beg:x_end, y_beg:y_end), &
-         &an(x_beg:x_end, y_beg:y_end), bp(x_beg:x_end, y_beg:y_end), &
-         &blk%uvelstar(x_beg:x_end,y_beg:y_end))
+    junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
+         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+         &blk%uvelstar(imin:imax,jmin:jmax))
+
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
 
   END SUBROUTINE uvel_solve
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE vvel_solve
   ! ----------------------------------------------------------------
-  SUBROUTINE vvel_solve(blkidx, blk, delta_t)
+  SUBROUTINE vvel_solve(blk, delta_t)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blkidx
     TYPE (block_struct), INTENT(INOUT) :: blk
     DOUBLE PRECISION, INTENT(IN) :: delta_t
+
+    INTEGER :: blkidx
 
     DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
     DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
@@ -431,6 +582,7 @@ CONTAINS
 
     LOGICAL :: slip
 
+    blkidx = blk%index
     CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
     x_beg = 2
@@ -703,19 +855,25 @@ CONTAINS
 
     ! apply zero flow conditions on sides
 
-    junk = solver(blkidx, SOLVE_V, x_beg, x_end, y_beg, y_end, scalar_sweep, &
-         &ap(x_beg:x_end, y_beg:y_end), aw(x_beg:x_end, y_beg:y_end), &
-         &ae(x_beg:x_end, y_beg:y_end), as(x_beg:x_end, y_beg:y_end), &
-         &an(x_beg:x_end, y_beg:y_end), bp(x_beg:x_end, y_beg:y_end), &
-         &blk%vvelstar(x_beg:x_end,y_beg:y_end))
+    junk = solver(blkidx, SOLVE_V, imin, imax, jmin, jmax, scalar_sweep, &
+         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+         &blk%vvelstar(imin:imax,jmin:jmax))
+
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
 
   END SUBROUTINE vvel_solve
 
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE linear_friction Linearization of the friction term.
-  ! ustar is the (previous) velocity in the direction we are interested
-  ! in; vstar is the (previous) velocity in the other direction 
+  ! SUBROUTINE linear_friction 
+  !
+  ! Linearization of the friction term.  ustar is the (previous)
+  ! velocity in the direction we are interested in; vstar is the
+  ! (previous) velocity in the other direction
   !
   ! WARNING: values of sc and sp are intentionally incremented.
   ! ----------------------------------------------------------------
@@ -832,19 +990,22 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE depth_solve
   ! ----------------------------------------------------------------
-  SUBROUTINE depth_solve(blkidx, blk, delta_t)
+  SUBROUTINE depth_solve(blk, delta_t)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blkidx
     TYPE(block_struct), INTENT(INOUT) :: blk
     DOUBLE PRECISION, INTENT(IN) :: delta_t
     INTEGER :: x_beg, y_beg, x_end, y_end, i, j, junk
+
+    INTEGER :: blkidx
 
     DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
     DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
     DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
     DOUBLE PRECISION :: cpo								! coefficients in discretization eqns
+
+    INTEGER :: imin, imax, jmin, jmax
 
     DOUBLE PRECISION :: &
          &cp(1:blk%xmax + 1, 1:blk%ymax + 1), &
@@ -854,10 +1015,17 @@ CONTAINS
          &cs(1:blk%xmax + 1, 1:blk%ymax + 1), &
          &bp(1:blk%xmax + 1, 1:blk%ymax + 1)
 
-    CALL block_owned_window(blk, x_beg, x_end, y_beg, y_end)
+    blkidx = blk%index
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+
+    x_beg = 2
+    x_end = blk%xmax
+    y_beg = 2
+    y_end = blk%ymax
 
     DO i=x_beg,x_end
        DO j=y_beg,y_end
+          IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hp1(i,j)
           hp2 = blk%hp2(i,j)
           he1 = blk%hu1(i,j)
@@ -1012,23 +1180,27 @@ CONTAINS
        END DO
     END DO
 
-    junk = solver(blkidx, SOLVE_DP, x_beg, x_end, y_beg, y_end, depth_sweep, &
-         &cp(x_beg:x_end,y_beg:y_end), cw(x_beg:x_end,y_beg:y_end), &
-         &ce(x_beg:x_end,y_beg:y_end), cs(x_beg:x_end,y_beg:y_end), &
-         &cn(x_beg:x_end,y_beg:y_end), &
-         &bp(x_beg:x_end,y_beg:y_end), &
-         &blk%dp(x_beg:x_end,y_beg:y_end))
+    junk = solver(blkidx, SOLVE_DP, imin, imax, jmin, jmax, depth_sweep, &
+         &cp(imin:imax,jmin:jmax), cw(imin:imax,jmin:jmax), &
+         &ce(imin:imax,jmin:jmax), cs(imin:imax,jmin:jmax), &
+         &cn(imin:imax,jmin:jmax), &
+         &bp(imin:imax,jmin:jmax), &
+         &blk%dp(imin:imax,jmin:jmax))
 
     ! compute updated depth with some underrelaxation
     ! depth = rel*depth_new + (1 - rel)*depth_old
     IF(update_depth)THEN
-       DO i=x_beg,x_end
-          DO j=y_beg,y_end
+       DO i=imin,imax
+          DO j=jmin,jmax
              blk%depth(i,j) = blk%depth(i,j) + relax_dp*blk%dp(i,j)
              blk%wsel(i,j) = blk%depth(i,j) + blk%zbot(i,j)
           END DO
        END DO
     ENDIF
+
+    CALL block_var_put(blk%bv_depth)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_depth)
 
   END SUBROUTINE depth_solve
 
@@ -1084,8 +1256,18 @@ CONTAINS
           blk%vvelstar(i,j) = blk%vvel(i,j)
        END DO
     END DO
-  END SUBROUTINE correct_velocity
 
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
+
+  END SUBROUTINE correct_velocity
 
 
 END MODULE hydro_solve

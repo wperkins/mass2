@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Wed Jan  5 15:36:03 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan  6 08:59:36 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -115,6 +115,7 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: u_cart(:,:)
      DOUBLE PRECISION, POINTER :: v_cart(:,:)
      DOUBLE PRECISION, POINTER :: vmag(:,:)
+     DOUBLE PRECISION, POINTER :: shear(:,:)
      DOUBLE PRECISION, POINTER :: froude_num(:,:)
      DOUBLE PRECISION, POINTER :: courant_num(:,:)
      DOUBLE PRECISION, POINTER :: mass_source(:,:)
@@ -158,6 +159,7 @@ MODULE block_module
      TYPE (block_var), POINTER :: bv_u_cart
      TYPE (block_var), POINTER :: bv_v_cart
      TYPE (block_var), POINTER :: bv_vmag
+     TYPE (block_var), POINTER :: bv_shear
      TYPE (block_var), POINTER :: bv_froude_num
      TYPE (block_var), POINTER :: bv_courant_num
      TYPE (block_var), POINTER :: bv_mass_source
@@ -171,7 +173,6 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: bedshear2(:,:) ! bed shear stress in eta direction
      DOUBLE PRECISION, POINTER :: windshear1(:,:) ! wind shear stress in xsi direction
      DOUBLE PRECISION, POINTER :: windshear2(:,:) ! wind shear stress in eta direction
-     DOUBLE PRECISION, POINTER :: shear(:,:) ! bed shear stress magnitude @ velocity locations
      DOUBLE PRECISION, POINTER :: apo(:,:)
      DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
      DOUBLE PRECISION, POINTER :: lvd(:,:) ! part of p' coeff that has V vel stuff
@@ -201,7 +202,11 @@ MODULE block_module
 
   END TYPE block_struct
 
+  ! where the all the blocks are stored
   TYPE(block_struct), PUBLIC, ALLOCATABLE :: block(:)
+
+  ! some work arrays used when applying boundary conditions
+  DOUBLE PRECISION, ALLOCATABLE, PUBLIC :: inlet_area(:), table_input(:)
 
 CONTAINS
 
@@ -272,6 +277,7 @@ CONTAINS
     blk%bv_v_cart => block_var_allocate("v_cart", blk%varbase, const=.TRUE.)
 
     blk%bv_vmag => block_var_allocate("vmag", blk%varbase, const=.TRUE.)
+    blk%bv_shear => block_var_allocate("shear", blk%varbase, const=.TRUE.)
     blk%bv_froude_num => block_var_allocate("froude_num", blk%varbase, const=.TRUE.)
     blk%bv_courant_num => block_var_allocate("courant_num", blk%varbase, const=.TRUE.)
     blk%bv_mass_source => block_var_allocate("mass_source", blk%varbase, const=.TRUE.)
@@ -325,6 +331,7 @@ CONTAINS
     blk%u_cart => blk%bv_u_cart%current
     blk%v_cart => blk%bv_v_cart%current
     blk%vmag => blk%bv_vmag%current
+    blk%shear => blk%bv_shear%current
     blk%froude_num => blk%bv_froude_num%current
     blk%courant_num => blk%bv_courant_num%current
     blk%mass_source => blk%bv_mass_source%current
@@ -556,6 +563,44 @@ CONTAINS
     block_owns = (block_owns_i(blk, i) .AND. block_owns_j(blk, j))
   END FUNCTION block_owns
 
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_uses_i
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_uses_i(blk, i)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER, INTENT(IN) :: i
+
+    block_uses_i = block_var_base_uses_i(blk%varbase, i)
+  END FUNCTION block_uses_i
+  
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_uses_j
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_uses_j(blk, j)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER, INTENT(IN) :: j
+
+    block_uses_j = block_var_base_uses_j(blk%varbase, j)
+  END FUNCTION block_uses_j
+
+  ! ----------------------------------------------------------------
+  ! LOGICAL FUNCTION block_uses
+  ! ----------------------------------------------------------------
+  LOGICAL FUNCTION block_uses(blk, i, j)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER, INTENT(IN) :: i, j
+    block_uses = (block_uses_i(blk, i) .AND. block_uses_j(blk, j))
+  END FUNCTION block_uses
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_owned_window
