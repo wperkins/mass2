@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Mon Jan  3 15:30:50 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 21:50:35 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -48,6 +48,9 @@ MODULE globals
   ! ----------------------------------------------------------------
   DOUBLE PRECISION, PUBLIC, SAVE :: salinity = 0.0
   DOUBLE PRECISION, PUBLIC, SAVE :: baro_press = 760.0
+
+  LOGICAL, PUBLIC, SAVE :: update_depth = .TRUE.
+  DOUBLE PRECISION, SAVE :: wind_speed, wind_drag_coeff
 
 CONTAINS
 

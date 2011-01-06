@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed Jan  5 12:00:29 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 18:35:59 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -20,6 +20,7 @@ MODULE plot_cgns
   USE config, ONLY: do_flow, do_flow_output, do_flow_diag, &
        &max_blocks, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime
   USE block_grid
+  USE block_hydro
 
   IMPLICIT NONE
 
@@ -34,7 +35,7 @@ MODULE plot_cgns
 
   INCLUDE 'cgnslib_f.h'
 
-  CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"
+  CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_cgns_name = "grid.cgns"
   LOGICAL, PRIVATE, PARAMETER :: do2D = .TRUE.
   INTEGER, PRIVATE :: pfileidx
   INTEGER, PRIVATE :: pbaseidx
@@ -76,7 +77,7 @@ CONTAINS
 
                                 ! make a grid file with coordinates in it
 
-    CALL plot_cgns_file_setup(grid_file_name, .TRUE., pfileidx, pbaseidx)
+    CALL plot_cgns_file_setup(grid_cgns_name, .TRUE., pfileidx, pbaseidx)
     CALL cg_close_f(pfileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
          &"cannot close grid file", fatal=.TRUE.)
@@ -86,7 +87,7 @@ CONTAINS
 
     CALL plot_cgns_make_name(plot_file_name)
     CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
-    CALL plot_cgns_link_coord(pfileidx, grid_file_name, max_blocks)
+    CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
 
   END SUBROUTINE plot_cgns_setup
 
@@ -336,12 +337,12 @@ CONTAINS
   ! make links to the coordinates and
   ! metrics in the grid file
   ! ----------------------------------------------------------------
-  SUBROUTINE plot_cgns_link_coord(fileidx, grid_file_name, nzones)
+  SUBROUTINE plot_cgns_link_coord(fileidx, grid_cgns_name, nzones)
 
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: fileidx, nzones
-    CHARACTER (LEN=*), INTENT(IN) :: grid_file_name
+    CHARACTER (LEN=*), INTENT(IN) :: grid_cgns_name
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_link_coord"
     INTEGER :: baseidx, zoneidx, ierr
     CHARACTER (LEN=1024) :: buffer
@@ -351,11 +352,11 @@ CONTAINS
     DO zoneidx = 1, nzones
        CALL cg_goto_f(fileidx, baseidx, ierr, 'Zone_t', zoneidx, "end")
        WRITE(buffer, '("MASS2/Block", I2.2, "/GridCoordinates")') zoneidx
-       CALL cg_link_write_f('GridCoordinates', grid_file_name, buffer, ierr)
+       CALL cg_link_write_f('GridCoordinates', grid_cgns_name, buffer, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
             &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
        WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
-       CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
+       CALL cg_link_write_f('GridMetrics', grid_cgns_name, buffer, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
             &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
        
@@ -682,7 +683,7 @@ CONTAINS
        CALL plot_cgns_file_close(pfileidx, pbaseidx)
        CALL plot_cgns_make_name(plot_file_name)
        CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
-       CALL plot_cgns_link_coord(pfileidx, grid_file_name, max_blocks)
+       CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
     END IF
 
   END SUBROUTINE plot_cgns_write

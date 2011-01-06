@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Mon Jan  3 13:51:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan  5 18:32:31 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -70,7 +70,7 @@ CONTAINS
     CHARACTER (LEN=80) :: zone_name
 
     !FIXME: CALL accum_calc()
-    !FIXME: CALL velocity_shift()
+    CALL velocity_shift()
     IF (ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_write(date_string, time_string, salinity, baro_press)
     END IF
