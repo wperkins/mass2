@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Thu Jan  6 09:00:02 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 10:02:53 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -16,12 +16,11 @@
 
 PROGRAM mass2_parallel
 
-  USE mpi
   USE utility
   USE time_series
-  USE block_grid
-  USE block_initialization
   USE config
+  USE block_initialization
+  USE hydro_solve
   USE plot_output
 
   IMPLICIT NONE
@@ -30,6 +29,7 @@ PROGRAM mass2_parallel
   CHARACTER (LEN=1024) :: buffer
   INTEGER :: ierr
   INTEGER :: mpi_rank
+  INTEGER :: time_step_count, maxsteps
 
   CALL time_series_module_init()
   CALL date_time_flags()
@@ -51,6 +51,8 @@ PROGRAM mass2_parallel
   END IF
 
   CALL read_config()
+  current_time = start_time
+
   CALL read_grid()
   CALL bc_init()
   CALL initialize()
@@ -58,6 +60,45 @@ PROGRAM mass2_parallel
   CALL ga_sync()
 
   CALL output_init(mpi_rank)
+
+  ! Time Marching Loop
+  
+  maxsteps = INT((end_time%time - current_time%time)/(delta_t/86400.0d0))
+  time_step_count = 0
+  DO WHILE(current_time%time .LT. end_time%time) 
+
+     IF(do_flow)THEN
+        CALL hydro()
+     ENDIF
+
+!!$     IF(do_transport)THEN
+!!$        CALL transport()
+!!$     ENDIF
+
+     ! update the old time level values of the independent variables
+     CALL update()
+
+     !---------------------------------------------------------------------------
+     !update model time prior to output 
+     !   since we are advancing in time the dependent variables are now at the next
+     !   time level
+
+     time_step_count = time_step_count + 1
+
+     ! update decimal julian day time
+     current_time%time = start_time%time + DBLE(time_step_count)*delta_t/86400.000000d0 ! remember that the delta is in SECONDS
+
+     CALL decimal_to_date(current_time%time, current_time%date_string, current_time%time_string)
+
+!!$     CALL output(status_flag)
+
+!!$     IF(write_restart_file)THEN
+!!$        CALL write_restart(status_flag)
+!!$     END IF
+
+  END DO
+  ! end time loop
+
 
   CALL ga_sync()
   CALL ga_terminate()
@@ -365,6 +406,48 @@ SUBROUTINE output_init(mpi_rank)
 
 END SUBROUTINE output_init
 
+! ----------------------------------------------------------------
+! SUBROUTINE update
+! update old values of dependent variables
+! ----------------------------------------------------------------
+SUBROUTINE update()
+
+  USE config
+  USE block_module
+
+  IMPLICIT NONE
+
+  INTEGER :: iblock, ispecies
+
+  DO iblock=1,max_blocks
+
+     CALL block_var_timestep(block(iblock)%bv_uvel)
+     CALL block_var_timestep(block(iblock)%bv_vvel)
+     CALL block_var_timestep(block(iblock)%bv_depth)
+
+     block(iblock)%wsel = block(iblock)%depth + block(iblock)%zbot
+     CALL block_var_put(block(iblock)%bv_wsel)
+     block(iblock)%dp = 0.0
+
+  END DO
+
+!!$  IF (do_transport) THEN
+!!$     DO ispecies = 1, max_species
+!!$        DO iblock = 1, max_blocks
+!!$           species(ispecies)%scalar(iblock)%concoldold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
+!!$                = species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax)
+!!$           species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
+!!$                = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
+!!$        END DO
+!!$     END DO
+!!$     CALL scalar_mass_balance(delta_t)
+!!$     IF (source_doing_sed) CALL bed_accounting(delta_t)
+!!$  END IF
+!!$
+!!$  IF (do_accumulate) CALL accumulate(current_time%time)
+
+END SUBROUTINE update
+
 
 
 ! ----------------------------------------------------------------
@@ -377,6 +460,7 @@ SUBROUTINE banner()
   IMPLICIT NONE
 
 #include "global.fh"
+#include "finclude/petscsys.h"
 
   WRITE(*,*)'                             ___   '
   WRITE(*,*)'                            /__ \  '
@@ -398,6 +482,10 @@ SUBROUTINE banner()
   WRITE(*,*)
   WRITE(*,'(" Running on ", I3, " processors")') ga_nnodes()
   WRITE(*,'(" Using Global Arrays ", I1, ".", I1)') GA_VERSION_MAJOR, GA_VERSION_MINOR
+  WRITE(*,'(" Using PETSc ",I1,".",I1,".",I1,"-p",I1," (", A, ")")') &
+       &PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR, PETSC_VERSION_PATCH,&
+       &PETSC_VERSION_PATCH_DATE
+  WRITE(*,*)
   
 END SUBROUTINE banner
 

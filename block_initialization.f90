@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Wed Jan  5 11:43:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan  6 11:37:52 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -17,11 +17,19 @@
 MODULE block_initialization
 
   USE config
-  USE block_module
+  USE block_hydro
 
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
+
+  INTEGER, PARAMETER, PRIVATE :: coeff_file_count = 4
+  CHARACTER (LEN=80), PARAMETER, PRIVATE :: coeff_file_name(coeff_file_count) = (/&
+       &"eddy_coeff.dat", &
+       &"kx_coeff.dat", &
+       &"ky_coeff.dat", &
+       &"roughness_coeff.dat"&
+       &/)
 
 CONTAINS
 
@@ -97,61 +105,29 @@ CONTAINS
        CALL status_message('done setting initial values for all blocks')
     ENDIF
 
-!     ! overwrite the default assignments
-!     IF(do_spatial_eddy)THEN
-!        filename = "eddy_coeff.dat"
-!        CALL open_existing(filename, 50)
-!        DO WHILE(.TRUE.)
-!           READ(50,*,END=101)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-!           block(iblock)%eddy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-!        END DO
-! 101    CLOSE(50)
-!     ENDIF
-!     IF(do_spatial_kx)THEN
-!        filename = "kx_coeff.dat"
-!        CALL open_existing(filename, 50)
-!        DO WHILE(.TRUE.)
-!           READ(50,*,END=102)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-!           block(iblock)%kx_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-!        END DO
-! 102    CLOSE(50)
-!     ENDIF
-!     IF(do_spatial_ky)THEN
-!        filename = "ky_coeff.dat"
-!        CALL open_existing(filename, 50)
-!        DO WHILE(.TRUE.)
-!           READ(50,*,END=103)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-!           block(iblock)%ky_diff(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-!        END DO
-! 103    CLOSE(50)
-!     ENDIF
+    ! overwrite the default assignments
+    IF(do_spatial_eddy) CALL initialize_coeff("eddy_coeff.dat")
+    IF(do_spatial_kx) CALL initialize_coeff("kx_coeff.dat")
+    IF(do_spatial_ky) CALL initialize_coeff("ky_coeff.dat")
+    IF(do_spatial_chezy) CALL initialize_coeff("roughness_coeff.dat")
 
-!     IF(do_spatial_chezy)THEN
-!        filename = "roughness_coeff.dat"
-!        CALL open_existing(filename, 50)
-!        DO WHILE(.TRUE.)
-!           READ(50,*,END=100)iblock, dum_val,i_start_cell, i_end_cell, j_start_cell , j_end_cell
-!           block(iblock)%chezy(i_start_cell+1:i_end_cell+1,j_start_cell+1:j_end_cell+1) = dum_val
-!        END DO
-! 100    CLOSE(50)
-!     ENDIF
+    IF (read_initial_profile) THEN
+       CALL error_message('profile initialization  not implemented', fatal=.TRUE.)
+       ! FIXME: CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
+    END IF
 
-!     IF (read_initial_profile) THEN
-!        CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
-!     END IF
+    IF (do_wetdry) THEN
+       DO iblock=1,max_blocks
+          CALL check_wetdry(block(iblock))
+       END DO
+    END IF
 
-!     IF (do_wetdry) THEN
-!        DO iblock=1,max_blocks
-!           CALL check_wetdry(block(iblock))
-!        END DO
-!     END IF
-
-!     IF (do_calc_eddy) THEN
-!        DO iblock=1,max_blocks
-!           CALL bedshear(block(iblock))
-!           CALL calc_eddy_viscosity(block(iblock))
-!        END DO
-!     END IF
+    IF (do_calc_eddy) THEN
+       DO iblock=1,max_blocks
+          CALL bedshear(block(iblock))
+          CALL calc_eddy_viscosity(block(iblock))
+       END DO
+    END IF
 
     DO iblock = 1, max_blocks
        CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
@@ -182,6 +158,68 @@ CONTAINS
     END DO
 
   END SUBROUTINE initialize
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE initialize_coeff
+  ! ----------------------------------------------------------------
+  SUBROUTINE initialize_coeff(filename)
+
+    IMPLICIT NONE
+
+    INTEGER, PARAMETER :: iounit = 50
+    CHARACTER (LEN=*), INTENT(IN) :: filename
+    INTEGER :: ifile
+
+    INTEGER :: iblock
+    INTEGER :: i_start_cell, i_end_cell, j_start_cell, j_end_cell
+    DOUBLE PRECISION :: dum_val
+    INTEGER :: i, j
+    INTEGER :: iostat
+
+    DOUBLE PRECISION, POINTER :: tmp(:, :)
+
+    DO ifile = 1, coeff_file_count
+       IF (filename .EQ. coeff_file_name(ifile)) THEN
+
+          SELECT CASE (ifile)
+          CASE (1)
+             tmp => block(iblock)%eddy
+             
+          CASE (2)
+             tmp => block(iblock)%kx_diff
+
+          CASE (3)
+             tmp => block(iblock)%ky_diff
+
+          CASE (4)
+             tmp => block(iblock)%chezy
+
+          CASE DEFAULT
+             CYCLE
+          END SELECT
+
+          CALL open_existing(filename, iounit)
+
+          DO WHILE(.TRUE.)
+             READ(iounit,*,IOSTAT=iostat) iblock, dum_val, &
+                  &i_start_cell, i_end_cell, j_start_cell , j_end_cell
+
+             IF (iostat .EQ. 0) THEN
+                DO i = i_start_cell+1, i_end_cell+1
+                   DO j = j_start_cell+1, j_end_cell+1
+                      IF (block_owns(block(iblock), i, j)) tmp(i, j) = dum_val
+                   END DO
+                END DO
+             ELSE 
+                EXIT
+             END IF
+          END DO
+          CLOSE(iounit)
+       END IF
+    END DO
+       
+  END SUBROUTINE initialize_coeff
+
 
 
 

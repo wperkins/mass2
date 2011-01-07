@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Jan  6 08:59:36 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 10:05:21 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -110,6 +110,7 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: depthold(:,:)
      DOUBLE PRECISION, POINTER :: deptholdold(:,:)
      DOUBLE PRECISION, POINTER :: wsel(:,:)
+     DOUBLE PRECISION, POINTER :: dp(:,:) ! d' depth correction field
      DOUBLE PRECISION, POINTER :: uvel_p(:,:)
      DOUBLE PRECISION, POINTER :: vvel_p(:,:)
      DOUBLE PRECISION, POINTER :: u_cart(:,:)
@@ -121,6 +122,8 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: mass_source(:,:)
      DOUBLE PRECISION, POINTER :: uflux(:,:)
      DOUBLE PRECISION, POINTER :: vflux(:,:)
+     DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
+     DOUBLE PRECISION, POINTER :: lvd(:,:) ! part of p' coeff that has V vel stuff
 
      ! These are managers for the above variables having values that
      ! need to be known over multiple processors, either for
@@ -154,6 +157,7 @@ MODULE block_module
      TYPE (block_var), POINTER :: bv_vvel
      TYPE (block_var), POINTER :: bv_depth
      TYPE (block_var), POINTER :: bv_wsel
+     TYPE (block_var), POINTER :: bv_dp
      TYPE (block_var), POINTER :: bv_uvel_p
      TYPE (block_var), POINTER :: bv_vvel_p
      TYPE (block_var), POINTER :: bv_u_cart
@@ -165,17 +169,17 @@ MODULE block_module
      TYPE (block_var), POINTER :: bv_mass_source
      TYPE (block_var), POINTER :: bv_uflux
      TYPE (block_var), POINTER :: bv_vflux
+     TYPE (block_var), POINTER :: bv_isdry
+     TYPE (block_var), POINTER :: bv_lud
+     TYPE (block_var), POINTER :: bv_lvd
 
      ! these values are only needed locally
 
-     DOUBLE PRECISION, POINTER :: dp(:,:) ! d' depth correction field
      DOUBLE PRECISION, POINTER :: bedshear1(:,:) ! bed shear stress in xsi direction
      DOUBLE PRECISION, POINTER :: bedshear2(:,:) ! bed shear stress in eta direction
      DOUBLE PRECISION, POINTER :: windshear1(:,:) ! wind shear stress in xsi direction
      DOUBLE PRECISION, POINTER :: windshear2(:,:) ! wind shear stress in eta direction
      DOUBLE PRECISION, POINTER :: apo(:,:)
-     DOUBLE PRECISION, POINTER :: lud(:,:) ! part of p' coeff that has U vel stuff
-     DOUBLE PRECISION, POINTER :: lvd(:,:) ! part of p' coeff that has V vel stuff
 
      DOUBLE PRECISION, POINTER :: xsource(:,:)
 
@@ -194,6 +198,10 @@ MODULE block_module
      TYPE (cell_type_struct), POINTER :: cell(:,:)
 
      LOGICAL, POINTER :: isdry(:,:)
+     LOGICAL, POINTER :: isdrystar(:,:)
+
+     INTEGER :: mass_source_ga
+     DOUBLE PRECISION :: mass_source_sum(1)
 
      ! This is allocated only by the root process.  It is used to
      ! collect the various block_var's to the root process for output
@@ -219,9 +227,14 @@ CONTAINS
 
     IMPLICIT NONE
 
+#include "mafdecls.fh"
+#include "global.fh"
+
     TYPE (block_struct), INTENT(INOUT) :: blk
     INTEGER, INTENT(IN) :: idx, xmax, ymax
     INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: pgrp, dims(1)
+    LOGICAL :: ok
 
     blk%index = idx
     blk%xmax = xmax
@@ -270,6 +283,7 @@ CONTAINS
     blk%bv_vvel => block_var_allocate("vvel", blk%varbase, const=.FALSE.)
     blk%bv_depth => block_var_allocate("depth", blk%varbase, const=.FALSE.)
     blk%bv_wsel => block_var_allocate("wsel", blk%varbase, const=.TRUE.)
+    blk%bv_dp => block_var_allocate("dp", blk%varbase, const=.TRUE.)
 
     blk%bv_uvel_p => block_var_allocate("uvel_p", blk%varbase, const=.TRUE.)
     blk%bv_vvel_p => block_var_allocate("vvel_p", blk%varbase, const=.TRUE.)
@@ -284,6 +298,11 @@ CONTAINS
 
     blk%bv_uflux => block_var_allocate("u_flux", blk%varbase, const=.TRUE.)
     blk%bv_vflux => block_var_allocate("v_flux", blk%varbase, const=.TRUE.)
+
+    blk%bv_isdry => block_var_allocate("isdry", blk%varbase, const=.TRUE.)
+
+    blk%bv_lud => block_var_allocate("lud", blk%varbase, const=.TRUE.)
+    blk%bv_lvd => block_var_allocate("lvd", blk%varbase, const=.TRUE.)
 
     ! local variables that need to be shared with other processors
     ! point at the arrays allocated as part of a block_var
@@ -326,6 +345,7 @@ CONTAINS
     blk%depthold => blk%bv_depth%old
     blk%deptholdold => blk%bv_depth%oldold
     blk%wsel => blk%bv_wsel%current
+    blk%dp => blk%bv_dp%current
     blk%uvel_p => blk%bv_uvel_p%current
     blk%vvel_p => blk%bv_vvel_p%current
     blk%u_cart => blk%bv_u_cart%current
@@ -337,19 +357,18 @@ CONTAINS
     blk%mass_source => blk%bv_mass_source%current
     blk%uflux => blk%bv_uflux%current
     blk%vflux => blk%bv_vflux%current
+    blk%lud => blk%bv_lud%current
+    blk%lvd => blk%bv_lvd%current
 
     ! these are not shared with other processors, so the "owned"
     ! window will do
 
-    blk%dp => block_array_owned(blk)
     blk%bedshear1 => block_array_owned(blk)
     blk%bedshear2 => block_array_owned(blk)
     blk%shear => block_array_owned(blk)
     blk%windshear1 => block_array_owned(blk)
     blk%windshear2 => block_array_owned(blk)
     blk%apo => block_array_owned(blk)
-    blk%lud => block_array_owned(blk)
-    blk%lvd => block_array_owned(blk)
     blk%xsource => block_array_owned(blk)
     blk%k_e => block_array_owned(blk)
     blk%k_w => block_array_owned(blk)
@@ -372,8 +391,26 @@ CONTAINS
     blk%pec_n => block_array_owned(blk)
     blk%pec_s => block_array_owned(blk)
 
+    CALL block_used_window(blk, imin, imax, jmin, jmax)
+    ALLOCATE(blk%isdead(imin:imax, jmin:jmax))
+    ALLOCATE(blk%cell(imin:imax, jmin:jmax))
+    ALLOCATE(blk%isdry(imin:imax, jmin:jmax))
+    ALLOCATE(blk%isdrystar(imin:imax, jmin:jmax))
+
     blk%buffer => block_buffer(blk)
 
+    ! make a mirrored GlobalArray to hold mass source summation
+    
+    pgrp = ga_pgroup_get_mirror()
+    blk%mass_source_ga = ga_create_handle()
+    dims(1) = 1
+    CALL ga_set_data(blk%mass_source_ga, 1, dims, MT_F_DBL)
+    CALL ga_set_pgroup(blk%mass_source_ga, pgrp)
+    CALL ga_set_array_name(blk%mass_source_ga, "mass_source_sum")
+    ok = ga_allocate(blk%mass_source_ga)
+    CALL ga_zero(blk%mass_source_ga)
+    
+    blk%mass_source_sum(1) = 0.0
 
   END SUBROUTINE block_allocate_size
 
@@ -384,7 +421,11 @@ CONTAINS
 
     IMPLICIT NONE
 
+#include "mafdecls.fh"
+#include "global.fh"
+
     TYPE (block_struct), INTENT(INOUT) :: blk
+    LOGICAL :: ok
 
     CALL block_var_deallocate(blk%bv_x_grid)
     CALL block_var_deallocate(blk%bv_y_grid)
@@ -424,6 +465,9 @@ CONTAINS
     CALL block_var_deallocate(blk%bv_mass_source)
     CALL block_var_deallocate(blk%bv_uflux)
     CALL block_var_deallocate(blk%bv_vflux)
+    CALL block_var_deallocate(blk%bv_isdry)
+    CALL block_var_deallocate(blk%bv_lud)
+    CALL block_var_deallocate(blk%bv_lvd)
 
     DEALLOCATE(blk%dp)
     DEALLOCATE(blk%bedshear1)
@@ -432,8 +476,6 @@ CONTAINS
     DEALLOCATE(blk%windshear1)
     DEALLOCATE(blk%windshear2)
     DEALLOCATE(blk%apo)
-    DEALLOCATE(blk%lud)
-    DEALLOCATE(blk%lvd)
     DEALLOCATE(blk%xsource)
     DEALLOCATE(blk%k_e)
     DEALLOCATE(blk%k_w)
@@ -455,6 +497,16 @@ CONTAINS
     DEALLOCATE(blk%pec_w)
     DEALLOCATE(blk%pec_n)
     DEALLOCATE(blk%pec_s)
+
+    DEALLOCATE(blk%isdead)
+    DEALLOCATE(blk%cell)
+
+    DEALLOCATE(blk%isdry)
+    DEALLOCATE(blk%isdrystar)
+
+    DEALLOCATE(blk%buffer)
+
+    ok = ga_destroy(blk%mass_source_ga)
 
 
   END SUBROUTINE block_deallocate
@@ -482,6 +534,29 @@ CONTAINS
     RETURN
 
   END FUNCTION block_buffer
+
+  ! ----------------------------------------------------------------
+  ! FUNCTION block_logical_buffer
+  ! ----------------------------------------------------------------
+  FUNCTION block_logical_buffer(blk)
+
+    IMPLICIT NONE
+    
+    TYPE (block_struct), INTENT(IN) :: blk
+    LOGICAL, POINTER :: block_logical_buffer(:, :)
+
+    INTEGER :: imin, imax, jmin, jmax
+
+    imin = blk%varbase%imin_global
+    imax = blk%varbase%imax_global
+    jmin = blk%varbase%jmin_global
+    jmax = blk%varbase%jmax_global
+
+    ALLOCATE(block_logical_buffer(imin:imax, jmin:jmax))
+
+    RETURN
+
+  END FUNCTION block_logical_buffer
 
   ! ----------------------------------------------------------------
   ! FUNCTION block_array_owned(blk)
@@ -605,7 +680,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_owned_window
   ! ----------------------------------------------------------------
-  SUBROUTINE block_owned_window(blk, imin, jmin, imax, jmax)
+  SUBROUTINE block_owned_window(blk, imin, imax, jmin, jmax)
 
     IMPLICIT NONE
 
@@ -623,7 +698,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_used_window
   ! ----------------------------------------------------------------
-  SUBROUTINE block_used_window(blk, imin, jmin, imax, jmax)
+  SUBROUTINE block_used_window(blk, imin, imax, jmin, jmax)
 
     IMPLICIT NONE
 
@@ -676,9 +751,9 @@ CONTAINS
              ij(4) = block(b)%varbase%jmax_owned
              CALL nga_distribution(block(b)%varbase%ga_handle, me, lo, hi)
           END IF
-          call ga_igop(MT_INT, ij, 4, '+')
-          call ga_igop(MT_INT, lo, ndim, '+')
-          call ga_igop(MT_INT, hi, ndim, '+')
+          call ga_igop(MT_F_INT, ij, 4, '+')
+          call ga_igop(MT_F_INT, lo, ndim, '+')
+          call ga_igop(MT_F_INT, hi, ndim, '+')
 
           IF (me == 0) THEN
              WRITE(*,100) b, p, ij(1), ij(2), ij(3), ij(4)
@@ -705,7 +780,5 @@ CONTAINS
     CALL block_var_all(var, blk%buffer)
 
   END SUBROUTINE block_collect
-
-
 
 END MODULE block_module

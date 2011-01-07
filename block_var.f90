@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 09:05:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 09:35:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -275,6 +275,81 @@ CONTAINS
   END SUBROUTINE block_var_put
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_get_logical
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_get_logical(var, larray)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(INOUT) :: var
+    LOGICAL, INTENT(INOUT) :: larray(&
+         &var%base%imin_used:var%base%imax_used,&
+         &var%base%jmin_used:var%base%jmax_used)
+
+    INTEGER :: lo(ndim), hi(ndim), ld(ndim-1)
+    INTEGER :: imin, imax, jmin, jmax, i, j
+
+    lo = var%base%lo_used
+    hi = var%base%hi_used
+    ld = var%base%ld_used
+
+    lo(3) = 1
+    hi(3) = 1
+
+    imin = var%base%imin_used
+    imax = var%base%imax_used
+    jmin = var%base%jmin_used
+    jmax = var%base%jmax_used
+
+    CALL nga_get(var%ga_handle, lo, hi, var%current(imin:imax, jmin:jmax), ld)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          larray(i, j) = (var%current(i,j) .GT. 0.0)
+       END DO
+    END DO
+
+  END SUBROUTINE block_var_get_logical
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_put_logical
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_put_logical(var, larray)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(INOUT) :: var
+    LOGICAL, INTENT(IN) :: larray(&
+         &var%base%imin_used:var%base%imax_used,&
+         &var%base%jmin_used:var%base%jmax_used)
+
+    INTEGER :: lo(ndim), hi(ndim), ld(ndim-1)
+    INTEGER :: imin, imax, jmin, jmax, i, j
+
+    lo = var%base%lo_owned
+    hi = var%base%hi_owned
+    ld = var%base%ld_owned
+
+    lo(3) = 1
+    hi(3) = 1
+
+    imin = var%base%imin_owned
+    imax = var%base%imax_owned
+    jmin = var%base%jmin_owned
+    jmax = var%base%jmax_owned
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          IF (larray(i, j)) var%current(i,j) = 1.0
+       END DO
+    END DO
+
+    CALL nga_put(var%ga_handle, lo, hi, var%current(imin:imax, jmin:jmax), ld)
+
+  END SUBROUTINE block_var_put_logical
+
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE block_var_initialize
   ! ----------------------------------------------------------------
   SUBROUTINE block_var_initialize(var, val)
@@ -290,28 +365,6 @@ CONTAINS
     CALL block_var_timestep(var)
 
   END SUBROUTINE block_var_initialize
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE block_var_init_window
-  ! ----------------------------------------------------------------
-  SUBROUTINE block_var_init_window(var, val, imin, imax, jmin, jmax)
-
-    IMPLICIT NONE
-
-    TYPE (block_var), INTENT(INOUT) :: var
-    DOUBLE PRECISION, INTENT(IN) :: val
-    INTEGER, INTENT(IN) :: imin, imax, jmin, jmax
-
-    INTEGER :: i, j
-
-    DO i = imin, imax
-       DO j = jmin, jmax
-          ! FIXME
-       END DO
-    END DO
-    
-
-  END SUBROUTINE block_var_init_window
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_var_iterate
@@ -356,6 +409,8 @@ CONTAINS
     IF (ASSOCIATED(var%oldold) .AND. ASSOCIATED(var%old)) THEN
        var%oldold(imin:imax, jmin:jmax) = var%old(imin:imax, jmin:jmax)
        var%old(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
+       CALL block_var_put(var, BLK_VAR_OLD)
+       CALL block_var_put(var, BLK_VAR_OLD)
     END IF
 
   END SUBROUTINE block_var_timestep

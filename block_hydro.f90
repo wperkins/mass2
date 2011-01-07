@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Thu Jan  6 07:58:19 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 10:04:45 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -337,7 +337,7 @@ CONTAINS
        END DO
     END DO
 
-    CALL ga_igop(MT_INT, crash, 1, '+');
+    CALL ga_igop(MT_F_INT, crash, 1, '+');
 
     CALL block_var_put(blk%bv_depth)
     CALL ga_sync()
@@ -434,20 +434,18 @@ CONTAINS
     INTEGER :: i1, j1, n
     LOGICAL :: flag
     DOUBLE PRECISION :: wsavg, wscell, wsn
-    LOGICAL :: isdry(i_index_min:blk%xmax + i_index_extra, &
-         &j_index_min:blk%ymax + j_index_extra)
 
     nx = blk%xmax
     ny = blk%ymax
 
-    isdry = blk%isdry
+    blk%isdrystar = blk%isdry
 
     DO i = 2, nx + 1
        DO j = 2, ny + 1 
 
           IF (.NOT. block_owns(blk, i, j)) CYCLE
 
-          IF (isdry(i,j)) THEN
+          IF (blk%isdrystar(i,j)) THEN
 
              wscell = blk%depth(i, j) + blk%zbot(i, j)
 
@@ -458,7 +456,7 @@ CONTAINS
              n = 0                ! count wet neighbors
 
              DO i1 = i - 1, i + 1, 2
-                IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
+                IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. blk%isdrystar(i1,j))) THEN
                    wsn = blk%depth(i1, j) + blk%zbot(i1, j)
                    IF (wsn .GE. wscell) flag = .TRUE.
                    n = n + 1
@@ -476,7 +474,7 @@ CONTAINS
              END DO
              DO j1 = j - 1, j + 1, 2
                 wsn = blk%depth(i, j1) + blk%zbot(i, j1)
-                IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
+                IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. blk%isdrystar(i,j1))) THEN
                    IF (wsn .GE. wscell) flag = .TRUE.
                    n = n + 1
                 END IF
@@ -493,7 +491,7 @@ CONTAINS
                 n = 1
 
                 DO i1 = i - 1, i + 1, 2
-                   IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
+                   IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. blk%isdrystar(i1,j))) THEN
                       wsn = blk%depth(i1, j) + blk%zbot(i1, j)
                       wsavg = wsavg + wsn
                       n = n + 1
@@ -511,7 +509,7 @@ CONTAINS
                 END DO
                 DO j1 = j - 1, j + 1, 2
                    wsn = blk%depth(i, j1) + blk%zbot(i, j1)
-                   IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
+                   IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. blk%isdrystar(i,j1))) THEN
                       wsavg = wsavg + wsn
                       n = n + 1
                    END IF
@@ -534,7 +532,7 @@ CONTAINS
                 IF (N .GT. 1 .AND. wsavg .GT. blk%zbot(i, j) + dry_rewet_depth ) THEN
                    flag = .TRUE.
                    DO i1 = i - 1, i + 1, 2
-                      IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. isdry(i1,j))) THEN
+                      IF (i1 .GT. 1 .AND. i1 .LT. nx + 1 .AND. (.NOT. blk%isdrystar(i1,j))) THEN
                          flag = flag .AND. ((wsavg - blk%zbot(i1, j)) .GT. dry_depth) 
                       ELSEIF (i1 .EQ. 1 .OR. i1 .EQ. nx + 1) THEN
                          SELECT CASE (blk%cell(i,j)%xtype)
@@ -547,7 +545,7 @@ CONTAINS
                       END IF
                    END DO
                    DO j1 = j - 1, j + 1, 2
-                      IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. isdry(i,j1))) THEN
+                      IF (j1 .GT. 1 .AND. j1 .LT. ny + 1 .AND. (.NOT. blk%isdrystar(i,j1))) THEN
                          flag = flag .AND. ((wsavg - blk%zbot(i, j1)) .GT. dry_depth) 
                       END IF
                    END DO
@@ -580,8 +578,41 @@ CONTAINS
     IF (block_owns_i(blk, 1)) blk%isdry(1,:) = blk%isdry(2,:)
     IF (block_owns_i(blk, nx + 1)) blk%isdry(nx + 1,:)  = blk%isdry(nx+1,:)
 
-    ! FIXME distribute isdry
+    CALL block_var_put_logical(blk%bv_isdry, blk%isdry)
+    CALL ga_sync()
+    CALL block_var_get_logical(blk%bv_isdry, blk%isdry)
 
   END SUBROUTINE check_wetdry
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_mass_source_sum
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_mass_source_sum(blk)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+
+    INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: lo(1), hi(1), ld(1)
+    INTEGER :: ierr
+
+    lo = 1
+    hi = 1
+    ld = 1
+    
+    CALL ga_zero(blk%mass_source_ga, ierr)
+
+    CALL block_owned_window(blk, imin, jmin, imax, jmax)
+    blk%mass_source_sum(1) = &
+         &SUM(ABS(blk%mass_source(imin:imax, jmin:jmax)))
+    CALL nga_put(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
+    CALL ga_sync()
+    CALL ga_merge_mirrored(blk%mass_source_ga, ierr)
+    CALL nga_get(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
+    
+
+  END SUBROUTINE block_mass_source_sum
+
 
 END MODULE block_hydro

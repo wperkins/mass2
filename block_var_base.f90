@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 20, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 09:02:58 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 10:05:29 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -43,6 +43,9 @@ MODULE block_variable_base
      ! local ranges of (MASS2) indexes for this variable
      INTEGER :: imin_owned, imax_owned, jmin_owned, jmax_owned
      INTEGER :: imin_used, imax_used, jmin_used, jmax_used
+
+     ! a local array to use the global array
+     DOUBLE PRECISION, ALLOCATABLE :: buffer(:,:)
 
   END type block_var_base
 
@@ -85,7 +88,7 @@ CONTAINS
     dims(3) = nslice
 
     base%ga_handle = ga_create_handle()
-    call ga_set_data(base%ga_handle, ndim, dims, MT_DBL)
+    call ga_set_data(base%ga_handle, ndim, dims, MT_F_DBL)
     call ga_set_array_name(base%ga_handle, "base")
 
     chunk(1) = 1
@@ -124,6 +127,9 @@ CONTAINS
     base%jmin_used = base%lo_used(2) - 1 + j_index_min
     base%jmax_used = base%hi_used(2) - 1 + j_index_min
 
+    ALLOCATE(base%buffer(base%imin_used:base%imax_used, &
+         &base%jmin_used:base%jmax_used))
+
     RETURN
 
   END FUNCTION block_var_base_allocate
@@ -143,6 +149,7 @@ CONTAINS
     LOGICAL :: ok
 
     ok = ga_destroy(base%ga_handle)
+    DEALLOCATE(base%buffer)
     DEALLOCATE(base)
     NULLIFY(base)
     RETURN
@@ -230,6 +237,74 @@ CONTAINS
          &block_var_base_uses_j(base, j))
 
   END FUNCTION block_var_base_uses
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_base_distribute_logical
+  !
+  ! use the global array in the specified base variable to distribute
+  ! a logical variable
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_base_distribute_logical(base, larray)
+
+    IMPLICIT NONE
+    
+    TYPE (block_var_base), INTENT(INOUT) :: base
+    LOGICAL, INTENT(INOUT) :: larray(base%imin_used:base%imax_used, &
+         &base%jmin_used:base%jmax_used)
+    INTEGER :: lo(ndim), hi(ndim), ld(ndim-1), myindex
+    INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: i, j
+
+    lo = base%lo_owned
+    hi = base%hi_owned
+    ld = base%ld_owned
+
+    lo(3) = 1
+    hi(3) = 1
+
+    imin = base%imin_owned
+    imax = base%imax_owned
+    jmin = base%jmin_owned
+    jmax = base%jmax_owned
+
+
+    base%buffer = 0.0
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          IF (larray(i, j)) base%buffer(i,j) = 1.0
+       END DO
+    END DO
+    
+    CALL nga_put(base%ga_handle, lo, hi, &
+         &base%buffer(imin:imax, jmin:jmax), ld)
+    CALL ga_sync()
+
+    lo = base%lo_used
+    hi = base%hi_used
+    ld = base%ld_used
+
+    lo(3) = 1
+    hi(3) = 1
+
+    imin = base%imin_used
+    imax = base%imax_used
+    jmin = base%jmin_used
+    jmax = base%jmax_used
+
+    CALL nga_get(base%ga_handle, lo, hi, &
+         &base%buffer(imin:imax, jmin:jmax), ld)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          larray(i,j) = (base%buffer(i,j) .GT. 0.0)
+       END DO
+    END DO
+
+    RETURN
+
+  END SUBROUTINE block_var_base_distribute_logical
+
 
 
 END MODULE block_variable_base

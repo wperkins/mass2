@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed Jan  5 18:35:59 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Thu Jan  6 15:12:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -469,9 +469,10 @@ CONTAINS
 
                                 ! average bed shear
 
-!!$             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
-!!$                  &accum_block(iblock)%hydro%shear%sum, &
-!!$                  &'shear', 'Bed Shear Stress', 'pound/foot^2')
+             CALL block_collect(block(iblock), block(iblock)%bv_shear)
+            CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &block(iblock)%buffer, &
+                  &'shear', 'Bed Shear Stress', 'pound/foot^2')
 
                                 ! Froude number
 
@@ -511,14 +512,16 @@ CONTAINS
 
           END IF
 
-!!$                                ! Dry Cell Flag
-!!$
-!!$          IF (do_wetdry) THEN
-!!$             
-!!$             CALL plot_cgns_write_flag(iblock, solidx, xmax,  ymax, &
-!!$                  &block(iblock)%isdry, 'isdry', 'Dry Cell Flag')
-!!$
-!!$          END IF
+                                ! Dry Cell Flag
+
+          IF (do_wetdry) THEN
+             
+             CALL block_collect(block(iblock), block(iblock)%bv_isdry)
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &block(iblock)%buffer, &
+                  &'isdry', 'Dry Cell Flag', 'none')
+
+          END IF
 !!$                                ! Dead Cell Flag
 !!$
 !!$          IF (do_rptdead) THEN
@@ -769,69 +772,69 @@ CONTAINS
 
   END SUBROUTINE plot_cgns_write_var
 
-  ! ! ----------------------------------------------------------------
-  ! ! SUBROUTINE plot_cgns_write_flag
-  ! ! ----------------------------------------------------------------
-  ! SUBROUTINE plot_cgns_write_flag(zoneidx, solidx, xmax, ymax, flag, name, desc)
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_cgns_write_flag
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_cgns_write_flag(zoneidx, solidx, xmax, ymax, flag, name, desc)
 
-  !   IMPLICIT NONE
+    IMPLICIT NONE
 
-  !   INTEGER, INTENT(IN) :: zoneidx, solidx
-  !   INTEGER, INTENT(IN) :: xmax, ymax
-  !   LOGICAL, INTENT(IN) :: flag(i_index_min:,j_index_min:)
-  !   CHARACTER (LEN=*), INTENT(IN) :: name, desc
-  !   INTEGER :: i, j, pos, fldidx, ierr
-  !   CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_flag"
-  !   CHARACTER (LEN=32) :: buffer
-    
-  !   tmp_int = 0
+    INTEGER, INTENT(IN) :: zoneidx, solidx
+    INTEGER, INTENT(IN) :: xmax, ymax
+    LOGICAL, INTENT(IN) :: flag(i_index_min:,j_index_min:)
+    CHARACTER (LEN=*), INTENT(IN) :: name, desc
+    INTEGER :: i, j, pos, fldidx, ierr
+    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_flag"
+    CHARACTER (LEN=32) :: buffer
 
-  !   IF (plot_cgns_docell) THEN
+    tmp_int = 0
 
-  !      DO j = 2, ymax
-  !         DO i = 2, xmax
-  !            pos = (i-1) + (j-2)*(xmax-1)
-  !            IF (flag(i,j)) tmp_int(pos) = 1
-  !         END DO
-  !      END DO
-       
-  !   ELSE
+    IF (plot_cgns_docell) THEN
 
-  !      DO j = 1, ymax+1
-  !         DO i = 1, xmax+1
-  !            pos = (i) + (j-1)*(xmax + 1)
-  !            IF (flag(i,j)) tmp_int(pos) = 1
-  !         END DO
-  !      END DO
+       DO j = 2, ymax
+          DO i = 2, xmax
+             pos = (i-1) + (j-2)*(xmax-1)
+             IF (flag(i,j)) tmp_int(pos) = 1
+          END DO
+       END DO
 
-  !   END IF
+    ELSE
 
-  !   buffer = name
-  !   CALL cg_field_write_f(pfileidx, pbaseidx, zoneidx, solidx, &
-  !        &Integer, buffer, tmp_int, fldidx, ierr)
+       DO j = 1, ymax+1
+          DO i = 1, xmax+1
+             pos = (i) + (j-1)*(xmax + 1)
+             IF (flag(i,j)) tmp_int(pos) = 1
+          END DO
+       END DO
 
-  !   IF (ierr .EQ. ERROR) THEN
-  !      WRITE(buffer, *) 'cannot write flag "', TRIM(name), '"'
-  !      CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
-  !   END IF
+    END IF
 
-  !   IF (plot_cgns_dodesc) THEN 
-  !                               ! put a description for the field
+    buffer = name
+    CALL cg_field_write_f(pfileidx, pbaseidx, zoneidx, solidx, &
+         &Integer, buffer, tmp_int, fldidx, ierr)
 
-  !      CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
-  !           &'Zone_t', zoneidx, &
-  !           &'FlowSolution_t', solidx, &
-  !           &'DataArray_t', fldidx,&
-  !           &'end')
-  !      IF (ierr .EQ. ERROR) THEN
-  !         WRITE(buffer, *) 'cannot write description for "', TRIM(name), '"'
-  !         CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
-  !      END IF
-       
-  !      CALL cg_descriptor_write_f('Description', desc, ierr)
-  !   END IF
+    IF (ierr .EQ. ERROR) THEN
+       WRITE(buffer, *) 'cannot write flag "', TRIM(name), '"'
+       CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
+    END IF
 
-  ! END SUBROUTINE plot_cgns_write_flag
+    IF (plot_cgns_dodesc) THEN 
+       ! put a description for the field
+
+       CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
+            &'Zone_t', zoneidx, &
+            &'FlowSolution_t', solidx, &
+            &'DataArray_t', fldidx,&
+            &'end')
+       IF (ierr .EQ. ERROR) THEN
+          WRITE(buffer, *) 'cannot write description for "', TRIM(name), '"'
+          CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
+       END IF
+
+       CALL cg_descriptor_write_f('Description', desc, ierr)
+    END IF
+
+  END SUBROUTINE plot_cgns_write_flag
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_cgns_file_close

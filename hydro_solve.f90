@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Thu Jan  6 08:21:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 09:29:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -45,7 +45,7 @@ CONTAINS
 
     INTEGER :: x_beg, y_beg, x_end, y_end, num_bc, i, j
     LOGICAL :: alldry
-    DOUBLE PRECISION :: apo(1), maxx_mass
+    DOUBLE PRECISION :: maxx_mass
     LOGICAL :: ds_flux_given
     INTEGER :: iblock
     INTEGER :: iteration
@@ -63,7 +63,7 @@ CONTAINS
        !**** BLOCK LOOP HERE *****
        DO iblock = 1,max_blocks 
 
-          CALL block_owned_window(block(iblock), imin, imax, jmin, jmax)
+          CALL block_owned_window(block(iblock), imin, jmin, imax, jmax)
 
           ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
 
@@ -75,7 +75,6 @@ CONTAINS
                   &.FALSE., ds_flux_given)
           END DO
           !-------------------------------------------------------------------------
-
 
           x_beg = 2
           y_beg = 2
@@ -154,9 +153,9 @@ CONTAINS
        maxx_mass = 0
 
        DO iblock=1,max_blocks
-          apo(1) = SUM(ABS(block(iblock)%mass_source(imin:imax, jmin:jmax)))
-          CALL ga_dgop(MT_DBL, apo, '+')
-          IF(apo(1) >= maxx_mass) maxx_mass = apo(1)
+          CALL block_mass_source_sum(block(iblock))
+          IF (block(iblock)%mass_source_sum(1) >= maxx_mass) &
+               &maxx_mass = block(iblock)%mass_source_sum(1)
        END DO
        IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
 
@@ -239,7 +238,6 @@ CONTAINS
          &source(1:blk%xmax + 1, 1:blk%ymax + 1)
 
     blkidx = blk%index
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
     x_beg = 2
     y_beg = 2
@@ -521,15 +519,24 @@ CONTAINS
        END DO
     END DO
 
-    junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
-         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
-         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
-         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
-         &blk%uvelstar(imin:imax,jmin:jmax))
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MIN(jmax, y_end)
+
+!!$FIXME
+!!$    junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
+!!$         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+!!$         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+!!$         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+!!$         &blk%uvelstar(imin:imax,jmin:jmax))
 
     CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_lud)
     CALL ga_sync()
     CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_get(blk%bv_lud)
 
   END SUBROUTINE uvel_solve
 
@@ -855,15 +862,24 @@ CONTAINS
 
     ! apply zero flow conditions on sides
 
-    junk = solver(blkidx, SOLVE_V, imin, imax, jmin, jmax, scalar_sweep, &
-         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
-         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
-         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
-         &blk%vvelstar(imin:imax,jmin:jmax))
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MAX(jmax, y_end)
+! FIXME
+!!$    junk = solver(blkidx, SOLVE_V, imin, imax, jmin, jmax, scalar_sweep, &
+!!$         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+!!$         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+!!$         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+!!$         &blk%vvelstar(imin:imax,jmin:jmax))
 
     CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_lvd)
     CALL ga_sync()
     CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_get(blk%bv_lvd)
+    
 
   END SUBROUTINE vvel_solve
 
@@ -1180,12 +1196,13 @@ CONTAINS
        END DO
     END DO
 
-    junk = solver(blkidx, SOLVE_DP, imin, imax, jmin, jmax, depth_sweep, &
-         &cp(imin:imax,jmin:jmax), cw(imin:imax,jmin:jmax), &
-         &ce(imin:imax,jmin:jmax), cs(imin:imax,jmin:jmax), &
-         &cn(imin:imax,jmin:jmax), &
-         &bp(imin:imax,jmin:jmax), &
-         &blk%dp(imin:imax,jmin:jmax))
+! FIXME
+!!$    junk = solver(blkidx, SOLVE_DP, imin, imax, jmin, jmax, depth_sweep, &
+!!$         &cp(imin:imax,jmin:jmax), cw(imin:imax,jmin:jmax), &
+!!$         &ce(imin:imax,jmin:jmax), cs(imin:imax,jmin:jmax), &
+!!$         &cn(imin:imax,jmin:jmax), &
+!!$         &bp(imin:imax,jmin:jmax), &
+!!$         &blk%dp(imin:imax,jmin:jmax))
 
     ! compute updated depth with some underrelaxation
     ! depth = rel*depth_new + (1 - rel)*depth_old
@@ -1198,9 +1215,13 @@ CONTAINS
        END DO
     ENDIF
 
+    CALL block_var_put(blk%bv_dp)
     CALL block_var_put(blk%bv_depth)
+    CALL block_var_put(blk%bv_wsel)
     CALL ga_sync()
+    CALL block_var_get(blk%bv_dp)
     CALL block_var_get(blk%bv_depth)
+    CALL block_var_get(blk%bv_wsel)
 
   END SUBROUTINE depth_solve
 
@@ -1217,10 +1238,16 @@ CONTAINS
 
     CALL block_owned_window(blk, x_beg, x_end, y_beg, y_end)
 
+    x_beg = MAX(x_beg, 2)
+    y_beg = MAX(y_beg, 2)
+    x_end = MIN(y_end, blk%xmax)
+    y_end = MIN(y_end, blk%ymax)
+
     ! correct u velocity
 
     DO i=x_beg,x_end
        DO j=y_beg,y_end
+          IF (.NOT. block_owns(blk, i, j)) CYCLE
           correction = blk%lud(i,j)*(blk%dp(i,j)-blk%dp(i+1,j))
           IF (i .EQ. x_end) THEN
              SELECT CASE (blk%cell(i,j)%xtype)
@@ -1242,6 +1269,7 @@ CONTAINS
 
     DO i=x_beg,x_end
        DO j=y_beg,y_end
+          IF (.NOT. block_owns(blk, i, j)) CYCLE
           correction =  blk%lvd(i,j)*(blk%dp(i,j)-blk%dp(i,j+1))
           IF (j .EQ. y_end) THEN
              SELECT CASE (blk%cell(i,j)%ytype)

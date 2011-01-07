@@ -439,17 +439,37 @@ CONTAINS
 
     TYPE (block_struct) :: blk
     INTEGER :: x_beg, y_beg, x_end, y_end, i, j, ig
+    INTEGER :: imin, imax, jmin, jmax
 
-    CALL block_owned_window(blk, x_beg, x_end, y_beg, y_end)
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
-    blk%cell(x_beg,:)%xtype = CELL_BOUNDARY_TYPE
-    blk%cell(x_beg,:)%xbctype = FLOWBC_NONE
-    blk%cell(x_end,:)%xtype = CELL_BOUNDARY_TYPE
-    blk%cell(x_end,:)%xbctype = FLOWBC_NONE
-    blk%cell(:,y_beg)%ytype = CELL_BOUNDARY_TYPE
-    blk%cell(:,y_beg)%ybctype = FLOWBC_NONE
-    blk%cell(:,y_end)%ytype = CELL_BOUNDARY_TYPE
-    blk%cell(:,y_end)%ybctype = FLOWBC_NONE
+    x_beg = 2
+    y_beg = 2
+    x_end = blk%xmax
+    y_end = blk%ymax
+
+    imin = MAX(imin, x_beg)
+    jmin = MAX(jmin, y_beg)
+    imax = MIN(imax, x_end)
+    jmax = MIN(jmax, y_end)
+
+    IF (block_owns_i(blk, x_beg)) THEN
+       blk%cell(x_beg,:)%xtype = CELL_BOUNDARY_TYPE
+       blk%cell(x_beg,:)%xbctype = FLOWBC_NONE
+    END IF
+    IF (block_owns_i(blk, x_end)) THEN
+       blk%cell(x_end,:)%xtype = CELL_BOUNDARY_TYPE
+       blk%cell(x_end,:)%xbctype = FLOWBC_NONE
+    END IF
+
+    IF (block_owns_j(blk, y_beg)) THEN
+       blk%cell(:,y_beg)%ytype = CELL_BOUNDARY_TYPE
+       blk%cell(:,y_beg)%ybctype = FLOWBC_NONE
+    END IF
+    IF (block_owns_j(blk, y_end)) THEN
+       blk%cell(:,y_end)%ytype = CELL_BOUNDARY_TYPE
+       blk%cell(:,y_end)%ybctype = FLOWBC_NONE
+    END IF
 
     DO ig = 1, nghost
 
@@ -457,7 +477,7 @@ CONTAINS
        IF (block_owns_i(blk, i)) THEN
           blk%uvel(i,:) = 0.0
           blk%vvel(i,:) = blk%vvel(x_beg,:)
-          CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+          CALL extrapolate_udepth(blk, i, jmin, jmax, level=.FALSE.)
           blk%eddy(i,:) = blk%eddy(x_beg,:)
        END IF
 
@@ -465,7 +485,7 @@ CONTAINS
        IF (block_owns_i(blk, i)) THEN
           blk%uvel(i,:) = 0.0
           blk%vvel(i,:) = blk%vvel(x_end,:)
-          CALL extrapolate_udepth(blk, i, y_beg, y_end, level=.FALSE.)
+          CALL extrapolate_udepth(blk, i, jmin, jmax, level=.FALSE.)
           blk%eddy(i,:) = blk%eddy(x_end,:)
        END IF
 
@@ -479,15 +499,15 @@ CONTAINS
        IF (block_owns_j(blk, j)) THEN
           blk%uvel(:,j) = blk%uvel(:,y_beg)
           blk%vvel(:,j) = 0.0
-          CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+          CALL extrapolate_vdepth(blk, imin, imax, j, level=.FALSE.)
           blk%eddy(:,j) = blk%eddy(:,y_beg)
        END IF
 
+       j = blk%ymax + ig
        IF (block_owns_j(blk, j)) THEN
-          j = blk%ymax + ig
           blk%uvel(:,j) = blk%uvel(:,y_end)
           blk%vvel(:,j) = 0.0
-          CALL extrapolate_vdepth(blk, x_beg, x_end, j, level=.FALSE.)
+          CALL extrapolate_vdepth(blk, imin, imax, j, level=.FALSE.)
           blk%eddy(:,j) = blk%eddy(:,y_end)
        END IF
 
@@ -835,19 +855,20 @@ CONTAINS
                 j_beg = bc%start_cell(j)+1
                 j_end	 = bc%end_cell(j)+1
                 DO jj = j_beg, j_end
-                   blk%dp(i,jj) = 0.0
-                   blk%depth(i,jj) = 2*table_input(j) - &
-                        &(blk%depth(i-1,jj) + blk%zbot(i-1,jj)) - blk%zbot(i,jj)
-                   ! blk%depth(i,jj) = table_input(j) - blk%zbot(i,jj)
-                   IF (do_wetdry) blk%depth(i,jj) =  &
-                        &MAX(blk%depth(i,jj), dry_zero_depth)
+                   IF (block_owns(blk, i, jj)) THEN
+                      blk%dp(i,jj) = 0.0
+                      blk%depth(i,jj) = 2*table_input(j) - &
+                           &(blk%depth(i-1,jj) + blk%zbot(i-1,jj)) - blk%zbot(i,jj)
+                      IF (do_wetdry) blk%depth(i,jj) =  &
+                           &MAX(blk%depth(i,jj), dry_zero_depth)
+                       blk%depthstar(i,jj) = blk%depth(i,jj)
+                       blk%depthold(i,jj) = blk%depth(i,jj)
+                       blk%uvel(i,jj) = blk%uvel(i-1,jj)
+                       blk%vvel(i, jj) = blk%vvel(i-1, jj)
+                       blk%cell(i-1,jj)%xtype = CELL_BOUNDARY_TYPE
+                       blk%cell(i-1,jj)%xbctype = FLOWBC_ELEV
+                   END IF
                 END DO
-                blk%depthstar(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
-                blk%depthold(i,j_beg:j_end) = blk%depth(i,j_beg:j_end)
-                blk%uvel(i,j_beg:j_end) = blk%uvel(i-1,j_beg:j_end)
-                blk%vvel(i, j_beg-1:j_end) = blk%vvel(i-1, j_beg-1:j_end)
-                blk%cell(i-1,j_beg:j_end)%xtype = CELL_BOUNDARY_TYPE
-                blk%cell(i-1,j_beg:j_end)%xbctype = FLOWBC_ELEV
              END DO
           CASE ("ELEVELO")
              GOTO 100
