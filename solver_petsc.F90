@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jan  5 09:34:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan  7 14:10:30 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -94,17 +94,12 @@ CONTAINS
                                 ! system based on which equation is
                                 ! being solved
           SELECT CASE (ieq)
-          CASE (SOLVE_V)
-             jmax = jmax - 1
-             build = do_flow
-          CASE (SOLVE_U, SOLVE_DP)
+          CASE (SOLVE_U, SOLVE_V, SOLVE_DP)
              build = do_flow
           CASE (SOLVE_SCALAR)
              build = do_transport
           END SELECT
 
-          pinfo(iblock)%eq(ieq)%built = build
-    
           IF (build) THEN 
              WRITE (*,*) 'Solver Initialize, Block ', iblock, ', equation ', ieq
              WRITE (*,*) '     imax = ', imax, ', jmax = ', jmax, ', size = ', imax*jmax
@@ -189,6 +184,9 @@ CONTAINS
                                 ! (does PC and KSP too)
              CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
              CHKERRQ(ierr)
+
+             pinfo(iblock)%eq(ieq)%built = .TRUE.
+          
           END IF
        END DO
     END DO
