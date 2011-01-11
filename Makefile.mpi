@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Mon Jan 10 08:43:16 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Tue Jan 11 14:38:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -72,7 +72,7 @@ solver_test_OBJS = $(solver_test_SOURCES:%.f90=%.o) $(solver_test_FSOURCES:%.F90
 
 
 FCFLAGS = -g -ggdb -fbounds-check -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
-FCFLAGS = -g -ggdb -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
+# FCFLAGS = -g -ggdb -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
 F90FLAGS = $(FLAGS)
 LDFLAGS = $(FLAGS) 
 FFLAGS = $(FLAGS)

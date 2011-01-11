@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Tue Jan 11 13:43:50 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jan 11 14:55:08 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -22,7 +22,6 @@ MODULE block_hydro
   USE config
   USE block_module
   USE differencing
-  ! USE solver_module
 
   IMPLICIT NONE
 

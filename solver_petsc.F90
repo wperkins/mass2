@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Mon Jan 10 10:23:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jan 11 14:44:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -209,8 +209,8 @@ CONTAINS
     DOUBLE PRECISION :: dtmp
     INTEGER :: ierr
     
-    PetscScalar v, tout(1)
-    PetscOffset i_t
+    PetscScalar v
+    PetscScalar, pointer :: x_vv(:)
 
     imax = x_end - x_start + 1
     jmax = y_end - y_start + 1
@@ -295,7 +295,7 @@ CONTAINS
 
     ! WRITE(*,*) "Solver: Solution complete"
 
-    call VecGetArray(pinfo(iblock)%eq(ieq)%x, tout, i_t, ierr)
+    call VecGetArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
     CHKERRQ(ierr)
   
     DO i = 1, imax
@@ -303,11 +303,11 @@ CONTAINS
           ip = (i-1)*jmax + j
           itmp = x_start + (i - 1)
           jtmp = y_start + (j - 1)
-          dtmp = tout(i_t + 1 + (ip - 1))
+          dtmp = x_vv(ip)
           x(itmp,jtmp) = dtmp
        END DO
     END DO
-    CALL VecRestoreArray(pinfo(iblock)%eq(ieq)%x, tout, i_t, ierr)
+    CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
     CHKERRQ(ierr)
 
     ! WRITE(*,*) "Solver: Solution written to array"
