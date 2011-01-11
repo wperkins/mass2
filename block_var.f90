@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Fri Jan  7 09:35:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jan 11 14:15:40 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -305,7 +305,7 @@ CONTAINS
 
     DO i = imin, imax
        DO j = jmin, jmax
-          larray(i, j) = (var%current(i,j) .GT. 0.0)
+          larray(i, j) = (var%current(i,j) .GT. 0.5)
        END DO
     END DO
 
@@ -337,6 +337,8 @@ CONTAINS
     imax = var%base%imax_owned
     jmin = var%base%jmin_owned
     jmax = var%base%jmax_owned
+
+    var%current = 0.0
 
     DO i = imin, imax
        DO j = jmin, jmax
@@ -384,7 +386,8 @@ CONTAINS
     
     IF (ASSOCIATED(var%star)) THEN
        var%star(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
-    END IF
+       CALL block_var_put(var, BLK_VAR_STAR)
+   END IF
 
 
   END SUBROUTINE block_var_iterate
@@ -410,7 +413,7 @@ CONTAINS
        var%oldold(imin:imax, jmin:jmax) = var%old(imin:imax, jmin:jmax)
        var%old(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
        CALL block_var_put(var, BLK_VAR_OLD)
-       CALL block_var_put(var, BLK_VAR_OLD)
+       CALL block_var_put(var, BLK_VAR_OLDOLD)
     END IF
 
   END SUBROUTINE block_var_timestep

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Fri Jan  7 09:29:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 10 09:44:21 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -157,11 +157,15 @@ CONTAINS
           IF (block(iblock)%mass_source_sum(1) >= maxx_mass) &
                &maxx_mass = block(iblock)%mass_source_sum(1)
        END DO
+
+       hydro_iteration = iteration
+
        IF(maxx_mass < max_mass_source_sum) EXIT ! break out of internal iteration loop
 
        !------------------------------------------------------------------------
 
     END DO    ! internal time iteration loop for momentum, depth correction equations
+    
 
     IF (do_wetdry .AND. .NOT. iterate_wetdry) THEN
        DO iblock = 1, max_blocks
@@ -229,13 +233,13 @@ CONTAINS
     LOGICAL :: slip
 
     DOUBLE PRECISION :: &
-         &ap(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &ae(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &aw(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &an(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &as(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &bp(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &source(1:blk%xmax + 1, 1:blk%ymax + 1)
+         &ap(2:blk%xmax, 2:blk%ymax), &
+         &ae(2:blk%xmax, 2:blk%ymax), &
+         &aw(2:blk%xmax, 2:blk%ymax), &
+         &an(2:blk%xmax, 2:blk%ymax), &
+         &as(2:blk%xmax, 2:blk%ymax), &
+         &bp(2:blk%xmax, 2:blk%ymax), &
+         &source(2:blk%xmax, 2:blk%ymax)
 
     blkidx = blk%index
 
@@ -244,8 +248,14 @@ CONTAINS
     x_end = blk%xmax
     y_end = blk%ymax
 
-    DO i=x_beg, x_end
-       DO j=y_beg,y_end
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MIN(jmax, y_end)
+
+    DO i=imin, imax
+       DO j=jmin, jmax
           IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hu1(i,j) 
           hp2 = blk%hu2(i,j)
@@ -519,18 +529,12 @@ CONTAINS
        END DO
     END DO
 
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
-    imin = MAX(imin, x_beg)
-    imax = MIN(imax, x_end)
-    jmin = MAX(jmin, y_beg)
-    jmax = MIN(jmax, y_end)
-
 !!$FIXME
-!!$    junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
-!!$         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
-!!$         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
-!!$         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
-!!$         &blk%uvelstar(imin:imax,jmin:jmax))
+    junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
+         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+         &blk%uvelstar(imin:imax,jmin:jmax))
 
     CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_put(blk%bv_lud)
@@ -576,13 +580,13 @@ CONTAINS
     DOUBLE PRECISION, EXTERNAL :: afunc
 
     DOUBLE PRECISION :: &
-         &ap(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &ae(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &aw(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &an(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &as(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &bp(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &source(1:blk%xmax + 1, 1:blk%ymax + 1)
+         &ap(2:blk%xmax, 2:blk%ymax), &
+         &ae(2:blk%xmax, 2:blk%ymax), &
+         &aw(2:blk%xmax, 2:blk%ymax), &
+         &an(2:blk%xmax, 2:blk%ymax), &
+         &as(2:blk%xmax, 2:blk%ymax), &
+         &bp(2:blk%xmax, 2:blk%ymax), &
+         &source(2:blk%xmax, 2:blk%ymax)
 
     INTEGER :: x_end, y_end
     INTEGER :: imin, imax, jmin, jmax
@@ -590,15 +594,20 @@ CONTAINS
     LOGICAL :: slip
 
     blkidx = blk%index
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
 
     x_beg = 2
     y_beg = 2
     x_end = blk%xmax
     y_end = blk%ymax
 
-    DO i=x_beg,x_end
-       DO j=y_beg,y_end
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MIN(jmax, y_end)
+
+    DO i=imin, imax
+       DO j=jmin, jmax
           IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hv1(i,j) 
           hp2 = blk%hv2(i,j)
@@ -862,17 +871,12 @@ CONTAINS
 
     ! apply zero flow conditions on sides
 
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
-    imin = MAX(imin, x_beg)
-    imax = MIN(imax, x_end)
-    jmin = MAX(jmin, y_beg)
-    jmax = MAX(jmax, y_end)
 ! FIXME
-!!$    junk = solver(blkidx, SOLVE_V, imin, imax, jmin, jmax, scalar_sweep, &
-!!$         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
-!!$         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
-!!$         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
-!!$         &blk%vvelstar(imin:imax,jmin:jmax))
+    junk = solver(blkidx, SOLVE_V, imin, imax, jmin, jmax, scalar_sweep, &
+         &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
+         &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
+         &an(imin:imax, jmin:jmax), bp(imin:imax, jmin:jmax), &
+         &blk%vvelstar(imin:imax,jmin:jmax))
 
     CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
     CALL block_var_put(blk%bv_lvd)
@@ -1020,27 +1024,32 @@ CONTAINS
     DOUBLE PRECISION :: depth_e,depth_w,depth_n,depth_s,depth_p	! depths at p,e,w,n,s
     DOUBLE PRECISION :: flux_e,flux_w,flux_n,flux_s					! fluxes
     DOUBLE PRECISION :: cpo								! coefficients in discretization eqns
+    DOUBLE PRECISION :: djunk
 
     INTEGER :: imin, imax, jmin, jmax
 
     DOUBLE PRECISION :: &
-         &cp(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &ce(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &cw(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &cn(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &cs(1:blk%xmax + 1, 1:blk%ymax + 1), &
-         &bp(1:blk%xmax + 1, 1:blk%ymax + 1)
+         &cp(2:blk%xmax, 2:blk%ymax), &
+         &ce(2:blk%xmax, 2:blk%ymax), &
+         &cw(2:blk%xmax, 2:blk%ymax), &
+         &cn(2:blk%xmax, 2:blk%ymax), &
+         &cs(2:blk%xmax, 2:blk%ymax), &
+         &bp(2:blk%xmax, 2:blk%ymax)
 
     blkidx = blk%index
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
-
     x_beg = 2
     x_end = blk%xmax
     y_beg = 2
     y_end = blk%ymax
 
-    DO i=x_beg,x_end
-       DO j=y_beg,y_end
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    jmin = MAX(jmin, y_beg)
+    imax = MIN(imax, x_end)
+    jmax = MIN(jmax, y_end)
+
+    DO i=imin, imax
+       DO j=jmin, jmax
           IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hp1(i,j)
           hp2 = blk%hp2(i,j)
@@ -1072,12 +1081,13 @@ CONTAINS
 
           ! blended 3-time level time discretization
 
-          blk%mass_source(i,j) = &
+          djunk = &
                &cpo*(blk%depthold(i,j) - blk%depth(i,j)) + &
                &cpo*blend_time*(-0.5*blk%depth(i,j) + blk%depthold(i,j) - &
                &0.5*blk%deptholdold(i,j)) + &
                &flux_w - flux_e + flux_s - flux_n + &
                &blk%xsource(i,j)*hp1*hp2
+          blk%mass_source(i,j) = djunk
 
 
           ce(i,j) = he2*depth_e*blk%lud(i,j)
@@ -1196,13 +1206,14 @@ CONTAINS
        END DO
     END DO
 
+    blk%dp(imin:imax,jmin:jmax) = 0.0
 ! FIXME
-!!$    junk = solver(blkidx, SOLVE_DP, imin, imax, jmin, jmax, depth_sweep, &
-!!$         &cp(imin:imax,jmin:jmax), cw(imin:imax,jmin:jmax), &
-!!$         &ce(imin:imax,jmin:jmax), cs(imin:imax,jmin:jmax), &
-!!$         &cn(imin:imax,jmin:jmax), &
-!!$         &bp(imin:imax,jmin:jmax), &
-!!$         &blk%dp(imin:imax,jmin:jmax))
+    junk = solver(blkidx, SOLVE_DP, imin, imax, jmin, jmax, depth_sweep, &
+         &cp(imin:imax,jmin:jmax), cw(imin:imax,jmin:jmax), &
+         &ce(imin:imax,jmin:jmax), cs(imin:imax,jmin:jmax), &
+         &cn(imin:imax,jmin:jmax), &
+         &bp(imin:imax,jmin:jmax), &
+         &blk%dp(imin:imax,jmin:jmax))
 
     ! compute updated depth with some underrelaxation
     ! depth = rel*depth_new + (1 - rel)*depth_old

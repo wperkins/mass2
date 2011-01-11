@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Fri Jan  7 13:56:41 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Mon Jan 10 08:43:16 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -33,6 +33,7 @@ CGNS_FLIBS = -L/opt/local/lib -lcgns
 PETSC_DIR = /Users/d3g096/ProjectStuff/mass2/parallel/petsc-3.1-p6
 PETSC_DIR = /home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7
 PETSC_ARCH = darwin9.8.0-c-opt
+PETSC_ARCH = darwin9.8.0-c-debug
 PETSC_FCFLAGS = -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(PETSC_DIR)/include
 PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
 
@@ -49,6 +50,7 @@ mass2_SOURCES = \
 	globals.f90 \
 	hydro_bc.f90 \
 	hydro_solve.f90 \
+	mass_source_output.f90 \
 	mass2_config.f90 \
 	mass2_parallel.f90 \
 	plot_cgns.f90 \
@@ -63,9 +65,10 @@ mass2_LIBS = time_series/libts.a
 
 solver_test_SOURCES = \
 	solver_test.f90 \
-	solver_common.f90 \
-	solver_petsc.f90
-solver_test_OBJS = $(solver_test_SOURCES:%.f90=%.o)
+	solver_common.f90
+solver_test_FSOURCES = \
+	solver_petsc.F90
+solver_test_OBJS = $(solver_test_SOURCES:%.f90=%.o) $(solver_test_FSOURCES:%.F90=%.o)
 
 
 FCFLAGS = -g -ggdb -fbounds-check -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
@@ -76,6 +79,8 @@ FFLAGS = $(FLAGS)
 
 LIBS =
 FLIBS = $(GA_FLIBS) $(CGNS_FLIBS) $(PETSC_FLIBS)
+
+all: mass2.mpi solver_test
 
 mass2.mpi: $(mass2_OBJS)
 	$(F90LINKER) $(LDFLAGS) -o $@ $(mass2_OBJS) $(mass2_LIBS) $(FLIBS)
@@ -100,7 +105,8 @@ hydro_bc.o: hydro_bc.f90 table_bc_module.o mass2_config.o
 hydro_solve.o: hydro_solve.f90 block_hydro.o block_hydro_bc.o differencing.o solver_petsc.o mass2_config.o
 globals.o: globals.f90 
 mass2_config.o: mass2_config.f90 differencing.o solver_common.o block_var_base.o
-mass2_parallel.o: mass2_parallel.f90 block_grid.o block_initialization.o mass2_config.o plot_output.o
+mass2_parallel.o: mass2_parallel.f90 block_grid.o block_initialization.o \
+	mass2_config.o mass_source_output.o plot_output.o 
 plot_cgns.o: plot_cgns.f90 block_grid.o block_hydro.o
 plot_output.o: plot_output.f90 plot_cgns.o mass2_config.o block_parallel.o
 solver_common.o: solver_common.f90

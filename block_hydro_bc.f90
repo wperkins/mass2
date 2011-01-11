@@ -1188,6 +1188,20 @@ CONTAINS
        GOTO 100
     END SELECT
 
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_depth, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_depth, BLK_VAR_STAR)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_get(blk%bv_depth, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_depth, BLK_VAR_STAR)
+
     RETURN
 100 CONTINUE
     WRITE(buf,*) " apply_hydro_bc: cannot handle: ", &

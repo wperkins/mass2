@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Fri Jan  7 14:10:30 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 10 10:23:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -37,7 +37,7 @@ MODULE solver_module
                                 ! contexts for each equation solved
   TYPE petsc_save_rec
      LOGICAL :: built
-     Vec :: x,b,u
+     Vec :: x,b
      Mat :: A
      KSP :: ksp
   END TYPE petsc_save_rec
@@ -81,7 +81,7 @@ CONTAINS
     CALL PetscInitialize(PETSC_NULL_CHARACTER,ierr)
     CHKERRQ(ierr)
 
-    CALL PetscPopSignalHandler(ierr)
+    ! CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
 
     DO iblock = 1, myblocks
@@ -135,8 +135,6 @@ CONTAINS
              CALL VecSetFromOptions(pinfo(iblock)%eq(ieq)%x,ierr)
              CHKERRQ(ierr)
              CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%b,ierr)
-             CHKERRQ(ierr)
-             CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%u,ierr)
              CHKERRQ(ierr)
 
                                 ! create a solver context for this
@@ -208,6 +206,7 @@ CONTAINS
     DOUBLE PRECISION, INTENT(INOUT), &
          &DIMENSION(x_start:x_end,y_start:y_end) :: x
     INTEGER :: imax, jmax, i, j, ip, ie, iw, in, is, itmp, jtmp
+    DOUBLE PRECISION :: dtmp
     INTEGER :: ierr
     
     PetscScalar v, tout(1)
@@ -230,39 +229,39 @@ CONTAINS
           jtmp = y_start + (j - 1)
           
           v = ap(itmp,jtmp)
-          call MatSetValues(pinfo(iblock)%eq(ieq)%A, 1, ip, 1, ip, v, INSERT_VALUES, ierr)
+          call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
 
           IF (j .LT. jmax) THEN
              v = -an(itmp,jtmp)
-             call MatSetValues(pinfo(iblock)%eq(ieq)%A, 1, ip, 1, in, v, INSERT_VALUES,ierr)
+             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, in, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (j .GT. 1) THEN
              v = -as(itmp,jtmp)
-             call MatSetValues(pinfo(iblock)%eq(ieq)%A, 1, ip, 1, is, v, INSERT_VALUES,ierr)
+             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, is, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (i .LT. imax) THEN
              v = -ae(itmp,jtmp)
-             call MatSetValues(pinfo(iblock)%eq(ieq)%A, 1, ip, 1, ie, v, INSERT_VALUES,ierr)
+             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ie, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (i .GT. 1) THEN
              v = -aw(itmp,jtmp)
-             call MatSetValues(pinfo(iblock)%eq(ieq)%A, 1, ip, 1, iw, v, INSERT_VALUES,ierr)
+             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, iw, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           v = bp(itmp,jtmp)
-          call VecSetValues(pinfo(iblock)%eq(ieq)%b, 1, ip, v, INSERT_VALUES, ierr)
+          call VecSetValue(pinfo(iblock)%eq(ieq)%b, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
         
           v = x(itmp,jtmp)
-          call VecSetValues(pinfo(iblock)%eq(ieq)%x, 1, ip, v, INSERT_VALUES, ierr)
+          call VecSetValue(pinfo(iblock)%eq(ieq)%x, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
 
           ! WRITE(*,*) "Solver: inserted row ", ip
@@ -304,7 +303,8 @@ CONTAINS
           ip = (i-1)*jmax + j
           itmp = x_start + (i - 1)
           jtmp = y_start + (j - 1)
-          x(itmp,jtmp) = tout(i_t + 1 + (ip - 1))
+          dtmp = tout(i_t + 1 + (ip - 1))
+          x(itmp,jtmp) = dtmp
        END DO
     END DO
     CALL VecRestoreArray(pinfo(iblock)%eq(ieq)%x, tout, i_t, ierr)
@@ -335,8 +335,6 @@ CONTAINS
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%x, ierr)
              CHKERRQ(ierr)
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%b, ierr)
-             CHKERRQ(ierr)
-             CALL VecDestroy(pinfo(iblock)%eq(ieq)%u, ierr)
              CHKERRQ(ierr)
           END IF
        END DO

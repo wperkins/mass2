@@ -28,7 +28,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November  4, 2002 by William A. Perkins
-! Last Change: Thu Jul 17 11:40:56 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Mon Jan 10 07:21:00 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 PROGRAM solver_test
@@ -39,7 +39,7 @@ PROGRAM solver_test
 
   CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
 
-  INTEGER, PARAMETER :: imax = 3, jmax = 4
+  INTEGER, PARAMETER :: imax = 6, jmax = 8
   DOUBLE PRECISION :: k, t, w, h
   DOUBLE PRECISION :: dx,dy
   DOUBLE PRECISION, DIMENSION(1:imax,1:jmax) :: ap, aw, ae, as, an, bp, tsol
@@ -125,8 +125,8 @@ PROGRAM solver_test
 
 
   junk = solver(1, SOLVE_SCALAR, 1, imax, 1, jmax, 500, &
-       &ap, aw, ae, &
-       &as, an, bp, &
+       &ap(1:imax,1:jmax), aw(1:imax,1:jmax), ae(1:imax,1:jmax), &
+       &as(1:imax,1:jmax), an(1:imax,1:jmax), bp(1:imax,1:jmax), &
        &tsol)
 
   DO i = 1, imax

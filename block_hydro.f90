@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Fri Jan  7 10:04:45 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jan 11 13:43:50 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -109,8 +109,8 @@ CONTAINS
        DO j= j_index_min+1, block(iblk)%ymax + j_index_extra
           DO i = 2, block(iblk)%xmax
              IF (block_owns(block(iblk), i, j)) THEN
-                flux1 = block(iblk)%uflux(i,j-1)
-                flux2 = block(iblk)%uflux(i,j)
+                flux1 = block(iblk)%vflux(i,j-1)
+                flux2 = block(iblk)%vflux(i,j)
                 block(iblk)%vvel_p(i,j) = 0.5*(flux1+flux2)/&
                      &block(iblk)%hp1(i,j)/block(iblk)%depth(i,j)
              END IF
@@ -137,6 +137,17 @@ CONTAINS
           END IF
        END DO
 
+       DO i = 2, block(iblk)%xmax
+          DO j= 2, block(iblk)%xmax
+             IF (block_owns(block(iblk), i, j)) THEN
+                block(iblk)%vmag(i, j) = SQRT(&
+                     &block(iblk)%uvel_p(i,j)*block(iblk)%uvel_p(i,j) + &
+                     &block(iblk)%vvel_p(i,j)*block(iblk)%vvel_p(i,j))
+             END IF
+          END DO
+       END DO
+       
+
        ! eastward & northward velocity @ cell center
 
        WHERE (block(iblk)%hp1 .NE. 0.0 .AND. block(iblk)%hp2 .NE. 0.0)
@@ -155,11 +166,7 @@ CONTAINS
        CALL block_var_put(block(iblk)%bv_vvel_p)
        CALL block_var_put(block(iblk)%bv_u_cart)
        CALL block_var_put(block(iblk)%bv_v_cart)
-       CALL ga_sync()
-       CALL block_var_get(block(iblk)%bv_uvel_p)
-       CALL block_var_get(block(iblk)%bv_vvel_p)
-       CALL block_var_get(block(iblk)%bv_u_cart)
-       CALL block_var_get(block(iblk)%bv_v_cart)
+       CALL block_var_put(block(iblk)%bv_vmag)
        
     END DO
   END SUBROUTINE velocity_shift
@@ -596,23 +603,58 @@ CONTAINS
     INTEGER :: imin, imax, jmin, jmax
     INTEGER :: lo(1), hi(1), ld(1)
     INTEGER :: ierr
+    DOUBLE PRECISION :: djunk
 
     lo = 1
     hi = 1
     ld = 1
     
-    CALL ga_zero(blk%mass_source_ga, ierr)
-
     CALL block_owned_window(blk, imin, jmin, imax, jmax)
-    blk%mass_source_sum(1) = &
-         &SUM(ABS(blk%mass_source(imin:imax, jmin:jmax)))
+    djunk = &
+         &SUM(ABS(blk%mass_source))
+    blk%mass_source_sum(1) = djunk
     CALL nga_put(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
     CALL ga_sync()
     CALL ga_merge_mirrored(blk%mass_source_ga, ierr)
     CALL nga_get(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
-    
+
+    blk%mass_source = 0.0
 
   END SUBROUTINE block_mass_source_sum
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE calc_diag
+  ! ----------------------------------------------------------------
+  SUBROUTINE calc_diag()
+
+    IMPLICIT NONE
+
+    INTEGER :: i, iblock
+
+    DO iblock = 1, max_blocks
+
+       WHERE (block(iblock)%depth .GT. 0.0 .AND. &
+            &block(iblock)%hp1 .NE. 0.0 .AND. &
+            &block(iblock)%hp2 .NE. 0.0)
+          block(iblock)%froude_num = &
+               &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)/ &
+               &SQRT(grav*block(iblock)%depth)
+          block(iblock)%courant_num = &
+               &delta_t*(2.0*SQRT(grav*block(iblock)%depth) + &
+               &SQRT(block(iblock)%uvel_p**2 + block(iblock)%vvel_p**2)) * &
+               &SQRT(1/block(iblock)%hp1**2 + 1/block(iblock)%hp2**2)
+       ELSEWHERE 
+          block(iblock)%froude_num = 0.0
+          block(iblock)%courant_num = 0.0
+       END WHERE
+
+       CALL block_var_put(block(iblock)%bv_froude_num)
+       CALL block_var_put(block(iblock)%bv_courant_num)
+
+    END DO
+
+  END SUBROUTINE calc_diag
 
 
 END MODULE block_hydro

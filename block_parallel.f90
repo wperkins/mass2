@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Fri Jan  7 10:05:21 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 10 10:36:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -393,10 +393,16 @@ CONTAINS
 
     CALL block_used_window(blk, imin, imax, jmin, jmax)
     ALLOCATE(blk%isdead(imin:imax, jmin:jmax))
+    blk%isdead%u = .FALSE.
+    blk%isdead%v = .FALSE.
+    blk%isdead%p = .FALSE.
+    blk%isdead%transient = .FALSE.
     ALLOCATE(blk%cell(imin:imax, jmin:jmax))
     ALLOCATE(blk%isdry(imin:imax, jmin:jmax))
+    blk%isdry = .FALSE.
     ALLOCATE(blk%isdrystar(imin:imax, jmin:jmax))
-
+    blk%isdrystar = .FALSE.
+    
     blk%buffer => block_buffer(blk)
 
     ! make a mirrored GlobalArray to hold mass source summation

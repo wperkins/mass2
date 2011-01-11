@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Thu Jan  6 11:37:52 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 10 10:19:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -132,17 +132,26 @@ CONTAINS
     DO iblock = 1, max_blocks
        CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_OLD)
+       CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_OLDOLD)
        CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_OLD)
+       CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_OLDOLD)
        CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
+       CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_OLD)
+       CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_OLDOLD)
        CALL block_var_put(block(iblock)%bv_wsel, BLK_VAR_CURRENT)
-       CALL block_var_put(block(iblock)%bv_wsel, BLK_VAR_STAR)
        CALL block_var_put(block(iblock)%bv_eddy, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
        CALL ga_sync()
+
+       ! don't block_var_get old or oldolod because the ghosted values
+       ! are not needed locally
+
        CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_STAR)
        CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
@@ -150,7 +159,6 @@ CONTAINS
        CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_STAR)
        CALL block_var_get(block(iblock)%bv_wsel, BLK_VAR_CURRENT)
-       CALL block_var_get(block(iblock)%bv_wsel, BLK_VAR_STAR)
        CALL block_var_get(block(iblock)%bv_eddy, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)

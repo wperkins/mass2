@@ -59,9 +59,6 @@ MODULE gage_output
   INTEGER, PRIVATE, POINTER :: scalar_varid(:)
   INTEGER, PRIVATE :: press_varid, deltap_varid, sat_varid
 
-  INTEGER, PARAMETER, PRIVATE :: mass_source_iounit = 19
-  CHARACTER (LEN=80), PARAMETER, PRIVATE :: mass_source_ioname = 'mass_source_monitor.out'
-
   INTEGER, PRIVATE, POINTER :: depos_varid(:), erode_varid(:), bedsed_varid(:), bedmass_varid(:)
   INTEGER, PRIVATE, POINTER :: bedporemass_varid(:), bedpore_varid(:), beddis_varid(:)
   INTEGER, PRIVATE, POINTER :: part_depos_varid(:), bedpartmass_varid(:), bedpart_varid(:)
@@ -976,75 +973,6 @@ CONTAINS
 
   END SUBROUTINE gage_file_close
   
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE mass_file_setup
-  ! ----------------------------------------------------------------
-  SUBROUTINE mass_file_setup()
-
-    USE globals
-
-    IMPLICIT NONE
-
-    INTEGER iblock
-
-    CALL open_new(mass_source_ioname, mass_source_iounit)
-    WRITE(mass_source_iounit,*)"# mass source history - summation of the mass source in each block "
-    WRITE(mass_source_iounit,*)"#      total mass imbalance for each block in ft3/sec"
-    WRITE(mass_source_iounit,100,advance='no')
-    DO iblock = 1, max_blocks 
-       WRITE(mass_source_iounit,200, advance='no') iblock
-    END DO
-    WRITE(mass_source_iounit,*)
-    CALL FLUSH(mass_source_iounit)
-
-100 FORMAT('#date',8x,'time',5x)
-200 FORMAT(i5,5x)
-
-  END SUBROUTINE mass_file_setup
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE mass_print
-  ! ----------------------------------------------------------------
-  SUBROUTINE mass_print(date_string, time_string)
-
-    USE globals
-    USE misc_vars, ONLY: iteration
-
-    IMPLICIT NONE
-
-    INTEGER :: iblock, j
-    CHARACTER*(*) :: date_string, time_string
-
-    j = 1
-    DO iblock = 1, max_blocks
-       IF (j == 1) &
-            &WRITE(mass_source_iounit,3013, advance='no')date_string,time_string,iteration
-       WRITE(mass_source_iounit,3012, advance='no')SUM(ABS(block(iblock)%mass_source))
-       IF (j >= 20) THEN
-          j = 1
-          IF (iblock .ne. max_blocks) WRITE(mass_source_iounit,*)
-       ELSE
-          j = j + 1
-       END IF
-    END DO
-    WRITE(mass_source_iounit,*)
-    CALL FLUSH(mass_source_iounit)
-
-3013 FORMAT(a10,2x,a12,1x,I3,1X)
-3012 FORMAT((g12.4,1x))
-    
-
-  END SUBROUTINE mass_print
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE mass_file_close
-  ! ----------------------------------------------------------------
-  SUBROUTINE mass_file_close()
-
-    CLOSE(mass_source_iounit)    
-
-  END SUBROUTINE mass_file_close
 
 
 
