@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Mon Jan 10 09:44:21 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 08:48:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -1251,7 +1251,7 @@ CONTAINS
 
     x_beg = MAX(x_beg, 2)
     y_beg = MAX(y_beg, 2)
-    x_end = MIN(y_end, blk%xmax)
+    x_end = MIN(x_end, blk%xmax)
     y_end = MIN(y_end, blk%ymax)
 
     ! correct u velocity

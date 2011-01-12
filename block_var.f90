@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Tue Jan 11 14:15:40 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 08:32:48 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -180,10 +180,11 @@ CONTAINS
     INTEGER :: lo(ndim), hi(ndim), ld(ndim-1)
     INTEGER :: imin, imax, jmin, jmax
 
-    INTEGER :: myindex = BLK_VAR_CURRENT
-    LOGICAL :: doblocking = .TRUE.
+    INTEGER :: myindex
 
     DOUBLE PRECISION, POINTER :: tmp(:,:)
+
+    myindex = BLK_VAR_CURRENT
 
     IF (PRESENT(index)) myindex = index
 
@@ -215,9 +216,7 @@ CONTAINS
             &tmp => var%oldold
     END SELECT
     
-    IF (ASSOCIATED(tmp)) THEN
-       CALL nga_get(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
-    END IF
+    CALL nga_get(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
   END SUBROUTINE block_var_get
 
 
@@ -238,7 +237,9 @@ CONTAINS
     INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION, POINTER :: tmp(:,:)
 
-    INTEGER :: myindex = BLK_VAR_CURRENT
+    INTEGER :: myindex
+
+    myindex = BLK_VAR_CURRENT
 
     IF (PRESENT(index)) myindex = index
 
@@ -269,8 +270,7 @@ CONTAINS
             &tmp => var%oldold
     END SELECT
 
-    IF (ASSOCIATED(tmp))&
-         &CALL nga_put(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
+    CALL nga_put(var%ga_handle, lo, hi, tmp(imin:imax, jmin:jmax), ld)
 
   END SUBROUTINE block_var_put
 
@@ -362,9 +362,11 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN) :: val
 
     var%current = val
-    CALL block_var_iterate(var)
-    CALL block_var_timestep(var)
-    CALL block_var_timestep(var)
+    IF (ASSOCIATED(var%star))  CALL block_var_iterate(var)
+    IF (ASSOCIATED(var%old)) THEN 
+       CALL block_var_timestep(var)
+       CALL block_var_timestep(var)
+    END IF
 
   END SUBROUTINE block_var_initialize
 
@@ -384,11 +386,8 @@ CONTAINS
     jmin = var%base%jmin_owned
     jmax = var%base%jmax_owned
     
-    IF (ASSOCIATED(var%star)) THEN
-       var%star(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
-       CALL block_var_put(var, BLK_VAR_STAR)
-   END IF
-
+    var%star(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
+    CALL block_var_put(var, BLK_VAR_STAR)
 
   END SUBROUTINE block_var_iterate
   
@@ -409,12 +408,13 @@ CONTAINS
     jmax = var%base%jmax_owned
     
 
-    IF (ASSOCIATED(var%oldold) .AND. ASSOCIATED(var%old)) THEN
-       var%oldold(imin:imax, jmin:jmax) = var%old(imin:imax, jmin:jmax)
-       var%old(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
-       CALL block_var_put(var, BLK_VAR_OLD)
-       CALL block_var_put(var, BLK_VAR_OLDOLD)
-    END IF
+    var%oldold(imin:imax, jmin:jmax) = var%old(imin:imax, jmin:jmax)
+    var%old(imin:imax, jmin:jmax) = var%current(imin:imax, jmin:jmax)
+    CALL block_var_put(var, BLK_VAR_OLD)
+    CALL block_var_put(var, BLK_VAR_OLDOLD)
+
+    ! remote old values are never needed on the local processor, so no
+    ! need to get
 
   END SUBROUTINE block_var_timestep
 
@@ -438,9 +438,11 @@ CONTAINS
     DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)
     INTEGER, INTENT(IN), OPTIONAL :: index
 
-    INTEGER :: myindex = BLK_VAR_CURRENT
+    INTEGER :: myindex
 
     INTEGER :: junk, lo(ndim), hi(ndim), ld(ndim)
+
+    myindex = BLK_VAR_CURRENT
 
     IF (PRESENT(index)) myindex = index
 

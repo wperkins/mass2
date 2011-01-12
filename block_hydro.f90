@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Tue Jan 11 14:55:08 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 07:49:28 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -83,15 +83,17 @@ CONTAINS
 
        CALL block_var_put(block(iblk)%bv_uflux)
        CALL block_var_put(block(iblk)%bv_vflux)
-       CALL ga_sync()
-       CALL block_var_get(block(iblk)%bv_uflux)
-       CALL block_var_get(block(iblk)%bv_vflux)
 
     END DO
+
+    CALL ga_sync()
 
     ! Next, compute the p-cell center velocity components from the fluxes
 
     DO iblk = 1, max_blocks
+
+       CALL block_var_get(block(iblk)%bv_uflux)
+       CALL block_var_get(block(iblk)%bv_vflux)
 
        DO i = i_index_min+1, block(iblk)%xmax+i_index_extra
           DO j=2, block(iblk)%ymax 
