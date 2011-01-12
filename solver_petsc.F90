@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Tue Jan 11 14:44:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 10:47:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -31,6 +31,8 @@ MODULE solver_module
 #include "finclude/petscpc.h90"
 #include "finclude/petscksp.h"
 #include "finclude/petscksp.h90"
+#include "finclude/petscis.h"
+#include "finclude/petscis.h90"
 
                                 ! individual blocks need to have save
                                 ! matrices, vectors, and solver
@@ -43,6 +45,10 @@ MODULE solver_module
   END TYPE petsc_save_rec
 
   TYPE petsc_blk_rec
+     INTEGER :: gimin, gimax, gjmin, gjmax
+     INTEGER :: limin, limax, ljmin, ljmax
+     INTEGER :: nlocal, nglobal
+     IS :: iset
      TYPE (petsc_save_rec) :: eq(NUM_SOLVE)
   END TYPE petsc_blk_rec
 
@@ -55,28 +61,17 @@ MODULE solver_module
 CONTAINS
 
   ! ----------------------------------------------------------------
-  ! INTEGER FUNCTION solver_initialize
-  ! Returns 0 if all is well
+  ! SUBROUTINE solver_initialize
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver_initialize(blocks, xmax, ymax, do_flow, do_transport)
-    
+  SUBROUTINE solver_initialize(blocks)
+
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: blocks, xmax(blocks), ymax(blocks)
-    LOGICAL, INTENT(IN) :: do_flow, do_transport
+    INTEGER, INTENT(IN) :: blocks
+
     INTEGER :: ierr
-    INTEGER :: iblock, imax, jmax, ieq, its
-    CHARACTER (LEN=10) :: prefix
-    CHARACTER (LEN=1024) :: buf
-    LOGICAL :: build
-
-    PC :: pc
-    PetscReal :: rtol, atol, dtol
-
-    dtol = 1e+04
-
-    myblocks = blocks
-    ALLOCATE(pinfo(myblocks))
+    
+    ALLOCATE(pinfo(blocks))
 
     CALL PetscInitialize(PETSC_NULL_CHARACTER,ierr)
     CHKERRQ(ierr)
@@ -84,183 +79,252 @@ CONTAINS
     ! CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
 
-    DO iblock = 1, myblocks
-       DO ieq = 1, 4
+  END SUBROUTINE solver_initialize
 
-          imax = xmax(iblock) - 2 + 1
-          jmax = ymax(iblock) - 2 + 1
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION solver_global_index
+  !
+  ! the indexes i and j are in the global window.  
+  !
+  ! the result is a global, 0-based index into a global vector
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION solver_global_index(pinfo, i, j) RESULT (ip)
 
-                                ! determine the size of the linear
-                                ! system based on which equation is
-                                ! being solved
-          SELECT CASE (ieq)
-          CASE (SOLVE_U, SOLVE_V, SOLVE_DP)
-             build = do_flow
-          CASE (SOLVE_SCALAR)
-             build = do_transport
-          END SELECT
+    IMPLICIT NONE
+    TYPE (petsc_blk_rec), INTENT(IN) :: pinfo
+    INTEGER, INTENT(IN) :: i, j
+    INTEGER :: itmp, jtmp, jsize
 
-          IF (build) THEN 
-             WRITE (*,*) 'Solver Initialize, Block ', iblock, ', equation ', ieq
-             WRITE (*,*) '     imax = ', imax, ', jmax = ', jmax, ', size = ', imax*jmax
+    ! 0-based indexes in global window
 
-          
+    itmp = i - pinfo%gimin
+    jtmp = j - pinfo%gjmin
 
-                                ! create a coefficient matrix of
-                                ! appropriate size for this block and
-                                ! equation and another matrix that may
-                                ! store a preconditioner
+    ! size of global windo
+    jsize = pinfo%gjmax - pinfo%gjmin + 1
 
-             CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
-             CHKERRQ(ierr)
-             CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
-             CHKERRQ(ierr)
-             CALL MatSetSizes(pinfo(iblock)%eq(ieq)%A, imax*jmax, imax*jmax, &
-                  &PETSC_DETERMINE, PETSC_DETERMINE, ierr)
-             CALL MatSetFromOptions(pinfo(iblock)%eq(ieq)%A, ierr)
-             CHKERRQ(ierr)
+    ! 0-based global vector index
+    ip = itmp*jsize + jtmp
+
+  END FUNCTION solver_global_index
+
+
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION solver_initialize_block
+  ! Returns 0 if all is well
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION solver_initialize_block(iblock, gimin, gimax, gjmin, gjmax, &
+       &limin, limax, ljmin, ljmax, do_flow, do_transport)
     
-                                ! create vectors to hold the
-                                ! right-hand side and estimate
-             
-             CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
-             CHKERRQ(ierr)
-             CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
-             CHKERRQ(ierr)
+    IMPLICIT NONE
 
-             ! FIXME: wrong sizes
-             CALL VecSetSizes(pinfo(iblock)%eq(ieq)%x, imax*jmax, PETSC_DETERMINE, ierr)
-             CHKERRQ(ierr)
-             
-             CALL VecSetFromOptions(pinfo(iblock)%eq(ieq)%x,ierr)
-             CHKERRQ(ierr)
-             CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x,pinfo(iblock)%eq(ieq)%b,ierr)
-             CHKERRQ(ierr)
+    INTEGER, INTENT(IN) :: iblock
+    INTEGER, INTENT(IN) :: gimin, gimax, gjmin, gjmax
+    INTEGER, INTENT(IN) :: limin, ljmin, limax, ljmax
+    LOGICAL, INTENT(IN) :: do_flow, do_transport
+    INTEGER :: ierr
+    INTEGER :: ieq, its
+    INTEGER :: i, j, lidx
+    CHARACTER (LEN=10) :: prefix
+    CHARACTER (LEN=1024) :: buf
+    LOGICAL :: build
 
-                                ! create a solver context for this
-                                ! block and equation. The options are
-                                ! renamed with a prefix of either
-                                ! 'scalar' or 'depth'.  
+    PC :: pc
+    PetscReal :: rtol, atol, dtol
+    PetscInt, ALLOCATABLE :: gidx(:)
 
-             SELECT CASE (ieq)
-             CASE (SOLVE_DP)
-                prefix = 'depth_'
-                its = depth_sweep
-                rtol = depth_rtol
-                atol = depth_atol
-             CASE DEFAULT
-                prefix = 'scalar_'
-                its = scalar_sweep
-                rtol = scalar_rtol
-                atol = scalar_atol
-             END SELECT
+    dtol = 1e+04
 
-             
-             CALL KSPCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
-             CHKERRQ(ierr)
-             CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
-             CHKERRQ(ierr)
-             CALL KSPSetInitialGuessNonzero(pinfo(iblock)%eq(ieq)%ksp, PETSC_TRUE, ierr)
-             CHKERRQ(ierr)
-             CALL KSPSetTolerances(pinfo(iblock)%eq(ieq)%ksp, rtol, atol, dtol, its, ierr)
-             CHKERRQ(ierr)
-             CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
-             CHKERRQ(ierr)
-             CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
-                  &PETSC_NULL, PETSC_NULL, ierr);
-             CHKERRQ(ierr)
+    pinfo(iblock)%gimin = gimin
+    pinfo(iblock)%gimax = gimax
+    pinfo(iblock)%gjmin = gjmin
+    pinfo(iblock)%gjmax = gjmax
+    pinfo(iblock)%nglobal = (gimax - gimin + 1)*(gjmax - gjmin + 1)
 
-             ! need to change the preconditioner, since the default
-             ! (ILU) does not work with MATMPIAIJ matrixes
+    pinfo(iblock)%limin = limin
+    pinfo(iblock)%limax = limax
+    pinfo(iblock)%ljmin = ljmin
+    pinfo(iblock)%ljmax = ljmax
+    pinfo(iblock)%nlocal = (limax - limin + 1)*(ljmax - ljmin + 1)
 
-             CALL KSPGetPC(pinfo(iblock)%eq(ieq)%ksp, pc, ierr)
-             CHKERRQ(ierr)
-             CALL PCSetType(pc, PCASM, ierr)
-             CHKERRQ(ierr)
+    ! build an index set for global indexes on the local processor
 
-                                ! set options from the command line
-                                ! (does PC and KSP too)
-             CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
-             CHKERRQ(ierr)
-
-             pinfo(iblock)%eq(ieq)%built = .TRUE.
-          
-          END IF
+    ALLOCATE(gidx(pinfo(iblock)%nlocal))
+    lidx = 1
+    DO i = limin, limax
+       DO j = ljmin, ljmax
+          gidx(lidx) = solver_global_index(pinfo(iblock), i, j)
+          lidx = lidx + 1
        END DO
     END DO
-    solver_initialize =  ierr
-  END FUNCTION solver_initialize
+    CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, gidx, &
+         &pinfo(iblock)%iset, ierr)
+
+    DO ieq = 1, 4
+
+       ! determine the size of the linear
+       ! system based on which equation is
+       ! being solved
+       SELECT CASE (ieq)
+       CASE (SOLVE_U, SOLVE_V, SOLVE_DP)
+          build = do_flow
+       CASE (SOLVE_SCALAR)
+          build = do_transport
+       END SELECT
+
+       IF (build) THEN 
+          WRITE (*,*) 'Solver Initialize, Block ', iblock, &
+               &', equation ', ieq, ', local size = ', pinfo(iblock)%nlocal
+
+          ! create a coefficient matrix of
+          ! appropriate size for this block and
+          ! equation and another matrix that may
+          ! store a preconditioner
+
+          CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
+          CHKERRQ(ierr)
+          CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
+          CHKERRQ(ierr)
+          CALL MatSetSizes(pinfo(iblock)%eq(ieq)%A, &
+               &pinfo(iblock)%nlocal, pinfo(iblock)%nlocal, &
+               &PETSC_DETERMINE, PETSC_DETERMINE, ierr)
+          CALL MatSetFromOptions(pinfo(iblock)%eq(ieq)%A, ierr)
+          CHKERRQ(ierr)
+
+          ! create vectors to hold the
+          ! right-hand side and estimate
+
+          CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
+          CHKERRQ(ierr)
+          CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
+          CHKERRQ(ierr)
+
+          ! FIXME: wrong sizes
+          CALL VecSetSizes(pinfo(iblock)%eq(ieq)%x, &
+               &pinfo(iblock)%nlocal, PETSC_DETERMINE, ierr)
+          CHKERRQ(ierr)
+
+          CALL VecSetFromOptions(pinfo(iblock)%eq(ieq)%x,ierr)
+          CHKERRQ(ierr)
+          CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%b,ierr)
+          CHKERRQ(ierr)
+
+          ! create a solver context for this
+          ! block and equation. The options are
+          ! renamed with a prefix of either
+          ! 'scalar' or 'depth'.  
+
+          SELECT CASE (ieq)
+          CASE (SOLVE_DP)
+             prefix = 'depth_'
+             its = depth_sweep
+             rtol = depth_rtol
+             atol = depth_atol
+          CASE DEFAULT
+             prefix = 'scalar_'
+             its = scalar_sweep
+             rtol = scalar_rtol
+             atol = scalar_atol
+          END SELECT
+
+
+          CALL KSPCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
+          CHKERRQ(ierr)
+          CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
+          CHKERRQ(ierr)
+          CALL KSPSetInitialGuessNonzero(pinfo(iblock)%eq(ieq)%ksp, PETSC_TRUE, ierr)
+          CHKERRQ(ierr)
+          CALL KSPSetTolerances(pinfo(iblock)%eq(ieq)%ksp, rtol, atol, dtol, its, ierr)
+          CHKERRQ(ierr)
+          CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
+          CHKERRQ(ierr)
+          CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
+               &PETSC_NULL, PETSC_NULL, ierr);
+          CHKERRQ(ierr)
+
+          ! need to change the preconditioner, since the default
+          ! (ILU) does not work with MATMPIAIJ matrixes
+
+          CALL KSPGetPC(pinfo(iblock)%eq(ieq)%ksp, pc, ierr)
+          CHKERRQ(ierr)
+          CALL PCSetType(pc, PCASM, ierr)
+          CHKERRQ(ierr)
+
+          ! set options from the command line
+          ! (does PC and KSP too)
+          CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
+          CHKERRQ(ierr)
+
+          pinfo(iblock)%eq(ieq)%built = .TRUE.
+
+       END IF
+    END DO
+    solver_initialize_block =  ierr
+  END FUNCTION solver_initialize_block
 
   ! ----------------------------------------------------------------
   ! INTEGER FUNCTION solver
   ! ----------------------------------------------------------------
-  INTEGER FUNCTION solver(iblock, ieq, x_start, x_end, y_start, y_end, its, &
+  INTEGER FUNCTION solver(iblock, ieq, imin, imax, jmin, jmax, its, &
        &ap, aw, ae, as, an, bp, x)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: iblock, ieq, x_start, x_end, y_start, y_end, its
+    INTEGER, INTENT(IN) :: iblock, ieq, imin, imax, jmin, jmax, its
     DOUBLE PRECISION, INTENT(IN), &
-         &DIMENSION(x_start:x_end,y_start:y_end) :: &
+         &DIMENSION(imin:imax, jmin:jmax) :: &
          &ap, aw, ae, as, an, bp
     DOUBLE PRECISION, INTENT(INOUT), &
-         &DIMENSION(x_start:x_end,y_start:y_end) :: x
-    INTEGER :: imax, jmax, i, j, ip, ie, iw, in, is, itmp, jtmp
+         &DIMENSION(imin:imax, jmin:jmax) :: x
+    INTEGER :: i, j, ip, ie, iw, in, is
     DOUBLE PRECISION :: dtmp
+    INTEGER :: lidx
     INTEGER :: ierr
     
     PetscScalar v
     PetscScalar, pointer :: x_vv(:)
 
-    imax = x_end - x_start + 1
-    jmax = y_end - y_start + 1
+    DO i = imin, imax
+       DO j = jmin, jmax
+          ip = solver_global_index(pinfo(iblock), i  , j  )
+          ie = solver_global_index(pinfo(iblock), i+1, j  )
+          iw = solver_global_index(pinfo(iblock), i-1, j  )
+          in = solver_global_index(pinfo(iblock), i  , j+1)
+          is = solver_global_index(pinfo(iblock), i  , j-1)
 
-    ! WRITE(*, *) 'Solver: starting: ', x_start, x_end, y_start, y_end, imax, jmax
-
-    DO i = 1, imax
-       DO j = 1, jmax
-          ip = (i-1)*jmax + j - 1
-          ie = i*jmax + j - 1
-          iw = (i-2)*jmax + j - 1
-          in = (i-1)*jmax + (j+1) - 1
-          is = (i-1)*jmax + (j-1) - 1
-
-          itmp = x_start + (i - 1)
-          jtmp = y_start + (j - 1)
-          
-          v = ap(itmp,jtmp)
+          v = ap(i,j)
           call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
 
           IF (j .LT. jmax) THEN
-             v = -an(itmp,jtmp)
+             v = -an(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, in, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (j .GT. 1) THEN
-             v = -as(itmp,jtmp)
+             v = -as(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, is, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (i .LT. imax) THEN
-             v = -ae(itmp,jtmp)
+             v = -ae(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ie, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
           IF (i .GT. 1) THEN
-             v = -aw(itmp,jtmp)
+             v = -aw(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, iw, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
-          v = bp(itmp,jtmp)
+          v = bp(i,j)
           call VecSetValue(pinfo(iblock)%eq(ieq)%b, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
         
-          v = x(itmp,jtmp)
+          v = x(i,j)
           call VecSetValue(pinfo(iblock)%eq(ieq)%x, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
 
@@ -298,13 +362,12 @@ CONTAINS
     call VecGetArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
     CHKERRQ(ierr)
   
-    DO i = 1, imax
-       DO j = 1, jmax
-          ip = (i-1)*jmax + j
-          itmp = x_start + (i - 1)
-          jtmp = y_start + (j - 1)
-          dtmp = x_vv(ip)
-          x(itmp,jtmp) = dtmp
+    lidx = 1
+    DO i = imin, imax
+       DO j = jmin, jmax
+          dtmp = x_vv(lidx)
+          x(i, j) = dtmp
+          lidx = lidx + 1
        END DO
     END DO
     CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)

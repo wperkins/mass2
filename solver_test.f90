@@ -28,7 +28,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November  4, 2002 by William A. Perkins
-! Last Change: Mon Jan 10 07:21:00 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 10:42:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 PROGRAM solver_test
@@ -39,7 +39,7 @@ PROGRAM solver_test
 
   CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
 
-  INTEGER, PARAMETER :: imax = 6, jmax = 8
+  INTEGER, PARAMETER :: imax = 3, jmax = 4
   DOUBLE PRECISION :: k, t, w, h
   DOUBLE PRECISION :: dx,dy
   DOUBLE PRECISION, DIMENSION(1:imax,1:jmax) :: ap, aw, ae, as, an, bp, tsol
@@ -58,7 +58,8 @@ PROGRAM solver_test
 
   
   scalar_sweep = 500
-  junk = solver_initialize(1, ijunk, jjunk, .FALSE., .TRUE.)
+  CALL solver_initialize(1)
+  junk = solver_initialize_block(1, 1, imax, 1, jmax, 1, imax, 1, jmax, .FALSE., .TRUE.)
 
   OPEN(file="junk", unit=1)
   WRITE(1,*) "Writing after Solver Initialization"
