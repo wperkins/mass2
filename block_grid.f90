@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Thu Jan  6 09:48:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 09:44:49 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -654,6 +654,8 @@ CONTAINS
     CALL block_var_put(blk%bv_hp1)
     CALL block_var_put(blk%bv_hp2)
     CALL block_var_put(blk%bv_hu1)
+    CALL block_var_put(blk%bv_hu2)
+    CALL block_var_put(blk%bv_hv1)
     CALL block_var_put(blk%bv_hv2)
     CALL block_var_put(blk%bv_gp12)
     CALL block_var_put(blk%bv_x_xsi)
@@ -664,6 +666,8 @@ CONTAINS
     CALL block_var_get(blk%bv_hp1)
     CALL block_var_get(blk%bv_hp2)
     CALL block_var_get(blk%bv_hu1)
+    CALL block_var_get(blk%bv_hu2)
+    CALL block_var_get(blk%bv_hv1)
     CALL block_var_get(blk%bv_hv2)
     CALL block_var_get(blk%bv_gp12)
     CALL block_var_get(blk%bv_x_xsi)
