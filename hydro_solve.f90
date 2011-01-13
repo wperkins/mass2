@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Wed Jan 12 14:23:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 10:14:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -50,8 +50,6 @@ CONTAINS
     INTEGER :: iblock
     INTEGER :: iteration
 
-    INTEGER :: imin, imax, jmin, jmax
-
     ! Assign U,V,D BCs for this time
     ! set U boundary conditions for this time
 
@@ -63,8 +61,6 @@ CONTAINS
        !**** BLOCK LOOP HERE *****
        DO iblock = 1,max_blocks 
 
-          CALL block_owned_window(block(iblock), imin, jmin, imax, jmax)
-
           ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
 
           CALL default_hydro_bc(block(iblock))
@@ -74,6 +70,21 @@ CONTAINS
              CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
                   &.FALSE., ds_flux_given)
           END DO
+
+          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
+          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
+          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_CURRENT)
+          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
+          CALL ga_sync()
+          CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
+          CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_STAR)
+          CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
+          CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_STAR)
+          CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
+          CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_STAR)
+          
           !-------------------------------------------------------------------------
 
           x_beg = 2
@@ -256,6 +267,7 @@ CONTAINS
 
     DO i=imin, imax
        DO j=jmin, jmax
+
           hp1 = blk%hu1(i,j) 
           hp2 = blk%hu2(i,j)
           he1 = blk%hp1(i+1,j)
@@ -266,6 +278,8 @@ CONTAINS
           hs2 = 0.50*(blk%hv2(i,j-1) + blk%hv2(i+1,j-1))
           hn1 = 0.50*(blk%hv1(i,j) + blk%hv1(i+1,j))
           hn2 = 0.50*(blk%hv2(i,j) + blk%hv2(i+1,j))
+
+          ! WRITE(*,*) i, j, hs1, hs2, hn1, hn2
 
           v_p = 0.25*(blk%vvel(i,j) + blk%vvel(i+1,j) &
                + blk%vvel(i,j-1) + blk%vvel(i+1,j-1))
@@ -278,6 +292,8 @@ CONTAINS
           k_n = harmonic(k_p, harmonic(blk%eddy(i,j+1), blk%eddy(i+1,j+1)))
           k_s = harmonic(k_p, harmonic(blk%eddy(i,j-1), blk%eddy(i+1,j-1)))
 
+          ! WRITE(*,*) i, j, k_e, k_w, k_p, k_n, k_s
+
           depth_e = blk%depth(i+1,j)
           zbot_e = blk%zbot(i+1,j)
           depth_w = blk%depth(i,j)
@@ -288,7 +304,7 @@ CONTAINS
           depth_s = 0.25*(blk%depth(i,j)+blk%depth(i,j-1) &
                + blk%depth(i+1,j)+blk%depth(i+1,j-1))
 
-          IF(j == 2)	depth_s = 0.5*(blk%depth(i,j-1)+blk%depth(i+1,j-1))
+          IF(j == y_beg) depth_s = 0.5*(blk%depth(i,j-1)+blk%depth(i+1,j-1))
           IF(j == y_end) depth_n = 0.5*(blk%depth(i,j+1)+blk%depth(i+1,j+1))
 
           flux_e = he2*0.5*(blk%uvel(i,j)+ blk%uvel(i+1,j))*depth_e
@@ -355,6 +371,8 @@ CONTAINS
           v_n = 0.5*(blk%vvel(i,j)+blk%vvel(i+1,j))
           v_s = 0.5*(blk%vvel(i,j-1)+blk%vvel(i+1,j-1))
 
+          ! WRITE(*,*) i, j, u_p, u_s, u_n
+          ! WRITE(*,*) i, j, v_w, v_e, v_s, v_n
           IF(j == y_end)THEN
              h2_xsi_p = 2.0*h2_xsi_p
              h1_eta_e = h1_eta_p
@@ -525,10 +543,10 @@ CONTAINS
 
           blk%lud(i,j) = 0.5*grav*hp2*(depth_e+depth_w)/ap(i,j)
 
+          ! WRITE (*, *) i, j, apo, as(i,j), aw(i,j), ap(i, j), ae(i,j), an(i,j)
        END DO
     END DO
 
-!!$FIXME
     junk =  solver(blkidx, SOLVE_U, imin, imax, jmin, jmax, scalar_sweep, &
          &ap(imin:imax, jmin:jmax), aw(imin:imax, jmin:jmax), &
          &ae(imin:imax, jmin:jmax), as(imin:imax, jmin:jmax), &
@@ -637,7 +655,7 @@ CONTAINS
           depth_w = 0.25*(blk%depth(i,j)+blk%depth(i-1,j) &
                + blk%depth(i-1,j)+blk%depth(i-1,j+1))
 
-          IF(i == 2) depth_w = 0.5*(blk%depth(i-1,j)+blk%depth(i-1,j+1))
+          IF(i == x_beg) depth_w = 0.5*(blk%depth(i-1,j)+blk%depth(i-1,j+1))
           IF(i == x_end) depth_e = 0.5*(blk%depth(i+1,j)+blk%depth(i+1,j+1))
 
           flux_e = he2*0.5*(blk%uvel(i,j)+ blk%uvel(i,j+1))*depth_e
@@ -1243,13 +1261,10 @@ CONTAINS
     INTEGER :: x_beg, y_beg, x_end, y_end, i, j
     DOUBLE PRECISION :: correction
 
-
-    CALL block_owned_window(blk, x_beg, x_end, y_beg, y_end)
-
-    x_beg = MAX(x_beg, 2)
-    y_beg = MAX(y_beg, 2)
-    x_end = MIN(x_end, blk%xmax)
-    y_end = MIN(y_end, blk%ymax)
+    x_beg = 2
+    x_end = blk%xmax
+    y_beg = 2
+    y_end = blk%ymax
 
     ! correct u velocity
 
@@ -1293,14 +1308,14 @@ CONTAINS
        END DO
     END DO
 
-    CALL block_var_put(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_uvel)
     CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
-    CALL block_var_put(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_vvel)
     CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
     CALL ga_sync()
-    CALL block_var_get(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_uvel)
     CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
-    CALL block_var_get(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_vvel)
     CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
 
   END SUBROUTINE correct_velocity
