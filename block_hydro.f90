@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Wed Jan 12 21:17:19 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 10:28:11 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -615,7 +615,7 @@ CONTAINS
          &SUM(ABS(blk%mass_source))
     blk%mass_source_sum(1) = djunk
     CALL ga_dgop(MT_F_DBL, blk%mass_source_sum, 1, '+');
-    WRITE(*,*) djunk, blk%mass_source_sum(1)
+    ! WRITE(*,*) djunk, blk%mass_source_sum(1)
 
     blk%mass_source = 0.0
 
