@@ -28,11 +28,11 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November  4, 2002 by William A. Perkins
-! Last Change: Wed Jan 12 10:42:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 12:54:26 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 PROGRAM solver_test
-
+  
   USE solver_module
 
   IMPLICIT NONE
@@ -45,21 +45,42 @@ PROGRAM solver_test
   DOUBLE PRECISION, DIMENSION(1:imax,1:jmax) :: ap, aw, ae, as, an, bp, tsol
   CHARACTER (LEN=1024) :: buf
 
-  INTEGER :: i, j, junk, ijunk(1), jjunk(1)
+  INTEGER :: i, j, junk, limin, limax, ljmin, ljmax
   INTEGER :: iP, iN, iS, iE, iW
+  INTEGER :: ierr, me, nproc, p
 
   DATA k, t, w, h / 1000, 0.01, 0.3, 0.4 /
 
   dx = w/REAL(imax)
   dy = h/REAL(jmax)
 
-  ijunk(1) = imax + 1
-  jjunk(1) = jmax + 1
-
-  
   scalar_sweep = 500
+
+  CALL mpi_init( ierr )
+  CALL mpi_comm_rank(MPI_COMM_WORLD, me, ierr)
+  CALL mpi_comm_size(MPI_COMM_WORLD, nproc, ierr)
+
   CALL solver_initialize(1)
-  junk = solver_initialize_block(1, 1, imax, 1, jmax, 1, imax, 1, jmax, .FALSE., .TRUE.)
+
+  SELECT CASE (nproc) 
+  CASE (1)
+     limin = 1
+     limax = imax
+     ljmin = 1
+     ljmax = jmax
+  CASE (2)
+     limin = 1
+     limax = imax
+     ljmin = me*jmax/2 + 1
+     ljmax = (me+1)*jmax/2
+  CASE DEFAULT
+     STOP
+  END SELECT
+     
+  WRITE (*, *) me, limin, limax, ljmin, ljmax
+
+  junk = solver_initialize_block(1, 1, imax, 1, jmax, &
+       &limin, limax, ljmin, ljmax, .FALSE., .TRUE.)
 
   OPEN(file="junk", unit=1)
   WRITE(1,*) "Writing after Solver Initialization"
@@ -70,9 +91,8 @@ PROGRAM solver_test
   WRITE(*,*) TRIM(buf)
   CLOSE(1)
 
-
-  DO i = 1, imax
-     DO j = 1, jmax
+  DO i = limin, limax
+     DO j = ljmin, ljmax
         bp(i,j) = 0.0
         ap(i,j) = 0.0
             
@@ -125,38 +145,47 @@ PROGRAM solver_test
 !!$  END DO
 
 
-  junk = solver(1, SOLVE_SCALAR, 1, imax, 1, jmax, 500, &
-       &ap(1:imax,1:jmax), aw(1:imax,1:jmax), ae(1:imax,1:jmax), &
-       &as(1:imax,1:jmax), an(1:imax,1:jmax), bp(1:imax,1:jmax), &
-       &tsol)
+  junk = solver(1, SOLVE_SCALAR, limin, limax, ljmin, ljmax, 500, &
+       &ap(limin:limax,ljmin:ljmax), aw(limin:limax,ljmin:ljmax), ae(limin:limax,ljmin:ljmax), &
+       &as(limin:limax,ljmin:ljmax), an(limin:limax,ljmin:ljmax), bp(limin:limax,ljmin:ljmax), &
+       &tsol(limin:limax,ljmin:ljmax))
 
   DO i = 1, imax
-     DO j = 1, jmax
+     DO j = ljmin, ljmax
+        IF (.NOT.(limin .LE. i .AND. i .LE. limax)) CYCLE
+        IF (.NOT.(ljmin .LE. j .AND. j .LE. ljmax)) CYCLE
         ip = (i-1)*jmax + j
-        WRITE (*,100) i, j, ip, &
+        WRITE (*,100) me, i, j, ip, &
              &an(i,j), as(i,j), aw(i,j), ae(i,j), &
              &ap(i,j), bp(i,j),  tsol(i, j)
+        CALL mpi_barrier(MPI_COMM_WORLD, ierr)
      END DO
   END DO
-  
-  ! tsol = 0.9*tsol
-  junk = solver(1, SOLVE_SCALAR, 1, imax, 1, jmax, 500, &
-       &ap, aw, ae, &
-       &as, an, bp, &
-       &tsol)
 
-  WRITE(*,*)
-  DO i = 1, imax
-     DO j = 1, jmax
-        ip = (i-1)*jmax + j
-        WRITE (*,100) i, j, ip, &
-             &an(i,j), as(i,j), aw(i,j), ae(i,j), &
-             &ap(i,j), bp(i,j),  tsol(i, j)
-     END DO
-  END DO
+!!$  ! tsol = 0.9*tsol
+!!$  junk = solver(1, SOLVE_SCALAR, 1, imax, 1, jmax, 500, &
+!!$       &ap, aw, ae, &
+!!$       &as, an, bp, &
+!!$       &tsol)
+!!$
+!!$  WRITE(*,*)
+!!$  DO p = 0, nproc - 1
+!!$     IF (me .EQ. p) THEN
+!!$        DO i = limin, limax
+!!$           DO j = ljmin, ljmax
+!!$              ip = (i-1)*jmax + j
+!!$              WRITE (*,100) p, i, j, ip, &
+!!$                   &an(i,j), as(i,j), aw(i,j), ae(i,j), &
+!!$                   &ap(i,j), bp(i,j),  tsol(i, j)
+!!$           END DO
+!!$        END DO
+!!$     END IF
+!!$  END DO
 
   junk = solver_finalize()
+
+  CALL mpi_finalize(junk)   
   
-100 FORMAT(3I6,6F8.1, F8.2)
+100 FORMAT(I2, 3I6,6F8.1, F8.2)
 
 END PROGRAM solver_test

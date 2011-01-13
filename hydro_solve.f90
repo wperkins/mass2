@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Wed Jan 12 08:48:31 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 14:23:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -256,7 +256,6 @@ CONTAINS
 
     DO i=imin, imax
        DO j=jmin, jmax
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hu1(i,j) 
           hp2 = blk%hu2(i,j)
           he1 = blk%hp1(i+1,j)
@@ -608,7 +607,6 @@ CONTAINS
 
     DO i=imin, imax
        DO j=jmin, jmax
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hv1(i,j) 
           hp2 = blk%hv2(i,j)
           he1 = 0.50*(blk%hu1(i,j) + blk%hu1(i,j+1))
@@ -1050,7 +1048,6 @@ CONTAINS
 
     DO i=imin, imax
        DO j=jmin, jmax
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
           hp1 = blk%hp1(i,j)
           hp2 = blk%hp2(i,j)
           he1 = blk%hu1(i,j)

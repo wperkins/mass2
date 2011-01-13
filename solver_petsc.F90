@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jan 12 10:47:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 21:29:07 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -39,16 +39,16 @@ MODULE solver_module
                                 ! contexts for each equation solved
   TYPE petsc_save_rec
      LOGICAL :: built
-     Vec :: x,b
+     Vec :: x,b,lx
      Mat :: A
      KSP :: ksp
+     VecScatter :: vscat
   END TYPE petsc_save_rec
 
   TYPE petsc_blk_rec
      INTEGER :: gimin, gimax, gjmin, gjmax
      INTEGER :: limin, limax, ljmin, ljmax
      INTEGER :: nlocal, nglobal
-     IS :: iset
      TYPE (petsc_save_rec) :: eq(NUM_SOLVE)
   END TYPE petsc_blk_rec
 
@@ -69,7 +69,7 @@ CONTAINS
 
     INTEGER, INTENT(IN) :: blocks
 
-    INTEGER :: ierr
+    INTEGER :: b, ieq, ierr
     
     ALLOCATE(pinfo(blocks))
 
@@ -79,6 +79,13 @@ CONTAINS
     ! CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
 
+    myblocks = blocks
+
+    DO b = 1, blocks
+       DO ieq = 1,  4
+          pinfo(b)%eq(ieq)%built = .FALSE.
+       END DO
+    END DO
   END SUBROUTINE solver_initialize
 
   ! ----------------------------------------------------------------
@@ -100,7 +107,7 @@ CONTAINS
     itmp = i - pinfo%gimin
     jtmp = j - pinfo%gjmin
 
-    ! size of global windo
+    ! size of global window
     jsize = pinfo%gjmax - pinfo%gjmin + 1
 
     ! 0-based global vector index
@@ -124,14 +131,16 @@ CONTAINS
     LOGICAL, INTENT(IN) :: do_flow, do_transport
     INTEGER :: ierr
     INTEGER :: ieq, its
-    INTEGER :: i, j, lidx
+    INTEGER :: i, j, idx
     CHARACTER (LEN=10) :: prefix
     CHARACTER (LEN=1024) :: buf
     LOGICAL :: build
 
     PC :: pc
     PetscReal :: rtol, atol, dtol
-    PetscInt, ALLOCATABLE :: gidx(:)
+    PetscInt, ALLOCATABLE :: lidx(:), gidx(:)
+    PetscInt :: mylo, myhi
+    IS :: lset, gset
 
     dtol = 1e+04
 
@@ -146,19 +155,6 @@ CONTAINS
     pinfo(iblock)%ljmin = ljmin
     pinfo(iblock)%ljmax = ljmax
     pinfo(iblock)%nlocal = (limax - limin + 1)*(ljmax - ljmin + 1)
-
-    ! build an index set for global indexes on the local processor
-
-    ALLOCATE(gidx(pinfo(iblock)%nlocal))
-    lidx = 1
-    DO i = limin, limax
-       DO j = ljmin, ljmax
-          gidx(lidx) = solver_global_index(pinfo(iblock), i, j)
-          lidx = lidx + 1
-       END DO
-    END DO
-    CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, gidx, &
-         &pinfo(iblock)%iset, ierr)
 
     DO ieq = 1, 4
 
@@ -208,6 +204,48 @@ CONTAINS
           CHKERRQ(ierr)
           CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%b,ierr)
           CHKERRQ(ierr)
+          CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx,ierr)
+          CHKERRQ(ierr)
+
+          ! build an index set for global indexes on the local processor
+          
+          ALLOCATE(lidx(pinfo(iblock)%nlocal))
+          ALLOCATE(gidx(pinfo(iblock)%nlocal))
+
+          CALL VecGetOwnershipRange(pinfo(iblock)%eq(ieq)%x, mylo, myhi, ierr)
+          CHKERRQ(ierr)
+
+          idx = 1
+          DO i = limin, limax
+             DO j = ljmin, ljmax
+                lidx(idx) = idx + mylo - 1
+                gidx(idx) = solver_global_index(pinfo(iblock), i, j)
+                idx = idx + 1
+             END DO
+          END DO
+          CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, lidx, lset, ierr)
+          
+          ! CALL ISView(lset, PETSC_VIEWER_STDOUT_WORLD, ierr)
+          
+          CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, gidx, gset, ierr)
+          
+          ! CALL ISView(gset, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
+          DEALLOCATE(lidx)
+          DEALLOCATE(gidx)
+
+          CALL VecScatterCreate(pinfo(iblock)%eq(ieq)%x, gset, &
+               &pinfo(iblock)%eq(ieq)%lx, lset, &
+               &pinfo(iblock)%eq(ieq)%vscat, ierr)
+          CHKERRQ(ierr)
+
+          ! CALL VecScatterView(pinfo(iblock)%eq(ieq)%vscat, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
+          CALL ISDestroy(lset, ierr)
+          CHKERRQ(ierr)
+          CALL ISDestroy(gset, ierr)
+          CHKERRQ(ierr)
+
 
           ! create a solver context for this
           ! block and equation. The options are
@@ -247,7 +285,7 @@ CONTAINS
 
           CALL KSPGetPC(pinfo(iblock)%eq(ieq)%ksp, pc, ierr)
           CHKERRQ(ierr)
-          CALL PCSetType(pc, PCASM, ierr)
+          CALL PCSetType(pc, PCJACOBI, ierr)
           CHKERRQ(ierr)
 
           ! set options from the command line
@@ -278,11 +316,16 @@ CONTAINS
          &DIMENSION(imin:imax, jmin:jmax) :: x
     INTEGER :: i, j, ip, ie, iw, in, is
     DOUBLE PRECISION :: dtmp
-    INTEGER :: lidx
+    INTEGER :: lidx, gimin, gimax, gjmin, gjmax
     INTEGER :: ierr
     
     PetscScalar v
     PetscScalar, pointer :: x_vv(:)
+
+    gimin = pinfo(iblock)%gimin
+    gimax = pinfo(iblock)%gimax
+    gjmin = pinfo(iblock)%gjmin
+    gjmax = pinfo(iblock)%gjmax
 
     DO i = imin, imax
        DO j = jmin, jmax
@@ -296,25 +339,25 @@ CONTAINS
           call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ip, v, INSERT_VALUES, ierr)
           CHKERRQ(ierr)
 
-          IF (j .LT. jmax) THEN
+          IF (j .LT. gjmax) THEN
              v = -an(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, in, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
-          IF (j .GT. 1) THEN
+          IF (j .GT. gjmin) THEN
              v = -as(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, is, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
-          IF (i .LT. imax) THEN
+          IF (i .LT. gimax) THEN
              v = -ae(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ie, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
           END IF
 
-          IF (i .GT. 1) THEN
+          IF (i .GT. gimin) THEN
              v = -aw(i,j)
              call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, iw, v, INSERT_VALUES,ierr)
              CHKERRQ(ierr)
@@ -347,6 +390,10 @@ CONTAINS
     CALL VecAssemblyEnd(pinfo(iblock)%eq(ieq)%b, ierr)
     CHKERRQ(ierr)
 
+    ! CALL MatView(pinfo(iblock)%eq(ieq)%A, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
+    ! CALL VecView(pinfo(iblock)%eq(ieq)%b, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
     ! WRITE(*,*) "Solver: Matrix assembled"
 
     call KSPSetOperators(pinfo(iblock)%eq(ieq)%ksp,&
@@ -359,7 +406,18 @@ CONTAINS
 
     ! WRITE(*,*) "Solver: Solution complete"
 
-    call VecGetArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
+    ! CALL VecView(pinfo(iblock)%eq(ieq)%x, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
+    CALL VecScatterBegin(pinfo(iblock)%eq(ieq)%vscat,&
+         &pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx, &
+         &INSERT_VALUES, SCATTER_FORWARD, ierr)
+    CALL VecScatterEnd(pinfo(iblock)%eq(ieq)%vscat,&
+         &pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx, &
+         &INSERT_VALUES, SCATTER_FORWARD, ierr)
+
+    ! CALL VecView(pinfo(iblock)%eq(ieq)%lx, PETSC_VIEWER_STDOUT_WORLD, ierr)
+
+    call VecGetArrayF90(pinfo(iblock)%eq(ieq)%lx, x_vv, ierr)
     CHKERRQ(ierr)
   
     lidx = 1
@@ -370,7 +428,7 @@ CONTAINS
           lidx = lidx + 1
        END DO
     END DO
-    CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
+    CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%lx, x_vv, ierr)
     CHKERRQ(ierr)
 
     ! WRITE(*,*) "Solver: Solution written to array"
@@ -397,8 +455,12 @@ CONTAINS
              CHKERRQ(ierr)
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%x, ierr)
              CHKERRQ(ierr)
+             CALL VecDestroy(pinfo(iblock)%eq(ieq)%lx, ierr)
+             CHKERRQ(ierr)
              CALL VecDestroy(pinfo(iblock)%eq(ieq)%b, ierr)
              CHKERRQ(ierr)
+             ! CALL VecScatterDestroy(pinfo(iblock)%eq(ieq)%vscat, ierr)
+             ! CHKERRQ(ierr)
           END IF
        END DO
     END DO

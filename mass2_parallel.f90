@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Wed Jan 12 08:32:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 14:28:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -58,9 +58,8 @@ PROGRAM mass2_parallel
   CALL read_grid()
   CALL bc_init()
   CALL initialize()
-
-  junk = solver_initialize(max_blocks, block(:)%xmax, block(:)%ymax, &
-       &do_flow, do_transport)
+  
+  IF (do_flow .OR. do_transport) CALL solver_setup()
 
   CALL ga_sync()
 
@@ -381,6 +380,43 @@ SUBROUTINE output()
   END IF
 
 END SUBROUTINE output
+
+! ----------------------------------------------------------------
+! SUBROUTINE solver_setup
+! ----------------------------------------------------------------
+SUBROUTINE solver_setup()
+
+  USE config
+  USE block_module
+  USE solver_module
+
+  IMPLICIT NONE
+
+  INTEGER :: iblk
+  INTEGER :: junk
+  INTEGER :: x_beg, x_end, y_beg, y_end
+  INTEGER :: imin, imax, jmin, jmax
+
+  CALL solver_initialize(max_blocks)
+
+  DO iblk = 1, max_blocks
+     x_beg = 2
+     x_end = block(iblk)%xmax
+     y_beg = 2
+     y_end =  block(iblk)%ymax
+     CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
+     imin = MAX(imin, x_beg)
+     imax = MIN(imax, x_end)
+     jmin = MAX(jmin, y_beg)
+     jmax = MIN(jmax, y_end)
+
+     junk = solver_initialize_block(iblk, &
+          &x_beg, x_end, y_beg, y_end, &
+          &imin, imax, jmin, jmax, do_flow, do_transport)
+  
+  END DO
+END SUBROUTINE solver_setup
+
 
 ! ----------------------------------------------------------------
 ! SUBROUTINE banner

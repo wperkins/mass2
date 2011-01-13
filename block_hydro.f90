@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Wed Jan 12 07:49:28 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jan 12 21:17:19 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -614,10 +614,8 @@ CONTAINS
     djunk = &
          &SUM(ABS(blk%mass_source))
     blk%mass_source_sum(1) = djunk
-    CALL nga_put(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
-    CALL ga_sync()
-    CALL ga_merge_mirrored(blk%mass_source_ga, ierr)
-    CALL nga_get(blk%mass_source_ga, lo, hi, blk%mass_source_sum, ld, ierr)
+    CALL ga_dgop(MT_F_DBL, blk%mass_source_sum, 1, '+');
+    WRITE(*,*) djunk, blk%mass_source_sum(1)
 
     blk%mass_source = 0.0
 
