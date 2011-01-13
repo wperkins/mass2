@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Mon Jan 10 10:19:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 10:11:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -150,7 +150,7 @@ CONTAINS
        CALL ga_sync()
 
        ! don't block_var_get old or oldolod because the ghosted values
-       ! are not needed locally
+       ! are not needed locally (except for depth)
 
        CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_STAR)
@@ -158,6 +158,7 @@ CONTAINS
        CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_STAR)
        CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_STAR)
+       CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_OLD)
        CALL block_var_get(block(iblock)%bv_wsel, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_eddy, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
