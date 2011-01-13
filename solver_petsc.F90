@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jan 12 21:29:07 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 10:27:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -57,6 +57,8 @@ MODULE solver_module
                                 ! remember the number of blocks for
                                 ! finalization
   INTEGER, PRIVATE :: myblocks
+  
+  CHARACTER (LEN=80), PRIVATE :: petscoptfile = "mass2.petscrc"
 
 CONTAINS
 
@@ -73,7 +75,7 @@ CONTAINS
     
     ALLOCATE(pinfo(blocks))
 
-    CALL PetscInitialize(PETSC_NULL_CHARACTER,ierr)
+    CALL PetscInitialize(petscoptfile, ierr)
     CHKERRQ(ierr)
 
     ! CALL PetscPopSignalHandler(ierr)
@@ -136,11 +138,16 @@ CONTAINS
     CHARACTER (LEN=1024) :: buf
     LOGICAL :: build
 
-    PC :: pc
+    KSP :: subksp
+    PC :: pc, subpc
     PetscReal :: rtol, atol, dtol
     PetscInt, ALLOCATABLE :: lidx(:), gidx(:)
     PetscInt :: mylo, myhi
     IS :: lset, gset
+
+    INTEGER :: nproc
+
+    CALL mpi_comm_size(MPI_COMM_WORLD, nproc, ierr)
 
     dtol = 1e+04
 
@@ -276,16 +283,16 @@ CONTAINS
           CHKERRQ(ierr)
           CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
           CHKERRQ(ierr)
-          CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
-               &PETSC_NULL, PETSC_NULL, ierr);
-          CHKERRQ(ierr)
+          ! CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
+          !      &PETSC_NULL, PETSC_NULL, ierr);
+          ! CHKERRQ(ierr)
 
           ! need to change the preconditioner, since the default
           ! (ILU) does not work with MATMPIAIJ matrixes
 
           CALL KSPGetPC(pinfo(iblock)%eq(ieq)%ksp, pc, ierr)
           CHKERRQ(ierr)
-          CALL PCSetType(pc, PCJACOBI, ierr)
+          CALL PCSetType(pc, PCASM, ierr)
           CHKERRQ(ierr)
 
           ! set options from the command line
