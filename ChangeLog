@@ -1,3 +1,21 @@
+2011-01-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* solver_petsc.F90 (solver_initialize): read options from a file
+
+	* hydro_solve.f90 (hydro): distribute velocity and depth after
+	*all* boundary conditions have been processed
+
+	* block_initialization.f90 (initialize): old depth needs to be
+	gotten after it's put; remote values are needed locally
+
+	* block_hydro_bc.f90 (apply_hydro_bc): don't distribute adjusted
+	velocity and depth here; wait until all bc's are processed
+
+	* block_hydro.f90 (block_mass_source_sum): comment out debug message
+
+	* block_grid.f90 (block_metrics): some of the metrics were not
+	distributed
+
 2010-12-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* configure.in: need to call AC_PROG_FC() before AC_PROG_F90()
