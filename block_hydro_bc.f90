@@ -679,9 +679,9 @@ CONTAINS
        ! ----------------------------------------------------------------
     CASE("US")
        i=1
+       IF (.NOT. block_owns_i(blk, i)) GOTO 50
        SELECT CASE(bc%bc_type)
        CASE("TABLE")
-
           SELECT CASE(bc%bc_kind)
           CASE("FLUX")
              DO j=1,bc%num_cell_pairs
@@ -1188,19 +1188,7 @@ CONTAINS
        GOTO 100
     END SELECT
 
-    CALL block_var_put(blk%bv_uvel, BLK_VAR_CURRENT)
-    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
-    CALL block_var_put(blk%bv_vvel, BLK_VAR_CURRENT)
-    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
-    CALL block_var_put(blk%bv_depth, BLK_VAR_CURRENT)
-    CALL block_var_put(blk%bv_depth, BLK_VAR_STAR)
-    CALL ga_sync()
-    CALL block_var_get(blk%bv_uvel, BLK_VAR_CURRENT)
-    CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
-    CALL block_var_get(blk%bv_vvel, BLK_VAR_CURRENT)
-    CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
-    CALL block_var_get(blk%bv_depth, BLK_VAR_CURRENT)
-    CALL block_var_get(blk%bv_depth, BLK_VAR_STAR)
+50  CONTINUE
 
     RETURN
 100 CONTINUE
