@@ -1,3 +1,14 @@
+2011-01-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* hydro_solve.f90 (hydro): pre-compute flow areas for "FLUX" bc's
+	(collectively)
+
+	* hydro_bc.f90 (read_bcspecs): allocate space for flow area when
+	bc kind is "FLUX"
+
+	* block_hydro_bc.f90 (block_compute_bc_flux): pre-compute flow
+	areas for "FLUX" bc's
+
 2011-01-13  William A. Perkins  <william.perkins@pnl.gov>
 
 	* solver_petsc.F90 (solver_initialize): read options from a file
