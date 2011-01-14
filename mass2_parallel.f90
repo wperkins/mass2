@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Wed Jan 12 14:28:57 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan 14 13:16:34 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -345,8 +345,15 @@ SUBROUTINE output()
         DO num_bc = 1, block_bc(iblock)%num_bc
            CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
                 &.FALSE., ds_flux_given)
+
         END DO
 
+        ! just put this for output
+
+        IF (do_rptdead) THEN
+           CALL block_var_put_logical(block(iblock)%bv_dead, block(iblock)%isdead%p)
+        END IF
+        
         IF (do_transport) THEN
 !!$           DO ispecies = 1, max_species
 !!$              DO num_bc = 1, scalar_bc(iblock)%num_bc
@@ -361,6 +368,8 @@ SUBROUTINE output()
         END IF
      END DO
 
+     
+
 !!$     IF (.NOT. do_accumulate) CALL accumulate(current_time%time)
      CALL plot_print(current_time%date_string, current_time%time_string, &
           &salinity, baro_press)
@@ -368,7 +377,7 @@ SUBROUTINE output()
   END IF
 
   IF(do_gage_print)THEN
-     IF(MOD(time_step_count,gage_print_freq) == 0)THEN
+     IF((current_time%time >= end_time%time) .OR. (MOD(time_step_count,gage_print_freq) == 0)) THEN
 !!$        CALL gage_print(current_time%date_string, current_time%time_string,&
 !!$             &DBLE((current_time%time - start_time%time)*24), &
 !!$             &do_transport, salinity, baro_press)
