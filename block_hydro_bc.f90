@@ -618,6 +618,88 @@ CONTAINS
     END IF
   END SUBROUTINE extrapolate_vdepth
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_compute_bc_flux
+  ! 
+  ! Collective
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_compute_bc_flux(blk, blkbc)
+
+    IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    TYPE (block_bc_struct), INTENT(INOUT) :: blkbc
+
+    INTEGER :: ibc
+    INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: ibeg, iend, jbeg, jend
+    INTEGER :: cmin, cmax
+    INTEGER :: i, j
+    DOUBLE PRECISION :: junk
+    LOGICAL :: isu
+
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+
+    DO ibc = 1, blkbc%num_bc
+       i = blkbc%bc_spec(ibc)%num_cell_pairs
+       cmin = MINVAL(blkbc%bc_spec(ibc)%start_cell(1:i))+1
+       cmax = MAXVAL(blkbc%bc_spec(ibc)%end_cell(1:i))+1
+       
+       SELECT CASE (blkbc%bc_spec(ibc)%bc_kind)
+       CASE ("FLUX")
+
+          blkbc%bc_spec(ibc)%flux_area = 0.0
+
+          SELECT CASE (blkbc%bc_spec(ibc)%bc_loc)
+          CASE ("US")
+             ibeg = 1
+             iend = 1
+             jbeg = cmin
+             jend = cmax
+             isu = .TRUE.
+          CASE ("DS")
+             ibeg = blk%xmax+1
+             iend = blk%xmax+1
+             jbeg = cmin
+             jend = cmax
+             isu = .TRUE.
+          CASE ("RB")
+             ibeg = cmin
+             iend = cmax
+             jbeg = 1
+             jend = 1
+             isu = .FALSE.
+          CASE ("LB")
+             ibeg = cmin
+             iend = cmax
+             jbeg = blk%ymax+1
+             jend = blk%ymax+1
+             isu = .FALSE.
+          END SELECT
+
+          DO i = ibeg, iend
+             DO j = jbeg, jend
+                IF (block_owns(blk, i, j)) THEN
+                   IF (isu) THEN
+                      CALL compute_uflow_area(blk, i, j, j, &
+                           &blkbc%bc_spec(ibc)%flux_area(j:j), junk)
+                   ELSE 
+                      CALL compute_vflow_area(blk, i, i, j, &
+                           &blkbc%bc_spec(ibc)%flux_area(j:j), junk)
+                   END IF
+                END IF
+             END DO
+          END DO
+          CALL ga_dgop(MT_F_DBL, blkbc%bc_spec(ibc)%flux_area(cmin:cmax), &
+               &cmax - cmin + 1, '+')
+       END SELECT
+    END DO
+  END SUBROUTINE block_compute_bc_flux
+
+
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE apply_hydro_bc
@@ -1207,7 +1289,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE (block_struct) :: blk
     INTEGER, INTENT(IN) :: i, jmin, jmax
-    DOUBLE PRECISION, INTENT(OUT) :: area(:), total
+    DOUBLE PRECISION, INTENT(OUT) :: area(jmin:jmax), total
 
     INTEGER :: ioff, j
     DOUBLE PRECISION :: d, w
@@ -1236,7 +1318,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE (block_struct) :: blk
     INTEGER, INTENT(IN) :: imin, imax, j
-    DOUBLE PRECISION, INTENT(OUT) :: area(:), total
+    DOUBLE PRECISION, INTENT(OUT) :: area(imin:imax), total
 
     INTEGER :: joff, i
     DOUBLE PRECISION :: d, w
