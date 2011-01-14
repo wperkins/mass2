@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Mon Jan 10 10:36:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan 14 13:14:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -170,6 +170,7 @@ MODULE block_module
      TYPE (block_var), POINTER :: bv_uflux
      TYPE (block_var), POINTER :: bv_vflux
      TYPE (block_var), POINTER :: bv_isdry
+     TYPE (block_var), POINTER :: bv_dead
      TYPE (block_var), POINTER :: bv_lud
      TYPE (block_var), POINTER :: bv_lvd
 
@@ -200,7 +201,6 @@ MODULE block_module
      LOGICAL, POINTER :: isdry(:,:)
      LOGICAL, POINTER :: isdrystar(:,:)
 
-     INTEGER :: mass_source_ga
      DOUBLE PRECISION :: mass_source_sum(1)
 
      ! This is allocated only by the root process.  It is used to
@@ -300,6 +300,7 @@ CONTAINS
     blk%bv_vflux => block_var_allocate("v_flux", blk%varbase, const=.TRUE.)
 
     blk%bv_isdry => block_var_allocate("isdry", blk%varbase, const=.TRUE.)
+    blk%bv_dead => block_var_allocate("dead", blk%varbase, const=.TRUE.)
 
     blk%bv_lud => block_var_allocate("lud", blk%varbase, const=.TRUE.)
     blk%bv_lvd => block_var_allocate("lvd", blk%varbase, const=.TRUE.)
@@ -405,18 +406,7 @@ CONTAINS
     
     blk%buffer => block_buffer(blk)
 
-    ! make a mirrored GlobalArray to hold mass source summation
-    
-    pgrp = ga_pgroup_get_mirror()
-    blk%mass_source_ga = ga_create_handle()
-    dims(1) = 1
-    CALL ga_set_data(blk%mass_source_ga, 1, dims, MT_F_DBL)
-    CALL ga_set_pgroup(blk%mass_source_ga, pgrp)
-    CALL ga_set_array_name(blk%mass_source_ga, "mass_source_sum")
-    ok = ga_allocate(blk%mass_source_ga)
-    CALL ga_zero(blk%mass_source_ga)
-    
-    blk%mass_source_sum(1) = 0.0
+    blk%mass_source_sum = 0.0
 
   END SUBROUTINE block_allocate_size
 
@@ -511,8 +501,6 @@ CONTAINS
     DEALLOCATE(blk%isdrystar)
 
     DEALLOCATE(blk%buffer)
-
-    ok = ga_destroy(blk%mass_source_ga)
 
 
   END SUBROUTINE block_deallocate
