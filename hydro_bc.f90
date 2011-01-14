@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 30, 2010 by William A. Perkins
-! Last Change: Mon Jan  3 09:29:09 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jan 13 14:54:01 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -34,6 +34,7 @@ MODULE hydro_bc
      INTEGER :: con_block, con_start_cell(max_cell_values), con_end_cell(max_cell_values)
      INTEGER :: start_cell(max_cell_values), end_cell(max_cell_values)
      INTEGER :: num_cell_pairs != 0
+     DOUBLE PRECISION, POINTER :: flux_area(:)
 
   END TYPE bc_spec_struct
 
@@ -94,6 +95,8 @@ CONTAINS
 
     INTEGER :: line, lerr, ierr, maxidx
 
+    INTEGER :: cmin, cmax, p
+
     CALL open_existing(bcspecs_name, bcspec_iounit)
 
     ! first we need to count how many TABLE bc types 
@@ -128,6 +131,7 @@ CONTAINS
        block_bc(block)%bc_spec(num_bc)%bc_type =	bc_type
        block_bc(block)%bc_spec(num_bc)%bc_kind =	bc_kind
        block_bc(block)%bc_spec(num_bc)%bc_extent = bc_extent
+       NULLIFY(block_bc(block)%bc_spec(num_bc)%flux_area)
 
        ! check block number
 
@@ -343,6 +347,14 @@ CONTAINS
                   &": ", TRIM(bc_type), "?"
              CALL error_message(msg, fatal=.FALSE.)
              READ (bcspec_iounit, *)
+          END SELECT
+
+          SELECT CASE (block_bc(block)%bc_spec(num_bc)%bc_kind)
+          CASE ("FLUX")
+             p = block_bc(block)%bc_spec(num_bc)%num_cell_pairs
+             cmin = MINVAL(block_bc(block)%bc_spec(num_bc)%start_cell(1:p))+1
+             cmax = MAXVAL(block_bc(block)%bc_spec(num_bc)%end_cell(1:p))+1
+             ALLOCATE(block_bc(block)%bc_spec(num_bc)%flux_area(cmin:cmax))
           END SELECT
        END IF
        ierr = ierr + lerr
