@@ -1,5 +1,15 @@
 2011-01-14  William A. Perkins  <william.perkins@pnl.gov>
 
+	* plot_cgns.f90 (plot_cgns_write): output isdead%p
+
+	* mass2_parallel.f90 (output): distribute isdead%p for output
+
+	* block_parallel.f90 (block_module): add parallel variable for
+	isdead%p; remove unused mass source global array
+
+	* block_hydro_bc.f90 (block_compute_bc_flux): fix indexing bug
+	(apply_hydro_bc): make DEAD, WALL, and FLUX conditions parallel
+
 	* hydro_solve.f90 (hydro): pre-compute flow areas for "FLUX" bc's
 	(collectively)
 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Thu Jan 13 14:53:37 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan 14 12:39:46 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -63,9 +63,9 @@ CONTAINS
 
           ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
 
-          CALL default_hydro_bc(block(iblock))
-
           ! loop over the total number of bc specifications
+
+          CALL default_hydro_bc(block(iblock))
           CALL block_compute_bc_flux(block(iblock), block_bc(iblock))
           DO num_bc = 1, block_bc(iblock)%num_bc
              CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
