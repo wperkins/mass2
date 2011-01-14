@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Thu Jan  6 15:12:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Jan 14 12:45:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -522,14 +522,16 @@ CONTAINS
                   &'isdry', 'Dry Cell Flag', 'none')
 
           END IF
-!!$                                ! Dead Cell Flag
-!!$
-!!$          IF (do_rptdead) THEN
-!!$
-!!$             CALL plot_cgns_write_flag(iblock, solidx, xmax,  ymax, &
-!!$                  &block(iblock)%isdead(:,:)%p, 'isdead', 'Dead Cell Flag')
-!!$
-!!$          END IF
+                                ! Dead Cell Flag
+
+          IF (do_rptdead) THEN
+
+             CALL block_collect(block(iblock), block(iblock)%bv_dead)
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &block(iblock)%buffer, &
+                  &'isdead', 'Dead Cell Flag', 'none')
+
+          END IF
 
        END IF
 
