@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Wed Jan 12 08:32:48 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan 15 19:30:09 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -419,7 +419,7 @@ CONTAINS
   END SUBROUTINE block_var_timestep
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE block_var_all
+  ! SUBROUTINE block_var_get_all
   !
   ! This fills buffer with the entire global array of the specified
   ! variable (and index).
@@ -427,7 +427,7 @@ CONTAINS
   ! It is assumed that buffer has the correct dimensions.  The caller
   ! should get the buffer using function block_buffer()
   ! ----------------------------------------------------------------
-  SUBROUTINE block_var_all(var, buffer, index)
+  SUBROUTINE block_var_get_all(var, buffer, index)
 
     IMPLICIT NONE
 
@@ -453,7 +453,44 @@ CONTAINS
     hi(3) = myindex
     CALL nga_get(var%ga_handle, lo, hi, buffer, ld)
 
-  END SUBROUTINE block_var_all
+  END SUBROUTINE block_var_get_all
 
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_put_all
+  !
+  ! This fills buffer with the entire global array of the specified
+  ! variable (and index).
+  !
+  ! It is assumed that buffer has the correct dimensions.  The caller
+  ! should fill the buffer using function block_buffer()
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_put_all(var, buffer, index)
+
+    IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
+
+    TYPE (block_var), INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+
+    INTEGER :: junk, lo(ndim), hi(ndim), ld(ndim)
+
+    myindex = BLK_VAR_CURRENT
+
+    IF (PRESENT(index)) myindex = index
+
+    CALL nga_inquire(var%ga_handle, junk, junk, hi)
+    lo = 1
+    ld = hi - lo + 1
+    lo(3) = myindex
+    hi(3) = myindex
+    CALL nga_put(var%ga_handle, lo, hi, buffer, ld)
+
+  END SUBROUTINE block_var_put_all
 
 END MODULE block_variable
