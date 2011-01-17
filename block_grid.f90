@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Thu Jan 13 09:44:49 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan 15 19:23:29 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -334,11 +334,11 @@ CONTAINS
        nj = jmax - jmin + 1
 
        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
-       CALL block_var_all(block(iblk)%bv_x_grid, block(iblk)%buffer)
+       CALL block_var_get_all(block(iblk)%bv_x_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%bv_y_grid, block(iblk)%buffer)
+       CALL block_var_get_all(block(iblk)%bv_y_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
-       CALL block_var_all(block(iblk)%bv_zbot_grid, block(iblk)%buffer)
+       CALL block_var_get_all(block(iblk)%bv_zbot_grid, block(iblk)%buffer)
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
 
     END DO
