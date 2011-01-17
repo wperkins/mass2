@@ -1,3 +1,18 @@
+2011-01-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.mpi: add gage output
+
+	* mass2_parallel.f90 (mass2_parallel, output_init, output): turn
+	on gage output
+
+	* gage_output_module.f90: drop netcdf code; make work in parallel
+
+	* block_var.f90 (block_var_get_all): block_var_all -> block_var_get_all
+
+	* block_parallel.f90 (block_collect): block_var_all -> block_var_get_all
+
+	* block_grid.f90 (block_gridplot): block_var_all -> block_var_get_all
+
 2011-01-14  William A. Perkins  <william.perkins@pnl.gov>
 
 	* plot_cgns.f90 (plot_cgns_write): output isdead%p
