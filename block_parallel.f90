@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Fri Jan 14 13:14:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Sat Jan 15 19:23:17 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -771,7 +771,7 @@ CONTAINS
     TYPE (block_struct), INTENT(INOUT) :: blk
     TYPE (block_var), INTENT(IN) :: var
 
-    CALL block_var_all(var, blk%buffer)
+    CALL block_var_get_all(var, blk%buffer)
 
   END SUBROUTINE block_collect
 
