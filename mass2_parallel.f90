@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Fri Jan 14 13:16:34 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 17 06:23:33 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -21,6 +21,7 @@ PROGRAM mass2_parallel
   USE config
   USE block_initialization
   USE hydro_solve
+  USE gage_output
   USE mass_source_output
   USE plot_output
 
@@ -106,8 +107,7 @@ PROGRAM mass2_parallel
   junk = solver_finalize()
 
   CALL plot_file_close()
-!!$  CALL gage_file_close()
-!!$  CALL diag_plot_file_close()
+  CALL gage_file_close()
   CALL mass_file_close()
 !!$  IF (debug) CALL block_flux_close()
   CALL time_series_module_done()
@@ -231,6 +231,7 @@ SUBROUTINE output_init(mpi_rank)
 
   USE config
   USE globals
+  USE gage_output
   USE mass_source_output
   USE plot_output
 
@@ -239,17 +240,16 @@ SUBROUTINE output_init(mpi_rank)
   INTEGER, INTENT(IN) :: mpi_rank
   INTEGER :: system_time(8)
 
+  IF (mpi_rank .EQ. 0) THEN
+     CALL block_gridplot('gridplot1.dat', DOGHOST=debug)
+  END IF
+
   !------------------------------------------------------------------------------------
   ! set up the gage print files
   ! FIXME
   IF(do_gage_print) THEN
-     ! CALL gage_file_setup(do_transport,error_iounit, status_iounit)
+     CALL gage_file_setup()
      CALL mass_file_setup()
-     ! IF (debug) CALL block_flux_setup()
-  END IF
-
-  IF (mpi_rank .EQ. 0) THEN
-     CALL block_gridplot('gridplot1.dat', DOGHOST=debug)
   END IF
 
   ! ----------------------------------------------------------------
@@ -323,6 +323,7 @@ SUBROUTINE output()
   USE globals
   USE block_module
   USE block_hydro_bc
+  USE gage_output
   USE mass_source_output
   USE plot_output
 
@@ -378,9 +379,9 @@ SUBROUTINE output()
 
   IF(do_gage_print)THEN
      IF((current_time%time >= end_time%time) .OR. (MOD(time_step_count,gage_print_freq) == 0)) THEN
-!!$        CALL gage_print(current_time%date_string, current_time%time_string,&
-!!$             &DBLE((current_time%time - start_time%time)*24), &
-!!$             &do_transport, salinity, baro_press)
+        CALL gage_print(current_time%date_string, current_time%time_string,&
+             &DBLE((current_time%time - start_time%time)*24), &
+             &do_transport, salinity, baro_press)
         CALL mass_print(current_time%date_string, current_time%time_string)
 !!$        IF (debug) &
 !!$             &CALL block_flux_print(current_time%date_string, current_time%time_string)
