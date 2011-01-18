@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Jan 17 06:23:33 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+! Last Change: Tue Jan 18 12:32:36 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -32,7 +32,8 @@ PROGRAM mass2_parallel
   INTEGER :: ierr
   INTEGER :: mpi_rank
   INTEGER :: maxsteps
-  INTEGER :: junk
+  INTEGER :: junk, heap, stack
+  LOGICAL :: ok
 
   CALL time_series_module_init()
   CALL date_time_flags()
@@ -40,6 +41,11 @@ PROGRAM mass2_parallel
   CALL mpi_init( ierr )
   IF (ierr .NE. 0) CALL error_message("MPI: initialization failure", fatal=.TRUE.)
   CALL ga_initialize()
+
+  heap = 100
+  stack= 100
+  ok = ma_init(MT_DBL, heap, stack)
+
 
   CALL mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierr)
   IF (ierr .NE. 0) CALL error_message("MPI: cannot get rank", fatal=.TRUE.)
