@@ -1,5 +1,12 @@
 2011-01-18  William A. Perkins  <william.perkins@pnl.gov>
 
+	* Makefile.mpi: try to make various directories set by host name 
+
+	* globals.f90 (globals): Intel Fortran does not like an empty
+	CONTAINS 
+
+	* mass2_parallel.f90 (mass2_parallel): call ma_init() 
+
 	* test/wave/falconer/mass2_v027.case3.cfg: update configuration
 	language
 
