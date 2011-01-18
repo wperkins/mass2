@@ -815,14 +815,14 @@ CONTAINS
                          blk%vvel(i, jj-1) = blk%vvel(i+1, jj-1)
                          blk%vvel(i, jj) = blk%vvel(i+1, jj)
                       END IF
+                      blk%uvelstar(i,jj) = blk%uvel(i,jj)
+                      blk%uvelold(i,jj) =  blk%uvel(i,jj)
+                      blk%vvelstar(i,jj) = blk%vvel(i,jj)
+                      blk%vvelold(i,jj)  = blk%vvel(i,jj)
+                      blk%cell(i+1,jj)%xtype = CELL_BOUNDARY_TYPE
+                      blk%cell(i+1,jj)%xbctype = FLOWBC_VEL
+                      IF (dsonly) blk%lud(i+1,jj) = 0.0
                    END IF
-                   blk%uvelstar(i,jj) = blk%uvel(i,jj)
-                   blk%uvelold(i,jj) =  blk%uvel(i,jj)
-                   blk%vvelstar(i,jj) = blk%vvel(i,jj)
-                   blk%vvelold(i,jj)  = blk%vvel(i,jj)
-                   blk%cell(i+1,jj)%xtype = CELL_BOUNDARY_TYPE
-                   blk%cell(i+1,jj)%xbctype = FLOWBC_VEL
-                   IF (dsonly) blk%lud(i+1,jj) = 0.0
                 END DO
                 IF (block_owns(blk, i, j_beg-1)) THEN
                    blk%vvelstar(i,j_beg-1) = blk%vvel(i,j_beg-1)
