@@ -7,35 +7,76 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Mon Jan 17 13:25:59 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Tue Jan 18 14:25:52 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
-F90         = openmpif90
-F90LINKER   = openmpif90
+HOST := $(shell uname -n)
 
-GA_TARGET = MACX
-CC = openmpicc -Wall
-CXX = openmpic++ -Wall
-FC = openmpif90 -Wall
- 
-GA = /home/d3g096/Projects/TE2THYS/src/GA/ga-4-3-2
-GA_FCFLAGS = -I$(GA)/include
-GA_FLIBS = -L$(GA)/lib/$(GA_TARGET) -lglobal -lma  -llinalg  -larmci -ltcgmsg-mpi  -lm
+F90         = $(HOST)
+F90LINKER   = $(HOST)
 
-GA = /Users/d3g096/ProjectStuff/MASS2/parallel
+ifeq ($(strip $(HOST)), PE10900)
+
+F90 = openmpif90
 GA = /home/d3g096/Projects/MASS2/src/parallel3/mac
-GA_FCFLAGS = -I$(GA)/include
-GA_FLIBS = -L$(GA)/lib -lga -larmci -llapack -lf77blas -latlas -lm
+GA_LIB = -llapack -lf77blas -latlas 
 CGNS_FCFLAGS = -I/opt/local/include
 CGNS_FLIBS = -L/opt/local/lib -lcgns
-
-PETSC_DIR = /Users/d3g096/ProjectStuff/mass2/parallel/petsc-3.1-p6
 PETSC_DIR = /home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7
 PETSC_ARCH = darwin9.8.0-c-opt
 # PETSC_ARCH = darwin9.8.0-c-debug
+FCPP_FLAG = -xf95-cpp-input
+
+endif
+
+ifeq ($(strip $(HOST)), PE10588)
+
+F90         = openmpif90
+GA = /Users/d3g096/ProjectStuff/MASS2/parallel
+GA_LIB = -llapack -lf77blas -latlas 
+CGNS_FCFLAGS = -I/opt/local/include
+CGNS_FLIBS = -L/opt/local/lib -lcgns
+PETSC_DIR = /Users/d3g096/ProjectStuff/mass2/parallel/petsc-3.1-p6
+PETSC_ARCH = darwin9.8.0-c-opt
+# PETSC_ARCH = darwin9.8.0-c-debug
+FCPP_FLAG = -xf95-cpp-input
+
+endif
+
+ifeq ($(strip $(HOST)), flophouse)
+
+F90         = mpif90
+GA	    = /usr/local/openmpi-intel
+GA_LIB = -llapack -lblas
+CGNS_FCFLAGS = -I/usr/unsupported/CGNSLib
+CGNS_FLIBS = -L/usr/unsupported/CGNSLib/LINUX64 -lcgns
+PETSC_DIR = /usr/local/openmpi-intel
+PETSC_ARCH =
+FCPP_FLAG = -fpp
+
+endif
+
+ifeq ($(strip $(HOST)), grapes)
+
+F90         = mpif90
+GA = /share/apps/ga/5.0.1/intel
+GA_LIB = -llapack -lblas
+CGNS_FCFLAGS = -I/home/d3g096/stuff/include
+CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns
+# PETSC_DIR defined by environment variable
+# PETSC_ARCH defined by environment variable
+FCPP_FLAG = -fpp
+
+endif
+
+F90LINKER   = $(F90)
+
+GA_FCFLAGS = -I$(GA)/include
+GA_FLIBS = -L$(GA)/lib -lga -larmci $(GA_LIB) -lm
+
 PETSC_FCFLAGS = -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(PETSC_DIR)/include
-PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
+PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -L$(PETSC_DIR)/lib -lpetsc
 
 mass2_SOURCES = \
 	block_hydro.f90 \
@@ -71,9 +112,10 @@ solver_test_FSOURCES = \
 	solver_petsc.F90
 solver_test_OBJS = $(solver_test_SOURCES:%.f90=%.o) $(solver_test_FSOURCES:%.F90=%.o)
 
-FCFLAGSCOMMON = -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) -xf95-cpp-input
+
+FCFLAGSCOMMON = -Itime_series $(GA_FCFLAGS) $(CGNS_FCFLAGS) $(PETSC_FCFLAGS) $(FCPP_FLAG)
 FCFLAGS = -g -ggdb -fbounds-check $(FCFLAGSCOMMON)
-# FCFLAGS = -g -ggdb $(FCFLAGSCOMMON)
+FCFLAGS = -g $(FCFLAGSCOMMON)
 FCFLAGS = -O3 $(FCFLAGSCOMMON)
 F90FLAGS = $(FLAGS)
 LDFLAGS = $(FLAGS) 
