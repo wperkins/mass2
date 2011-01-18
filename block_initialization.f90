@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Thu Jan 13 10:11:17 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 17 07:47:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -190,30 +190,32 @@ CONTAINS
     DO ifile = 1, coeff_file_count
        IF (filename .EQ. coeff_file_name(ifile)) THEN
 
-          SELECT CASE (ifile)
-          CASE (1)
-             tmp => block(iblock)%eddy
-             
-          CASE (2)
-             tmp => block(iblock)%kx_diff
-
-          CASE (3)
-             tmp => block(iblock)%ky_diff
-
-          CASE (4)
-             tmp => block(iblock)%chezy
-
-          CASE DEFAULT
-             CYCLE
-          END SELECT
-
           CALL open_existing(filename, iounit)
 
           DO WHILE(.TRUE.)
              READ(iounit,*,IOSTAT=iostat) iblock, dum_val, &
                   &i_start_cell, i_end_cell, j_start_cell , j_end_cell
 
+             ! FIXME: check iblock
+
              IF (iostat .EQ. 0) THEN
+                SELECT CASE (ifile)
+                CASE (1)
+                   tmp => block(iblock)%eddy
+                   
+                CASE (2)
+                   tmp => block(iblock)%kx_diff
+                   
+                CASE (3)
+                   tmp => block(iblock)%ky_diff
+                   
+                CASE (4)
+                   tmp => block(iblock)%chezy
+                   
+                CASE DEFAULT
+                   CYCLE
+                END SELECT
+
                 DO i = i_start_cell+1, i_end_cell+1
                    DO j = j_start_cell+1, j_end_cell+1
                       IF (block_owns(block(iblock), i, j)) tmp(i, j) = dum_val
