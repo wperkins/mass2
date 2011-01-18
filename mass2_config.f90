@@ -386,6 +386,15 @@ CONTAINS
     i = INT(LOG10(REAL(i)) + 1)
     IF (i .GT. 999) CALL date_time_flags(ydigits = i)
 
+    ! adjust digits included in output seconds, if necessary
+    
+    i = INT(MIN(LOG10(delta_t*gage_print_freq), LOG10(delta_t*print_freq)))
+
+    IF (i .LT. 0) THEN
+       i = ABS(i) + 1
+       CALL date_time_flags(sdigits=i)
+    END IF
+
     RETURN
 
 1000 CONTINUE
