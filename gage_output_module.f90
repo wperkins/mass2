@@ -49,23 +49,8 @@ MODULE gage_output
   CHARACTER (LEN=80), PARAMETER, PRIVATE :: gage_control = 'gage_control.dat'
 
   LOGICAL, PARAMETER, PRIVATE :: gage_do_text = .TRUE.
-  LOGICAL, PARAMETER, PRIVATE :: gage_do_netcdf = (.NOT. gage_do_text)
 
-  INTEGER, PRIVATE :: gage_ncid
-  CHARACTER (LEN=80), PARAMETER, PRIVATE :: gage_ncname = 'gage.nc'
-  INTEGER, PRIVATE :: tslen = 20, idlen = 40
-  INTEGER, PRIVATE :: gage_dimid, time_dimid, tslen_dimid, idlen_dimid
-  INTEGER, PRIVATE :: block_varid, eta_varid, xi_varid, gname_varid
-  INTEGER, PRIVATE :: time_varid,  ts_varid, id_varid, elapsed_varid
-
-  INTEGER, PRIVATE :: wselev_varid, depth_varid, vmag_varid, uvel_varid, vvel_varid, isdry_varid
-  INTEGER, PRIVATE, POINTER :: scalar_varid(:)
-  INTEGER, PRIVATE :: press_varid, deltap_varid, sat_varid
-
-  INTEGER, PRIVATE, POINTER :: depos_varid(:), erode_varid(:), bedsed_varid(:), bedmass_varid(:)
-  INTEGER, PRIVATE, POINTER :: bedporemass_varid(:), bedpore_varid(:), beddis_varid(:)
-  INTEGER, PRIVATE, POINTER :: part_depos_varid(:), bedpartmass_varid(:), bedpart_varid(:)
-  INTEGER, PRIVATE :: beddepth_varid
+  INTEGER, PRIVATE :: tslen = 40, idlen = 40
 
 CONTAINS
 
@@ -76,7 +61,7 @@ CONTAINS
 
     IMPLICIT NONE
     TYPE(gage_specs_struct) :: gage_rec
-    CHARACTER (LEN=40) :: buffer
+    CHARACTER (LEN=80) :: buffer
     INTEGER :: i
 
     IF (LEN_TRIM(gage_rec%ident) .LE. 0) THEN
@@ -229,7 +214,7 @@ CONTAINS
        &do_transport, salinity, baro_press)
 
     IMPLICIT NONE
-    CHARACTER*(*), INTENT(IN) :: date_string, time_string
+    CHARACTER (LEN=*), INTENT(IN) :: date_string, time_string
     DOUBLE PRECISION, INTENT(IN) :: elapsed, salinity, baro_press
     LOGICAL, INTENT(IN) :: do_transport
 
@@ -249,7 +234,7 @@ CONTAINS
        
        OPEN(gage_iounit, file=gage_specs(i)%filename, POSITION="APPEND")
 
-       WRITE(gage_iounit, 101, ADVANCE='NO') timestamp
+       WRITE(gage_iounit, '(A25, " ")', ADVANCE='NO') timestamp
        WRITE(gage_iounit, 100, ADVANCE='NO') elapsed
 
        WRITE (gage_iounit, 102, ADVANCE='NO') block(iblock)%wsel(icell,jcell)
@@ -333,8 +318,7 @@ CONTAINS
        END IF
        CLOSE(50)
     END DO
-100 FORMAT(F15.6, ' ')
-101 FORMAT(A20, ' ')
+100 FORMAT(F18.8, ' ')
 102 FORMAT(E15.8, ' ')
 
   END SUBROUTINE gage_print_text
@@ -347,12 +331,6 @@ CONTAINS
   SUBROUTINE gage_file_setup()
 
     IMPLICIT NONE
-
-    NULLIFY(gage_specs)
-    NULLIFY(scalar_varid)
-    NULLIFY(depos_varid)
-    NULLIFY(erode_varid)
-    NULLIFY(bedsed_varid)
 
     CALL gage_read_control()
 
@@ -386,11 +364,6 @@ CONTAINS
     IMPLICIT NONE
 
     CLOSE(gage_iounit)
-    IF (ASSOCIATED(gage_specs)) DEALLOCATE(gage_specs)
-    IF (ASSOCIATED(scalar_varid)) DEALLOCATE(scalar_varid)
-    IF (ASSOCIATED(depos_varid)) DEALLOCATE(depos_varid)
-    IF (ASSOCIATED(erode_varid)) DEALLOCATE(erode_varid)
-    IF (ASSOCIATED(bedsed_varid)) DEALLOCATE(bedsed_varid)
 
   END SUBROUTINE gage_file_close
   
