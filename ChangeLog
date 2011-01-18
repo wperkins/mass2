@@ -1,3 +1,32 @@
+2011-01-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/wave/falconer/mass2_v027.case3.cfg: update configuration
+	language
+
+	* test/wave/falconer/mass2_v027.case2.cfg: update configuration
+	language
+
+	* test/wave/falconer/mass2_v027.case1.cfg: update configuration
+	language 
+
+	* test/wave/falconer/Makefile: mass2_v027.cfg -> mass2.cfg
+
+	* test/flow/spur-dike-1/Makefile: mass2_v027.cfg -> mass2.cfg
+
+	* Makefile.mpi (FCFLAGS): group flags better
+
+	* block_hydro_bc.f90 (apply_hydro_bc): update of star/old values
+	in wrong place
+
+	* block_initialization.f90 (initialize_coeff): array to fill was
+	chosen too soon
+
+	* gage_output_module.f90 (gage_output): remove all netcdf variables
+	(gage_print_text): better timestamp and elapsed time formatting
+
+	* mass2_config.f90 (read_config): set second digits based on
+	output time step(s)
+
 2011-01-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* Makefile.mpi: add gage output
