@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Mon Jan 10 08:45:34 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jan 18 12:09:40 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -57,8 +57,5 @@ MODULE globals
   TYPE(datetime_struct), PUBLIC, SAVE :: current_time
   INTEGER, PUBLIC, SAVE :: time_step_count
   INTEGER, PUBLIC, SAVE :: hydro_iteration
-
-CONTAINS
-
 
 END MODULE globals
