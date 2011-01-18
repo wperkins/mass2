@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Nov  5 11:42:59 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Mon Jan 17 06:46:52 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -56,7 +56,7 @@ $(METRICVECTEPSFILES): vectors-%-metric.eps: plot-%.nc vectors-metric.lay
 	$(TECPLOT) -b -y $@ junk.lay -p ../../../tecplot/macros/export_eps.mcr
 
 $(PLOTFILES): plot-%.nc: $(MODELFILES) $(MODEL)
-	sed -e "s/@S@/$*/g" mass2_v027.base > mass2_v027.cfg
+	sed -e "s/@S@/$*/g" mass2_v027.base > mass2.cfg
 	$(MODEL)
 	mv plot.nc $@
 
@@ -77,6 +77,6 @@ clean::
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
 	rm -f gridplot1.dat
 	rm -f plot.nc $(PLOTFILES)
-	rm -f batch.log junk.lay mass2_v027.cfg hotstart*.bin
+	rm -f batch.log junk.lay mass2_v027.cfg mass2.cfg hotstart*.bin
 	rm -f $(EPSFILES)
 

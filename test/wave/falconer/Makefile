@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 13, 2002 by William A. Perkins
-# Last Change: Mon Apr  8 13:11:39 2002 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon Jan 17 07:09:36 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 MODEL = ../../../mass2_v027
 TECPLOT = tecplot
@@ -15,8 +15,7 @@ TECPLOT = tecplot
 EPSFILES = \
 	plot.case1.eps \
 	plot.case2.eps \
-	plot.case3.eps \
-    plot.case3blk.eps 
+	plot.case3.eps
 
 MODELFILES =
 
@@ -25,7 +24,7 @@ all: $(EPSFILES)
 plot.case1.nc: mass2_v027.case1.cfg bcspecs.case1 stage.case1.dat grid1.dat \
 	$(MODELFILES) $(MODEL)
 	cp bcspecs.case1 bcspecs.dat
-	cp mass2_v027.case1.cfg mass2_v027.cfg
+	cp mass2_v027.case1.cfg mass2.cfg
 	$(MODEL)
 	mv plot.nc $@
 
@@ -35,7 +34,7 @@ clean::
 plot.case2.nc: mass2_v027.case2.cfg bcspecs.case2 stage.case2.dat grid2.dat \
 	$(MODELFILES) $(MODEL)
 	cp bcspecs.case2 bcspecs.dat
-	cp mass2_v027.case2.cfg mass2_v027.cfg
+	cp mass2_v027.case2.cfg mass2.cfg
 	$(MODEL)
 	mv plot.nc $@
 
@@ -45,7 +44,7 @@ clean::
 plot.case3.nc: mass2_v027.case3.cfg bcspecs.case1 stage.case1.dat grid2.dat \
 	$(MODELFILES) $(MODEL)
 	cp bcspecs.case1 bcspecs.dat
-	cp mass2_v027.case3.cfg mass2_v027.cfg
+	cp mass2_v027.case3.cfg mass2.cfg
 	$(MODEL)
 	mv plot.nc $@
 
