@@ -1,5 +1,14 @@
 2011-01-24  William A. Perkins  <william.perkins@pnl.gov>
 
+	* mass2_parallel.f90 (mass2_parallel): write hotstart
+
+	* hotstart.f90: writing seems to work
+
+	* Makefile.mpi: add hotstart.f90
+
+	* plot_output.f90: put #include's in subprograms instead of module
+	to avoid duplicate declarations
+
 	* scalar_bc.f90: module for managing scalar boundary conditions 
 
 	* Makefile.mpi: compile in some of the transport modules
