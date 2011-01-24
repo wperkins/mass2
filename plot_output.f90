@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Tue Jan 11 14:16:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 24 09:54:18 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -21,9 +21,6 @@ MODULE plot_output
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
-#include "mafdecls.fh"
-#include "global.fh"
 
 CONTAINS
 
@@ -48,6 +45,8 @@ CONTAINS
 
     IMPLICIT NONE
 
+#include "global.fh"
+
     ! this has to be collective
     CALL plot_geometry()
     !FIXME: CALL accum_initialize()
@@ -63,6 +62,8 @@ CONTAINS
   SUBROUTINE plot_print(date_string, time_string, salinity, baro_press)
     
     IMPLICIT NONE
+
+#include "global.fh"
 
     CHARACTER (LEN=*) :: date_string
     CHARACTER (LEN=*) :: time_string
@@ -88,6 +89,8 @@ CONTAINS
   SUBROUTINE plot_file_close()
 
     IMPLICIT NONE
+
+#include "global.fh"
 
     IF (ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_close()
