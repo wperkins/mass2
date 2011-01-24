@@ -7,12 +7,16 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 23, 2000 by William A. Perkins
-! Last Change: Thu Jul 17 08:30:37 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Jan 20 22:27:24 2011 by William A. Perkins <d3g096@PE10588.local>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE sediment_source
 ! ----------------------------------------------------------------
 MODULE sediment_source
+
+  USE utility
+  USE globals
+  USE config
 
   IMPLICIT NONE
 
@@ -51,8 +55,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE sediment_source_initialize()
 
-    USE globals
-
     IMPLICIT NONE
 
     INTEGER :: iblk
@@ -65,10 +67,6 @@ CONTAINS
   ! TYPE (SEDIMENT_SOURCE_REC) FUNCTION sediment_parse_options
   ! ----------------------------------------------------------------
   TYPE (SEDIMENT_SOURCE_REC) FUNCTION sediment_parse_options(options)
-
-    USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
-    USE utility
-    USE globals
 
     IMPLICIT NONE
     POINTER sediment_parse_options
@@ -210,9 +208,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION sediment_erosion(rec, iblk, i, j)
 
-    USE globals
-    USE misc_vars, ONLY: delta_t
-
     IMPLICIT NONE
     INCLUDE 'bed_functions.inc'
     TYPE (sediment_source_rec) :: rec
@@ -234,9 +229,6 @@ CONTAINS
   ! DOUBLE PRECISION FUNCTION sediment_deposition
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION sediment_deposition(rec, iblk, i, j, sconc)
-
-    USE globals
-    USE misc_vars, ONLY: delta_t
 
     IMPLICIT NONE
     TYPE (sediment_source_rec) :: rec
