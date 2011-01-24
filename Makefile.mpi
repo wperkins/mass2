@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Tue Jan 18 14:25:52 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Thu Jan 20 22:27:59 2011 by William A. Perkins <d3g096@PE10588.local>
 # -------------------------------------------------------------
 # $Id$
 
@@ -88,17 +88,24 @@ mass2_SOURCES = \
 	block_grid.f90 \
 	differencing.f90 \
 	distance.f90 \
+	energy_flux_module.f90 \
+	gas_coeffs_module.f90 \
+	gas_functions_module.f90 \
 	globals.f90 \
 	gage_output_module.f90 \
 	hydro_bc.f90 \
 	hydro_solve.f90 \
 	mass_source_output.f90 \
+	met_data_module.f90 \
 	mass2_config.f90 \
 	mass2_parallel.f90 \
 	plot_cgns.f90 \
 	plot_output.f90 \
+	scalars_module.f90 \
+	sediment_source.f90 \
 	solver_common.f90 \
-	table_bc_module.f90
+	table_bc_module.f90 \
+	temperature_source.f90 
 mass2_FSOURCES = \
 	solver_petsc.F90
 
@@ -145,6 +152,9 @@ block_parallel.o: block_parallel.f90 block_var.o
 block_var.o: block_var.f90 block_var_base.o
 block_var_base.o: block_var_base.f90 globals.o
 diffenencing.o: differencing.f90
+energy_flux_module.o: energy_flux_module.f90
+gas_coeffs_module.o: gas_coeffs_module.f90
+gas_functions_module.o: gas_functions_module.f90 gas_coeffs_module.o
 globals.o: globals.f90 
 gage_output_module.o: gage_output_module.f90 block_parallel.o mass2_config.o
 hotstart.o: hotstart.f90 
@@ -153,12 +163,16 @@ hydro_solve.o: hydro_solve.f90 block_hydro.o block_hydro_bc.o differencing.o sol
 mass2_config.o: mass2_config.f90 differencing.o solver_common.o block_var_base.o
 mass2_parallel.o: mass2_parallel.f90 block_grid.o block_initialization.o \
 	mass2_config.o mass_source_output.o gage_output_module.o plot_output.o 
+met_data_module.o: met_data_module.f90
 plot_cgns.o: plot_cgns.f90 block_grid.o block_hydro.o
 plot_output.o: plot_output.f90 plot_cgns.o mass2_config.o block_parallel.o
+scalars_module.o: scalars_module.f90 globals.o
 solver_common.o: solver_common.f90
 solver_petsc.o: solver_petsc.F90 solver_common.o
 solver_test.o: solver_test.f90 solver_common.o solver_petsc.o
 table_bc_module.o: table_bc_module.f90 
+temperature_source.o: temperature_source.f90 met_data_module.o \
+	energy_flux_module.o 
 
 clean::
 	rm -f $(mass2_OBJS) *.mod *~
