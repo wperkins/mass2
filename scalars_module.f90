@@ -24,7 +24,7 @@
 MODULE scalars
 
   USE utility
-  USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
+  USE globals
 
 IMPLICIT NONE
 
