@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Tue Jan 18 12:32:36 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 24 09:54:38 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -24,8 +24,12 @@ PROGRAM mass2_parallel
   USE gage_output
   USE mass_source_output
   USE plot_output
+  USE hotstart
 
   IMPLICIT NONE
+
+#include "mafdecls.fh"
+#include "global.fh"
 
   CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
   CHARACTER (LEN=1024) :: buffer
@@ -103,9 +107,9 @@ PROGRAM mass2_parallel
 
      CALL output()
 
-!!$     IF(write_restart_file)THEN
-!!$        CALL write_restart(status_flag)
-!!$     END IF
+     IF(write_restart_file)THEN
+        CALL write_restart()
+     END IF
 
   END DO
   ! end time loop
