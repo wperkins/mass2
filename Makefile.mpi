@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Jan 20 22:27:59 2011 by William A. Perkins <d3g096@PE10588.local>
+# Last Change: Mon Jan 24 09:49:09 2011 by William A. Perkins <d3g096@flophouse>
 # -------------------------------------------------------------
 # $Id$
 
@@ -93,6 +93,7 @@ mass2_SOURCES = \
 	gas_functions_module.f90 \
 	globals.f90 \
 	gage_output_module.f90 \
+	hotstart.f90 \
 	hydro_bc.f90 \
 	hydro_solve.f90 \
 	mass_source_output.f90 \
@@ -102,7 +103,6 @@ mass2_SOURCES = \
 	plot_cgns.f90 \
 	plot_output.f90 \
 	scalars_module.f90 \
-	sediment_source.f90 \
 	solver_common.f90 \
 	table_bc_module.f90 \
 	temperature_source.f90 
@@ -157,7 +157,7 @@ gas_coeffs_module.o: gas_coeffs_module.f90
 gas_functions_module.o: gas_functions_module.f90 gas_coeffs_module.o
 globals.o: globals.f90 
 gage_output_module.o: gage_output_module.f90 block_parallel.o mass2_config.o
-hotstart.o: hotstart.f90 
+hotstart.o: hotstart.f90 block_parallel.o mass2_config.o
 hydro_bc.o: hydro_bc.f90 table_bc_module.o mass2_config.o
 hydro_solve.o: hydro_solve.f90 block_hydro.o block_hydro_bc.o differencing.o solver_petsc.o mass2_config.o
 mass2_config.o: mass2_config.f90 differencing.o solver_common.o block_var_base.o
