@@ -1,3 +1,15 @@
+2011-01-24  William A. Perkins  <william.perkins@pnl.gov>
+
+	* scalar_bc.f90: module for managing scalar boundary conditions 
+
+	* Makefile.mpi: compile in some of the transport modules
+
+	* sediment_source.f90: update to use parallel modules (just
+	compiling, not working)
+
+	* scalars_module.f90: update to use parallel modules (just
+	compiling, not working)
+
 2011-01-18  William A. Perkins  <william.perkins@pnl.gov>
 
 	* Makefile.mpi: try to make various directories set by host name 
