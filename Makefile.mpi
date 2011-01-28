@@ -26,6 +26,7 @@ CGNS_FLIBS = -L/opt/local/lib -lcgns
 PETSC_DIR = /home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7
 PETSC_ARCH = darwin9.8.0-c-opt
 # PETSC_ARCH = darwin9.8.0-c-debug
+PETSC_LIB =
 FCPP_FLAG = -xf95-cpp-input
 
 endif
@@ -40,6 +41,7 @@ CGNS_FLIBS = -L/opt/local/lib -lcgns
 PETSC_DIR = /Users/d3g096/ProjectStuff/mass2/parallel/petsc-3.1-p6
 PETSC_ARCH = darwin9.8.0-c-opt
 # PETSC_ARCH = darwin9.8.0-c-debug
+PETSC_LIB =
 FCPP_FLAG = -xf95-cpp-input
 
 endif
@@ -53,6 +55,7 @@ CGNS_FCFLAGS = -I/usr/unsupported/CGNSLib
 CGNS_FLIBS = -L/usr/unsupported/CGNSLib/LINUX64 -lcgns
 PETSC_DIR = /usr/local/openmpi-intel
 PETSC_ARCH =
+PETSC_LIB =
 FCPP_FLAG = -fpp
 
 endif
@@ -61,11 +64,13 @@ ifeq ($(strip $(HOST)), grapes)
 
 F90         = mpif90
 GA = /share/apps/ga/5.0.1/intel
-GA_LIB = -llapack -lblas
+# GA = /home/d3g096/stuff/src/ga-5-0
+GA_LIB = -libverbs -llapack -lblas 
 CGNS_FCFLAGS = -I/home/d3g096/stuff/include
-CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns
+CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns -lhdf5 -lsz -lz
 # PETSC_DIR defined by environment variable
 # PETSC_ARCH defined by environment variable
+PETSC_LIB = -lX11
 FCPP_FLAG = -fpp
 
 endif
@@ -76,7 +81,7 @@ GA_FCFLAGS = -I$(GA)/include
 GA_FLIBS = -L$(GA)/lib -lga -larmci $(GA_LIB) -lm
 
 PETSC_FCFLAGS = -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(PETSC_DIR)/include
-PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -L$(PETSC_DIR)/lib -lpetsc
+PETSC_FLIBS = -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -L$(PETSC_DIR)/lib -lpetsc $(PETSC_LIB)
 
 mass2_SOURCES = \
 	block_hydro.f90 \
