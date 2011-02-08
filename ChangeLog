@@ -1,5 +1,8 @@
 2011-02-08  William A. Perkins  <william.perkins@pnl.gov>
 
+	* test/flow/normal-1blk/Makefile: make config file with correct
+	name; do not create NetCDF files
+
 	* block_hydro.f90 (bedshear): no need to get shear after it's put 
 
 	* hotstart.f90 (read_hotstart): compiles and runs, but does not
