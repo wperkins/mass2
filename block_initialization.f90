@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Mon Jan 17 07:47:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 31 09:11:47 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -18,6 +18,7 @@ MODULE block_initialization
 
   USE config
   USE block_hydro
+  USE hotstart
 
   IMPLICIT NONE
 
@@ -91,8 +92,7 @@ CONTAINS
     ! using uniform values from cfg file or a restart file
 
     IF(read_hotstart_file)THEN
-       ! FIXME: CALL read_hotstart()
-       CALL error_message('hotstart not implemented', fatal=.TRUE.)
+       CALL read_hotstart()
     ELSE
        CALL status_message('setting initial values for all blocks')
        DO iblock=1,max_blocks
