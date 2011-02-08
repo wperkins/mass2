@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Thu Jan 13 10:28:11 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Jan 31 08:43:27 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -393,8 +393,7 @@ CONTAINS
     END DO
 
     CALL block_var_put(blk%bv_shear)
-    CALL ga_sync()
-    CALL block_var_get(blk%bv_shear)
+    ! no need to get, since ghost cell values are not used
 
   END SUBROUTINE bedshear
 
