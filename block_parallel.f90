@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Sat Jan 15 19:23:17 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Mon Jan 31 08:42:13 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -366,7 +366,6 @@ CONTAINS
 
     blk%bedshear1 => block_array_owned(blk)
     blk%bedshear2 => block_array_owned(blk)
-    blk%shear => block_array_owned(blk)
     blk%windshear1 => block_array_owned(blk)
     blk%windshear2 => block_array_owned(blk)
     blk%apo => block_array_owned(blk)
@@ -432,6 +431,7 @@ CONTAINS
     CALL block_var_deallocate(blk%bv_x_out)
     CALL block_var_deallocate(blk%bv_y_out)
     CALL block_var_deallocate(blk%bv_zbot_out)
+
     CALL block_var_deallocate(blk%bv_x_xsi)
     CALL block_var_deallocate(blk%bv_y_xsi)
     CALL block_var_deallocate(blk%bv_x_eta)
@@ -443,29 +443,38 @@ CONTAINS
     CALL block_var_deallocate(blk%bv_hv1)
     CALL block_var_deallocate(blk%bv_hv2)
     CALL block_var_deallocate(blk%bv_gp12)
+
     CALL block_var_deallocate(blk%bv_chezy)
     CALL block_var_deallocate(blk%bv_kx_diff)
     CALL block_var_deallocate(blk%bv_ky_diff)
     CALL block_var_deallocate(blk%bv_eddy)
+
     CALL block_var_deallocate(blk%bv_uvel)
     CALL block_var_deallocate(blk%bv_vvel)
     CALL block_var_deallocate(blk%bv_depth)
     CALL block_var_deallocate(blk%bv_wsel)
+    CALL block_var_deallocate(blk%bv_dp)
+
+    CALL block_var_deallocate(blk%bv_uvel_p)
+    CALL block_var_deallocate(blk%bv_vvel_p)
     CALL block_var_deallocate(blk%bv_u_cart)
     CALL block_var_deallocate(blk%bv_v_cart)
-    CALL block_var_deallocate(blk%bv_u_cart)
-    CALL block_var_deallocate(blk%bv_v_cart)
+
     CALL block_var_deallocate(blk%bv_vmag)
+    CALL block_var_deallocate(blk%bv_shear)
     CALL block_var_deallocate(blk%bv_froude_num)
     CALL block_var_deallocate(blk%bv_courant_num)
     CALL block_var_deallocate(blk%bv_mass_source)
+
     CALL block_var_deallocate(blk%bv_uflux)
     CALL block_var_deallocate(blk%bv_vflux)
+
     CALL block_var_deallocate(blk%bv_isdry)
+    CALL block_var_deallocate(blk%bv_dead)
+
     CALL block_var_deallocate(blk%bv_lud)
     CALL block_var_deallocate(blk%bv_lvd)
 
-    DEALLOCATE(blk%dp)
     DEALLOCATE(blk%bedshear1)
     DEALLOCATE(blk%bedshear2)
     DEALLOCATE(blk%shear)
