@@ -7,12 +7,16 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 20, 2011 by William A. Perkins
-! Last Change: Thu Jan 20 20:23:52 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Tue Jan 25 13:04:37 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE scalar_bc_module
 ! ----------------------------------------------------------------
 MODULE scalar_bc_module
+
+  USE utility
+  USE config
+  USE table_boundary_conditions
 
   IMPLICIT NONE
 
@@ -45,6 +49,7 @@ MODULE scalar_bc_module
   TYPE(scalar_bc_struct), ALLOCATABLE :: scalar_bc(:)
 
   CHARACTER (LEN=80), PRIVATE :: scalar_bcspecs_name = "scalar_bcspecs.dat"
+  INTEGER, PARAMETER, PRIVATE :: bcspec_iounit = 18
 
 CONTAINS
 
@@ -71,14 +76,14 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! read_scalar_bcspecs
   ! ----------------------------------------------------------------
-  SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
+  SUBROUTINE read_scalar_bcspecs(max_blocks, max_species, xmax, ymax)
 
 
     ! reads the bc spec file
     ! format: block#	bc_loc	bc_type	bc_kind	bc_extent	'connect_block OR filename' 'cell pairs'			
 
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: iounit, max_blocks, max_species
+    INTEGER, INTENT(IN) :: max_blocks, max_species
     INTEGER, INTENT(IN) :: xmax(:), ymax(:)
 
     INTEGER :: junk1, block, species, cells(2*max_cell_values) = -999 , num_bc, con_block, i
@@ -89,12 +94,12 @@ CONTAINS
     CHARACTER (LEN=80) :: file_name
     CHARACTER (LEN=1024) :: msg
 
-    CALL open_existing(scalar_bcspecs_name, iounit)
+    CALL open_existing(scalar_bcspecs_name, bcspec_iounit)
 
     ! first we need to count how many SCALAR TABLE bc types 
 
     DO WHILE(.TRUE.)
-       READ(iounit,*,END=100)junk1,junk_char1,junk_char2
+       READ(bcspec_iounit,*,END=100)junk1,junk_char1,junk_char2
        IF(junk_char2 == "TABLE") max_scalar_tables = max_scalar_tables + 1
     END DO
 
@@ -104,13 +109,13 @@ CONTAINS
     scalar_bc(:)%num_bc = 0
 
     ! now start over to fill and parse
-    REWIND(iounit)
+    REWIND(bcspec_iounit)
 
     ierr = 0
     line = 0
 
     DO WHILE(.TRUE.)
-       READ(iounit,*,END=200)block, bc_loc, bc_type, species, bc_kind, bc_extent
+       READ(bcspec_iounit,*,END=200)block, bc_loc, bc_type, species, bc_kind, bc_extent
        line = line + 1
        lerr = 0
 
@@ -162,21 +167,21 @@ CONTAINS
 
           ! reread BC specific information from the line
 
-          BACKSPACE(iounit)
+          BACKSPACE(bcspec_iounit)
 
           SELECT CASE(bc_type)
 
           CASE("ZEROG")
              SELECT CASE(bc_extent)
              CASE("ALL")
-                READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent
                 scalar_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
                 scalar_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
                 scalar_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
              CASE("PART")
                 cells = -999
-                READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,cells(:)
-                CALL set_scalar_part(iounit, scalar_bc(block)%bc_spec(num_bc), &
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,cells(:)
+                CALL set_scalar_part(scalar_bc(block)%bc_spec(num_bc), &
                      &cells, maxidx, line, lerr)
              CASE DEFAULT
                 lerr = lerr + 1
@@ -186,7 +191,7 @@ CONTAINS
              END SELECT
 
           CASE("BLOCK")
-             READ(iounit,*)block, bc_loc, bc_type, species, bc_kind, bc_extent, con_block
+             READ(bcspec_iounit,*)block, bc_loc, bc_type, species, bc_kind, bc_extent, con_block
 
              scalar_bc(block)%num_bc = scalar_bc(block)%num_bc - 1
              num_bc = scalar_bc(block)%num_bc
@@ -198,7 +203,7 @@ CONTAINS
           CASE("TABLE")
              SELECT CASE(bc_extent)
              CASE("ALL")
-                READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start
                 table_count = table_count + 1 ! keep a running count of the number of tables
                 scalar_bc(block)%bc_spec(num_bc)%table_num = table_count
                 scalar_table_bc(table_count)%file_name = file_name ! associate file and table number
@@ -208,12 +213,12 @@ CONTAINS
                 scalar_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
              CASE("PART")
                 cells = -999
-                READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start,cells(:)
+                READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start,cells(:)
                 table_count = table_count + 1 ! keep a running count of the number of tables
                 scalar_bc(block)%bc_spec(num_bc)%table_num = table_count
                 scalar_table_bc(table_count)%file_name = file_name ! associate file and table number
                 scalar_bc(block)%bc_spec(num_bc)%x_start = x_start ! starting x grid line for BC
-                CALL set_scalar_part(iounit, scalar_bc(block)%bc_spec(num_bc), &
+                CALL set_scalar_part(scalar_bc(block)%bc_spec(num_bc), &
                      &cells, maxidx, line, lerr)
              CASE DEFAULT
                 lerr = lerr + 1
@@ -226,7 +231,7 @@ CONTAINS
              WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
                   &": ", TRIM(bc_type), "?"
              CALL error_message(msg, fatal=.FALSE.)
-             READ(iounit, *) junk1
+             READ(bcspec_iounit, *) junk1
           END SELECT
        END IF
        ierr = ierr + lerr
@@ -235,7 +240,7 @@ CONTAINS
 
 200 CONTINUE
 
-    CLOSE(iounit)
+    CLOSE(bcspec_iounit)
 
     IF (ierr .GT. 0) THEN
        WRITE(msg, *) TRIM(scalar_bcspecs_name), ": ", ierr, " errors"
@@ -248,10 +253,10 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE set_scalar_part
   ! ----------------------------------------------------------------
-  SUBROUTINE set_scalar_part(iounit, spec, cells, maxidx, line, ierr)
+  SUBROUTINE set_scalar_part(spec, cells, maxidx, line, ierr)
 
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: iounit, cells(:), maxidx, line
+    INTEGER, INTENT(IN) :: cells(:), maxidx, line
     TYPE (scalar_bc_spec_struct), INTENT(INOUT) :: spec
     INTEGER, INTENT(INOUT) :: ierr
 
