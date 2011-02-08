@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Sat Jan 15 19:23:29 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Mon Jan 31 07:50:43 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -18,7 +18,7 @@
 MODULE block_grid
 
   USE utility
-  USE config, ONLY: max_blocks
+  USE config, ONLY: max_blocks, grid_file_name
   USE block_module
 
   IMPLICIT NONE
@@ -804,6 +804,46 @@ CONTAINS
     END DO
 
   END SUBROUTINE plot_geometry
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE read_grid
+  ! ----------------------------------------------------------------
+  SUBROUTINE read_grid()
+
+    IMPLICIT NONE
+
+    INTEGER :: b
+    INTEGER :: imax, jmax
+
+    IF (max_blocks .GT. 1) THEN
+       CALL error_message("Only one block allowed right now", fatal=.TRUE.)
+    END IF
+
+    ALLOCATE(block(max_blocks))
+
+    DO b = 1, max_blocks
+
+       CALL block_read_grid(block(b), b, grid_file_name(b))
+
+       CALL block_build_ghost(block(b))
+
+       CALL block_interp_grid(block(b))
+
+       CALL block_metrics(block(b))
+
+       CALL block_plot_geometry(block(b))
+
+    END DO
+
+    CALL block_distribution_report()
+
+    imax = MAXVAL(block(:)%xmax) + 1
+    jmax = MAXVAL(block(:)%ymax) + 1
+
+    ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
+
+  END SUBROUTINE read_grid
 
 
 
