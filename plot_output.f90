@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Mon Jan 24 09:54:18 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Fri Jan 28 14:44:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -16,6 +16,7 @@
 ! ----------------------------------------------------------------
 MODULE plot_output
 
+  USE config
   USE plot_cgns
 
   IMPLICIT NONE
@@ -51,7 +52,7 @@ CONTAINS
     CALL plot_geometry()
     !FIXME: CALL accum_initialize()
 
-    IF (ga_nodeid() .EQ. 0) THEN
+    IF (plot_do_cgns .AND. ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_setup()
     END IF
   END SUBROUTINE plot_file_setup
@@ -74,7 +75,7 @@ CONTAINS
     !FIXME: CALL accum_calc()
     CALL velocity_shift()
     CALL ga_sync()
-    IF (ga_nodeid() .EQ. 0) THEN
+    IF (plot_do_cgns .AND. ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_write(date_string, time_string, salinity, baro_press)
     END IF
     CALL ga_sync()
@@ -92,7 +93,7 @@ CONTAINS
 
 #include "global.fh"
 
-    IF (ga_nodeid() .EQ. 0) THEN
+    IF (plot_do_cgns .AND. ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_close()
     END IF
 
