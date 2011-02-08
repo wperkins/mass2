@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Wed Oct 29 11:40:03 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Fri Jan 28 14:14:02 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -54,9 +54,9 @@ $(filter %-stage-flow-metric.eps, $(EPSFILES)): plot-stage-flow.nc
 
 plot-flow-stage.nc hotstart.bin: $(MODELFILES) $(MODEL) flow.dat stage.dat
 	cp bcspecs.base bcspecs.dat
-	cp mass2_v027.base mass2_v027.cfg
+	cp mass2_v027.base mass2.cfg
 	$(MODEL)
-	mv plot.nc $@
+	touch $@
 	mv hotstart_04-01-1996_060000.bin hotstart.bin
 
 clean:: 
@@ -66,9 +66,9 @@ clean::
 
 plot-stage-stage.nc: $(MODELFILES) $(MODEL) stage.dat ustage.dat
 	sed -e 's/FLUX/ELEV/g' -e 's/flow\.dat/ustage.dat/g' bcspecs.base > bcspecs.dat
-	cp mass2_v027.base mass2_v027.cfg
+	cp mass2_v027.base mass2.cfg
 	$(MODEL)
-	mv plot.nc $@
+	touch $@
 	rm hotstart_04-01-1996_060000.bin
 
 clean:: 
@@ -79,20 +79,20 @@ clean::
 plot-stage-flow.nc: $(MODELFILES) $(MODEL) flow.dat ustage.dat
 	sed -e '1s/FLUX/ELEV/g' -e '1s/flow\.dat/ustage.dat/g' \
 		-e '2s/ELEV/FLUX/g' -e '2s/stage\.dat/flow.dat/g' bcspecs.base > bcspecs.dat
-	cp mass2_v027.base mass2_v027.cfg
+	cp mass2_v027.base mass2.cfg
 	$(MODEL)
-	mv plot.nc $@
+	touch $@
 
 clean:: 
 	rm -f plot-stage-flow.nc
-	rm -f bcspecs.dat mass2_v027.cfg
+	rm -f bcspecs.dat mass2_v027.cfg mass2.cfg
 	rm -f hotstart.bin
 
 plot-flow-flow.nc: $(MODELFILES) $(MODEL) hotstart.bin flow.dat
 	sed -e 's/ELEV/FLUX/g' -e 's/stage\.dat/flow.dat/g' bcspecs.base > bcspecs.dat
-	sed -e '11s/^T/F/' -e '12s/^F/T/' mass2_v027.base > mass2_v027.cfg
+	sed -e '11s/^T/F/' -e '12s/^F/T/' mass2_v027.base > mass2.cfg
 	$(MODEL)
-	mv plot.nc $@
+	touch $@
 
 clean:: 
 	rm -f plot-flow-flow.nc
