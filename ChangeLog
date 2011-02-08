@@ -1,3 +1,33 @@
+2011-02-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_hydro.f90 (bedshear): no need to get shear after it's put 
+
+	* hotstart.f90 (read_hotstart): compiles and runs, but does not
+	work correctly
+
+	* mass2_parallel.f90: move read_grid() to block_grid.f90; do
+	deallocation
+
+	* scalar_bc.f90: compiles, but not tested
+
+2011-02-04  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.mpi (mass2_SOURCES): add scalar_bc.f90
+
+2011-01-31  William A. Perkins  <william.perkins@pnl.gov>
+
+	* block_parallel.f90 (block_deallocate): some missing arrays
+	included 
+
+	* block_initialization.f90 (initialize): read hotstart when called
+	for 
+
+	* block_grid.f90 (read_grid): move to here
+
+	* hotstart.f90 (read_hotstart): make hot start reading work
+
+	* plot_output.f90: only do CGNS output if plot_do_cgns is set
+
 2011-01-24  William A. Perkins  <william.perkins@pnl.gov>
 
 	* mass2_parallel.f90 (mass2_parallel): write hotstart
