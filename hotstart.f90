@@ -15,51 +15,86 @@ MODULE hotstart
 
 CONTAINS
 
-!!$  ! ----------------------------------------------------------------
-!!$  ! SUBROUTINE read_hotstart
-!!$  ! ----------------------------------------------------------------
-!!$  SUBROUTINE read_hotstart()
-!!$
-!!$    IMPLICIT NONE
-!!$
-!!$    INTEGER :: iblock, i
-!!$    CHARACTER (LEN=1024) :: msg
-!!$    LOGICAL :: do_transport_restart
-!!$    INTEGER :: max_species_in_restart
-!!$
-!!$    CALL open_existing('hotstart.bin', hotstart_iounit)
-!!$    CALL status_message('reading hotstart file')
-!!$    READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
-!!$    DO iblock=1,max_blocks
-!!$       READ(hotstart_iounit,*) block(iblock)%uvel
-!!$       !WRITE(*,*)'done with uvel read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%uold
-!!$       !WRITE(*,*)'done with uold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%uoldold
-!!$       !WRITE(*,*)'done with uoldold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%ustar
-!!$       !WRITE(*,*)'done with ustar read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%vvel
-!!$       !WRITE(*,*)'done with vvel read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%vold
-!!$       !WRITE(*,*)'done with vold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%voldold
-!!$       !WRITE(*,*)'done with voldold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%vstar
-!!$       !WRITE(*,*)'done with vstar read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%depth
-!!$       !WRITE(*,*)'done with depth read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%depthold
-!!$       !WRITE(*,*)'done with depthold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%deptholdold
-!!$       !WRITE(*,*)'done with deptholdold read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%dstar
-!!$       !WRITE(*,*)'done with dstar read for block -',iblock
-!!$       READ(hotstart_iounit,*) block(iblock)%eddy 
-!!$       !WRITE(*,*)'done with eddy read for block -',iblock
-!!$    END DO
-!!$    IF( (do_transport).AND.(do_transport_restart) )THEN
-!!$
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE hotstart_read_var
+  ! ----------------------------------------------------------------
+  SUBROUTINE hotstart_read_var(iunit, var, buffer, index)
+    
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iunit
+    TYPE (block_var), INTENT(INOUT) :: var
+    DOUBLE PRECISION, INTENT(INOUT) :: &
+         &buffer(var%base%imin_global:var%base%imax_global, &
+         &var%base%jmin_global:var%base%jmax_global)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+
+    myindex = BLK_VAR_CURRENT
+
+    IF (PRESENT(index)) myindex = index
+
+    READ (iunit, *) buffer(var%base%imin_global:var%base%imax_global, &
+         &var%base%jmin_global:var%base%jmax_global)
+    CALL block_var_put_all(var, buffer, myindex)
+
+  END SUBROUTINE hotstart_read_var
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE read_hotstart
+  ! ----------------------------------------------------------------
+  SUBROUTINE read_hotstart()
+
+    IMPLICIT NONE
+
+#include "global.fh"
+
+    INTEGER :: iblk, i
+    CHARACTER (LEN=1024) :: msg
+    LOGICAL :: do_transport_restart
+    INTEGER :: max_species_in_restart
+
+    IF (ga_nodeid() .EQ. 0) THEN
+
+       CALL open_existing(hotstart_file_name, hotstart_iounit)
+       CALL status_message('reading hotstart file "' // TRIM(hotstart_file_name) // '"')
+       READ(hotstart_iounit,*) do_transport_restart, max_species_in_restart
+       DO iblk=1,max_blocks
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_uvel, &
+               &block(iblk)%buffer, BLK_VAR_CURRENT)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_uvel, &
+               &block(iblk)%buffer, BLK_VAR_OLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_uvel, &
+               &block(iblk)%buffer, BLK_VAR_OLDOLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_uvel, &
+               &block(iblk)%buffer, BLK_VAR_STAR)
+          
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_vvel, &
+               &block(iblk)%buffer, BLK_VAR_CURRENT)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_vvel, &
+               &block(iblk)%buffer, BLK_VAR_OLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_vvel, &
+               &block(iblk)%buffer, BLK_VAR_OLDOLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_vvel, &
+               &block(iblk)%buffer, BLK_VAR_STAR)
+          
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_depth, &
+               &block(iblk)%buffer, BLK_VAR_CURRENT)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_depth, &
+               &block(iblk)%buffer, BLK_VAR_OLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_depth, &
+               &block(iblk)%buffer, BLK_VAR_OLDOLD)
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_depth, &
+               &block(iblk)%buffer, BLK_VAR_STAR)
+          
+          CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_eddy, &
+               &block(iblk)%buffer, BLK_VAR_CURRENT)
+       END DO
+       
+       IF( (do_transport).AND.(do_transport_restart) )THEN
+
 !!$       ! if a bed is expected in the
 !!$       ! hotstart, the number of scalars must
 !!$       ! be the same in the hotstart as was
@@ -99,17 +134,45 @@ CONTAINS
 !!$
 !!$    ELSE IF (do_transport) THEN
 !!$       DO i = 1, max_species
-!!$          DO iblock =1, max_blocks
-!!$             species(i)%scalar(iblock)%conc = conc_initial
-!!$             species(i)%scalar(iblock)%concold = conc_initial
+!!$          DO iblk =1, max_blocks
+!!$             species(i)%scalar(iblk)%conc = conc_initial
+!!$             species(i)%scalar(iblk)%concold = conc_initial
 !!$          END DO
 !!$       END DO
-!!$    END IF
-!!$
-!!$    CLOSE(hotstart_iounit)
-!!$    WRITE(status_iounit,*)'done reading hotstart file'
-!!$
-!!$  END SUBROUTINE read_hotstart
+       END IF
+
+       CLOSE(hotstart_iounit)
+
+       CALL status_message('done reading hotstart file')
+    END IF
+
+    CALL ga_sync()
+
+    DO iblk=1,max_blocks
+       CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_STAR)
+       CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_OLDOLD)
+       CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_OLD)
+       CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_CURRENT)
+
+       CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_STAR)
+       CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_OLDOLD)
+       CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_OLD)
+       CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_CURRENT)
+    
+       CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_STAR)
+       CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_OLDOLD)
+       CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_OLD)
+       CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_CURRENT)
+
+       CALL block_var_get(block(iblk)%bv_eddy, BLK_VAR_CURRENT)
+
+       block(iblk)%wsel = block(iblk)%depth + block(iblk)%zbot
+       CALL block_var_put(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
+       CALL ga_sync()
+       CALL block_var_get(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
+    END DO
+
+  END SUBROUTINE read_hotstart
 
   ! ----------------------------------------------------------------
   !  FUNCTION hotstart_name
