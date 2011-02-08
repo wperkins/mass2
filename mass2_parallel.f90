@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Jan 24 09:54:38 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Jan 31 08:04:53 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -36,7 +36,7 @@ PROGRAM mass2_parallel
   INTEGER :: ierr
   INTEGER :: mpi_rank
   INTEGER :: maxsteps
-  INTEGER :: junk, heap, stack
+  INTEGER :: junk, heap, stack, iblk
   LOGICAL :: ok
 
   CALL time_series_module_init()
@@ -114,13 +114,18 @@ PROGRAM mass2_parallel
   END DO
   ! end time loop
 
-  junk = solver_finalize()
+  IF (do_flow .OR. do_transport) junk = solver_finalize()
 
   CALL plot_file_close()
   CALL gage_file_close()
   CALL mass_file_close()
 !!$  IF (debug) CALL block_flux_close()
   CALL time_series_module_done()
+
+  DO iblk = 1, max_blocks
+     CALL block_deallocate(block(iblk))
+  END DO
+
   CLOSE(utility_error_iounit)
   CLOSE(utility_status_iounit)
 
@@ -131,49 +136,6 @@ PROGRAM mass2_parallel
 END PROGRAM mass2_parallel
 
 ! ----------------------------------------------------------------
-! SUBROUTINE read_grid
-! ----------------------------------------------------------------
-SUBROUTINE read_grid()
-
-  USE utility
-  USE config
-  USE block_grid
-
-  IMPLICIT NONE
-
-  INTEGER :: b
-  INTEGER :: imax, jmax
-
-  IF (max_blocks .GT. 1) THEN
-     CALL error_message("Only one block allowed right now", fatal=.TRUE.)
-  END IF
-
-  ALLOCATE(block(max_blocks))
-
-  DO b = 1, max_blocks
-
-     CALL block_read_grid(block(b), b, grid_file_name(b))
-
-     CALL block_build_ghost(block(b))
-
-     CALL block_interp_grid(block(b))
-
-     CALL block_metrics(block(b))
-
-     CALL block_plot_geometry(block(b))
-
-  END DO
-
-  CALL block_distribution_report()
-
-  imax = MAXVAL(block(:)%xmax) + 1
-  jmax = MAXVAL(block(:)%ymax) + 1
-
-  ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
-
-END SUBROUTINE read_grid
-
-! ----------------------------------------------------------------
 ! SUBROUTINE bc_init
 ! ----------------------------------------------------------------
 SUBROUTINE bc_init()
@@ -181,6 +143,7 @@ SUBROUTINE bc_init()
   USE utility
   USE config
   USE block_hydro_bc
+  USE scalar_bc_module
 
   IMPLICIT NONE
 
@@ -204,9 +167,8 @@ SUBROUTINE bc_init()
   IF(do_transport)THEN
      CALL error_message('transport not implemented', fatal=.TRUE.)
   !    ! read species related stuff
-  !    CALL allocate_scalar_block_bc(max_blocks)
-  !    CALL read_scalar_bcspecs(bcspec_iounit, max_blocks, max_species, &
-  !         &block%xmax, block%ymax)
+     CALL allocate_scalar_block_bc(max_blocks)
+     CALL read_scalar_bcspecs(max_blocks, max_species, block(:)%xmax, block(:)%ymax)
   !    CALL read_scalar_bc_tables()
   !    CALL set_scalar_block_connections(max_blocks, max_species)
   !    CALL scalar_source_read()
