@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Mon Jan 31 09:11:47 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Feb 16 10:15:26 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -18,6 +18,7 @@ MODULE block_initialization
 
   USE config
   USE block_hydro
+  USE scalars
   USE hotstart
 
   IMPLICIT NONE
@@ -63,12 +64,6 @@ CONTAINS
 
        blk%wsel = blk%depth + blk%zbot
 
-    END IF
-
-
-    ! FIXME
-    IF (do_transport) THEN
-       CALL error_message('transport initialization not implemented', fatal=.TRUE.)
     END IF
 
     CALL block_var_initialize(blk%bv_eddy, eddy_default)
@@ -165,6 +160,22 @@ CONTAINS
        CALL block_var_get(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
     END DO
+
+    IF (do_transport) THEN
+       DO i = 1, max_species
+          DO iblock =1, max_blocks
+             CALL block_var_initialize(species(i)%scalar(iblock)%concvar, conc_initial)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
+             CALL ga_sync()
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
+          END DO
+       END DO
+    END IF
+
 
   END SUBROUTINE initialize
 
