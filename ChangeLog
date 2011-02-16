@@ -1,3 +1,44 @@
+2011-02-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.mpi (mass2_SOURCES): add minimal sources to do transport
+
+	* plot_cgns.f90 (plot_cgns_write): output (generic only) transport 
+
+	* plot_output.f90 (plot_print): salinity and baro_press are not
+	needed here
+
+	* scalar_bc.f90 (set_scalar_block_connections): copy to here, but
+	comment most of it out
+
+	* scalar_solve.f90: put subprograms in a module; parallelize BC
+	application and solving
+
+	* mass2_parallel.f90 (mass2_parallel): allocate scalar storage; do
+	transport 
+	(bc_init): read transport BC's
+	(update): time step scalar variables
+
+	* block_initialization.f90 (initialize): do transport
+	initialization 
+
+	* generic_source.f90: comment out bed source stuff
+
+	* block_parallel.f90 (block_deallocate): don't deallocate
+	blk%shear 'cause it a pointer
+
+	* scalar_solve.f90: 
+
+	* scalars_module.f90: reworked to use block_variable to store
+	concentrations 
+
+	* scalars_source.f90: working in parallel for generic scalars
+	only; other kinds commented out
+
+	* test/transport/mixing/mass2_v027.base: bring up to date
+
+	* test/transport/mixing/mixing.base.lay: use CGNS output instead
+	of NetCDF
+
 2011-02-08  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/flow/normal-1blk/Makefile: make config file with correct
