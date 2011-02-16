@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Jan 31 08:04:53 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Feb 16 12:11:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -21,6 +21,7 @@ PROGRAM mass2_parallel
   USE config
   USE block_initialization
   USE hydro_solve
+  USE scalar_solve_module
   USE gage_output
   USE mass_source_output
   USE plot_output
@@ -36,7 +37,7 @@ PROGRAM mass2_parallel
   INTEGER :: ierr
   INTEGER :: mpi_rank
   INTEGER :: maxsteps
-  INTEGER :: junk, heap, stack, iblk
+  INTEGER :: junk, heap, stack, iblk, i, j
   LOGICAL :: ok
 
   CALL time_series_module_init()
@@ -67,6 +68,16 @@ PROGRAM mass2_parallel
   current_time = start_time
 
   CALL read_grid()
+
+  IF (do_transport) THEN
+     CALL allocate_species()
+     DO i=1, max_species
+        DO j =1, max_blocks
+           CALL allocate_scalarblock_components(j, block(j)%varbase)
+        END DO
+     END DO
+  END IF
+
   CALL bc_init()
   CALL initialize()
   
@@ -86,9 +97,9 @@ PROGRAM mass2_parallel
         CALL hydro()
      ENDIF
 
-!!$     IF(do_transport)THEN
-!!$        CALL transport()
-!!$     ENDIF
+     IF(do_transport)THEN
+        CALL transport()
+     ENDIF
 
      ! update the old time level values of the independent variables
      CALL update()
@@ -143,7 +154,9 @@ SUBROUTINE bc_init()
   USE utility
   USE config
   USE block_hydro_bc
+  USE scalars
   USE scalar_bc_module
+  USE scalars_source
 
   IMPLICIT NONE
 
@@ -165,13 +178,11 @@ SUBROUTINE bc_init()
   END IF
 
   IF(do_transport)THEN
-     CALL error_message('transport not implemented', fatal=.TRUE.)
-  !    ! read species related stuff
      CALL allocate_scalar_block_bc(max_blocks)
      CALL read_scalar_bcspecs(max_blocks, max_species, block(:)%xmax, block(:)%ymax)
-  !    CALL read_scalar_bc_tables()
-  !    CALL set_scalar_block_connections(max_blocks, max_species)
-  !    CALL scalar_source_read()
+     CALL read_scalar_bc_tables()
+     CALL set_scalar_block_connections()
+     CALL scalar_source_read()
   !    IF (source_doing_sed) CALL bed_initialize()
   !    CALL scalar_mass_init()
 
@@ -252,6 +263,7 @@ SUBROUTINE update()
 
   USE config
   USE block_module
+  USE scalars
 
   IMPLICIT NONE
 
@@ -271,18 +283,15 @@ SUBROUTINE update()
 
   END DO
 
-!!$  IF (do_transport) THEN
-!!$     DO ispecies = 1, max_species
-!!$        DO iblock = 1, max_blocks
-!!$           species(ispecies)%scalar(iblock)%concoldold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
-!!$                = species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax)
-!!$           species(ispecies)%scalar(iblock)%concold(2:block(iblock)%xmax,2:block(iblock)%ymax) &
-!!$                = species(ispecies)%scalar(iblock)%conc(2:block(iblock)%xmax,2:block(iblock)%ymax)
-!!$        END DO
-!!$     END DO
+  IF (do_transport) THEN
+     DO ispecies = 1, max_species
+        DO iblock = 1, max_blocks
+           CALL block_var_timestep(species(ispecies)%scalar(iblock)%concvar)
+        END DO
+     END DO
 !!$     CALL scalar_mass_balance(delta_t)
 !!$     IF (source_doing_sed) CALL bed_accounting(delta_t)
-!!$  END IF
+  END IF
 !!$
 !!$  IF (do_accumulate) CALL accumulate(current_time%time)
 
