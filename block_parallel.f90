@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Mon Jan 31 08:42:13 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Feb 16 10:03:21 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -477,7 +477,6 @@ CONTAINS
 
     DEALLOCATE(blk%bedshear1)
     DEALLOCATE(blk%bedshear2)
-    DEALLOCATE(blk%shear)
     DEALLOCATE(blk%windshear1)
     DEALLOCATE(blk%windshear2)
     DEALLOCATE(blk%apo)
