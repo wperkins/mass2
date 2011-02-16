@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Fri Jan 14 12:45:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Feb 16 11:33:03 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -367,13 +367,15 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print_cgns
   ! ----------------------------------------------------------------
-  SUBROUTINE plot_cgns_write(date_string, time_string, salinity, baro_press)
+  SUBROUTINE plot_cgns_write(date_string, time_string)
+
+    USE scalars
+    USE scalars_source
 
     IMPLICIT NONE
 
     CHARACTER (LEN=*), INTENT(IN) :: date_string
     CHARACTER (LEN=*), INTENT(IN) :: time_string
-    DOUBLE PRECISION, INTENT(IN) :: salinity, baro_press
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write"
 
     INTEGER :: iblock, ispecies, solidx, xmax, ymax, ierr, ifract, timeidx
@@ -535,15 +537,17 @@ CONTAINS
 
        END IF
 
-!!$       IF (do_transport) THEN
-!!$          DO ispecies = 1, max_species
-!!$             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
-!!$                  &accum_block(iblock)%conc(ispecies)%sum, &
-!!$                  &scalar_source(ispecies)%name,  &
-!!$                  &scalar_source(ispecies)%description, &
-!!$                  &scalar_source(ispecies)%units,&
-!!$                  &scalar_source(ispecies)%conversion) 
-!!$
+       IF (do_transport) THEN
+          DO ispecies = 1, max_species
+             CALL block_collect(block(iblock),&
+                  &species(ispecies)%scalar(iblock)%concvar)
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &block(iblock)%buffer, &
+                  &scalar_source(ispecies)%name,  &
+                  &scalar_source(ispecies)%description, &
+                  &scalar_source(ispecies)%units,&
+                  &scalar_source(ispecies)%conversion) 
+
 !!$             SELECT CASE(scalar_source(ispecies)%srctype)
 !!$             CASE (TDG)
 !!$                                ! TDG pressure
@@ -667,10 +671,10 @@ CONTAINS
 !!$                     &"mass/foot^2")
 !!$
 !!$             END SELECT
-!!$          END DO
-!!$       END IF
-
-                                ! bed depth if called for
+          END DO
+       END IF
+!!$
+!!$                                ! bed depth if called for
 !!$       IF (source_doing_sed) THEN
 !!$          CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
 !!$               &accum_block(iblock)%bed%depth%sum, &
