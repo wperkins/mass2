@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 26, 2000 by William A. Perkins
-! Last Change: Thu May 15 15:29:45 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Tue Feb 15 13:50:50 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -23,7 +23,7 @@
 ! ----------------------------------------------------------------
 MODULE generic_source
 
-  USE bed_source
+  ! USE bed_source
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
@@ -54,7 +54,7 @@ MODULE generic_source
 
      DOUBLE PRECISION :: diffusivity
 
-     TYPE(bedsrc_rec), POINTER :: bedsrc
+     ! TYPE(bedsrc_rec), POINTER :: bedsrc
   END TYPE generic_source_rec
 
 CONTAINS
@@ -97,30 +97,30 @@ CONTAINS
           END IF
           READ(options(i+1), *) generic_parse_options%halflife
           i = i + 1
-       CASE ('BEDSOURCE')
-          IF ((i + 2 .GT. nopt) .OR. (LEN_TRIM(options(i+2)) .LE. 0) .OR. &
-               &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(msg, 100) 'BEDSOURCE'
-             CALL error_message(msg, fatal=.TRUE.)
-          END IF
-          generic_parse_options%hasbedsrc = .TRUE.
-          generic_parse_options%bedsrc => &
-               &bedsrc_read(options(i+1), options(i+2))
-          i = i + 2
-       CASE ('BEDFLOW')
-          IF ((i + 3 .GT. nopt) .OR. (LEN_TRIM(options(i+3)) .LE. 0) .OR. &
-               &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
-             WRITE(msg, 100) 'BEDFLOW'
-             CALL error_message(msg, fatal=.TRUE.)
-          END IF
-          IF (ASSOCIATED(bedflowsrc)) THEN
-             WRITE(msg, *) 'BEDFLOW already specified, extra specification ignored'
-             CALL error_message(msg, fatal=.FALSE.)
-          ELSE
-             bedflowsrc => bedsrc_read(options(i+1), options(i+2))
-             READ(options(i+3), *) bedflowconv
-          END IF
-          i = i + 3
+!!$       CASE ('BEDSOURCE')
+!!$          IF ((i + 2 .GT. nopt) .OR. (LEN_TRIM(options(i+2)) .LE. 0) .OR. &
+!!$               &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
+!!$             WRITE(msg, 100) 'BEDSOURCE'
+!!$             CALL error_message(msg, fatal=.TRUE.)
+!!$          END IF
+!!$          generic_parse_options%hasbedsrc = .TRUE.
+!!$          generic_parse_options%bedsrc => &
+!!$               &bedsrc_read(options(i+1), options(i+2))
+!!$          i = i + 2
+!!$       CASE ('BEDFLOW')
+!!$          IF ((i + 3 .GT. nopt) .OR. (LEN_TRIM(options(i+3)) .LE. 0) .OR. &
+!!$               &(LEN_TRIM(options(i+1)) .LE. 0)) THEN
+!!$             WRITE(msg, 100) 'BEDFLOW'
+!!$             CALL error_message(msg, fatal=.TRUE.)
+!!$          END IF
+!!$          IF (ASSOCIATED(bedflowsrc)) THEN
+!!$             WRITE(msg, *) 'BEDFLOW already specified, extra specification ignored'
+!!$             CALL error_message(msg, fatal=.FALSE.)
+!!$          ELSE
+!!$             bedflowsrc => bedsrc_read(options(i+1), options(i+2))
+!!$             READ(options(i+3), *) bedflowconv
+!!$          END IF
+!!$          i = i + 3
        CASE ('DIFFUS')
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
              WRITE(msg, 100) 'DIFFUS'
@@ -158,10 +158,10 @@ CONTAINS
        generic_source_term = generic_source_term - &
             &rec%lamda*depth*conc
     END IF
-    IF (rec%hasbedsrc) THEN
-       generic_source_term = generic_source_term + &
-            bedsrc_source_term(rec%bedsrc, iblock, i, j)/area
-    END IF
+!!$    IF (rec%hasbedsrc) THEN
+!!$       generic_source_term = generic_source_term + &
+!!$            bedsrc_source_term(rec%bedsrc, iblock, i, j)/area
+!!$    END IF
   END FUNCTION generic_source_term
 
 END MODULE generic_source
