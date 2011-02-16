@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 20, 2011 by William A. Perkins
-! Last Change: Tue Jan 25 13:04:37 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Wed Feb 16 10:29:47 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE scalar_bc_module
@@ -289,6 +289,61 @@ CONTAINS
 
   END SUBROUTINE set_scalar_part
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE set_scalar_block_connections
+  ! ----------------------------------------------------------------
+  SUBROUTINE set_scalar_block_connections()
+
+    IMPLICIT NONE
+
+    INTEGER :: error_iounit, status_iounit
+    INTEGER :: block,num_bc,con_block, i, start_cell, end_cell
+    INTEGER :: species_con_block, species_num_bc, species_block, ispecies
+
+    ! for each hydro block-to-block connection, build a scalar BC for
+    ! each species that copies the hydro connection
+
+!!$    DO block = 1, max_blocks
+!!$
+!!$       DO num_bc = 1, block_bc(block)%num_bc
+!!$
+!!$          IF (block_bc(block)%bc_spec(num_bc)%bc_type .EQ. 'BLOCK') THEN
+!!$
+!!$             DO ispecies = 1, max_species
+!!$
+!!$                scalar_bc(block)%num_bc = scalar_bc(block)%num_bc + 1
+!!$                species_num_bc = scalar_bc(block)%num_bc
+!!$
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%bc_type =	'BLOCK'
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%bc_kind =	'CONC'
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%bc_loc = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%bc_loc
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%bc_extent = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%bc_extent
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%block = block
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%species = ispecies
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%con_block = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%con_block
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%num_cell_pairs = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%num_cell_pairs
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%start_cell = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%start_cell
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%end_cell = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%end_cell
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%con_start_cell = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%con_start_cell
+!!$                scalar_bc(block)%bc_spec(species_num_bc)%con_end_cell = &
+!!$                     &block_bc(block)%bc_spec(num_bc)%con_end_cell
+!!$             END DO
+!!$          END IF
+!!$       END DO
+!!$    END DO
+!!$
+!!$    CALL status_message("done setting scalar block connections")
+
+    IF (max_blocks .GT. 1) CALL error_message("multiple blocks not supported", fatal=.TRUE.)
+
+  END SUBROUTINE set_scalar_block_connections
 
 END MODULE scalar_bc_module
   
