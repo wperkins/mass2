@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Fri Jan 28 14:44:33 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Feb 16 11:33:16 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -76,7 +76,7 @@ CONTAINS
     CALL velocity_shift()
     CALL ga_sync()
     IF (plot_do_cgns .AND. ga_nodeid() .EQ. 0) THEN
-       CALL plot_cgns_write(date_string, time_string, salinity, baro_press)
+       CALL plot_cgns_write(date_string, time_string)
     END IF
     CALL ga_sync()
     !FIXME: CALL accum_reset()
