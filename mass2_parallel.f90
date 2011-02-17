@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Wed Feb 16 12:11:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Feb 17 08:58:56 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -157,6 +157,7 @@ SUBROUTINE bc_init()
   USE scalars
   USE scalar_bc_module
   USE scalars_source
+  USE met_data_module
 
   IMPLICIT NONE
 
@@ -199,11 +200,11 @@ SUBROUTINE bc_init()
   END IF
 
   ! FIXME
-  ! ! read in met data from a file
-  ! IF (source_need_met) THEN
-  !    CALL read_met_data(weather_filename)
-  !    CALL update_met_data(current_time%time)
-  ! END IF
+  ! read in met data from a file
+  IF (source_need_met) THEN
+     CALL read_met_data(weather_filename)
+     CALL update_met_data(current_time%time)
+  END IF
 
 END SUBROUTINE bc_init
 
