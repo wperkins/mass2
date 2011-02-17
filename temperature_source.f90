@@ -17,7 +17,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 24, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:50:09 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Feb 17 12:23:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -86,7 +86,7 @@ CONTAINS
 
     IF (rec%doexchange) THEN
        temperature_source_term = &
-            &net_heat_flux(net_solar, t_water, t_air, t_dew, windspeed) &
+            &net_heat_flux(net_solar, t, t_air, t_dew, windspeed) &
             &/(1000.0*4186.0/3.2808) ! rho*specifc heat*depth in feet
     END IF
     RETURN
