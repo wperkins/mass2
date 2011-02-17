@@ -5,6 +5,7 @@ MODULE hotstart
 
   USE config
   USE block_module
+  USE scalars
 
   IMPLICIT NONE
 
@@ -95,50 +96,43 @@ CONTAINS
        
        IF( (do_transport).AND.(do_transport_restart) )THEN
 
-!!$       ! if a bed is expected in the
-!!$       ! hotstart, the number of scalars must
-!!$       ! be the same in the hotstart as was
-!!$       ! specified for the simulation
-!!$
-!!$       IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
-!!$          WRITE (msg,*) 'specified number of scalar species, ', &
-!!$               &max_species, ', does not match that in hotstart file (',&
-!!$               &max_species_in_restart, ')'
-!!$          CALL error_message(msg, fatal=.TRUE.)
-!!$       END IF
-!!$
-!!$       ! if we don't expect a bed, don't
-!!$       ! worry about the number of scalar
-!!$       ! species
-!!$
-!!$       IF(max_species_in_restart > max_species) max_species_in_restart = max_species
-!!$       DO i=1,max_species_in_restart
-!!$          DO iblock = 1, max_blocks
-!!$             READ(hotstart_iounit,*) species(i)%scalar(iblock)%conc
-!!$             WRITE(msg,*)'done with conc read for species -',i,'and block -',iblock
-!!$             CALL status_message(msg)
-!!$             READ(hotstart_iounit,*) species(i)%scalar(iblock)%concold
-!!$             WRITE(msg,*)'done with concold read for species -',i,'and block -',iblock
-!!$             CALL status_message(msg)
-!!$             READ(hotstart_iounit,*) species(i)%scalar(iblock)%concoldold
-!!$             WRITE(msg,*)'done with concoldold read for species -',i,'and block -',iblock
-!!$             CALL status_message(msg)
-!!$          END DO
-!!$       END DO
-!!$
-!!$       ! if any sediment species were
-!!$       ! specified, we expect to find a bed
-!!$       ! in the hotstart file
-!!$
-!!$       IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
-!!$
-!!$    ELSE IF (do_transport) THEN
-!!$       DO i = 1, max_species
-!!$          DO iblk =1, max_blocks
-!!$             species(i)%scalar(iblk)%conc = conc_initial
-!!$             species(i)%scalar(iblk)%concold = conc_initial
-!!$          END DO
-!!$       END DO
+          ! if a bed is expected in the
+          ! hotstart, the number of scalars must
+          ! be the same in the hotstart as was
+          ! specified for the simulation
+          
+!!$          IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
+!!$             WRITE (msg,*) 'specified number of scalar species, ', &
+!!$                  &max_species, ', does not match that in hotstart file (',&
+!!$                  &max_species_in_restart, ')'
+!!$             CALL error_message(msg, fatal=.TRUE.)
+!!$          END IF
+          
+          ! if we don't expect a bed, don't
+          ! worry about the number of scalar
+          ! species
+          
+          IF(max_species_in_restart > max_species) max_species_in_restart = max_species
+          DO i=1,max_species_in_restart
+             DO iblk = 1, max_blocks
+                CALL hotstart_read_var(hotstart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_CURRENT)
+                CALL hotstart_read_var(hotstart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_OLD)
+                CALL hotstart_read_var(hotstart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_OLDOLD)
+             END DO
+          END DO
+          
+          ! if any sediment species were
+          ! specified, we expect to find a bed
+          ! in the hotstart file
+          
+!!$          IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
+          
        END IF
 
        CLOSE(hotstart_iounit)
@@ -292,28 +286,20 @@ CONTAINS
        END DO
 
        IF(do_transport)THEN
-!!$          DO i=1,max_species
-!!$             DO iblock = 1, max_blocks
-!!$                block(iblock)%work = species(i)%scalar(iblock)%conc
-!!$                WHERE(abs(block(iblock)%work) < tiny) &
-!!$                     &block(iblock)%work = sign(tiny, block(iblock)%work)
-!!$                WRITE(restart_iounit,*)block(iblock)%work
-!!$
-!!$                block(iblock)%work = species(i)%scalar(iblock)%concold
-!!$                WHERE(abs(block(iblock)%work) < tiny) &
-!!$                     &block(iblock)%work = sign(tiny, block(iblock)%work) 
-!!$                WRITE(restart_iounit,*)block(iblock)%work
-!!$
-!!$                block(iblock)%work = species(i)%scalar(iblock)%concoldold
-!!$                WHERE(abs(block(iblock)%work) < tiny) &
-!!$                     &block(iblock)%work = sign(tiny, block(iblock)%work) 
-!!$                WRITE(restart_iounit,*)block(iblock)%work
-!!$
-!!$                ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%conc
-!!$                ! WRITE(restart_iounit,*) species(i)%scalar(iblock)%concold
-!!$             END DO
-!!$          END DO
-!!$
+          DO i=1,max_species
+             DO iblk = 1, max_blocks
+                CALL restart_write_var(restart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_CURRENT)
+                CALL restart_write_var(restart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_OLDOLD)
+                CALL restart_write_var(restart_iounit, &
+                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                     &BLK_VAR_OLDOLD)
+             END DO
+          END DO
+
 !!$          IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
        END IF
 
