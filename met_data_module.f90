@@ -8,7 +8,7 @@ IMPLICIT NONE
 DOUBLE PRECISION :: net_solar ! net incoming solar radiation W/m2
 DOUBLE PRECISION :: t_air			! air temperature deg. C
 DOUBLE PRECISION :: t_dew			!	dewpoint temperature deg. C
-DOUBLE PRECISION :: t_water		! water temperature deg. C (from model simulation)
+! DOUBLE PRECISION :: t_water		! water temperature deg. C (from model simulation)
 DOUBLE PRECISION :: windspeed	! wind speed m/s
 DOUBLE PRECISION :: baro_press ! barometric pressure mm Hg
 
