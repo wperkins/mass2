@@ -1,3 +1,39 @@
+2011-02-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* temperature_source.f90 (temperature_source_term): don't use
+	global t_water, use the t that's passed in
+
+	* tdg_source.f90 (tdg_read_param): don't use misc_vars
+
+	* scalars_source.f90: turn on temperature and TDG scalars
+
+	* met_data_module.f90: globally defined t_water was screwing
+	things up
+
+	* mass2_parallel.f90 (bc_init): read met data if needed
+
+	* hotstart.f90: turn on transport input/output
+
+	* gage_output_module.f90: turn on gage output for transport
+
+	* block_initialization.f90 (initialize): completely reorder
+	initialization so defaults are always set before a hot start is
+	read 
+
+	* Makefile.mpi: add TDG modules
+
+	* test/transport/mixing-side/mass2.cfg: add
+
+	* test/transport/decay/mass2.cfg: add
+
+	* test/temperature/pond/mass2.cfg: add
+
+	* test/temperature/pond/mass2_v027.cfg: bring up to date
+
+	* test/transport/decay/mass2_v027.cfg: bring up to date
+
+	* test/transport/mixing-side/mass2_v027.cfg: bring up to date
+
 2011-02-16  William A. Perkins  <william.perkins@pnl.gov>
 
 	* Makefile.mpi (mass2_SOURCES): add minimal sources to do transport
