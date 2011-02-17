@@ -29,6 +29,8 @@ MODULE gage_output
   USE date_time
   USE config
   USE block_module
+  USE scalars
+  USE scalars_source
 
   IMPLICIT NONE
 
@@ -145,34 +147,34 @@ CONTAINS
     WRITE(iounit, 100, ADVANCE='NO') "isdry"
 
     IF (do_transport) THEN
-!!$       DO i = 1, max_species
-!!$          WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name)
-!!$          
-!!$          SELECT CASE (scalar_source(i)%srctype)
-!!$          CASE (GEN)
-!!$             IF (source_doing_sed) THEN
-!!$                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-pore'
-!!$                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
-!!$                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
-!!$             END IF
-!!$          CASE (PART)
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-depos'
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
-!!$          CASE (TDG)                             
-!!$             WRITE(iounit, 100, ADVANCE='NO') "tdgpress"
-!!$             WRITE(iounit, 100, ADVANCE='NO') "tdgdeltap"
-!!$             WRITE(iounit, 100, ADVANCE='NO') "tdgsat"
-!!$          CASE (SED)                             
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-depos'
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-erode'
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
-!!$             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
-!!$          END SELECT
-!!$       END DO
-!!$       IF (source_doing_sed) THEN
-!!$          WRITE(iounit, 100, ADVANCE='NO') "beddepth"
-!!$       END IF
+       DO i = 1, max_species
+          WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name)
+          
+          SELECT CASE (scalar_source(i)%srctype)
+          CASE (GEN)
+             IF (source_doing_sed) THEN
+                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-pore'
+                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
+                WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
+             END IF
+          CASE (PART)
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-depos'
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
+          CASE (TDG)                             
+             WRITE(iounit, 100, ADVANCE='NO') "tdgpress"
+             WRITE(iounit, 100, ADVANCE='NO') "tdgdeltap"
+             WRITE(iounit, 100, ADVANCE='NO') "tdgsat"
+          CASE (SED)                             
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-depos'
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-erode'
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bedmass'
+             WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
+          END SELECT
+       END DO
+       IF (source_doing_sed) THEN
+          WRITE(iounit, 100, ADVANCE='NO') "beddepth"
+       END IF
     END IF
 
     WRITE(iounit, *)
@@ -253,15 +255,15 @@ CONTAINS
 
        IF(do_transport)THEN
 
-!!$          IF (source_doing_temp) THEN
-!!$             t_water = species(source_temp_idx)%scalar(iblock)%conc(icell,jcell)
-!!$          END IF
-!!$          DO j = 1, max_species
-!!$             WRITE (gage_iounit, 102, ADVANCE='NO') &
-!!$                  &species(j)%scalar(iblock)%conc(icell,jcell)/&
-!!$                  &scalar_source(j)%conversion
-!!$             SELECT CASE(scalar_source(j)%srctype)
-!!$             CASE (GEN)
+          IF (source_doing_temp) THEN
+             t_water = species(source_temp_idx)%scalar(iblock)%conc(icell,jcell)
+          END IF
+          DO j = 1, max_species
+             WRITE (gage_iounit, 102, ADVANCE='NO') &
+                  &species(j)%scalar(iblock)%conc(icell,jcell)/&
+                  &scalar_source(j)%conversion
+             SELECT CASE(scalar_source(j)%srctype)
+             CASE (GEN)
 !!$                IF (scalar_source(j)%generic_param%issorbed) THEN
 !!$                   WRITE(gage_iounit, 102, ADVANCE='NO') bed(iblock)%pore(j, icell, jcell)
 !!$                   value = 0.0
@@ -279,8 +281,8 @@ CONTAINS
 !!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
 !!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
 !!$                END IF
-!!$                
-!!$             CASE (TDG)                             
+                
+             CASE (TDG)                             
 !!$                conc_TDG = species(j)%scalar(iblock)%conc(icell,jcell)
 !!$                value = TDGasPress(conc_TDG,  t_water,  salinity)
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO') value
@@ -291,7 +293,7 @@ CONTAINS
 !!$                value = TDGasSaturation(conc_TDG,  t_water,  salinity, baro_press)
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO') value
 !!$
-!!$             CASE (SED)                             
+             CASE (SED)                             
 !!$                ifract = scalar_source(j)%sediment_param%ifract
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
 !!$                     &scalar_source(j)%sediment_param%block(iblock)%deposition(icell, jcell)
@@ -303,7 +305,7 @@ CONTAINS
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
 !!$                     &bed(iblock)%sediment(ifract, icell, jcell)
 !!$
-!!$             CASE (PART)
+             CASE (PART)
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
 !!$                     &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell)
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
@@ -312,9 +314,9 @@ CONTAINS
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
 !!$                     &bed(iblock)%particulate(j, icell, jcell)
 !!$                
-!!$             END SELECT
-!!$
-!!$          END DO
+             END SELECT
+
+          END DO
        END IF
        CLOSE(50)
     END DO
