@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Wed Feb 16 10:15:26 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Feb 17 09:23:37 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -86,19 +86,28 @@ CONTAINS
     ! assign initial conditions for each block
     ! using uniform values from cfg file or a restart file
 
-    IF(read_hotstart_file)THEN
-       CALL read_hotstart()
-    ELSE
-       CALL status_message('setting initial values for all blocks')
-       DO iblock=1,max_blocks
-          CALL block_initialize(block(iblock))
+    CALL status_message('setting initial values for all blocks')
+    DO iblock=1,max_blocks
+       CALL block_initialize(block(iblock))
+    END DO
+    ! handle case if we are doing transport-only and not restarting
+    IF((.NOT. do_flow).AND.(do_transport))THEN
+       CALL error_message('transport-only initialization not implemented', fatal=.TRUE.)
+    ELSE IF (do_transport) THEN
+       DO i = 1, max_species
+          DO iblock =1, max_blocks
+             CALL block_var_initialize(species(i)%scalar(iblock)%concvar, conc_initial)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
+             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
+             CALL ga_sync()
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
+             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
+          END DO
        END DO
-       ! handle case if we are doing transport-only and not restarting
-       IF((.NOT. do_flow).AND.(do_transport))THEN
-          CALL error_message('transport-only initialization not implemented', fatal=.TRUE.)
-       END IF
-       CALL status_message('done setting initial values for all blocks')
-    ENDIF
+    END IF
+    CALL status_message('done setting initial values for all blocks')
 
     ! overwrite the default assignments
     IF(do_spatial_eddy) CALL initialize_coeff("eddy_coeff.dat")
@@ -109,6 +118,8 @@ CONTAINS
     IF (read_initial_profile) THEN
        CALL error_message('profile initialization  not implemented', fatal=.TRUE.)
        ! FIXME: CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
+    ELSE IF(read_hotstart_file)THEN
+       CALL read_hotstart()
     END IF
 
     IF (do_wetdry) THEN
@@ -160,21 +171,6 @@ CONTAINS
        CALL block_var_get(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
     END DO
-
-    IF (do_transport) THEN
-       DO i = 1, max_species
-          DO iblock =1, max_blocks
-             CALL block_var_initialize(species(i)%scalar(iblock)%concvar, conc_initial)
-             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
-             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
-             CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
-             CALL ga_sync()
-             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
-             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
-             CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
-          END DO
-       END DO
-    END IF
 
 
   END SUBROUTINE initialize
