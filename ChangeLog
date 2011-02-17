@@ -1,5 +1,8 @@
 2011-02-17  William A. Perkins  <william.perkins@pnl.gov>
 
+	* hotstart.f90 (write_restart): make sure "old" values have been
+	put by all processors before writing restart 
+
 	* temperature_source.f90 (temperature_source_term): don't use
 	global t_water, use the t that's passed in
 
