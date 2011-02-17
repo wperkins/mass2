@@ -18,7 +18,7 @@
 ! COMMENTS:
 !
 ! MOD HISTORY: Created July 21, 2000 by William A. Perkins
-! Last Change: Tue Feb 15 14:03:25 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Feb 17 12:03:03 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 !
 !***************************************************************
 ! $Id$
@@ -32,8 +32,8 @@ MODULE scalars_source
   USE globals, ONLY: nghost
   USE config, ONLY: max_blocks,  max_species
   USE generic_source
-!!$  USE temperature_source
-!!$  USE tdg_source
+  USE temperature_source
+  USE tdg_source
 !!$  USE sediment_source
 !!$  USE particulate_source
 
@@ -69,8 +69,8 @@ MODULE scalars_source
      DOUBLE PRECISION :: cds_blend
 
      TYPE(generic_source_rec), POINTER :: generic_param
-!!$     TYPE(temperature_source_rec), POINTER :: temp_param
-!!$     TYPE(tdg_source_rec), POINTER :: tdg_param
+     TYPE(temperature_source_rec), POINTER :: temp_param
+     TYPE(tdg_source_rec), POINTER :: tdg_param
 !!$     TYPE(sediment_source_rec), POINTER :: sediment_param
 !!$     TYPE(part_source_rec), POINTER :: part_param
   END TYPE scalar_source_rec
@@ -146,8 +146,8 @@ CONTAINS
        scalar_source(id)%cds_blend = 0.0
        scalar_source(id)%relax = 1.0
        NULLIFY(scalar_source(id)%generic_param)
-!!$       NULLIFY(scalar_source(id)%temp_param)
-!!$       NULLIFY(scalar_source(id)%tdg_param)
+       NULLIFY(scalar_source(id)%temp_param)
+       NULLIFY(scalar_source(id)%tdg_param)
 !!$       NULLIFY(scalar_source(id)%sediment_param)
 !!$       NULLIFY(scalar_source(id)%part_param)
 
@@ -224,22 +224,22 @@ CONTAINS
                                 ! deal with scalar type specific options
 
        SELECT CASE (scalar_source(id)%srctype)
-!!$       CASE (TEMP)
-!!$          IF (source_doing_temp) THEN
-!!$             WRITE(buffer,*) 'only one TEMP scalar allowed'
-!!$             CALL error_message(buffer, fatal=.TRUE.)
-!!$          END IF
-!!$          scalar_source(id)%temp_param => &
-!!$               &temperature_parse_options(options)
-!!$          source_doing_temp = .TRUE.
-!!$          source_temp_idx = id
-!!$          source_need_met = (scalar_source(id)%temp_param%doexchange .OR.&
-!!$               &source_need_met)
-!!$       CASE (TDG)
-!!$          scalar_source(id)%tdg_param => &
-!!$               &tdg_parse_options(options)
-!!$          source_need_met = (scalar_source(id)%tdg_param%doexchange .OR.&
-!!$               &source_need_met)
+       CASE (TEMP)
+          IF (source_doing_temp) THEN
+             WRITE(buffer,*) 'only one TEMP scalar allowed'
+             CALL error_message(buffer, fatal=.TRUE.)
+          END IF
+          scalar_source(id)%temp_param => &
+               &temperature_parse_options(options)
+          source_doing_temp = .TRUE.
+          source_temp_idx = id
+          source_need_met = (scalar_source(id)%temp_param%doexchange .OR.&
+               &source_need_met)
+       CASE (TDG)
+          scalar_source(id)%tdg_param => &
+               &tdg_parse_options(options)
+          source_need_met = (scalar_source(id)%tdg_param%doexchange .OR.&
+               &source_need_met)
        CASE (GEN)
           scalar_source(id)%generic_param => &
                &generic_parse_options(options)
@@ -322,15 +322,15 @@ CONTAINS
   ! interactions with the bed.
   ! ----------------------------------------------------------------
   SUBROUTINE scalar_source_timestep(time, delta_t)
-!!$    USE met_data_module
+    USE met_data_module
     IMPLICIT NONE
     DOUBLE PRECISION :: time, delta_t
 
     INTEGER :: i, didx, sidx
 
-!!$                                ! update meteorologic data, if used
-!!$
-!!$    IF (source_need_met) CALL update_met_data(time)
+                                ! update meteorologic data, if used
+
+    IF (source_need_met) CALL update_met_data(time)
 
                                 ! necessary activities to prepare
                                 ! individual scalar species
@@ -371,12 +371,12 @@ CONTAINS
     scalar_source_term = 0.0
 
     SELECT CASE (scalar_source(ispecies)%srctype)
-!!$    CASE (TEMP)
-!!$       scalar_source_term = scalar_source_term + &
-!!$            &temperature_source_term(scalar_source(ispecies)%temp_param, conc)
-!!$    CASE (TDG)
-!!$       scalar_source_term = scalar_source_term + &
-!!$            &tdg_source_term(scalar_source(ispecies)%tdg_param, conc, t_water, sal)
+    CASE (TEMP)
+       scalar_source_term = scalar_source_term + &
+            &temperature_source_term(scalar_source(ispecies)%temp_param, conc)
+    CASE (TDG)
+       scalar_source_term = scalar_source_term + &
+            &tdg_source_term(scalar_source(ispecies)%tdg_param, conc, t_water, sal)
     CASE (GEN)
        scalar_source_term = scalar_source_term + &
             &generic_source_term(scalar_source(ispecies)%generic_param, iblock, i, j, conc, depth, area)
