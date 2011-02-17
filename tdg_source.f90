@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created July 24, 2000 by William A. Perkins
-! Last Change: Tue Apr  8 08:42:01 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: Thu Feb 17 11:14:29 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -87,13 +87,13 @@ CONTAINS
   ! SUBROUTINE tdg_read_param
   ! ----------------------------------------------------------------
   SUBROUTINE tdg_read_param(tdg_rec, filename)
-    USE misc_vars, ONLY: grid_iounit, status_iounit
     USE utility
     IMPLICIT NONE
 
     TYPE(tdg_source_rec) :: tdg_rec
     CHARACTER (LEN=*) :: filename
 
+    INTEGER, PARAMETER :: grid_iounit=15
     INTEGER :: istat
 
     CALL open_existing(filename, grid_iounit)
