@@ -236,80 +236,104 @@ CONTAINS
 
     me = ga_nodeid()
 
-    IF( me .EQ. 0 .AND. (current_time%time >= end_time%time) .OR. &
+    IF ((current_time%time >= end_time%time) .OR. &
          &(MOD(time_step_count,restart_print_freq) == 0))THEN
 
-       restart_filename = hotstart_name(current_time%date_string, current_time%time_string)
-
-       CALL open_new(restart_filename, restart_iounit)
-
-       IF (do_transport) THEN
-          do_transport_restart = .TRUE.
-          WRITE(restart_iounit,*) do_transport_restart, max_species
-       ELSE
-          do_transport_restart = .FALSE.
-          WRITE(restart_iounit,*) do_transport_restart, 0
-       END IF
+       ! values other than current may not be pushed to their GA's, do it now
 
        DO iblk=1,max_blocks
-
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
-               &block(iblk)%buffer, BLK_VAR_CURRENT)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
-               &block(iblk)%buffer, BLK_VAR_OLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
-               &block(iblk)%buffer, BLK_VAR_OLDOLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
-               &block(iblk)%buffer, BLK_VAR_STAR)
-
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
-               &block(iblk)%buffer, BLK_VAR_CURRENT)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
-               &block(iblk)%buffer, BLK_VAR_OLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
-               &block(iblk)%buffer, BLK_VAR_OLDOLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
-               &block(iblk)%buffer, BLK_VAR_STAR)
-
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
-               &block(iblk)%buffer, BLK_VAR_CURRENT)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
-               &block(iblk)%buffer, BLK_VAR_OLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
-               &block(iblk)%buffer, BLK_VAR_OLDOLD)
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
-               &block(iblk)%buffer, BLK_VAR_STAR)
-
-          CALL restart_write_var(restart_iounit, block(iblk)%bv_eddy, &
-               &block(iblk)%buffer, BLK_VAR_CURRENT)
-
+          CALL block_var_put(block(iblk)%bv_uvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblk)%bv_uvel, BLK_VAR_OLD)
+          CALL block_var_put(block(iblk)%bv_uvel, BLK_VAR_OLDOLD)
+          CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLD)
+          CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLDOLD)
+          CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_STAR)
+          CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_OLD)
+          CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_OLDOLD)
        END DO
-
-       IF(do_transport)THEN
+       
+       IF (do_transport) THEN
           DO i=1,max_species
              DO iblk = 1, max_blocks
-                CALL restart_write_var(restart_iounit, &
-                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
-                     &BLK_VAR_CURRENT)
-                CALL restart_write_var(restart_iounit, &
-                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
-                     &BLK_VAR_OLDOLD)
-                CALL restart_write_var(restart_iounit, &
-                     &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
-                     &BLK_VAR_OLDOLD)
+                CALL block_var_put(species(i)%scalar(iblk)%concvar, BLK_VAR_OLD)
+                CALL block_var_put(species(i)%scalar(iblk)%concvar, BLK_VAR_OLDOLD)
              END DO
           END DO
-
-!!$          IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
        END IF
 
-       CLOSE(restart_iounit)
+       CALL ga_sync()
 
-    ENDIF
+       IF (me .EQ. 0) THEN
+
+          restart_filename = hotstart_name(current_time%date_string, current_time%time_string)
+
+          CALL open_new(restart_filename, restart_iounit)
+          
+          IF (do_transport) THEN
+             do_transport_restart = .TRUE.
+             WRITE(restart_iounit,*) do_transport_restart, max_species
+          ELSE
+             do_transport_restart = .FALSE.
+             WRITE(restart_iounit,*) do_transport_restart, 0
+          END IF
+
+          DO iblk=1,max_blocks
+
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
+                  &block(iblk)%buffer, BLK_VAR_CURRENT)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
+                  &block(iblk)%buffer, BLK_VAR_OLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
+                  &block(iblk)%buffer, BLK_VAR_OLDOLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_uvel, &
+                  &block(iblk)%buffer, BLK_VAR_STAR)
+
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
+                  &block(iblk)%buffer, BLK_VAR_CURRENT)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
+                  &block(iblk)%buffer, BLK_VAR_OLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
+                  &block(iblk)%buffer, BLK_VAR_OLDOLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_vvel, &
+                  &block(iblk)%buffer, BLK_VAR_STAR)
+             
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
+                  &block(iblk)%buffer, BLK_VAR_CURRENT)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
+                  &block(iblk)%buffer, BLK_VAR_OLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
+                  &block(iblk)%buffer, BLK_VAR_OLDOLD)
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_depth, &
+                  &block(iblk)%buffer, BLK_VAR_STAR)
+             
+             CALL restart_write_var(restart_iounit, block(iblk)%bv_eddy, &
+                  &block(iblk)%buffer, BLK_VAR_CURRENT)
+             
+          END DO
+          
+          IF(do_transport)THEN
+             DO i=1,max_species
+                DO iblk = 1, max_blocks
+                   CALL restart_write_var(restart_iounit, &
+                        &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                        &BLK_VAR_CURRENT)
+                   CALL restart_write_var(restart_iounit, &
+                        &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                        &BLK_VAR_OLDOLD)
+                   CALL restart_write_var(restart_iounit, &
+                        &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
+                        &BLK_VAR_OLDOLD)
+                END DO
+             END DO
+
+!!$          IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
+          END IF
+
+          CLOSE(restart_iounit)
+       END IF
+    END IF
 
   END SUBROUTINE write_restart
-
-
-
 
 END MODULE hotstart
