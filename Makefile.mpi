@@ -165,8 +165,9 @@ energy_flux_module.o: energy_flux_module.f90
 gas_coeffs_module.o: gas_coeffs_module.f90
 gas_functions_module.o: gas_functions_module.f90 gas_coeffs_module.o
 globals.o: globals.f90 
-gage_output_module.o: gage_output_module.f90 block_parallel.o mass2_config.o
-hotstart.o: hotstart.f90 block_parallel.o mass2_config.o
+gage_output_module.o: gage_output_module.f90 block_parallel.o mass2_config.o \
+	scalars_source.o
+hotstart.o: hotstart.f90 block_parallel.o mass2_config.o scalars_module.o
 hydro_bc.o: hydro_bc.f90 table_bc_module.o mass2_config.o
 hydro_solve.o: hydro_solve.f90 block_hydro.o block_hydro_bc.o differencing.o \
 	solver_petsc.o mass2_config.o
