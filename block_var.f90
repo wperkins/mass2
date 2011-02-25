@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Sat Jan 15 19:30:09 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: Thu Feb 24 12:03:53 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -492,5 +492,34 @@ CONTAINS
     CALL nga_put(var%ga_handle, lo, hi, buffer, ld)
 
   END SUBROUTINE block_var_put_all
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_get_some
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_get_some(var, imin, imax, jmin, jmax, buffer, index)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(IN) :: var
+    INTEGER, INTENT(IN) :: imin, imax, jmin, jmax
+    DOUBLE PRECISION, INTENT(INOUT) :: buffer(imin:imax, jmin:jmax)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+    INTEGER :: myindex, lo(ndim), hi(ndim), ld(ndim)
+   
+    myindex = BLK_VAR_CURRENT
+
+    IF (PRESENT(index)) myindex = index
+
+    lo(1) = imin - i_index_min + 1
+    lo(2) = jmin - j_index_min + 1
+    lo(3) = myindex
+    hi(1) = imax - i_index_min + 1
+    hi(2) = jmax - j_index_min + 1
+    hi(3) = myindex
+    ld = hi - lo + 1
+    CALL nga_get(var%ga_handle, lo, hi, buffer(imin:imax, jmin:jmax), ld)
+
+  END SUBROUTINE block_var_get_some
+
 
 END MODULE block_variable
