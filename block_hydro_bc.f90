@@ -93,62 +93,62 @@ CONTAINS
           ! this because the grid has not been
           ! read yet
 
-          x1 = block(bc%block)%x_grid(i, j)
-          y1 = block(bc%block)%y_grid(i, j)
-          x2 = block(conbc%block)%x_grid(coni, conj)
-          y2 = block(conbc%block)%y_grid(coni, conj)
-
-          rdist = distance(x1, y1, x2, y2)
-
-          SELECT CASE (bc%bc_loc)
-          CASE ("US","DS")
-             x2 = block(bc%block)%x_grid(i, j+1)
-             y2 = block(bc%block)%y_grid(i, j+1)
-          CASE ("LB","RB")
-             x2 = block(bc%block)%x_grid(i+1, j)
-             y2 = block(bc%block)%y_grid(i+1, j)
-          END SELECT
-
-          rdist = rdist/distance(x1, y1, x2, y2)
-
-          IF (rdist .GT. 0.01) THEN
-             IF (debug) THEN 
-                WRITE (msg,*) '   REJECT: cell pair ', n, ' starting point different'
-                CALL status_message(msg)
-             END IF
-             RETURN
-          END IF
-
-          SELECT CASE (bc%bc_loc)
-          CASE ("US","DS")
-             j = bc%end_cell(n)
-             x1 = block(bc%block)%x_grid(i, j+1)
-             y1 = block(bc%block)%y_grid(i, j+1)
-             conj = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid(coni, conj+1)
-             y2 = block(conbc%block)%y_grid(coni, conj+1)
-          CASE ("LB","RB")
-             i =  bc%end_cell(n)
-             x1 = block(bc%block)%x_grid(i+1, j)
-             y1 = block(bc%block)%y_grid(i+1, j)
-             coni = conbc%end_cell(n)
-             x2 = block(conbc%block)%x_grid(coni+1, conj)
-             y2 = block(conbc%block)%y_grid(coni+1, conj)
-          END SELECT
-
-          rdist = distance(x1, y1, x2, y2)
-
-          x2 = block(bc%block)%x_grid(i, j)
-          y2 = block(bc%block)%y_grid(i, j)
-          rdist = rdist/distance(x1, y1, x2, y2)
-
-          IF (rdist .GT. 0.01) THEN
-             IF (debug) THEN 
-                WRITE (msg,*) '   REJECT: cell pair ', n, ' ending point different'
-                CALL status_message(msg)
-             END IF
-             RETURN
-          END IF
+!!$          x1 = block(bc%block)%x_grid(i, j)
+!!$          y1 = block(bc%block)%y_grid(i, j)
+!!$          x2 = block(conbc%block)%x_grid(coni, conj)
+!!$          y2 = block(conbc%block)%y_grid(coni, conj)
+!!$
+!!$          rdist = distance(x1, y1, x2, y2)
+!!$
+!!$          SELECT CASE (bc%bc_loc)
+!!$          CASE ("US","DS")
+!!$             x2 = block(bc%block)%x_grid(i, j+1)
+!!$             y2 = block(bc%block)%y_grid(i, j+1)
+!!$          CASE ("LB","RB")
+!!$             x2 = block(bc%block)%x_grid(i+1, j)
+!!$             y2 = block(bc%block)%y_grid(i+1, j)
+!!$          END SELECT
+!!$
+!!$          rdist = rdist/distance(x1, y1, x2, y2)
+!!$
+!!$          IF (rdist .GT. 0.01) THEN
+!!$             IF (debug) THEN 
+!!$                WRITE (msg,*) '   REJECT: cell pair ', n, ' starting point different'
+!!$                CALL status_message(msg)
+!!$             END IF
+!!$             RETURN
+!!$          END IF
+!!$
+!!$          SELECT CASE (bc%bc_loc)
+!!$          CASE ("US","DS")
+!!$             j = bc%end_cell(n)
+!!$             x1 = block(bc%block)%x_grid(i, j+1)
+!!$             y1 = block(bc%block)%y_grid(i, j+1)
+!!$             conj = conbc%end_cell(n)
+!!$             x2 = block(conbc%block)%x_grid(coni, conj+1)
+!!$             y2 = block(conbc%block)%y_grid(coni, conj+1)
+!!$          CASE ("LB","RB")
+!!$             i =  bc%end_cell(n)
+!!$             x1 = block(bc%block)%x_grid(i+1, j)
+!!$             y1 = block(bc%block)%y_grid(i+1, j)
+!!$             coni = conbc%end_cell(n)
+!!$             x2 = block(conbc%block)%x_grid(coni+1, conj)
+!!$             y2 = block(conbc%block)%y_grid(coni+1, conj)
+!!$          END SELECT
+!!$
+!!$          rdist = distance(x1, y1, x2, y2)
+!!$
+!!$          x2 = block(bc%block)%x_grid(i, j)
+!!$          y2 = block(bc%block)%y_grid(i, j)
+!!$          rdist = rdist/distance(x1, y1, x2, y2)
+!!$
+!!$          IF (rdist .GT. 0.01) THEN
+!!$             IF (debug) THEN 
+!!$                WRITE (msg,*) '   REJECT: cell pair ', n, ' ending point different'
+!!$                CALL status_message(msg)
+!!$             END IF
+!!$             RETURN
+!!$          END IF
 
           ! check to see if there is an integral
           ! ratio of fine to coarse cells on
@@ -235,6 +235,76 @@ CONTAINS
   END SUBROUTINE set_block_connections
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE connect_indexes
+  ! ----------------------------------------------------------------
+  SUBROUTINE connect_indexes(blk, bc, cblk, ipair, ibeg, iend, jbeg, jend, &
+       &conibeg, coniend, conjbeg, conjend, cells, concells)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    TYPE (bc_spec_struct), INTENT(IN) :: bc
+    TYPE (block_struct), INTENT(IN) :: cblk
+    INTEGER, INTENT(IN) :: ipair
+    INTEGER, INTENT(OUT) :: ibeg, iend, jbeg, jend
+    INTEGER, INTENT(OUT) :: conibeg, coniend, conjbeg, conjend
+    INTEGER, INTENT(OUT) :: cells, concells
+
+
+    SELECT CASE(bc%bc_loc)
+    CASE("US")
+       ibeg = 2 - nghost
+       iend = ibeg + (nghost - 1)
+       coniend = cblk%xmax
+       conibeg = coniend - (nghost - 1)
+       jbeg = bc%start_cell(ipair)+1
+       jend = bc%end_cell(ipair)+1
+       cells = jend - jbeg + 1
+       conjbeg = bc%con_start_cell(ipair)+1
+       conjend = bc%con_end_cell(ipair)+1
+       concells = conjend - conjbeg + 1
+    CASE ("DS")
+       iend = blk%xmax + nghost
+       ibeg = iend - (nghost - 1)
+       conibeg = 2
+       coniend = conibeg + (nghost - 1)
+       jbeg = bc%start_cell(ipair)+1
+       jend = bc%end_cell(ipair)+1
+       cells = jend - jbeg + 1
+       conjbeg = bc%con_start_cell(ipair)+1
+       conjend = bc%con_end_cell(ipair)+1
+       concells = conjend - conjbeg + 1
+    CASE ("RB")
+       ibeg = bc%start_cell(ipair)+1
+       iend = bc%end_cell(ipair)+1
+       cells = iend - ibeg + 1
+       conibeg = bc%con_start_cell(ipair)+1
+       coniend = bc%con_end_cell(ipair)+1
+       concells = coniend - conibeg + 1
+       jbeg = 2 - nghost
+       jend = jbeg + (nghost - 1)
+       conjend = cblk%ymax + nghost
+       conjbeg = conjend - (nghost - 1)
+    CASE ("LB")
+       ibeg = bc%start_cell(ipair)+1
+       iend = bc%end_cell(ipair)+1
+       cells = iend - ibeg + 1
+       conibeg = bc%con_start_cell(ipair)+1
+       coniend = bc%con_end_cell(ipair)+1
+       concells = coniend - conibeg + 1
+       jbeg = blk%ymax + nghost
+       jend = jbeg + (nghost - 1)
+       conjbeg = 2 
+       conjend = conjbeg + (nghost - 1)
+    CASE DEFAULT
+       CALL error_message("This should never happen in connect_indexes", &
+            &fatal=.TRUE.)
+    END SELECT
+
+  END SUBROUTINE connect_indexes
+
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE fillghost
   ! ----------------------------------------------------------------
   SUBROUTINE fillghost(iblock)
@@ -313,54 +383,9 @@ CONTAINS
           con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
 
           DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-             CASE("US")
-                ibeg = 2 - nghost
-                iend = ibeg + (nghost - 1)
-                coniend = block(con_block)%xmax
-                conibeg = coniend - (nghost - 1)
-                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
-                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-                cells = jend - jbeg + 1
-                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-                conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
-                concells = conjend - conjbeg + 1
-             CASE ("DS")
-                iend = block(iblock)%xmax + nghost
-                ibeg = iend - (nghost - 1)
-                conibeg = 2
-                coniend = conibeg + (nghost - 1)
-                jbeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
-                jend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-                cells = jend - jbeg + 1
-                conjbeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-                conjend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
-                concells = conjend - conjbeg + 1
-             CASE ("RB")
-                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
-                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-                cells = iend - ibeg + 1
-                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
-                concells = coniend - conibeg + 1
-                jbeg = 2 - nghost
-                jend = jbeg + (nghost - 1)
-                conjend = block(con_block)%ymax + nghost
-                conjbeg = conjend - (nghost - 1)
-             CASE ("LB")
-                ibeg = block_bc(iblock)%bc_spec(num_bc)%start_cell(k)+1
-                iend = block_bc(iblock)%bc_spec(num_bc)%end_cell(k)+1
-                cells = iend - ibeg + 1
-                conibeg = block_bc(iblock)%bc_spec(num_bc)%con_start_cell(k)+1
-                coniend = block_bc(iblock)%bc_spec(num_bc)%con_end_cell(k)+1
-                concells = coniend - conibeg + 1
-                jbeg = block(iblock)%ymax + nghost
-                jend = jbeg + (nghost - 1)
-                conjbeg = 2 
-                conjend = conjbeg + (nghost - 1)
-             CASE DEFAULT
-                ! FIXME: should never happen  need to crash here
-             END SELECT
+             CALL connect_indexes(block(iblock), block_bc(iblock)%bc_spec(num_bc),&
+                  &block(con_block), k, ibeg, iend, jbeg, jend, &
+                  &conibeg, coniend, conjbeg, conjend, cells, concells)
 
              SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
              CASE ("US", "DS")
@@ -521,7 +546,7 @@ CONTAINS
 
     CALL block_var_put(blk%bv_eddy)
     CALL ga_sync()
-    CALL block_var_put(blk%bv_eddy)
+    CALL block_var_get(blk%bv_eddy)
 
     blk%isdead(:,:)%u = .FALSE.
     blk%isdead(:,:)%v = .FALSE.
