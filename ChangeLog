@@ -1,3 +1,26 @@
+2011-02-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.mpi (mass2_SOURCES): add block_ghost.f90 and
+	realequal.f90 
+
+	* block_ghost.f90: a new module to do ghost cell stuff
+
+	* block_grid.f90 (block_extrap_ghost): do corners elsewhere
+
+	* block_hydro_bc.f90 (check_hydro_block_connection): turn block
+	connection language back on, but don't do match testing
+	(fillghost): move block connection code around, still doesn't do
+	anything 
+
+	* block_parallel.f90 (block_distribution_report): format change
+
+	* block_var.f90 (block_var_get_some): added
+
+	* mass2_parallel.f90 (mass2_parallel): the parts of read_grid()
+	need to be here
+
+	* realequal.f90: a function to test equality of reals
+
 2011-02-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* hotstart.f90 (write_restart): make sure "old" values have been
