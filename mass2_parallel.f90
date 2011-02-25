@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Thu Feb 17 08:58:56 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Feb 25 07:19:12 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -20,6 +20,7 @@ PROGRAM mass2_parallel
   USE time_series
   USE config
   USE block_initialization
+  USE block_ghost
   USE hydro_solve
   USE scalar_solve_module
   USE gage_output
@@ -39,6 +40,7 @@ PROGRAM mass2_parallel
   INTEGER :: maxsteps
   INTEGER :: junk, heap, stack, iblk, i, j
   LOGICAL :: ok
+  INTEGER :: imax, jmax
 
   CALL time_series_module_init()
   CALL date_time_flags()
@@ -67,7 +69,40 @@ PROGRAM mass2_parallel
   CALL read_config()
   current_time = start_time
 
-  CALL read_grid()
+  ALLOCATE(block(max_blocks))
+
+  DO iblk = 1, max_blocks
+
+     CALL block_read_grid(block(iblk), iblk, grid_file_name(iblk))
+
+     CALL block_extrap_ghost(block(iblk))
+
+     CALL block_extrap_ghost_corners(block(iblk))
+
+  END DO
+
+  CALL bc_init()
+
+  DO iblk = 1, max_blocks
+
+     CALL block_build_ghost(iblk)
+
+     CALL block_extrap_ghost_corners(block(iblk))
+
+     CALL block_interp_grid(block(iblk))
+
+     CALL block_metrics(block(iblk))
+
+     CALL block_plot_geometry(block(iblk))
+
+  END DO
+
+  CALL block_distribution_report()
+
+  imax = MAXVAL(block(:)%xmax) + 1
+  jmax = MAXVAL(block(:)%ymax) + 1
+
+  ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
 
   IF (do_transport) THEN
      CALL allocate_species()
@@ -78,7 +113,6 @@ PROGRAM mass2_parallel
      END DO
   END IF
 
-  CALL bc_init()
   CALL initialize()
   
   IF (do_flow .OR. do_transport) CALL solver_setup()
@@ -448,6 +482,7 @@ SUBROUTINE banner()
   WRITE(*,*)
   
 END SUBROUTINE banner
+
 
 
 
