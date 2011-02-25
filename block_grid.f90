@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Mon Jan 31 07:50:43 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Feb 25 08:17:12 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -87,20 +87,6 @@ CONTAINS
     DEALLOCATE(x, y, z)
 
   END SUBROUTINE block_read_grid
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE block_build_ghost
-  ! ----------------------------------------------------------------
-  SUBROUTINE block_build_ghost(blk)
-
-    IMPLICIT NONE
-
-    TYPE (block_struct), INTENT(INOUT) :: blk
-
-    CALL block_extrap_ghost(blk)
-
-  END SUBROUTINE block_build_ghost
-
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_extrap_ghost
@@ -202,17 +188,6 @@ CONTAINS
     CALL block_var_get(blk%bv_zbot_grid)
     ! CALL ga_print(blk%y_grid%ga_handle)
 
-    CALL block_extrap_ghost_corners(blk)
-
-    CALL block_var_put(blk%bv_x_grid)
-    CALL block_var_put(blk%bv_y_grid)
-    CALL block_var_put(blk%bv_zbot_grid)
-    CALL ga_sync()
-    CALL block_var_get(blk%bv_x_grid)
-    CALL block_var_get(blk%bv_y_grid)
-    CALL block_var_get(blk%bv_zbot_grid)
-    ! CALL ga_print(blk%y_grid%ga_handle)
-
   END SUBROUTINE block_extrap_ghost
 
   ! ----------------------------------------------------------------
@@ -233,6 +208,16 @@ CONTAINS
           CALL block_extrap_1_corner(blk, blk%xmax + ig, blk%ymax + jg, -1, -1)
        END DO
     END DO
+
+    CALL block_var_put(blk%bv_x_grid)
+    CALL block_var_put(blk%bv_y_grid)
+    CALL block_var_put(blk%bv_zbot_grid)
+    CALL ga_sync()
+    CALL block_var_get(blk%bv_x_grid)
+    CALL block_var_get(blk%bv_y_grid)
+    CALL block_var_get(blk%bv_zbot_grid)
+    ! CALL ga_print(blk%y_grid%ga_handle)
+
   END SUBROUTINE block_extrap_ghost_corners
 
   ! ----------------------------------------------------------------
@@ -247,12 +232,8 @@ CONTAINS
     DOUBLE PRECISION :: mi, mj, bi, bj, zi, zj
     INTEGER :: i1, i2, j1, j2
 
-    INTEGER :: imin, imax, jmin, jmax
-
-    imin = blk%varbase%imin_owned
-    jmin = blk%varbase%jmin_owned
-    imax = blk%varbase%imax_owned
-    jmax = blk%varbase%jmax_owned
+    LOGICAL realequal
+    EXTERNAL realequal
 
     IF (.NOT. block_owns(blk, i, j)) RETURN
 
@@ -261,27 +242,40 @@ CONTAINS
     j1 = j + joff
     j2 = j + 2*joff
 
-    IF (blk%x_grid(i, j2) .NE. blk%x_grid(i, j1)) THEN
+    mi = 0.0
+    bi = 0.0
+    mj = 0.0
+    bj = 0.0
+
+    IF (.NOT. realequal(blk%x_grid(i, j2), blk%x_grid(i, j1))) THEN
        mi = (blk%y_grid(i, j2) - blk%y_grid(i, j1))/&
             &(blk%x_grid(i, j2) - blk%x_grid(i, j1))
        bi = blk%y_grid(i, j2) - mi*blk%x_grid(i, j2)
     END IF
 
-    IF (blk%x_grid(i2, j) .NE. blk%x_grid(i1, j)) THEN
+    IF (.NOT. realequal(blk%x_grid(i2, j), blk%x_grid(i1, j))) THEN
        mj = (blk%y_grid(i2, j) - blk%y_grid(i1, j))/&
             &(blk%x_grid(i2, j) - blk%x_grid(i1, j))
        bj = blk%y_grid(i2, j) - mj*blk%x_grid(i2, j)
     END IF
 
-    IF (blk%x_grid(i, j2) .EQ. blk%x_grid(i, j1)) THEN
+    IF (realequal(blk%x_grid(i, j2), blk%x_grid(i, j1))) THEN
        blk%x_grid(i, j) = blk%x_grid(i, j2)
        blk%y_grid(i, j) = mj*blk%x_grid(i, j) + bj
-    ELSE IF (blk%x_grid(i2, j) .EQ. blk%x_grid(i1, j)) THEN
+    ELSE IF (realequal(blk%x_grid(i2, j), blk%x_grid(i1, j))) THEN
        blk%x_grid(i, j) = blk%x_grid(i2, j)
        blk%y_grid(i, j) = mi*blk%x_grid(i, j) + bi
-    ELSE 
+    ELSE IF (.NOT. (realequal(mi, 0.0d00) .OR. realequal(mj, 0.0d00))) THEN
        blk%y_grid(i, j) = (bi - mi/mj*bj)*(mj/(mj - mi))
        blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
+    ELSE IF (.NOT. realequal(mi, 0.0d00)) THEN
+       blk%y_grid(i, j) = blk%y_grid(i1, j)
+       blk%x_grid(i, j) = (blk%y_grid(i, j) - bi)/mi
+    ELSE IF (.NOT. realequal(mj, 0.0d00)) THEN
+       blk%y_grid(i, j) = blk%y_grid(i, j1)
+       blk%x_grid(i, j) = (blk%y_grid(i, j) - bj)/mj
+    ELSE 
+       CALL error_message("serious mesh problem", fatal=.TRUE.)
     END IF
 
     zi = blk%zbot_grid(i,j1) - (blk%zbot_grid(i,j2) - blk%zbot_grid(i,j1))
@@ -805,45 +799,6 @@ CONTAINS
 
   END SUBROUTINE plot_geometry
 
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE read_grid
-  ! ----------------------------------------------------------------
-  SUBROUTINE read_grid()
-
-    IMPLICIT NONE
-
-    INTEGER :: b
-    INTEGER :: imax, jmax
-
-    IF (max_blocks .GT. 1) THEN
-       CALL error_message("Only one block allowed right now", fatal=.TRUE.)
-    END IF
-
-    ALLOCATE(block(max_blocks))
-
-    DO b = 1, max_blocks
-
-       CALL block_read_grid(block(b), b, grid_file_name(b))
-
-       CALL block_build_ghost(block(b))
-
-       CALL block_interp_grid(block(b))
-
-       CALL block_metrics(block(b))
-
-       CALL block_plot_geometry(block(b))
-
-    END DO
-
-    CALL block_distribution_report()
-
-    imax = MAXVAL(block(:)%xmax) + 1
-    jmax = MAXVAL(block(:)%ymax) + 1
-
-    ALLOCATE(inlet_area(MAX(imax,jmax)), table_input(MAX(imax,jmax)))
-
-  END SUBROUTINE read_grid
 
 
 
