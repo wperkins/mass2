@@ -6,7 +6,7 @@
 MODULE block_hydro_bc
 
   USE config
-  USE block_module
+  USE block_grid
   USE hydro_bc
 
   IMPLICIT NONE
@@ -235,227 +235,6 @@ CONTAINS
   END SUBROUTINE set_block_connections
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE connect_indexes
-  ! ----------------------------------------------------------------
-  SUBROUTINE connect_indexes(blk, bc, cblk, ipair, ibeg, iend, jbeg, jend, &
-       &conibeg, coniend, conjbeg, conjend, cells, concells)
-
-    IMPLICIT NONE
-
-    TYPE (block_struct), INTENT(IN) :: blk
-    TYPE (bc_spec_struct), INTENT(IN) :: bc
-    TYPE (block_struct), INTENT(IN) :: cblk
-    INTEGER, INTENT(IN) :: ipair
-    INTEGER, INTENT(OUT) :: ibeg, iend, jbeg, jend
-    INTEGER, INTENT(OUT) :: conibeg, coniend, conjbeg, conjend
-    INTEGER, INTENT(OUT) :: cells, concells
-
-
-    SELECT CASE(bc%bc_loc)
-    CASE("US")
-       ibeg = 2 - nghost
-       iend = ibeg + (nghost - 1)
-       coniend = cblk%xmax
-       conibeg = coniend - (nghost - 1)
-       jbeg = bc%start_cell(ipair)+1
-       jend = bc%end_cell(ipair)+1
-       cells = jend - jbeg + 1
-       conjbeg = bc%con_start_cell(ipair)+1
-       conjend = bc%con_end_cell(ipair)+1
-       concells = conjend - conjbeg + 1
-    CASE ("DS")
-       iend = blk%xmax + nghost
-       ibeg = iend - (nghost - 1)
-       conibeg = 2
-       coniend = conibeg + (nghost - 1)
-       jbeg = bc%start_cell(ipair)+1
-       jend = bc%end_cell(ipair)+1
-       cells = jend - jbeg + 1
-       conjbeg = bc%con_start_cell(ipair)+1
-       conjend = bc%con_end_cell(ipair)+1
-       concells = conjend - conjbeg + 1
-    CASE ("RB")
-       ibeg = bc%start_cell(ipair)+1
-       iend = bc%end_cell(ipair)+1
-       cells = iend - ibeg + 1
-       conibeg = bc%con_start_cell(ipair)+1
-       coniend = bc%con_end_cell(ipair)+1
-       concells = coniend - conibeg + 1
-       jbeg = 2 - nghost
-       jend = jbeg + (nghost - 1)
-       conjend = cblk%ymax + nghost
-       conjbeg = conjend - (nghost - 1)
-    CASE ("LB")
-       ibeg = bc%start_cell(ipair)+1
-       iend = bc%end_cell(ipair)+1
-       cells = iend - ibeg + 1
-       conibeg = bc%con_start_cell(ipair)+1
-       coniend = bc%con_end_cell(ipair)+1
-       concells = coniend - conibeg + 1
-       jbeg = blk%ymax + nghost
-       jend = jbeg + (nghost - 1)
-       conjbeg = 2 
-       conjend = conjbeg + (nghost - 1)
-    CASE DEFAULT
-       CALL error_message("This should never happen in connect_indexes", &
-            &fatal=.TRUE.)
-    END SELECT
-
-  END SUBROUTINE connect_indexes
-
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE fillghost
-  ! ----------------------------------------------------------------
-  SUBROUTINE fillghost(iblock)
-
-    IMPLICIT NONE
-
-    INTEGER, INTENT(IN) :: iblock
-    INTEGER :: i, ibeg, iend, coni, conibeg, coniend
-    INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
-    INTEGER :: k, con_block
-    INTEGER :: ig, jg
-    INTEGER :: num_bc, cells, concells, ifcells, jfcells
-
-    ! cell-centered quantities
-    ! for extrapolated cells, use
-    ! parameters from the neighboring real
-    ! cell (metrics are computed elsewhere)
-
-
-    DO ig = 1, nghost
-       IF (block_owns_i(block(iblock), 2-ig)) THEN
-          block(iblock)%eddy(2-ig,:) = block(iblock)%eddy(2,:)
-          block(iblock)%kx_diff(2-ig,:) = block(iblock)%kx_diff(2,:)
-          block(iblock)%ky_diff(2-ig,:) = block(iblock)%ky_diff(2,:)
-          block(iblock)%chezy(2-ig,:) = block(iblock)%chezy(2,:)
-       END IF
-       IF (block_owns_i(block(iblock), block(iblock)%xmax+ig)) THEN
-          block(iblock)%eddy(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%eddy(block(iblock)%xmax,:)
-          block(iblock)%kx_diff(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%kx_diff(block(iblock)%xmax,:)
-          block(iblock)%ky_diff(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%ky_diff(block(iblock)%xmax,:)
-          block(iblock)%chezy(block(iblock)%xmax+ig,:) = &
-               &block(iblock)%chezy(block(iblock)%xmax,:)
-       END IF
-    END DO
-    DO jg = 1, nghost 
-       IF (block_owns_j(block(iblock), 2-jg)) THEN
-          block(iblock)%eddy(:, 2-jg) = block(iblock)%eddy(:,2)
-          block(iblock)%kx_diff(:, 2-jg) = block(iblock)%kx_diff(:,2)
-          block(iblock)%ky_diff(:, 2-jg) = block(iblock)%ky_diff(:,2)
-          block(iblock)%chezy(:, 2-jg) = block(iblock)%chezy(:,2)
-       END IF
-       IF (block_owns_j(block(iblock), block(iblock)%ymax+ig)) THEN
-          block(iblock)%eddy(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%eddy(:,block(iblock)%ymax)
-          block(iblock)%kx_diff(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%kx_diff(:,block(iblock)%ymax)
-          block(iblock)%ky_diff(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%ky_diff(:,block(iblock)%ymax)
-          block(iblock)%chezy(:,block(iblock)%ymax+ig) = &
-               &block(iblock)%chezy(:,block(iblock)%ymax)
-       END IF
-    END DO
-
-    CALL block_var_put(block(iblock)%bv_eddy)
-    CALL block_var_put(block(iblock)%bv_kx_diff)
-    CALL block_var_put(block(iblock)%bv_ky_diff)
-    CALL block_var_put(block(iblock)%bv_chezy)
-    CALL ga_sync()
-    CALL block_var_get(block(iblock)%bv_eddy)
-    CALL block_var_get(block(iblock)%bv_kx_diff)
-    CALL block_var_get(block(iblock)%bv_ky_diff)
-    CALL block_var_get(block(iblock)%bv_chezy)
-
-    ! copy ghost cell metrics and
-    ! parameters from connecting block
-
-    ! FIXME: block connections
-
-    DO num_bc = 1, block_bc(iblock)%num_bc
-
-       SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type) 
-       CASE ("BLOCK")
-          con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
-
-          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
-             CALL connect_indexes(block(iblock), block_bc(iblock)%bc_spec(num_bc),&
-                  &block(con_block), k, ibeg, iend, jbeg, jend, &
-                  &conibeg, coniend, conjbeg, conjend, cells, concells)
-
-             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
-             CASE ("US", "DS")
-                ifcells = 1
-                IF (cells .GE. concells) THEN
-                   jfcells = cells/concells
-                ELSE 
-                   jfcells = concells/cells
-                END IF
-             CASE ("LB", "RB")
-                IF (cells .GE. concells) THEN
-                   ifcells = cells/concells
-                ELSE 
-                   ifcells = concells/cells
-                END IF
-                jfcells = 1
-             END SELECT
-
-
-             ! FIXME: block connections
-             IF (cells .EQ. concells) THEN
-
-                coni = conibeg
-                DO i = ibeg, iend
-                   conj = conjbeg
-                   DO j = jbeg, jend
-
-!!$                      block(iblock)%hp1(i,j) = block(con_block)%hp1(coni,conj)
-!!$                      block(iblock)%hp2(i,j) = block(con_block)%hp2(coni,conj)
-!!$                      block(iblock)%hv1(i,j-1) = block(con_block)%hv1(coni,conj-1)
-!!$                      block(iblock)%hv2(i,j-1) = block(con_block)%hv2(coni,conj-1)
-!!$                      block(iblock)%hv1(i,j) = block(con_block)%hv1(coni,conj)
-!!$                      block(iblock)%hv2(i,j) = block(con_block)%hv2(coni,conj)
-!!$
-!!$                      ! do not copy hu1,hu2 - they are calculated
-!!$
-!!$                      block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
-!!$                      block(iblock)%gp12(i,j) = block(con_block)%gp12(coni,conj)
-!!$
-!!$                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-!!$                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-!!$                      block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-!!$                      block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
-                      conj = conj + 1
-                   END DO
-                   coni = coni + 1
-                END DO
-
-             ELSE 
-
-                DO i = ibeg, iend
-                   coni = conibeg + (i - ibeg)/ifcells
-                   DO j = jbeg, jend
-                      conj = conjbeg + (j - jbeg)/jfcells
-                      ! do not copy metrics, they are calculated
-!!$                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
-!!$                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
-!!$                      block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
-!!$                      block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
-                   END DO
-                END DO
-
-             END IF
-          END DO
-       END SELECT
-    END DO
-
-  END SUBROUTINE fillghost
-
-  ! ----------------------------------------------------------------
   ! SUBROUTINE default_hydro_bc
   ! ----------------------------------------------------------------
   SUBROUTINE default_hydro_bc(blk)
@@ -466,7 +245,7 @@ CONTAINS
     INTEGER :: x_beg, y_beg, x_end, y_end, i, j, ig
     INTEGER :: imin, imax, jmin, jmax
 
-    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    CALL block_used_window(blk, imin, imax, jmin, jmax)
 
     x_beg = 2
     y_beg = 2
@@ -478,20 +257,20 @@ CONTAINS
     imax = MIN(imax, x_end)
     jmax = MIN(jmax, y_end)
 
-    IF (block_owns_i(blk, x_beg)) THEN
+    IF (block_uses_i(blk, x_beg)) THEN
        blk%cell(x_beg,:)%xtype = CELL_BOUNDARY_TYPE
        blk%cell(x_beg,:)%xbctype = FLOWBC_NONE
     END IF
-    IF (block_owns_i(blk, x_end)) THEN
+    IF (block_uses_i(blk, x_end)) THEN
        blk%cell(x_end,:)%xtype = CELL_BOUNDARY_TYPE
        blk%cell(x_end,:)%xbctype = FLOWBC_NONE
     END IF
 
-    IF (block_owns_j(blk, y_beg)) THEN
+    IF (block_uses_j(blk, y_beg)) THEN
        blk%cell(:,y_beg)%ytype = CELL_BOUNDARY_TYPE
        blk%cell(:,y_beg)%ybctype = FLOWBC_NONE
     END IF
-    IF (block_owns_j(blk, y_end)) THEN
+    IF (block_uses_j(blk, y_end)) THEN
        blk%cell(:,y_end)%ytype = CELL_BOUNDARY_TYPE
        blk%cell(:,y_end)%ybctype = FLOWBC_NONE
     END IF
@@ -499,7 +278,7 @@ CONTAINS
     DO ig = 1, nghost
 
        i = x_beg - ig
-       IF (block_owns_i(blk, i)) THEN
+       IF (block_uses_i(blk, i)) THEN
           blk%uvel(i,:) = 0.0
           blk%vvel(i,:) = blk%vvel(x_beg,:)
           CALL extrapolate_udepth(blk, i, jmin, jmax, level=.FALSE.)
@@ -507,21 +286,15 @@ CONTAINS
        END IF
 
        i = blk%xmax + ig
-       IF (block_owns_i(blk, i)) THEN
+       IF (block_uses_i(blk, i)) THEN
           blk%uvel(i,:) = 0.0
           blk%vvel(i,:) = blk%vvel(x_end,:)
           CALL extrapolate_udepth(blk, i, jmin, jmax, level=.FALSE.)
           blk%eddy(i,:) = blk%eddy(x_end,:)
        END IF
 
-       CALL block_var_put(blk%bv_uvel)
-       CALL block_var_put(blk%bv_vvel)
-       CALL ga_sync()
-       CALL block_var_get(blk%bv_uvel)
-       CALL block_var_get(blk%bv_vvel)
-
        j = y_beg - ig
-       IF (block_owns_j(blk, j)) THEN
+       IF (block_uses_j(blk, j)) THEN
           blk%uvel(:,j) = blk%uvel(:,y_beg)
           blk%vvel(:,j) = 0.0
           CALL extrapolate_vdepth(blk, imin, imax, j, level=.FALSE.)
@@ -529,24 +302,14 @@ CONTAINS
        END IF
 
        j = blk%ymax + ig
-       IF (block_owns_j(blk, j)) THEN
+       IF (block_uses_j(blk, j)) THEN
           blk%uvel(:,j) = blk%uvel(:,y_end)
           blk%vvel(:,j) = 0.0
           CALL extrapolate_vdepth(blk, imin, imax, j, level=.FALSE.)
           blk%eddy(:,j) = blk%eddy(:,y_end)
        END IF
 
-       CALL block_var_put(blk%bv_uvel)
-       CALL block_var_put(blk%bv_vvel)
-       CALL ga_sync()
-       CALL block_var_get(blk%bv_uvel)
-       CALL block_var_get(blk%bv_vvel)
-
     END DO
-
-    CALL block_var_put(blk%bv_eddy)
-    CALL ga_sync()
-    CALL block_var_get(blk%bv_eddy)
 
     blk%isdead(:,:)%u = .FALSE.
     blk%isdead(:,:)%v = .FALSE.
@@ -772,7 +535,7 @@ CONTAINS
 
     CASE ("BLOCK")
 
-       ! FIXME: CALL fillghost_hydro(blk, block(bc%con_block), bc)
+       CALL fillghost_hydro(blk, block(bc%con_block), bc)
        RETURN
 
     END SELECT
@@ -1413,6 +1176,780 @@ CONTAINS
     END DO
     total = SUM(area)
   END SUBROUTINE compute_vflow_area
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_ghost_transfer
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_ghost_transfer(blk, var, ibeg, iend, jbeg, jend, &
+       &cblk, cvar, conibeg, coniend, conjbeg, conjend)
+
+    IMPLICIT NONE
+    
+    TYPE (block_struct), INTENT(INOUT) :: blk, cblk
+    TYPE (block_var), INTENT(INOUT) :: var, cvar
+    INTEGER, INTENT(IN) :: ibeg, iend, jbeg, jend
+    INTEGER, INTENT(IN) :: conibeg, coniend, conjbeg, conjend
+
+    INTEGER :: i, j, coni, conj
+    
+    CALL block_var_get_some(cvar, &
+         &conibeg, coniend, conjbeg, conjend, &
+         &cblk%buffer(conibeg:coniend, conjbeg:conjend))
+
+    coni = conibeg
+    DO i = ibeg, iend
+       conj = conjbeg
+       DO j = jbeg, jend
+          IF (block_owns(blk, i, j)) THEN
+             var%current(i,j) = cblk%buffer(coni,conj)
+             ! WRITE(*, *) i, j, var%current(i,j), coni, conj, cblk%buffer(coni,conj)
+          END IF
+          conj = conj + 1
+       END DO
+       coni = coni + 1
+    END DO
+
+  END SUBROUTINE block_ghost_transfer
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_build_one_ghost
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_build_one_ghost(blk, bc, cblk)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    TYPE (block_struct), INTENT(INOUT) :: cblk
+    TYPE (bc_spec_struct), INTENT(IN) :: bc
+
+    INTEGER :: k, cells, con_cells, ifcells, jfcells
+    INTEGER :: i, ibeg, iend, coni, conibeg, coniend, icoff
+    INTEGER :: j, jbeg, jend, conj, conjbeg, conjend, jcoff
+    DOUBLE PRECISION :: fract
+
+    DO k = 1, bc%num_cell_pairs
+
+       SELECT CASE(bc%bc_loc)
+       CASE("US")
+          ibeg = 0 - (nghost - 1)
+          iend = ibeg + (nghost - 1)
+          coniend = cblk%xmax - 1
+          conibeg = coniend - (nghost - 1)
+          jbeg = bc%start_cell(k)
+          jend = bc%end_cell(k) + 1
+          conjbeg = bc%con_start_cell(k)
+          conjend = bc%con_end_cell(k) + 1
+          cells = jend - jbeg
+          con_cells = conjend - conjbeg
+          icoff = 0
+          jcoff = 1
+       CASE ("DS")
+          ibeg = blk%xmax + 1
+          iend = ibeg + (nghost - 1)
+          conibeg = 2
+          coniend = conibeg + (nghost - 1)
+          jbeg = bc%start_cell(k)
+          jend = bc%end_cell(k) + 1
+          conjbeg = bc%con_start_cell(k)
+          conjend = bc%con_end_cell(k) + 1
+          cells = jend - jbeg
+          con_cells = conjend - conjbeg
+          icoff = 0
+          jcoff = 1
+       CASE ("RB") 
+          jbeg = 0 - (nghost - 1)
+          jend = jbeg + (nghost - 1)
+          conjend = cblk%ymax - 1
+          conjbeg = conjend - (nghost - 1)
+          ibeg = bc%start_cell(k)
+          iend = bc%end_cell(k) + 1
+          conibeg = bc%con_start_cell(k)
+          coniend = bc%con_end_cell(k) + 1
+          cells = iend - ibeg
+          con_cells = coniend - conibeg
+          icoff = 1
+          jcoff = 0
+       CASE ("LB") 
+          jbeg = blk%ymax + 1
+          jend = jbeg + (nghost - 1)
+          conjbeg = 2
+          conjend = conjbeg + (nghost - 1)
+          ibeg = bc%start_cell(k)
+          iend = bc%end_cell(k) + 1
+          conibeg = bc%con_start_cell(k)
+          coniend = bc%con_end_cell(k) + 1
+          cells = iend - ibeg 
+          con_cells = coniend - conibeg
+          icoff = 1
+          jcoff = 0
+       END SELECT
+
+       ! fine cells per coarse cell
+
+       SELECT CASE(bc%bc_loc)
+       CASE ("US", "DS")
+          ifcells = 1
+          IF (cells .GE. con_cells) THEN
+             jfcells = cells/con_cells
+          ELSE 
+             jfcells = con_cells/cells
+          END IF
+       CASE ("LB", "RB")
+          IF (cells .GE. con_cells) THEN
+             ifcells = cells/con_cells
+          ELSE 
+             ifcells = con_cells/cells
+          END IF
+          jfcells = 1
+       END SELECT
+
+       IF (cells .EQ. con_cells) THEN
+
+          ! if the number of cells is equal on both sides, we
+          ! just copy the ghost cell corners from the connecting
+          ! block
+
+          CALL block_ghost_transfer(blk, blk%bv_x_grid, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_x_grid, conibeg, coniend, conjbeg, conjend)
+          
+          CALL block_ghost_transfer(blk, blk%bv_y_grid, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_y_grid, conibeg, coniend, conjbeg, conjend)
+          
+          CALL block_ghost_transfer(blk, blk%bv_zbot_grid, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_zbot_grid, conibeg, coniend, conjbeg, conjend)
+          
+      ELSE IF (cells .GT. con_cells) THEN
+
+          ! if this is the fine block, we need to interpolate
+          ! ghost cell corners from the coarse cell corners
+
+          CALL error_message("block_build_ghost: 1-to-many connection not allowed", &
+               &fatal=.TRUE.)
+
+!!$                DO i = ibeg, iend
+!!$                   coni = conibeg + (i - ibeg)/ifcells
+!!$                   DO j = jbeg, jend
+!!$                      conj = conjbeg + (j - jbeg)/jfcells
+!!$
+!!$                      IF (ifcells .EQ. 1) THEN
+!!$                         fract = DBLE(MOD(j - jbeg, jfcells))
+!!$                         fract = fract/DBLE(jfcells)
+!!$                         icoff = 0
+!!$                         jcoff = 1
+!!$                      ELSE 
+!!$                         fract = DBLE(MOD(i - ibeg, ifcells))
+!!$                         fract = fract/DBLE(ifcells)
+!!$                         icoff = 1
+!!$                         jcoff = 0
+!!$                      END IF
+!!$
+!!$                      CALL interpolate_point(fract,&
+!!$                           &cblk%x_grid(coni,conj),&
+!!$                           &cblk%y_grid(coni,conj),&
+!!$                           &cblk%zbot_grid(coni,conj),&
+!!$                           &cblk%x_grid(coni+icoff,conj+jcoff),&
+!!$                           &cblk%y_grid(coni+icoff,conj+jcoff),&
+!!$                           &cblk%zbot_grid(coni+icoff,conj+jcoff),&
+!!$                           &blk%x_grid(i,j), &
+!!$                           &blk%y_grid(i,j), &
+!!$                           &blk%zbot_grid(i,j))
+!!$
+!!$                   END DO
+!!$                END DO
+
+       ELSE IF (cells .LT. con_cells) THEN
+
+          ! if this is the coarse block, we copy selected fine
+          ! block corners for the ghost cells
+
+          CALL error_message("block_build_ghost: 1-to-many connection not allowed", &
+               &fatal=.TRUE.)
+!!$                DO i = ibeg, iend
+!!$                   coni = conibeg + (i - ibeg)*ifcells
+!!$                   DO j = jbeg, jend
+!!$
+!!$                      conj = conjbeg + (j - jbeg)*jfcells
+!!$                      blk%x_grid(i,j) = cblk%x_grid(coni,conj)
+!!$                      blk%y_grid(i,j) = cblk%y_grid(coni,conj)
+!!$                      blk%zbot_grid(i,j) = cblk%zbot_grid(coni,conj)
+!!$
+!!$                   END DO
+!!$                END DO
+       END IF
+    END DO
+
+
+
+  END SUBROUTINE block_build_one_ghost
+
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_build_ghost
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_build_ghost(iblk)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iblk
+    INTEGER :: num_bc, cblk
+
+                                ! copy ghost cell coordinates for those
+                                ! cells connecting with another block
+
+    DO num_bc = 1, block_bc(iblk)%num_bc
+       IF (block_bc(iblk)%bc_spec(num_bc)%bc_type .EQ. "BLOCK") THEN
+          cblk = block_bc(iblk)%bc_spec(num_bc)%con_block
+          CALL block_build_one_ghost(block(iblk),  &
+               &block_bc(iblk)%bc_spec(num_bc), block(cblk))
+          CALL block_var_put(block(iblk)%bv_x_grid)
+          CALL block_var_put(block(iblk)%bv_y_grid)
+          CALL block_var_put(block(iblk)%bv_zbot_grid)
+       END IF
+       CALL ga_sync()
+       CALL block_var_get(block(iblk)%bv_x_grid)
+       CALL block_var_get(block(iblk)%bv_y_grid)
+       CALL block_var_get(block(iblk)%bv_zbot_grid)
+    END DO
+
+  END SUBROUTINE block_build_ghost
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE connect_indexes
+  ! ----------------------------------------------------------------
+  SUBROUTINE connect_indexes(blk, bc, cblk, ipair, ibeg, iend, jbeg, jend, &
+       &conibeg, coniend, conjbeg, conjend, cells, concells)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(IN) :: blk
+    TYPE (bc_spec_struct), INTENT(IN) :: bc
+    TYPE (block_struct), INTENT(IN) :: cblk
+    INTEGER, INTENT(IN) :: ipair
+    INTEGER, INTENT(OUT) :: ibeg, iend, jbeg, jend
+    INTEGER, INTENT(OUT) :: conibeg, coniend, conjbeg, conjend
+    INTEGER, INTENT(OUT) :: cells, concells
+
+
+    SELECT CASE(bc%bc_loc)
+    CASE("US")
+       ibeg = 2 - nghost
+       iend = ibeg + (nghost - 1)
+       coniend = cblk%xmax
+       conibeg = coniend - (nghost - 1)
+       jbeg = bc%start_cell(ipair)+1
+       jend = bc%end_cell(ipair)+1
+       cells = jend - jbeg + 1
+       conjbeg = bc%con_start_cell(ipair)+1
+       conjend = bc%con_end_cell(ipair)+1
+       concells = conjend - conjbeg + 1
+    CASE ("DS")
+       iend = blk%xmax + nghost
+       ibeg = iend - (nghost - 1)
+       conibeg = 2
+       coniend = conibeg + (nghost - 1)
+       jbeg = bc%start_cell(ipair)+1
+       jend = bc%end_cell(ipair)+1
+       cells = jend - jbeg + 1
+       conjbeg = bc%con_start_cell(ipair)+1
+       conjend = bc%con_end_cell(ipair)+1
+       concells = conjend - conjbeg + 1
+    CASE ("RB")
+       ibeg = bc%start_cell(ipair)+1
+       iend = bc%end_cell(ipair)+1
+       cells = iend - ibeg + 1
+       conibeg = bc%con_start_cell(ipair)+1
+       coniend = bc%con_end_cell(ipair)+1
+       concells = coniend - conibeg + 1
+       jbeg = 2 - nghost
+       jend = jbeg + (nghost - 1)
+       conjend = cblk%ymax
+       conjbeg = conjend - (nghost - 1)
+    CASE ("LB")
+       ibeg = bc%start_cell(ipair)+1
+       iend = bc%end_cell(ipair)+1
+       cells = iend - ibeg + 1
+       conibeg = bc%con_start_cell(ipair)+1
+       coniend = bc%con_end_cell(ipair)+1
+       concells = coniend - conibeg + 1
+       jbeg = blk%ymax + nghost
+       jend = jbeg + (nghost - 1)
+       conjbeg = 2 
+       conjend = conjbeg + (nghost - 1)
+    CASE DEFAULT
+       CALL error_message("This should never happen in connect_indexes", &
+            &fatal=.TRUE.)
+    END SELECT
+
+  END SUBROUTINE connect_indexes
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE fillghost
+  ! ----------------------------------------------------------------
+  SUBROUTINE fillghost(iblock)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iblock
+    INTEGER :: i, ibeg, iend, coni, conibeg, coniend
+    INTEGER :: j, jbeg, jend, conj, conjbeg, conjend
+    INTEGER :: k, con_block
+    INTEGER :: ig, jg
+    INTEGER :: num_bc, cells, concells, ifcells, jfcells
+
+    ! cell-centered quantities
+    ! for extrapolated cells, use
+    ! parameters from the neighboring real
+    ! cell (metrics are computed elsewhere)
+
+
+    DO ig = 1, nghost
+       IF (block_owns_i(block(iblock), 2-ig)) THEN
+          block(iblock)%eddy(2-ig,:) = block(iblock)%eddy(2,:)
+          block(iblock)%kx_diff(2-ig,:) = block(iblock)%kx_diff(2,:)
+          block(iblock)%ky_diff(2-ig,:) = block(iblock)%ky_diff(2,:)
+          block(iblock)%chezy(2-ig,:) = block(iblock)%chezy(2,:)
+       END IF
+       IF (block_owns_i(block(iblock), block(iblock)%xmax+ig)) THEN
+          block(iblock)%eddy(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%eddy(block(iblock)%xmax,:)
+          block(iblock)%kx_diff(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%kx_diff(block(iblock)%xmax,:)
+          block(iblock)%ky_diff(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%ky_diff(block(iblock)%xmax,:)
+          block(iblock)%chezy(block(iblock)%xmax+ig,:) = &
+               &block(iblock)%chezy(block(iblock)%xmax,:)
+       END IF
+    END DO
+    DO jg = 1, nghost 
+       IF (block_owns_j(block(iblock), 2-jg)) THEN
+          block(iblock)%eddy(:, 2-jg) = block(iblock)%eddy(:,2)
+          block(iblock)%kx_diff(:, 2-jg) = block(iblock)%kx_diff(:,2)
+          block(iblock)%ky_diff(:, 2-jg) = block(iblock)%ky_diff(:,2)
+          block(iblock)%chezy(:, 2-jg) = block(iblock)%chezy(:,2)
+       END IF
+       IF (block_owns_j(block(iblock), block(iblock)%ymax+ig)) THEN
+          block(iblock)%eddy(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%eddy(:,block(iblock)%ymax)
+          block(iblock)%kx_diff(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%kx_diff(:,block(iblock)%ymax)
+          block(iblock)%ky_diff(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%ky_diff(:,block(iblock)%ymax)
+          block(iblock)%chezy(:,block(iblock)%ymax+ig) = &
+               &block(iblock)%chezy(:,block(iblock)%ymax)
+       END IF
+    END DO
+
+    CALL block_var_put(block(iblock)%bv_eddy)
+    CALL block_var_put(block(iblock)%bv_kx_diff)
+    CALL block_var_put(block(iblock)%bv_ky_diff)
+    CALL block_var_put(block(iblock)%bv_chezy)
+
+    ! copy ghost cell metrics and
+    ! parameters from connecting block
+
+    ! FIXME: block connections
+
+    DO num_bc = 1, block_bc(iblock)%num_bc
+
+       SELECT CASE (block_bc(iblock)%bc_spec(num_bc)%bc_type) 
+       CASE ("BLOCK")
+          con_block = block_bc(iblock)%bc_spec(num_bc)%con_block
+
+          DO k = 1,block_bc(iblock)%bc_spec(num_bc)%num_cell_pairs
+
+             CALL connect_indexes(block(iblock), block_bc(iblock)%bc_spec(num_bc),&
+                  &block(con_block), k, ibeg, iend, jbeg, jend, &
+                  &conibeg, coniend, conjbeg, conjend, cells, concells)
+
+             SELECT CASE(block_bc(iblock)%bc_spec(num_bc)%bc_loc)
+             CASE ("US", "DS")
+                ifcells = 1
+                IF (cells .GE. concells) THEN
+                   jfcells = cells/concells
+                ELSE 
+                   jfcells = concells/cells
+                END IF
+             CASE ("LB", "RB")
+                IF (cells .GE. concells) THEN
+                   ifcells = cells/concells
+                ELSE 
+                   ifcells = concells/cells
+                END IF
+                jfcells = 1
+             END SELECT
+
+
+             ! FIXME: block connections
+             IF (cells .EQ. concells) THEN
+
+                ! grid metrics should be computed correctly for ghost
+                ! cells, there's no need to transfer them.
+
+
+!!$                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_hp1, &
+!!$                     &ibeg, iend, jbeg, jend, &
+!!$                     &block(con_block), block(con_block)%bv_hp1, &
+!!$                     &conibeg, coniend, conjbeg, conjend)
+!!$                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_hp2, &
+!!$                     &ibeg, iend, jbeg, jend, &
+!!$                     &block(con_block), block(con_block)%bv_hp2, &
+!!$                     &conibeg, coniend, conjbeg, conjend)
+!!$                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_hv1, &
+!!$                     &ibeg, iend, jbeg, jend, &
+!!$                     &block(con_block), block(con_block)%bv_hv1, &
+!!$                     &conibeg, coniend, conjbeg, conjend)
+!!$                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_hv2, &
+!!$                     &ibeg, iend, jbeg-1, jend, &
+!!$                     &block(con_block), block(con_block)%bv_hv2, &
+!!$                     &conibeg, coniend, conjbeg-1, conjend)
+!!$                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_gp12, &
+!!$                     &ibeg, iend, jbeg, jend, &
+!!$                     &block(con_block), block(con_block)%bv_gp12, &
+!!$                     &conibeg, coniend, conjbeg, conjend)
+
+                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_eddy, &
+                     &ibeg, iend, jbeg, jend, &
+                     &block(con_block), block(con_block)%bv_eddy, &
+                     &conibeg, coniend, conjbeg, conjend)
+                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_kx_diff, &
+                     &ibeg, iend, jbeg, jend, &
+                     &block(con_block), block(con_block)%bv_kx_diff, &
+                     &conibeg, coniend, conjbeg, conjend)
+                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_ky_diff, &
+                     &ibeg, iend, jbeg, jend, &
+                     &block(con_block), block(con_block)%bv_ky_diff, &
+                     &conibeg, coniend, conjbeg, conjend)
+                CALL block_ghost_transfer(block(iblock), block(iblock)%bv_chezy, &
+                     &ibeg, iend, jbeg, jend, &
+                     &block(con_block), block(con_block)%bv_chezy, &
+                     &conibeg, coniend, conjbeg, conjend)
+
+             ELSE 
+
+                DO i = ibeg, iend
+                   coni = conibeg + (i - ibeg)/ifcells
+                   DO j = jbeg, jend
+                      conj = conjbeg + (j - jbeg)/jfcells
+                      ! do not copy metrics, they are calculated
+!!$                      block(iblock)%eddy(i,j) = block(con_block)%eddy(coni,conj)
+!!$                      block(iblock)%kx_diff(i,j) = block(con_block)%kx_diff(coni,conj)
+!!$                      block(iblock)%ky_diff(i,j) = block(con_block)%ky_diff(coni,conj)
+!!$                      block(iblock)%chezy(i,j) = block(con_block)%chezy(coni,conj)
+                   END DO
+                END DO
+
+             END IF
+          END DO
+       END SELECT
+    END DO
+
+    CALL block_var_put(block(iblock)%bv_eddy)
+    CALL block_var_put(block(iblock)%bv_kx_diff)
+    CALL block_var_put(block(iblock)%bv_ky_diff)
+    CALL block_var_put(block(iblock)%bv_chezy)
+    CALL ga_sync()
+    CALL block_var_get(block(iblock)%bv_eddy)
+    CALL block_var_get(block(iblock)%bv_kx_diff)
+    CALL block_var_get(block(iblock)%bv_ky_diff)
+    CALL block_var_get(block(iblock)%bv_chezy)
+
+  END SUBROUTINE fillghost
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE fillghost_hydro
+  ! ----------------------------------------------------------------
+  SUBROUTINE fillghost_hydro(blk, cblk, bc)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    TYPE (block_struct), INTENT(INOUT) :: cblk
+    TYPE (bc_spec_struct), INTENT(IN) :: bc
+
+    INTEGER :: n, cells, concells, ifcells, jfcells
+    INTEGER :: i, j, iu, ju
+    INTEGER :: conjbeg, conjend, conj, jbeg, jend
+    INTEGER :: conibeg, coniend, coni, ibeg, iend
+    LOGICAL :: side
+    DOUBLE PRECISION :: carea, cflux
+    CHARACTER (LEN=1024) :: msg
+
+    DO n = 1, bc%num_cell_pairs
+
+       CALL connect_indexes(blk, bc,&
+            &cblk, n, ibeg, iend, jbeg, jend, &
+            &conibeg, coniend, conjbeg, conjend, cells, concells)
+
+       SELECT CASE (bc%bc_loc)
+       CASE ("US", "DS")
+          ifcells = 1
+          IF (cells .GE. concells) THEN
+             jfcells = cells/concells
+          ELSE 
+             jfcells = concells/cells
+          END IF
+          side = .FALSE.
+       CASE ("LB", "RB")
+          IF (cells .GE. concells) THEN
+             ifcells = cells/concells
+          ELSE 
+             ifcells = concells/cells
+          END IF
+          jfcells = 1
+          side = .TRUE.
+       END SELECT
+
+       IF (cells .EQ. concells) THEN
+
+          ! if the same number of cells are on both sides of the
+          ! boundary, just copy the state variables from the connected
+          ! cells
+
+          CALL block_ghost_transfer(&
+               &blk, blk%bv_uvel, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_uvel, conibeg, coniend, conjbeg, conjend)
+
+          CALL block_ghost_transfer(&
+               &blk, blk%bv_vvel, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_vvel, conibeg, coniend, conjbeg, conjend)
+
+          CALL block_ghost_transfer(&
+               &blk, blk%bv_depth, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_depth, conibeg, coniend, conjbeg, conjend)
+
+          CALL block_ghost_transfer(&
+               &blk, blk%bv_eddy, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_eddy, conibeg, coniend, conjbeg, conjend)
+
+          CALL block_ghost_transfer(blk, blk%bv_isdry, ibeg, iend, jbeg, jend, &
+               &cblk, cblk%bv_isdry, conibeg, coniend, conjbeg, conjend)
+
+          ! FIXME, fill isdry()
+
+!!$       ELSE IF (cells .GT. concells) THEN
+!!$
+!!$          ! this block has more cells than the neighboring block, we
+!!$          ! need to interpolate some of the variables from the coarse
+!!$          ! block
+!!$
+!!$          ! copy the first cross vel value
+!!$
+!!$          IF (.NOT. side) THEN
+!!$             blk%vvel(ibeg:iend,jbeg-1) = cblk%vvel(conibeg:coniend,conjbeg-1)
+!!$          ELSE 
+!!$             blk%uvel(ibeg-1,jbeg:jend) = cblk%uvel(conibeg-1,conjbeg:conjend)
+!!$          END IF
+!!$
+!!$          ! we need to do the depth first so
+!!$          ! that flow area calculations are
+!!$          ! accurate
+!!$
+!!$          DO i = ibeg, iend
+!!$             coni = conibeg + (i - ibeg)/ifcells
+!!$             DO j = jbeg, jend
+!!$                conj = conjbeg + (j - jbeg)/jfcells
+!!$
+!!$                ! all the fine ghost cells are dry if
+!!$                ! the neighboring coarse cell is dry
+!!$
+!!$                blk%isdry(i,j) = cblk%isdry(coni,conj)
+!!$
+!!$                blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), coni, conj)
+!!$                blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+!!$                IF (do_wetdry) THEN
+!!$                   blk%wsel(i,j) = MAX(blk%wsel(i,j), blk%zbot(i,j))
+!!$                   blk%depth(i,j) = MAX(blk%depth(i,j), dry_zero_depth)
+!!$                   blk%isdry(i,j) = blk%isdry(i,j) .OR. (blk%depth(i,j) .LE. dry_depth)
+!!$                END IF
+!!$
+!!$
+!!$                ! linearly interpolate cross vel within the
+!!$                ! neighboring coarse cell
+!!$
+!!$                IF (.NOT. side) THEN
+!!$                   blk%vvel(i,j) = (cblk%vvel(coni, conj) - cblk%vvel(coni, conj-1))*&
+!!$                        &(DBLE(MOD(j - jbeg + 1, jfcells)))/DBLE(jfcells) + cblk%vvel(coni, conj-1)
+!!$                ELSE 
+!!$                   blk%uvel(i,j) = (cblk%uvel(coni, conj) - cblk%uvel(coni-1, conj))*&
+!!$                        &(DBLE(MOD(i - ibeg + 1, ifcells)))/DBLE(ifcells) + cblk%uvel(coni-1, conj)
+!!$                END IF
+!!$             END DO
+!!$          END DO
+!!$
+!!$          ! now we can calculate the total local
+!!$          ! flow area and u
+!!$
+!!$          IF (.NOT. side) THEN
+!!$             DO i = ibeg, iend
+!!$                coni = conibeg + (i - ibeg)/ifcells
+!!$                DO conj = conjbeg, conjend
+!!$                   IF (i .GT. 2) THEN
+!!$                      cflux = uflux(cblk, coni, conj, conj)
+!!$                   ELSE
+!!$                      cflux = uflux(cblk, coni, conj, conj)
+!!$                   END IF
+!!$                   ju = jbeg + (conj - conjbeg)*jfcells
+!!$                   carea = uarea(blk, i, ju, ju + jfcells - 1)
+!!$                   DO j = ju, ju + jfcells - 1
+!!$                      IF (carea .GT. 0.0) THEN
+!!$                         blk%uvel(i,j) = cflux/carea
+!!$                      ELSE 
+!!$                         blk%uvel(i,j) = 0.0
+!!$                      END IF
+!!$                      ! WRITE (*,101) i, j, coni, conj, cflux, carea
+!!$                      ! 101 FORMAT('In fillghost_hydro: ', 4(1X, I3), 2(1X, E15.6))
+!!$                   END DO
+!!$                END DO
+!!$             END DO
+!!$          ELSE
+!!$             DO j = jbeg, jend
+!!$                conj = conjbeg + (j - jbeg)/jfcells
+!!$                DO coni = conibeg, coniend
+!!$                   IF (j .GT. 2) THEN
+!!$                      cflux = vflux(cblk, coni, coni, conj-1)
+!!$                   ELSE
+!!$                      cflux = vflux(cblk, coni, coni, conj)
+!!$                   END IF
+!!$                   iu = ibeg + (coni - conibeg)*ifcells
+!!$                   carea = varea(blk, iu, iu  + ifcells - 1, j)
+!!$                   DO i = iu, iu + ifcells - 1
+!!$                      IF (carea .GT. 0.0) THEN
+!!$                         blk%vvel(i,j) = cflux/carea
+!!$                      ELSE 
+!!$                         blk%vvel(i,j) = 0.0
+!!$                      END IF
+!!$                   END DO
+!!$                END DO
+!!$             END DO
+!!$          END IF
+!!$
+!!$       ELSE IF (cells .LT. concells) THEN
+!!$
+!!$          ! this block is the coarse block; we should be able to copy
+!!$          ! most of what we need
+!!$
+!!$
+!!$          ! this ghost cell is dry if all
+!!$          ! neighboring cells are dry, so
+!!$          ! initialize all here
+!!$          blk%isdry(ibeg:iend,jbeg:jend) = .FALSE.
+!!$
+!!$          ! copy the first cross vel value
+!!$
+!!$          IF (.NOT. side) THEN
+!!$             blk%vvel(ibeg:iend, jbeg-1) = cblk%vvel(conibeg:coniend, conjbeg-1)
+!!$          ELSE
+!!$             blk%uvel(ibeg-1, jbeg:jend) = cblk%uvel(conibeg-1, conjbeg:conjend)
+!!$          END IF
+!!$
+!!$          DO i = ibeg, iend
+!!$             coni = conibeg + (i - ibeg)*ifcells
+!!$             DO j = jbeg, jend
+!!$                conj = conjbeg + (j - jbeg)*jfcells
+!!$
+!!$                ! interpolate depth at the ghost cell
+!!$                ! centroid, using the closest
+!!$                ! neighboring cell as a hint
+!!$
+!!$                blk%wsel(i,j) = wsinterp(cblk, blk%x(i,j), blk%y(i,j), &
+!!$                     &coni, conj + jfcells/2)
+!!$                blk%depth(i,j) = blk%wsel(i,j) - blk%zbot(i,j)
+!!$                IF (do_wetdry) THEN
+!!$                   blk%wsel(i,j) = MAX(blk%wsel(i,j), blk%zbot(i,j))
+!!$                   blk%depth(i,j) = MAX(blk%depth(i,j), dry_zero_depth)
+!!$                END IF
+!!$
+!!$                IF (.NOT. side) THEN
+!!$
+!!$                   ! copy next cross v value
+!!$                   blk%vvel(i,j) = cblk%vvel(coni, conj + jfcells - 1)
+!!$
+!!$                   ! compute u using fluxes
+!!$                   IF (i .GT. 2) THEN
+!!$                      cflux = uflux(cblk, coni, conj, conj + jfcells - 1)
+!!$                   ELSE 
+!!$                      cflux = uflux(cblk, coni, conj, conj + jfcells - 1)
+!!$                   END IF
+!!$                   carea = uarea(blk, i, j, j)
+!!$                   IF (carea .GT. 0.0) THEN
+!!$                      blk%uvel(i,j) = cflux/carea
+!!$                   ELSE 
+!!$                      blk%uvel(i,j) = 0.0
+!!$                   END IF
+!!$
+!!$                ELSE 
+!!$                   blk%uvel(i,j) = cblk%uvel(coni + ifcells - 1, conj)
+!!$
+!!$                   carea = varea(blk, i, i, j)
+!!$                   IF (jbeg .GT. 2) THEN
+!!$                      cflux = vflux(cblk, coni, coni + ifcells - 1, conj-1)
+!!$                   ELSE 
+!!$                      cflux = vflux(cblk, coni, coni + ifcells - 1, conj)
+!!$                   END IF
+!!$                   IF (carea .GT. 0.0) THEN
+!!$                      blk%vvel(i,j) = cflux/carea
+!!$                   ELSE 
+!!$                      blk%vvel(i,j) = 0.0
+!!$                   END IF
+!!$                END IF
+!!$
+!!$                ! check wetdry, all neighboring cells
+!!$                ! must be dry for this cell to be dry
+!!$                blk%isdry(i,j) = (blk%isdry(i,j) .OR. cblk%isdry(coni, conj))
+!!$
+!!$             END DO
+!!$          END DO
+       END IF
+
+       ! Not sure why we're worried about old values here.  Old values
+       ! in ghost cells should not be used. Star values are needed however. 
+       
+       DO i = ibeg-1, iend
+          DO j = jbeg-1, jend
+             IF (block_uses(blk, i, j)) THEN
+                blk%uvelold(i,j) = blk%uvel(i,j)
+                blk%uvelstar(i,j) = blk%uvel(i,j)
+                blk%vvelold(i,j) = blk%vvel(i,j)
+                blk%vvelstar(i,j) = blk%vvel(i,j)
+                blk%depthold(i,j) = blk%depth(i,j)
+                blk%depthstar(i,j) = blk%depth(i,j)
+                blk%dp(i,j) = 0.0
+             END IF
+          END DO
+       END DO
+
+       IF (.NOT. side) THEN
+          IF (ibeg .LT. 2) THEN
+             i = 2
+          ELSE 
+             i = blk%xmax
+          END IF
+          DO j = jbeg, jend
+             IF (block_uses(blk, i, j)) THEN
+                blk%cell(i,j)%xtype = CELL_NORMAL_TYPE
+             END IF
+          END DO
+       ELSE 
+          IF (jbeg .LT. 2) THEN
+             j = 2
+          ELSE 
+             j = blk%ymax
+          END IF
+          DO i = ibeg, iend
+             IF (block_uses(blk, i, j)) THEN
+                blk%cell(i,j)%ytype = CELL_NORMAL_TYPE
+             END IF
+          END DO
+       END IF
+    END DO
+
+  END SUBROUTINE fillghost_hydro
 
 
 END MODULE block_hydro_bc
