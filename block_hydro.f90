@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Mon Jan 31 08:43:27 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Mar 16 10:31:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 
@@ -139,7 +139,7 @@ CONTAINS
        END DO
 
        DO i = 2, block(iblk)%xmax
-          DO j= 2, block(iblk)%xmax
+          DO j= 2, block(iblk)%ymax
              IF (block_owns(block(iblk), i, j)) THEN
                 block(iblk)%vmag(i, j) = SQRT(&
                      &block(iblk)%uvel_p(i,j)*block(iblk)%uvel_p(i,j) + &
