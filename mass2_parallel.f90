@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Fri Feb 25 07:19:12 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Mar  7 08:06:24 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -20,7 +20,6 @@ PROGRAM mass2_parallel
   USE time_series
   USE config
   USE block_initialization
-  USE block_ghost
   USE hydro_solve
   USE scalar_solve_module
   USE gage_output
@@ -114,6 +113,9 @@ PROGRAM mass2_parallel
   END IF
 
   CALL initialize()
+  DO j =1, max_blocks
+     CALL fillghost(j)
+  END DO
   
   IF (do_flow .OR. do_transport) CALL solver_setup()
 
