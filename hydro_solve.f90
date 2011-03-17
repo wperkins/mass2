@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Fri Jan 14 12:39:46 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Mar 16 13:43:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -73,18 +73,20 @@ CONTAINS
           END DO
 
           CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
           CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
           CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_CURRENT)
+          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
           CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
+          CALL block_var_put_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
           CALL ga_sync()
           CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
-          CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_STAR)
           CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
-          CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_STAR)
           CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
-          CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
+          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
+          CALL block_var_get_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
           
           !-------------------------------------------------------------------------
 
