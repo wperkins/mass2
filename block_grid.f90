@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Fri Feb 25 08:17:12 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Feb 25 13:15:19 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -482,10 +482,10 @@ CONTAINS
 
     INTEGER :: imin, imax, jmin, jmax, i, j
 
-    imin = i_index_min
-    imax = blk%xmax+i_index_extra
-    jmin = j_index_min
-    jmax = blk%ymax+j_index_extra
+    imin = blk%varbase%imin_global
+    imax = blk%varbase%imax_global
+    jmin = blk%varbase%jmin_global
+    jmax = blk%varbase%jmax_global
 
     ! metric coeff. 2 on the u face of the c.v.
 
