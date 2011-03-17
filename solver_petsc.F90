@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Thu Jan 13 10:27:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Feb 25 10:26:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -72,8 +72,21 @@ CONTAINS
     INTEGER, INTENT(IN) :: blocks
 
     INTEGER :: b, ieq, ierr
+    INTEGER :: status
+    LOGICAL :: exists
     
     ALLOCATE(pinfo(blocks))
+
+    ! make sure there is a PETSc configuration file
+
+    INQUIRE(FILE=petscoptfile, EXIST=exists) 
+    IF (.NOT. exists) THEN
+       OPEN(UNIT=16, FILE=petscoptfile, ACTION='WRITE', IOSTAT=status)
+       IF (status .EQ. 0) THEN
+          WRITE (16,*)
+          CLOSE(16)
+       END IF
+    END IF
 
     CALL PetscInitialize(petscoptfile, ierr)
     CHKERRQ(ierr)
@@ -88,6 +101,7 @@ CONTAINS
           pinfo(b)%eq(ieq)%built = .FALSE.
        END DO
     END DO
+
   END SUBROUTINE solver_initialize
 
   ! ----------------------------------------------------------------
