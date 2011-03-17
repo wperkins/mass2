@@ -1,3 +1,33 @@
+2011-03-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.mpi: add some compiler specific flags
+
+	* solver_petsc.F90 (solver_initialize): make a "mass2.petscrc"
+	file if it does not exist
+
+	* plot_cgns.f90 (plot_cgns): make output 3D by default
+	(plot_cgns_file_setup): make sure selected physical dimension is
+	actually used
+
+	* mass2_parallel.f90 (mass2_parallel): call fillghost() after
+	initialization 
+
+	* hydro_solve.f90 (hydro): need to parallel get isdry too
+
+	* block_hydro_bc.f90 (default_hydro_bc): apply BC's to used cells
+	not just owned cells
+	(apply_hydro_bc): do block connections too
+	(block_ghost_transfer, block_build_one_ghost, block_build_ghost)
+	(connect_indexes, fillghost, fillghost_hydro): add routines to
+	assign block connections and ghost cell value transfers
+
+	* block_hydro.f90 (velocity_shift): fix typo
+
+	* block_grid.f90 (block_metrics): use blk%varbase to get block
+	index ranges
+
+	* block_ghost.f90: no longer needed
+
 2011-02-25  William A. Perkins  <william.perkins@pnl.gov>
 
 	* Makefile.mpi (mass2_SOURCES): add block_ghost.f90 and
