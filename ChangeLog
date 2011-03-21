@@ -1,3 +1,14 @@
+2011-03-21  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_cgns.f90 (plot_cgns_write_grid): completely rework the way
+	grid dependent data is output
+
+	* block_parallel.f90 (block_allocate_size): add slope variable
+
+	* block_grid.f90 (block_metrics): compute a slope
+
+	* Makefile.mpi (OPTFLAGS): change Intel floating point trap option 
+
 2011-03-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* Makefile.mpi: add some compiler specific flags
