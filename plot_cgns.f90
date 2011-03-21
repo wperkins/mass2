@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Thu Mar 17 07:21:00 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Mon Mar 21 13:17:34 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -242,18 +242,57 @@ CONTAINS
           END IF
        END IF
 
-       CALL cg_discrete_write_f(fileidx, baseidx, zoneidx, "GridMetrics", ddataidx, ierr)
-       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write descrete data", fatal=.TRUE.)
-    
+       
+       ! CALL cg_discrete_write_f(fileidx, baseidx, zoneidx, "GridMetrics", ddataidx, ierr)
+       
+!!$       CALL block_collect(blk, blk%bv_hp1)
+!!$       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp1", &
+!!$            &blk%buffer(1:size(1), 1:size(2)))
+!!$       CALL block_collect(blk, blk%bv_hp2)
+!!$       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp2", &
+!!$            &blk%buffer(1:size(1), 1:size(2)))
+!!$       CALL block_collect(blk, blk%bv_gp12)
+!!$       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "gp12", &
+!!$            &blk%buffer(1:size(1), 1:size(2)))
+
+       CALL cg_sol_write_f(fileidx, baseidx, zoneidx, "GridMetrics", CellCenter, &
+            &ddataidx, ierr)
+       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write solution", fatal=.TRUE.)
+
+       CALL block_collect(blk, blk%bv_x)
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'CentroidX', 'Cell Center Easting', 'feet')
+       
+       CALL block_collect(blk, blk%bv_y)
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'CentroidY', 'Cell Center Northing', 'feet')
+       
+       CALL block_collect(blk, blk%bv_zbot)
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'CentroidZ', 'Cell Center Bottom Elevation', 'feet')
+       
+       CALL block_collect(blk, blk%bv_slope)
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'Slope', 'Cell Center Bottom Elevation', 'feet')
+       
        CALL block_collect(blk, blk%bv_hp1)
-       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp1", &
-            &blk%buffer(1:size(1), 1:size(2)))
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'hp1', 'Cell hp1 metric', 'feet')
+
        CALL block_collect(blk, blk%bv_hp2)
-       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp2", &
-            &blk%buffer(1:size(1), 1:size(2)))
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'hp2', 'Cell hp2 metric', 'feet')
+       
        CALL block_collect(blk, blk%bv_gp12)
-       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "gp12", &
-            &blk%buffer(1:size(1), 1:size(2)))
+       CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
+            &blk%buffer, &
+            &'gp12', 'Cell gp12 metric', 'feet')
     END IF
     RETURN
 
