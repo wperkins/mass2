@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Feb 17 15:51:34 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Mar 17 08:49:12 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -91,6 +91,7 @@ MODULE block_module
      DOUBLE PRECISION, POINTER :: hu1(:,:)
      DOUBLE PRECISION, POINTER :: hu2(:,:)
      DOUBLE PRECISION, POINTER :: gp12(:,:)
+     DOUBLE PRECISION, POINTER :: slope(:,:)
      DOUBLE PRECISION, POINTER :: eddy(:,:)
      DOUBLE PRECISION, POINTER :: kx_diff(:,:)
      DOUBLE PRECISION, POINTER :: ky_diff(:,:)
@@ -149,6 +150,7 @@ MODULE block_module
      TYPE (block_var), POINTER :: bv_hu1
      TYPE (block_var), POINTER :: bv_hu2
      TYPE (block_var), POINTER :: bv_gp12
+     TYPE (block_var), POINTER :: bv_slope
      TYPE (block_var), POINTER :: bv_eddy
      TYPE (block_var), POINTER :: bv_kx_diff
      TYPE (block_var), POINTER :: bv_ky_diff
@@ -269,6 +271,7 @@ CONTAINS
     blk%bv_hv1 => block_var_allocate("hv1", blk%varbase, const=.TRUE.)
     blk%bv_hv2 => block_var_allocate("hv2", blk%varbase, const=.TRUE.)
     blk%bv_gp12 => block_var_allocate("gp12", blk%varbase, const=.TRUE.)
+    blk%bv_slope => block_var_allocate("slope", blk%varbase, const=.TRUE.)
 
     ! simulation coefficients that can vary spatially
 
@@ -328,6 +331,7 @@ CONTAINS
     blk%hu1 => blk%bv_hu1%current
     blk%hu2 => blk%bv_hu2%current
     blk%gp12 => blk%bv_gp12%current
+    blk%slope => blk%bv_slope%current
     blk%eddy => blk%bv_eddy%current
     blk%kx_diff => blk%bv_kx_diff%current
     blk%ky_diff => blk%bv_ky_diff%current
