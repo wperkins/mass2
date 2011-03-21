@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Fri Feb 25 13:15:19 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Mar 17 11:56:53 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -481,6 +481,7 @@ CONTAINS
     TYPE (block_struct), INTENT(INOUT) :: blk
 
     INTEGER :: imin, imax, jmin, jmax, i, j
+    DOUBLE PRECISION :: a, b, c, d, e, f, g, h, ii, di, dj, dzdi, dzdj
 
     imin = blk%varbase%imin_global
     imax = blk%varbase%imax_global
@@ -645,6 +646,33 @@ CONTAINS
     blk%gp12 = blk%x_xsi*blk%x_eta + &
          &blk%y_xsi*blk%y_eta
 
+    ! compute a slope (like Arc/Info, using an 8 point scheme) for each cell
+    
+    imin = blk%varbase%imin_owned
+    imax = blk%varbase%imax_owned
+    jmin = blk%varbase%jmin_owned
+    jmax = blk%varbase%jmax_owned
+    DO i = imin, imax
+       DO j = jmin, jmax
+          a = blk%zbot(i-1, j-1)
+          b = blk%zbot(i  , j-1)
+          c = blk%zbot(i+1, j-1)
+          d = blk%zbot(i-1, j  )
+          e = blk%zbot(i  , j  )
+          f = blk%zbot(i+1, j  )
+          g = blk%zbot(i-1, j+1)
+          h = blk%zbot(i  , j+1)
+          ii = blk%zbot(i+1, j+1)
+
+          di = blk%hp1(i, j)
+          dj = blk%hp2(i, j)
+          
+          dzdi = ((a + 2.0*d + g) - (c + 2.0*f + ii)) / (8.0 * di)
+          dzdj = ((a + 2.0*b + c) - (g + 2.0*h + ii)) / (8.0 * dj)
+          blk%slope(i,j) = SQRT(dzdi*dzdi + dzdj*dzdj)
+       END DO
+    END DO
+
     CALL block_var_put(blk%bv_hp1)
     CALL block_var_put(blk%bv_hp2)
     CALL block_var_put(blk%bv_hu1)
@@ -656,6 +684,7 @@ CONTAINS
     CALL block_var_put(blk%bv_y_xsi)
     CALL block_var_put(blk%bv_x_eta)
     CALL block_var_put(blk%bv_y_eta)
+    CALL block_var_put(blk%bv_slope)
     CALL ga_sync()
     CALL block_var_get(blk%bv_hp1)
     CALL block_var_get(blk%bv_hp2)
