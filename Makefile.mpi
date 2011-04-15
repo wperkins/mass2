@@ -80,6 +80,24 @@ FCPP_FLAG = -fpp
 
 endif
 
+ifeq ($(strip $(HOST)), briareus)
+
+F90         = mpif90
+GA = /share/apps/ga/5.0.1/intel
+# GA = /home/d3g096/stuff/src/ga-5-0
+GA_LIB = -libverbs -llapack -lblas 
+CGNS_FCFLAGS = -I/home/d3g096/stuff/include
+CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns 
+# PETSC_DIR defined by environment variable
+# PETSC_ARCH defined by environment variable
+PETSC_LIB = -lX11
+FCPP_FLAG = -fpp
+DBFLAGS = -g
+OPTFLAGS = -O2 -fpe1
+
+
+endif
+
 F90LINKER   = $(F90)
 
 GA_FCFLAGS = -I$(GA)/include
