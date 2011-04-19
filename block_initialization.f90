@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Thu Feb 17 09:23:37 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Apr 19 10:40:55 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 
@@ -79,6 +79,8 @@ CONTAINS
   ! ----------------------------------------------------------------
   SUBROUTINE initialize()
 
+    USE profile_init
+
     IMPLICIT NONE
 
     INTEGER :: i, iblock, var
@@ -116,8 +118,7 @@ CONTAINS
     IF(do_spatial_chezy) CALL initialize_coeff("roughness_coeff.dat")
 
     IF (read_initial_profile) THEN
-       CALL error_message('profile initialization  not implemented', fatal=.TRUE.)
-       ! FIXME: CALL profile_init(given_initial_wsel, manning, SQRT(mann_con))
+       CALL profile_initialize(given_initial_wsel, manning, SQRT(mann_con))
     ELSE IF(read_hotstart_file)THEN
        CALL read_hotstart()
     END IF
