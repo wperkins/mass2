@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Thu Mar 17 11:56:53 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Tue Apr 19 10:56:55 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -648,10 +648,10 @@ CONTAINS
 
     ! compute a slope (like Arc/Info, using an 8 point scheme) for each cell
     
-    imin = blk%varbase%imin_owned
-    imax = blk%varbase%imax_owned
-    jmin = blk%varbase%jmin_owned
-    jmax = blk%varbase%jmax_owned
+    imin = MAX(blk%varbase%imin_owned, 2)
+    imax = MIN(blk%varbase%imax_owned, blk%xmax)
+    jmin = MAX(blk%varbase%jmin_owned, 2)
+    jmax = MIN(blk%varbase%jmax_owned, blk%ymax)
     DO i = imin, imax
        DO j = jmin, jmax
           a = blk%zbot(i-1, j-1)
