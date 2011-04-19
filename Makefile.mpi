@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June  1, 1998 by William A. Perkins
-# Last Change: Thu Mar 17 14:27:24 2011 by William A. Perkins <d3g096@flophouse>
+# Last Change: Tue Apr 19 12:02:56 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -61,7 +61,7 @@ PETSC_DIR = /usr/local/openmpi-intel
 PETSC_ARCH =
 PETSC_LIB =
 FCPP_FLAG = -fpp
-DBFLAGS = -g
+DBFLAGS = -g -CB -fpe1
 OPTFLAGS = -O2 -fpe1
 
 endif
@@ -131,6 +131,7 @@ mass2_SOURCES = \
 	met_data_module.f90 \
 	plot_cgns.f90 \
 	plot_output.f90 \
+	profile_init.f90 \
 	realequal.f90 \
 	scalar_bc.f90 \
 	scalar_solve.f90 \
@@ -180,7 +181,8 @@ clean::
 block_grid.o: block_grid.f90 block_parallel.o mass2_config.o
 block_hydro.o: block_hydro.f90 block_parallel.o mass2_config.o
 block_hydro_bc.o: block_hydro_bc.f90 hydro_bc.o block_grid.o
-block_initialization.o: block_initialization.f90 block_hydro.o hotstart.o scalars_module.o
+block_initialization.o: block_initialization.f90 block_hydro.o \
+	hotstart.o scalars_module.o profile_init.o
 block_parallel.o: block_parallel.f90 block_var.o
 block_var.o: block_var.f90 block_var_base.o
 block_var_base.o: block_var_base.f90 globals.o
@@ -212,6 +214,7 @@ table_bc_module.o: table_bc_module.f90
 tdg_source.o: tdg_source.f90 gas_functions_module.o met_data_module.o
 temperature_source.o: temperature_source.f90 met_data_module.o \
 	energy_flux_module.o 
+profile_init.o: profile_init.f90 mass2_config.o block_parallel.o
 
 mass2_parallel.o: mass2_parallel.f90 block_grid.o block_initialization.o \
 	mass2_config.o mass_source_output.o gage_output_module.o plot_output.o \
