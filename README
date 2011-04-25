@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Dec 21 08:19:29 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: Mon Apr 25 07:25:11 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -267,7 +267,7 @@ On bearflag:
 
     sh bootstrap.sh
     set path = ( /usr/software/intel101/x86_64/bin $path)
-    setenv FCFLAGS ""
+    setenv FCFLAGS "-O2 -fpe1"
     configure \
         --with-f90=ifort \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
