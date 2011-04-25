@@ -1,3 +1,18 @@
+2011-04-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* global_module_023.f90 (velocity_shift): fixed indexing problem
+	in flux calculations
+
+2011-03-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_cgns.f90 (plot_cgns_file_setup): make output 3D; make sure
+	of file physical dimension
+
+	* test/temperature/pond/mass2_v027.cfg: make gage output hourly
+
+	* test/flow/normal-2blk/mass2_v027.cfg: update eddy viscosity
+	input 
+
 2010-12-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* configure.in: need to call AC_PROG_FC() before AC_PROG_F90()
