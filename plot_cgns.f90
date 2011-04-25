@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed Apr  7 09:09:05 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Sun Mar 20 06:54:22 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -31,7 +31,7 @@ MODULE plot_cgns
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_file_name = "grid.cgns"
-  LOGICAL, PRIVATE, PARAMETER :: do2D = .TRUE.
+  LOGICAL, PRIVATE, PARAMETER :: do2D = .FALSE.
   INTEGER, PRIVATE :: pfileidx
   INTEGER, PRIVATE :: pbaseidx
   CHARACTER (LEN=1024), PRIVATE :: plot_file_name
@@ -144,7 +144,7 @@ CONTAINS
     ELSE 
        physdim = 3
     END IF
-    CALL cg_base_write_f(fileidx, "MASS2", 2, 2, baseidx, ierr)
+    CALL cg_base_write_f(fileidx, "MASS2", 2, physdim, baseidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base in " //&
          &TRIM(filename), fatal=.TRUE.)
 
