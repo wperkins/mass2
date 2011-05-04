@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Wed May  4 12:46:36 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Wed May  4 13:27:09 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -152,7 +152,9 @@ CONTAINS
 
     DO iblock = 1, max_blocks
        CALL plot_cgns_write_grid(fileidx, baseidx, block(iblock), iblock, docoord, zoneidx)
-       CALL plot_cgns_write_bc(fileidx, baseidx, zoneidx,  block(iblock), iblock)
+       IF (docoord) THEN
+          CALL plot_cgns_write_bc(fileidx, baseidx, zoneidx,  block(iblock), iblock)
+       END IF
     END DO
 
 
@@ -384,6 +386,18 @@ CONTAINS
        CALL cg_link_write_f('GridMetrics', grid_file_name, buffer, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
             &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
+
+       WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneBC")') zoneidx
+       CALL cg_link_write_f('ZoneBC', grid_file_name, buffer, ierr)
+       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+            &"cannot link to zone bc: " // buffer, fatal=.TRUE.)
+
+       IF (nzones .GT. 1) THEN
+          WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneGridConnectivity")') zoneidx
+          CALL cg_link_write_f('ZoneGridConnectivity', grid_file_name, buffer, ierr)
+          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+               &"cannot link to zone connection path: " // buffer, fatal=.TRUE.)
+       END IF
        
     END DO
   END SUBROUTINE plot_cgns_link_coord
@@ -403,8 +417,9 @@ CONTAINS
 
     INTEGER :: imin, imax, jmin, jmax
     INTEGER :: p, ierr, pts(2,2), bctype, bcidx
+    LOGICAL :: isconn
 
-    CHARACTER (LEN=32) :: bcname
+    CHARACTER (LEN=32) :: bcname, dname
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_bc"
 
     DO b = 1, block_bc(iblock)%num_bc
@@ -433,15 +448,19 @@ CONTAINS
        CASE DEFAULT
           CONTINUE
        END SELECT
-       
-       SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_kind)
-       CASE ("FLUX", "VELO", "UVEL", "VVEL", "ELEVELO")
-          bctype = BCInflow
-       CASE ("ELEV")
-          bctype = BCOutflow
-       CASE DEFAULT
-          CONTINUE
-       END SELECT
+
+       isconn = (block_bc(iblock)%bc_spec(b)%bc_type .EQ. "BLOCK")
+
+       IF (.NOT. isconn) THEN
+          SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_kind)
+          CASE ("FLUX", "VELO", "UVEL", "VVEL", "ELEVELO")
+             bctype = BCInflow
+          CASE ("ELEV")
+             bctype = BCOutflow
+          CASE DEFAULT
+             CONTINUE
+          END SELECT
+       END IF
 
        DO p = 1, block_bc(iblock)%bc_spec(b)%num_cell_pairs
 
@@ -459,10 +478,21 @@ CONTAINS
           pts(1,2) = imax
           pts(2,2) = jmax
           
-          WRITE(bcname, '("BC", I2.2, ".", I2.2)') b, p
           ierr = 0
-          CALL cg_boco_write_f(fileidx, baseidx, zoneidx, bcname, bctype, &
-               &PointRange, 2, pts, bcidx, ierr)
+          IF (isconn) THEN
+             WRITE(bcname, '("CONN", I2.2, ".", I2.2)') b, p
+             WRITE(dname, '("Block", I2.2)') &
+                  &block_bc(iblock)%bc_spec(b)%con_block
+             CALL cg_conn_write_short_f(fileidx, baseidx, zoneidx, bcname, &
+                  &Vertex, Abutting1to1, PointRange, 2, pts, dname, bcidx, ierr)
+             ! CALL cg_conn_write_f(fileidx, baseidx, zoneidx, bcname, &
+             !      &Vertex, Abutting1to1, PointRange, 2, pts, &
+             !      &dname, Structured, PointRangeDonor, Integer, 2, pts, bcidx, ierr)
+          ELSE 
+             WRITE(bcname, '("BC", I2.2, ".", I2.2)') b, p
+             CALL cg_boco_write_f(fileidx, baseidx, zoneidx, bcname, bctype, &
+                  &PointRange, 2, pts, bcidx, ierr)
+          END IF
           IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
                &"cannot write bc", fatal=.TRUE.)
           
