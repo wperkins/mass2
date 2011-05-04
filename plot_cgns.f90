@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Sun Mar 20 06:54:22 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Wed May  4 12:46:36 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -152,6 +152,7 @@ CONTAINS
 
     DO iblock = 1, max_blocks
        CALL plot_cgns_write_grid(fileidx, baseidx, block(iblock), iblock, docoord, zoneidx)
+       CALL plot_cgns_write_bc(fileidx, baseidx, zoneidx,  block(iblock), iblock)
     END DO
 
 
@@ -277,6 +278,7 @@ CONTAINS
             &blk%hp2(1:size(1), 1:size(2)))
        CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "gp12", &
             &blk%gp12(1:size(1), 1:size(2)))
+
     END IF
     RETURN
 
@@ -386,6 +388,89 @@ CONTAINS
     END DO
   END SUBROUTINE plot_cgns_link_coord
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_cgns_write_all_bc
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_cgns_write_bc(fileidx, baseidx, zoneidx, blk, iblock)
+
+    USE block_boundary_conditions
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: fileidx, baseidx, zoneidx, iblock
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER :: b
+
+    INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: p, ierr, pts(2,2), bctype, bcidx
+
+    CHARACTER (LEN=32) :: bcname
+    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_bc"
+
+    DO b = 1, block_bc(iblock)%num_bc
+
+       ! indexes used for BC's are vertex based
+       
+       imin = 1
+       jmin = 1
+       IF (plot_cgns_docell) THEN
+          imax = blk%xmax
+          jmax = blk%ymax
+       ELSE
+          imax = blk%xmax + 1
+          jmax = blk%ymax + 1
+       END IF
+       
+       SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_loc)
+       CASE ("US")
+          imax = imin
+       CASE ("DS")
+          imin = imax
+       CASE ("LB")
+          jmax = jmin
+       CASE ("RB")
+          jmin = jmax
+       CASE DEFAULT
+          CONTINUE
+       END SELECT
+       
+       SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_kind)
+       CASE ("FLUX", "VELO", "UVEL", "VVEL", "ELEVELO")
+          bctype = BCInflow
+       CASE ("ELEV")
+          bctype = BCOutflow
+       CASE DEFAULT
+          CONTINUE
+       END SELECT
+
+       DO p = 1, block_bc(iblock)%bc_spec(b)%num_cell_pairs
+
+          SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_loc)
+          CASE ("US", "DS")
+             jmin = block_bc(iblock)%bc_spec(b)%start_cell(p)
+             jmax = block_bc(iblock)%bc_spec(b)%end_cell(p)
+          CASE ("LB", "RB")
+             imin = block_bc(iblock)%bc_spec(b)%start_cell(p)
+             imax = block_bc(iblock)%bc_spec(b)%end_cell(p)
+          END SELECT
+          
+          pts(1,1) = imin
+          pts(2,1) = jmin
+          pts(1,2) = imax
+          pts(2,2) = jmax
+          
+          WRITE(bcname, '("BC", I2.2, ".", I2.2)') b, p
+          ierr = 0
+          CALL cg_boco_write_f(fileidx, baseidx, zoneidx, bcname, bctype, &
+               &PointRange, 2, pts, bcidx, ierr)
+          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+               &"cannot write bc", fatal=.TRUE.)
+          
+       END DO
+    END DO
+  
+
+  END SUBROUTINE plot_cgns_write_bc
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print_cgns
