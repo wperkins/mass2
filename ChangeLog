@@ -1,5 +1,10 @@
 2011-05-04  William A. Perkins  <william.perkins@pnl.gov>
 
+	* plot_cgns.f90 (plot_cgns_file_setup): only write BCs when
+	coordinates are written 
+	(plot_cgns_link_coord): link to BCs and connections too
+	(plot_cgns_write_bc): write connections too
+
 	* Makefile.am (plot_cgns.o): depends on block_bc_module.o
 
 	* plot_cgns.f90 (plot_cgns_write_bc): initial routine to write
