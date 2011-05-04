@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Fri Apr  2 11:31:04 2010 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Wed May  4 11:32:01 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FFLAGS = $(FCFLAGS)
@@ -126,7 +126,7 @@ particulate_source.o: particulate_source.f90 \
 
 plot_cgns.o: plot_cgns.f90 global_module_023.o scalars_module.o \
 	scalars_source.o bed.o misc_vars_module.o accumulator.o \
-	gas_functions_module.o bed.o time_series/libts.a
+	gas_functions_module.o bed.o block_bc_module.o time_series/libts.a
 
 plot_netcdf.o: plot_netcdf.f90 global_module_023.o scalars_module.o \
 	scalars_source.o bed.o misc_vars_module.o accumulator.o \
