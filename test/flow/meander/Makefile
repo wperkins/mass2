@@ -7,12 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 20, 2004 by William A. Perkins
-# Last Change: Tue Apr  6 09:39:54 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 12:46:03 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
 MODEL=../../../mass2
-TECPLOT=tecplot9
+TECPLOT=tecplot
 
 
 EPSFILES=										\
