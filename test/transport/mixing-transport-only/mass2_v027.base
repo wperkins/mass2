@@ -19,14 +19,14 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 5			number_scalar_iterations
 2			scalar_sweep	! internal iterations
 50			depth_sweep
-0.20001 F		eddy viscosity
+0.20001 F F 0.7		eddy viscosity
 0.20001 F		kx_diff		! diffusion coeff in xsi (ft^2/sec)
 3.00000 F		ky_diff		! diffusion coeff in eta (ft^2/sec)
 0.026 F			chezy_con	! manning n value if manning=TRUE
 1.49			mann_con	! constant in the bed shear stress  =1.0 if metric units, 1.49*1.49 for english
 0.40			relax_dp	! relaxation factor for depth corrections
 0.7			relax_uv	! u/v underrelaxation
-1.0 1.0			blend_uv, blend_time	! spatial and temporal differencing scheme blend factor for u/v
+CDS 1.0 1.0			blend_uv, blend_time	! spatial and temporal differencing scheme blend factor for u/v
 0.2			uvel_initial	! initial uniform value of u velocity
 0.0			vvel_initial	! initial uniform value of v velocity
 0.0			conc_initial	! initial uniform value of concentration						
