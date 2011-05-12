@@ -33,5 +33,5 @@ set grid x
 set pointsize 0.5
 set key below
 
-plot '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc stuff 1 5' using 3:4 title 'Simulated' with points 3, \
-     C(x) title 'Analytic Solution' with lines 1
+plot '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc stuff 1 5' using 3:4 title 'Simulated' with points ls 3, \
+     C(x) title 'Analytic Solution' with lines ls 1

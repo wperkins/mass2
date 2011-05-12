@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Thu Jan  8 11:25:19 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 07:30:37 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -29,6 +29,6 @@ set label "Critical Depth" at 300*0.3048, 1.7*0.3048 font "Helvetica, 18"
 set arrow from first 4000*0.3048, graph 0 to first 4000*0.3048, graph 1 nohead lt 7
 set label "Slope Break" at 3900*0.3048, 4*0.3048 center rotate font "Helvetica, 18"
 
-plot '<perl ../../../scripts/mass2slice.pl -t 1 -i plot.nc depth 1 5' using ($3*0.3048):($4*0.3048) title 'Initial Conditions' with lines 3, \
-     1.459*0.3048 notitle with lines 7, \
-     '<perl ../../../scripts/mass2slice.pl -l -i plot.nc depth 1 5' using ($3*0.3048):($4*0.3048) title 'Steady State' with linespoints 1
+plot '<perl ../../../scripts/mass2slice.pl -t 1 -i plot.nc depth 1 5' using ($3*0.3048):($4*0.3048) title 'Initial Conditions' with lines ls 3, \
+     1.459*0.3048 notitle with lines ls 7, \
+     '<perl ../../../scripts/mass2slice.pl -l -i plot.nc depth 1 5' using ($3*0.3048):($4*0.3048) title 'Steady State' with linespoints ls 1

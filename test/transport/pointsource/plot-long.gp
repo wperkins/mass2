@@ -18,10 +18,10 @@ set xlabel 'Longitudinal Distance, m'
 set xrange [0:3100]
 set ylabel 'Concentration'
 set key
-plot '<perl solution.pl -y 75' using ($1*0.3048):3 title 'Analytic (y = 75)' with lines 1, \
-     '<perl solution.pl -y 125' using ($1*0.3048):3 title 'Analytic (y = 125)' with lines 3, \
-     '<perl solution.pl -y 155' using ($1*0.3048):3 title 'Analytic (y = 155)' with lines 4, \
-     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 9' using ($3*0.3048):4 title "Simulated" with points 7, \
-     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 14' using ($3*0.3048):4 notitle with points 7, \
-     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 17' using ($3*0.3048):4 notitle with points 7
+plot '<perl solution.pl -y 75' using ($1*0.3048):3 title 'Analytic (y = 75)' with lines ls 1, \
+     '<perl solution.pl -y 125' using ($1*0.3048):3 title 'Analytic (y = 125)' with lines ls 3, \
+     '<perl solution.pl -y 155' using ($1*0.3048):3 title 'Analytic (y = 155)' with lines ls 4, \
+     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 9' using ($3*0.3048):4 title "Simulated" with points ls 7, \
+     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 14' using ($3*0.3048):4 notitle with points ls 7, \
+     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 17' using ($3*0.3048):4 notitle with points ls 7
 

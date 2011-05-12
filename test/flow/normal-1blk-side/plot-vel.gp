@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Mon Feb 23 13:15:20 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 07:14:32 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -23,5 +23,5 @@ set mytics
 set pointsize 0.5
 set key below
 
-plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc vmag 1 5' using 3:4 title 'Initial Conditions' with linespoints 1, \
-     '<perl ../../../scripts/mass2slice.pl -t 2 -j plot.nc vmag 1 5' using 3:4 title 'Steady State' with linespoints 3
+plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc vmag 1 5' using 3:4 title 'Initial Conditions' with linespoints ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -t 2 -j plot.nc vmag 1 5' using 3:4 title 'Steady State' with linespoints ls 3

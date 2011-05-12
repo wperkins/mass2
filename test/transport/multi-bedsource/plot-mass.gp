@@ -27,11 +27,11 @@ set grid y
 set title 'Multiple Bed Sources'
 set key below
 
-plot '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 202' using 1:4 title 'Stuff Outflux' with linespoints 1, \
-     '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 2' using 1:4 title 'Stuff: i = 2' with lines 3, \
-     '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 1' using 1:4 title 'Stuff: i = 1' with linespoints 4, \
-     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 202' using 1:4 title 'More Stuff Outflux' with linespoints 5, \
-     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 2' using 1:4 title 'More Stuff: i = 2' with lines 7, \
-     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 1' using 1:4 title 'More Stuff: i = 1' with linespoints 8
+plot '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 202' using 1:4 title 'Stuff Outflux' with linespoints ls 1, \
+     '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 2' using 1:4 title 'Stuff: i = 2' with lines ls 3, \
+     '<perl ../../../scripts/mass2flux.pl -c -v stuff plot.nc 1 1' using 1:4 title 'Stuff: i = 1' with linespoints ls 4, \
+     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 202' using 1:4 title 'More Stuff Outflux' with linespoints ls 5, \
+     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 2' using 1:4 title 'More Stuff: i = 2' with lines ls 7, \
+     '<perl ../../../scripts/mass2flux.pl -c -v morestuff plot.nc 1 1' using 1:4 title 'More Stuff: i = 1' with linespoints ls 8
 
 

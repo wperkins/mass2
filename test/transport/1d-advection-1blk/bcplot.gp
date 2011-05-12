@@ -31,4 +31,4 @@ set format y '%.1f'
 set ylabel 'Concentration'
 
 set nokey
-plot 'conc-bc.dat' using 1:3 with lines 1
+plot 'conc-bc.dat' using 1:3 with lines ls 1

@@ -42,10 +42,10 @@ plot C(x, 360.0) title "Analytic: t = 6.0 min", \
      C(x, 1800.0) title "Analytic: t = 30.0 min", \
      C(x, 2520.0) title "Analytic: t = 42.0 min", \
      C(x, 3240.0) title "Analytic: t = 54.0 min", \
-     '< perl ../../../scripts/mass2slice.pl -j -t 12 plot.nc stuff 1 6 2 6' using 3:4 title 'Simulated' with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -j -t 14 plot.nc stuff 1 6 2 6' using 3:4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -j -t 16 plot.nc stuff 1 6 2 6' using 3:4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -j -t 18 plot.nc stuff 1 6 2 6' using 3:4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -j -t 20 plot.nc stuff 1 6 2 6' using 3:4 notitle with points 7
+     '< perl ../../../scripts/mass2slice.pl -j -t 12 plot.nc stuff 1 6 2 6' using 3:4 title 'Simulated' with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -j -t 14 plot.nc stuff 1 6 2 6' using 3:4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -j -t 16 plot.nc stuff 1 6 2 6' using 3:4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -j -t 18 plot.nc stuff 1 6 2 6' using 3:4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -j -t 20 plot.nc stuff 1 6 2 6' using 3:4 notitle with points ls 7
 
 

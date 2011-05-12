@@ -18,7 +18,7 @@ set xlabel 'Lateral Distance, feet'
 set ylabel 'Concentration'
 set yrange [100:200]
 set key below
-plot '<perl ../mixing/solution.pl -x 420' using 2:3 title 'Analytic (x = 420)' with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 12' using 3:4 title "Numerical (y = 420)" with points 1, \
-     '<perl ../mixing/solution.pl -x 1020' using 2:3 title 'Analytic (y = 1020)' with lines 3, \
-     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 27' using 3:4 title "Numerical (y = 1020)" with points 3
+plot '<perl ../mixing/solution.pl -x 420' using 2:3 title 'Analytic (x = 420)' with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 12' using 3:4 title "Numerical (y = 420)" with points ls 1, \
+     '<perl ../mixing/solution.pl -x 1020' using 2:3 title 'Analytic (y = 1020)' with lines ls 3, \
+     '<perl ../../../scripts/mass2slice.pl -i -l plot.nc stuff 1 27' using 3:4 title "Numerical (y = 1020)" with points ls 3

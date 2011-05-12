@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Mon Feb 23 13:14:55 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 07:13:45 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -24,5 +24,5 @@ set mytics
 set pointsize 0.5
 set key 
 
-plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc depth 1 5' using 3:4 title 'Initial Conditions' with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -l -j plot.nc depth 1 5' using 3:4 title 'Steady State' with linespoints 3
+plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc depth 1 5' using 3:4 title 'Initial Conditions' with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -l -j plot.nc depth 1 5' using 3:4 title 'Steady State' with linespoints ls 3

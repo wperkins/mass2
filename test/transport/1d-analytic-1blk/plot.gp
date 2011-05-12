@@ -35,15 +35,15 @@ set nokey
                                 # is 60 time steps, and t = 1800.0 is
                                 # 100 time steps
 
-plot C(x/0.3048, 360.0) title "Analytic Solution" with lines 1, \
-     C(x/0.3048, 1080.0) notitle  with lines 1, \
-     C(x/0.3048, 1800.0) notitle  with lines 1, \
-     C(x/0.3048, 2520.0) notitle  with lines 1, \
-     C(x/0.3048, 3240.0) notitle  with lines 1, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 12 plot.nc stuff 1 6' using ($3*0.3048):4 title 'Simulated' with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 14 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 16 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 18 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 20 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7
+plot C(x/0.3048, 360.0) title "Analytic Solution" with lines ls 1, \
+     C(x/0.3048, 1080.0) notitle  with lines ls 1, \
+     C(x/0.3048, 1800.0) notitle  with lines ls 1, \
+     C(x/0.3048, 2520.0) notitle  with lines ls 1, \
+     C(x/0.3048, 3240.0) notitle  with lines ls 1, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 12 plot.nc stuff 1 6' using ($3*0.3048):4 title 'Simulated' with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 14 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 16 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 18 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 20 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7
 
 
