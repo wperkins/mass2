@@ -10,7 +10,7 @@
 # Last Change: Tue Apr  8 12:34:04 2003 by William A. Perkins <perk@leechong.pnl.gov>
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 TECPLOT = tecplot
 
 EPSFILES = \
