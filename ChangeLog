@@ -1,3 +1,16 @@
+2011-05-15  Perkins  <D3G096@ironhorse.pnl.gov>
+
+	* util/cart_grid/Makefile.am: use $(OBJEXT) instead of .o so
+	things work on Windoze
+
+	* mass2.f90 (mass2): don't use the fptrap module anymore
+
+	* Makefile.am : use $(OBJEXT) instead of .o so things work on
+	Windoze
+
+	* configure.in: use $(OBJEXT) instead of .o so things work on
+	Windoze
+
 2011-05-12  William A. Perkins  <william.perkins@pnl.gov>
 
 	* plot_cgns.f90 (plot_cgns_setup): keep track of the blocks that
