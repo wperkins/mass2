@@ -22,8 +22,8 @@ cartgrid_SOURCES = \
 
 # dependancies for individual object files
 
-cartgrid.o: cartgrid.f90 elevtbl.o
-elevtbl.o: elevtbl.f90
+cartgrid.$(OBJEXT): cartgrid.f90 elevtbl.$(OBJEXT)
+elevtbl.$(OBJEXT): elevtbl.f90
 
 clean-local:
 	rm -f *.$(F90MODULEEXT)
