@@ -35,7 +35,7 @@ AC_SUBST(SOLVERLDFLAGS)
 
                                 # use the internal TDMA solver by default
 SOLVERSRC=solver_tdma.f90
-SOLVEROBJ='solver_tdma.o'
+SOLVEROBJ='solver_tdma.$(OBJEXT)'
 SOLVERFFLAGS=
 SOLVERLDFLAGS=
 

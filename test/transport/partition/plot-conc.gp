@@ -25,5 +25,5 @@ set mytics
 set pointsize 0.5
 set key
 
-plot '<perl ../../../scripts/mass2slice.pl -l -i plot.nc stuff 1 5' using ($3*0.3048):4 title 'Dissolved' with linespoints 1, \
-     '<perl ../../../scripts/mass2slice.pl -l -i plot.nc particulate 1 5' using ($3*0.3048):4 title 'Particulate' with linespoints 2
+plot '<perl ../../../scripts/mass2slice.pl -l -i plot.nc stuff 1 5' using ($3*0.3048):4 title 'Dissolved' with linespoints ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -l -i plot.nc particulate 1 5' using ($3*0.3048):4 title 'Particulate' with linespoints ls 2

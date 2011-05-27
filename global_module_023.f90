@@ -372,8 +372,8 @@ SUBROUTINE velocity_shift()
            block(iblk)%vflux(i,j) = flux2
            block(iblk)%vvel_p(i,j) = 0.5*(flux1+flux2)/block(iblk)%hp1(i,j)/block(iblk)%depth(i,j)
         END DO
-        block(iblk)%vflux(1,j) = block(iblk)%vflux(i,2)
-        block(iblk)%vflux(i,block(iblk)%xmax+1) = block(iblk)%vflux(i,block(iblk)%xmax)
+        block(iblk)%vflux(1,j) = block(iblk)%vflux(2,j)
+        block(iblk)%vflux(block(iblk)%xmax+1,j) = block(iblk)%vflux(block(iblk)%xmax,j)
         ! DO i = 2, block(iblk)%xmax
         !    block(iblk)%vflux(i,j) = fluxsum
         ! END DO

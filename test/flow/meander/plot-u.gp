@@ -42,7 +42,6 @@ set key title ""
 set key right top Right noreverse box linetype -2 linewidth 1.000 samplen 4 spacing 1 width 0
 set nolabel
 set noarrow
-set nolinestyle
 set nologscale
 set offsets 0, 0, 0, 0
 set pointsize 1
@@ -63,15 +62,14 @@ set cntrparam levels auto 5
 set cntrparam points 5
 set size ratio 0 1,1
 set origin 0,0
-set data style points
-set function style lines
+set style data points
+set style function lines
 set xzeroaxis lt -2 lw 1.000
 set x2zeroaxis lt -2 lw 1.000
 set yzeroaxis lt -2 lw 1.000
 set y2zeroaxis lt -2 lw 1.000
 set tics in
 set ticslevel 0.5
-set ticscale 1 0.5
 set mxtics default
 set mytics default
 set mx2tics default
@@ -81,21 +79,21 @@ set ytics border mirror norotate autofreq
 set ztics border nomirror norotate autofreq 
 set nox2tics
 set noy2tics
-set timestamp "" bottom norotate 0.000000,0.000000  ""
+set timestamp "" bottom norotate
 set rrange [ * : * ] noreverse nowriteback  # (currently [-0.00000:10.0000] )
 set trange [ * : * ] noreverse nowriteback  # (currently [-5.00000:5.00000] )
 set urange [ * : * ] noreverse nowriteback  # (currently [-5.00000:5.00000] )
 set vrange [ * : * ] noreverse nowriteback  # (currently [-5.00000:5.00000] )
-set xlabel "y/B" 0.000000,0.000000  ""
-set x2label "" 0.000000,0.000000  ""
+set xlabel "y/B"
+set x2label ""
 set timefmt "%d/%m/%y\n%H:%M"
 set xrange [ -0.500000 : 0.500000 ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
-set ylabel "U/U_{o}" 0.000000,0.000000  ""
-set y2label "" 0.000000,0.000000  ""
+set ylabel "U/U_{o}"
+set y2label ""
 set yrange [ 0 : 1.5 ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
 set y2range [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
-set zlabel "" 0.000000,0.000000  ""
+set zlabel ""
 set zrange [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
 set zero 1e-08
 set lmargin -1
@@ -106,28 +104,28 @@ set locale "C"
 W = 7.677
 U0 = 1.2
 set key left bottom
-set title "Section A" 0.000000,0.000000  ""
+set title "Section A"
 set output 'plot-u-a.eps'
-plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 187' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 187' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines 3, \
-     'observed/meander-vel-a.dat' using 1:2 title "Observed" with points 7
+plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 187' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 187' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines ls 3, \
+     'observed/meander-vel-a.dat' using 1:2 title "Observed" with points ls 7
      
 set nokey
-set title "Section B" 0.000000,0.000000  ""
+set title "Section B"
 set output 'plot-u-b.eps'
-plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 217' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 217' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines 3, \
-     'observed/meander-vel-b.dat' using 1:2 title "Observed" with points 7
+plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 217' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 217' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines ls 3, \
+     'observed/meander-vel-b.dat' using 1:2 title "Observed" with points ls 7
      
-set title "Section C" 0.000000,0.000000  ""
+set title "Section C"
 set output 'plot-u-c.eps'
-plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 126' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 126' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines 3, \
-     'observed/meander-vel-c.dat' using (-$1):2 title "Observed" with points 7
+plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 126' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 126' using (0.5-$3/W):($4/1.2) title "Simulated (Smooth Walls)" with lines ls 3, \
+     'observed/meander-vel-c.dat' using (-$1):2 title "Observed" with points ls 7
      
-set title "Section D" 0.000000,0.000000  ""
+set title "Section D"
 set output 'plot-u-d.eps'
-plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 157' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 157' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines 3, \
-     'observed/meander-vel-d.dat' using (-$1):2 title "Observed" with points 7
+plot '<perl ../../../scripts/mass2slice.pl -j -l plot.rough.nc uvel 1 157' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -j -l plot.slip.nc uvel 1 157' using (0.5-$3/W):($4/1.2) title "Simulated (Rough Walls)" with lines ls 3, \
+     'observed/meander-vel-d.dat' using (-$1):2 title "Observed" with points ls 7
 #    EOF

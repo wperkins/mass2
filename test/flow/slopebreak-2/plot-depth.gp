@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Thu Feb  1 19:18:04 2007 by William A. Perkins <perk@mcperktop.local>
+# Last Change: Wed May 11 07:24:52 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -25,5 +25,5 @@ set xlabel 'Longitudinal Distance, feet'
 set pointsize 0.5
 set key left
 
-plot '<perl ../../../scripts/mass2slice.pl -t 1 -i plot.nc depth 1 5' using 3:4 title 'Initial Conditions' with linespoints 1, \
-     '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc depth 1 5' using 3:4 title 'Steady State' with linespoints 3
+plot '<perl ../../../scripts/mass2slice.pl -t 1 -i plot.nc depth 1 5' using 3:4 title 'Initial Conditions' with linespoints ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc depth 1 5' using 3:4 title 'Steady State' with linespoints ls 3

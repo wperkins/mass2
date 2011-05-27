@@ -4,7 +4,7 @@
 
 PROGRAM mass2
 
-USE fptrap
+! USE fptrap
 USE mass2_main_025
 USE misc_vars
 
@@ -32,7 +32,7 @@ CALL open_new('status.out', utility_status_iounit)
 CALL open_new('error-warning.out', utility_error_iounit)
 CALL open_new('output.out', output_iounit)
 
-CALL fptrap_common()
+! CALL fptrap_common()
 
 CALL read_config()
 

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Fri Dec 17 09:42:48 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Fri May 27 15:03:30 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FFLAGS = $(FCFLAGS)
@@ -70,114 +70,114 @@ solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
 
 # dependancies for individual object files
 
-accumulator.o: accumulator.f90 global_module_023.o scalars_module.o \
-	scalars_source.o misc_vars_module.o bed.o
+accumulator.$(OBJEXT): accumulator.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
+	scalars_source.$(OBJEXT) misc_vars_module.$(OBJEXT) bed.$(OBJEXT)
 
-bed.o: bed.f90 scalars_source.o scalars_module.o global_module_023.o \
-	misc_vars_module.o time_series/libts.a
+bed.$(OBJEXT): bed.f90 scalars_source.$(OBJEXT) scalars_module.$(OBJEXT) global_module_023.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) time_series/libts.a
 
-bed_functions.o: bed_functions.f90 bed.o
+bed_functions.$(OBJEXT): bed_functions.f90 bed.$(OBJEXT)
 
-bed_source.o: bed_source.f90 table_bc_module.o global_module_023.o \
-	misc_vars_module.o time_series/libts.a
+bed_source.$(OBJEXT): bed_source.f90 table_bc_module.$(OBJEXT) global_module_023.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) time_series/libts.a
 
-block_bc_module.o: block_bc_module.f90 table_bc_module.o global_module_023.o \
+block_bc_module.$(OBJEXT): block_bc_module.f90 table_bc_module.$(OBJEXT) global_module_023.$(OBJEXT) \
 	time_series/libts.a
 
-block_flux_output.o: block_flux_output.f90 global_module_023.o 
+block_flux_output.$(OBJEXT): block_flux_output.f90 global_module_023.$(OBJEXT) 
 
-diffenencing.o: differencing.f90
+diffenencing.$(OBJEXT): differencing.f90
 
-energy_flux_module.o: energy_flux_module.f90 constants.o
+energy_flux_module.$(OBJEXT): energy_flux_module.f90 constants.$(OBJEXT)
 
-gage_output_module.o: gage_output_module.f90 global_module_023.o \
-	scalars_module.o gas_functions_module.o  bed.o time_series/libts.a
+gage_output_module.$(OBJEXT): gage_output_module.f90 global_module_023.$(OBJEXT) \
+	scalars_module.$(OBJEXT) gas_functions_module.$(OBJEXT)  bed.$(OBJEXT) time_series/libts.a
 
-gas_coeffs_module.o: gas_coeffs_module.f90
+gas_coeffs_module.$(OBJEXT): gas_coeffs_module.f90
 
-gas_functions_module.o: gas_functions_module.f90 gas_coeffs_module.o
+gas_functions_module.$(OBJEXT): gas_functions_module.f90 gas_coeffs_module.$(OBJEXT)
 
-generic_source.o: generic_source.f90 misc_vars_module.o bed_source.o
+generic_source.$(OBJEXT): generic_source.f90 misc_vars_module.$(OBJEXT) bed_source.$(OBJEXT) constants.$(OBJEXT)
 
-global_module_023.o: global_module_023.f90 constants.o misc_vars_module.o time_series/libts.a
+global_module_023.$(OBJEXT): global_module_023.f90 misc_vars_module.$(OBJEXT) time_series/libts.a
 
-hydro_solve.o: hydro_solve.f90  global_module_023.f90 misc_vars_module.o\
-	 differencing.o $(SOLVEROBJ)
+hydro_solve.$(OBJEXT): hydro_solve.f90  global_module_023.f90 misc_vars_module.$(OBJEXT)\
+	 differencing.$(OBJEXT) $(SOLVEROBJ)
 
-io_routines_module.o: io_routines_module.f90
+io_routines_module.$(OBJEXT): io_routines_module.f90
 
-mass2_main_025.o: mass2_main_025.f90 \
-	global_module_023.o io_routines_module.o block_bc_module.o table_bc_module.o \
-	 scalars_module.o met_data_module.o energy_flux_module.o \
-	gas_functions_module.o plot_output.o gage_output_module.o misc_vars_module.o \
-	transport_only_module.o scalars_source.o bed.o accumulator.o scalar_mass_balance.o \
-	differencing.o block_flux_output.o $(SOLVEROBJ)
+mass2_main_025.$(OBJEXT): mass2_main_025.f90 \
+	global_module_023.$(OBJEXT) io_routines_module.$(OBJEXT) block_bc_module.$(OBJEXT) table_bc_module.$(OBJEXT) \
+	 scalars_module.$(OBJEXT) met_data_module.$(OBJEXT) energy_flux_module.$(OBJEXT) \
+	gas_functions_module.$(OBJEXT) plot_output.$(OBJEXT) gage_output_module.$(OBJEXT) misc_vars_module.$(OBJEXT) \
+	transport_only_module.$(OBJEXT) scalars_source.$(OBJEXT) bed.$(OBJEXT) accumulator.$(OBJEXT) scalar_mass_balance.$(OBJEXT) \
+	differencing.$(OBJEXT) block_flux_output.$(OBJEXT) $(SOLVEROBJ)
 
-mass2.o: mass2.f90 mass2_main_025.o
+mass2.$(OBJEXT): mass2.f90 mass2_main_025.$(OBJEXT)
 
-misc_vars_module.o: misc_vars_module.f90 
+misc_vars_module.$(OBJEXT): misc_vars_module.f90 
 
-met_data_module.o: met_data_module.f90 table_bc_module.o 
+met_data_module.$(OBJEXT): met_data_module.f90 table_bc_module.$(OBJEXT) 
 
-netcdferror.o: netcdferror.f90
+netcdferror.$(OBJEXT): netcdferror.f90
 
-particulate_source.o: particulate_source.f90 \
-	global_module_023.o scalars_module.o misc_vars_module.o bed_functions.inc \
+particulate_source.$(OBJEXT): particulate_source.f90 \
+	global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) misc_vars_module.$(OBJEXT) bed_functions.inc \
 	time_series/libts.a
 
-plot_cgns.o: plot_cgns.f90 global_module_023.o scalars_module.o \
-	scalars_source.o bed.o misc_vars_module.o accumulator.o \
-	gas_functions_module.o bed.o time_series/libts.a
+plot_cgns.$(OBJEXT): plot_cgns.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
+	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
+	gas_functions_module.$(OBJEXT) bed.$(OBJEXT) block_bc_module.$(OBJEXT) time_series/libts.a
 
-plot_netcdf.o: plot_netcdf.f90 global_module_023.o scalars_module.o \
-	scalars_source.o bed.o misc_vars_module.o accumulator.o \
-	gas_functions_module.o bed.o
+plot_netcdf.$(OBJEXT): plot_netcdf.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
+	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
+	gas_functions_module.$(OBJEXT) bed.$(OBJEXT)
 
-plot_output.o: plot_output.f90 global_module_023.o scalars_module.o \
-	scalars_source.o bed.o misc_vars_module.o accumulator.o \
-	gas_functions_module.o plot_cgns.o plot_netcdf.o
+plot_output.$(OBJEXT): plot_output.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
+	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
+	gas_functions_module.$(OBJEXT) plot_cgns.$(OBJEXT) plot_netcdf.$(OBJEXT)
 
-profile_init.o: profile_init.f90 global_module_023.o misc_vars_module.o \
+profile_init.$(OBJEXT): profile_init.f90 global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) \
 	time_series/libts.a
 
-scalar_mass_balance.o: scalar_mass_balance.f90 global_module_023.o \
-	scalars_source.o bed.o time_series/libts.a
+scalar_mass_balance.$(OBJEXT): scalar_mass_balance.f90 global_module_023.$(OBJEXT) \
+	scalars_source.$(OBJEXT) bed.$(OBJEXT) time_series/libts.a
 
-scalar_solve.o: scalar_solve.f90 global_module_023.o misc_vars_module.o \
-	scalars_module.o $(SOLVEROBJ) differencing.o
+scalar_solve.$(OBJEXT): scalar_solve.f90 global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) \
+	scalars_module.$(OBJEXT) $(SOLVEROBJ) differencing.$(OBJEXT)
 
-scalars_module.o: scalars_module.f90 misc_vars_module.o time_series/libts.a
+scalars_module.$(OBJEXT): scalars_module.f90 misc_vars_module.$(OBJEXT) time_series/libts.a
 
-scalars_source.o: scalars_source.f90 temperature_source.o misc_vars_module.o \
-	tdg_source.o generic_source.o scalars_module.o met_data_module.o \
-	sediment_source.o particulate_source.o differencing.o time_series/libts.a 
+scalars_source.$(OBJEXT): scalars_source.f90 temperature_source.$(OBJEXT) misc_vars_module.$(OBJEXT) \
+	tdg_source.$(OBJEXT) generic_source.$(OBJEXT) scalars_module.$(OBJEXT) met_data_module.$(OBJEXT) \
+	sediment_source.$(OBJEXT) particulate_source.$(OBJEXT) differencing.$(OBJEXT) time_series/libts.a 
 
-sediment_source.o: sediment_source.f90 global_module_023.o scalars_module.o \
-	misc_vars_module.o time_series/libts.a
+sediment_source.$(OBJEXT): sediment_source.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) time_series/libts.a
 
-solver_aztec.o: solver_aztec.f90 solver_common.o
+solver_aztec.$(OBJEXT): solver_aztec.f90 solver_common.$(OBJEXT)
 
-solver_common.o: solver_common.f90
+solver_common.$(OBJEXT): solver_common.f90
 
-solver_sixpack.o: solver_sixpack.f90 solver_common.o
+solver_sixpack.$(OBJEXT): solver_sixpack.f90 solver_common.$(OBJEXT)
 
-solver_tdma.o: solver_tdma.f90 solver_common.o
+solver_tdma.$(OBJEXT): solver_tdma.f90 solver_common.$(OBJEXT)
 
-solver_test.o: solver_test.f90 $(SOLVEROBJ)
+solver_test.$(OBJEXT): solver_test.f90 $(SOLVEROBJ)
 
-table_bc_module.o: table_bc_module.f90  time_series/libts.a
+table_bc_module.$(OBJEXT): table_bc_module.f90  time_series/libts.a
 
-tdg_source.o: tdg_source.f90 misc_vars_module.o gas_functions_module.o \
-	met_data_module.o time_series/libts.a
+tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) gas_functions_module.$(OBJEXT) \
+	met_data_module.$(OBJEXT) time_series/libts.a
 
-temperature_source.o: temperature_source.f90 met_data_module.o \
-	misc_vars_module.o energy_flux_module.o global_module_023.o \
+temperature_source.$(OBJEXT): temperature_source.f90 met_data_module.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) energy_flux_module.$(OBJEXT) global_module_023.$(OBJEXT) \
 	time_series/libts.a
 
-total_conc.o: total_conc.f90 scalars_source.o
+total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 
-transport_only_module.o: transport_only_module.f90  \
-	global_module_023.o misc_vars_module.o time_series/libts.a
+transport_only_module.$(OBJEXT): transport_only_module.f90  \
+	global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) time_series/libts.a
 
 clean-local:
 	rm -f *.$(F90MODULEEXT)

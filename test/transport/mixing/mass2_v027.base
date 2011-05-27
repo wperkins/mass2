@@ -19,14 +19,14 @@ T F         ! initial: w.s. elev or depth, profile
 5           ! scalar iterations
 2           ! inner iterations for scalars
 50          ! inner iterations for depth correction
-0.20001 F   ! eddy viscosity
+0.20001 F F 0.7   ! eddy viscosity
 3.00001 F   ! diffusion coeff in xsi (ft^2/sec)
 3.00000 F   ! diffusion coeff in eta (ft^2/sec)
 0.026 F     ! manning n value if manning=TRUE
 1.49        ! constant in the bed shear stress
 0.40        ! relaxation factor for depth corrections
 1.0         ! relaxation factor for u/v momentum
-1.0 1.0     ! spatial, temporal discretization scheme blending factor
+CDS 1.0 1.0     ! spatial, temporal discretization scheme blending factor
 0.2         ! initial uniform value of u velocity
 0.0         ! initial uniform value of v velocity
 0.0         ! initial uniform value of concentration                        

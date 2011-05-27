@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January  2, 2004 by William A. Perkins
-# Last Change: Wed Jan  7 09:35:42 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 11:37:20 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -20,7 +20,7 @@ set xrange [0:1000]
 set yrange [0:*]
 
 
-plot "<perl ../../../scripts/mass2slice.pl -i plot.nc zbot 1 26" using ($3*0.3048):($4*0.3048) title "Bottom" with lines 7, \
-     "<perl ../../../scripts/mass2slice.pl -i -l plot.nc wsel 1 26" using ($3*0.3048):($4*0.3048) title "Simulated" with lines 3, \
-     '<perl mkgrid.pl -s' using ($1*0.3048):($5*0.3048) title "Analytic" with lines 1
+plot "<perl ../../../scripts/mass2slice.pl -i plot.nc zbot 1 26" using ($3*0.3048):($4*0.3048) title "Bottom" with lines ls 7, \
+     "<perl ../../../scripts/mass2slice.pl -i -l plot.nc wsel 1 26" using ($3*0.3048):($4*0.3048) title "Simulated" with lines ls 3, \
+     '<perl mkgrid.pl -s' using ($1*0.3048):($5*0.3048) title "Analytic" with lines ls 1
      

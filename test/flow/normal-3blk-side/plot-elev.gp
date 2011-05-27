@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Tue Mar 16 08:58:06 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Wed May 11 07:19:53 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -21,11 +21,11 @@ set xlabel 'Longitudinal Distance, feet'
 # set grid x
 set mytics
 set pointsize 0.5
-set key screen 0.8, 0.4
+set key at screen 0.8, 0.4
 
 set arrow from first 4000, graph 0.0 to first 4000, graph 1.0 nohead lt 0 
 set arrow from first 6000, graph 0.0 to first 6000, graph 1.0 nohead lt 0 
 
-plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc wsel 1 5 2 10 3 5' using 3:4 title 'Initial Conditions' with linespoints 1, \
-     '<perl ../../../scripts/mass2slice.pl -l -j plot.nc wsel 1 5 2 10 3 5' using 3:4 title 'Steady State' with linespoints 3, \
-     '<perl ../../../scripts/mass2slice.pl -j plot.nc zbot 1 5 2 10 3 5' using 3:4 title 'Bottom' with lines 7
+plot '<perl ../../../scripts/mass2slice.pl -t 1 -j plot.nc wsel 1 5 2 10 3 5' using 3:4 title 'Initial Conditions' with linespoints ls 1, \
+     '<perl ../../../scripts/mass2slice.pl -l -j plot.nc wsel 1 5 2 10 3 5' using 3:4 title 'Steady State' with linespoints ls 3, \
+     '<perl ../../../scripts/mass2slice.pl -j plot.nc zbot 1 5 2 10 3 5' using 3:4 title 'Bottom' with lines ls 7

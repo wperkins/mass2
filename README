@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Aug 19 08:21:33 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Fri May 27 15:03:30 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -241,6 +241,15 @@ On mac laptop:
         --enable-f90-debug \
         --enable-f90-optimize
 
+On PE10900:
+
+    setenv FCFLAGS "-g"
+    configure \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-f90=gfortran-mp-4.3 \
+        --with-extra-f90flags="-fno-second-underscore -ffpe-trap=invalid,zero,overflow"
+
 
 On bearflag:
 
@@ -257,8 +266,11 @@ On bearflag:
     
 
     sh bootstrap.sh
+
     source /usr/software/intel101/x86_64/bin/ifortvars.csh
-    setenv FCFLAGS ""
+    setenv FC ifort
+    setenv FCFLAGS "-g -fpe1"
+    setenv FCFLAGS "-O2 -fpe1"
     configure \
         --with-f90=ifort \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \

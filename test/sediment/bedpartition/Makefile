@@ -7,10 +7,10 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 19, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 13:38:05 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: Mon May 16 11:24:35 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MODEL = ../../../mass2
 
 EPSFILES = \
 	plot-mass.eps

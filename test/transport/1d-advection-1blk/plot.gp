@@ -28,11 +28,11 @@ set pointsize 0.5
 # set timestamp
 set nokey
 
-plot C(24*60 - x/0.3048/u,Tp) title 'Advected BC' with lines 1, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 8 plot.nc stuff 1 6' using ($3*0.3048):4 title 'Simulated' with points 7, \
-     C(48*60 - x/0.3048/u,Tp) notitle with lines 1, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 10 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7, \
-     C(72*60 - x/0.3048/u,Tp) notitle with lines 1, \
-     '< perl ../../../scripts/mass2slice.pl -i -t 12 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points 7
+plot C(24*60 - x/0.3048/u,Tp) title 'Advected BC' with lines ls 1, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 8 plot.nc stuff 1 6' using ($3*0.3048):4 title 'Simulated' with points ls 7, \
+     C(48*60 - x/0.3048/u,Tp) notitle with lines ls 1, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 10 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7, \
+     C(72*60 - x/0.3048/u,Tp) notitle with lines ls 1, \
+     '< perl ../../../scripts/mass2slice.pl -i -t 12 plot.nc stuff 1 6' using ($3*0.3048):4 notitle with points ls 7
 
 
