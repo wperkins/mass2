@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Fri May  6 13:12:39 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Fri May 27 14:39:29 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -706,6 +706,11 @@ CONTAINS
                   &scalar_source(ispecies)%conversion) 
 
              SELECT CASE(scalar_source(ispecies)%srctype)
+             CASE(TEMP)
+                CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                     &accum_block(iblock)%temp%evaporation%sum, &
+                     &"EvaporationRate",  'Evaporation Rate', "in/day") 
+                
              CASE (TDG)
                                 ! TDG pressure
 

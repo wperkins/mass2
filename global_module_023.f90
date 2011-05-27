@@ -25,6 +25,7 @@
 MODULE globals
 
 USE utility
+USE constants
 
 IMPLICIT NONE
 
@@ -34,12 +35,6 @@ INTEGER  :: max_blocks
 
 INTEGER :: status
 
-DOUBLE PRECISION, PARAMETER :: grav = 32.2, tiny = 1.0D-100
-DOUBLE PRECISION, PARAMETER :: density = 1.94
-DOUBLE PRECISION, PARAMETER :: density_air = 0.00237  ! 60 degrees F
-DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
-DOUBLE PRECISION, PARAMETER :: vonkarmon = 0.4
-DOUBLE PRECISION, PARAMETER :: viscosity_water = 1.22e-05 ! ft^2/s @ 60F
 
                                 ! a list of cell types
 
@@ -152,6 +147,7 @@ TYPE block_struct
   LOGICAL, POINTER :: isdry(:,:)
 
   DOUBLE PRECISION, POINTER :: xsource(:,:)
+  DOUBLE PRECISION, POINTER :: evaporation(:,:) ! Evaporation rate, ft/s
 
 END TYPE block_struct
 
@@ -312,6 +308,7 @@ SUBROUTINE allocate_block_components(n, status_iounit)
   block(n)%isdry = .FALSE.
 
   ALLOCATE(block(n)%xsource(imin:imax, jmin:jmax))
+  ALLOCATE(block(n)%evaporation(imin:imax, jmin:jmax))
 
   block(n)%xsource = 0.0
 

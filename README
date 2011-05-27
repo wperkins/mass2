@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Sun May 15 08:42:35 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Fri May 27 14:43:11 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -266,8 +266,10 @@ On bearflag:
     
 
     sh bootstrap.sh
-    set path = ( /usr/software/intel101/x86_64/bin $path)
+
+    source /usr/software/intel101/x86_64/bin/ifortvars.csh
     setenv FC ifort
+    setenv FCFLAGS "-g -fpe1"
     setenv FCFLAGS "-O2 -fpe1"
     configure \
         --with-f90=ifort \

@@ -123,6 +123,43 @@
 	* block_bc_module.f90 (set_bc_part): fixed wrong file name in
 	error messages 
 
+2009-09-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* gage_output_module.f90 (gage_read_control) 
+	(gage_file_setup_text, gage_print_text, gage_file_close): make
+	flushing of text output optional
+
+2009-08-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* test/temperature/pond/Makefile (EPSFILES): make a picture of
+	evaporation too
+
+	* test/temperature/pond/mass2_v027.cfg: turn on plot output for testing
+
+	* accumulator.f90 (accumulator, accum_initialize, accum_reset)
+	(accumulate, accum_calc): accumulate computed evaporation rate
+
+	* gage_output_module.f90 (gage_print_text, gage_file_header)
+	(gage_file_setup_netcdf, gage_print_netcdf): output computed
+	evaporation rate
+
+	* plot_cgns.f90 (plot_cgns_write): output computed evaporation
+	rate 
+
+	* global_module_023.f90 (globals): move some constants to
+	constants.f90 
+
+	* mass2_main_025.f90 (update): calculate evaporation rate if
+	called for
+
+	* temperature_source.f90 (evaporation_rate): computes water
+	evaporation rate from the energy term
+	(temperature_source_rec): add storage for evaporation
+
+	* energy_flux_module.f90 (latent_heat): add function
+
+	* Makefile.am (mass2_SOURCES): add constants.f90
+
 2009-07-17  William A. Perkins  <william.perkins@pnl.gov>
 
 	* test/flow/spur-dike-1/streamlines-metric.lay: draw the x-velocity

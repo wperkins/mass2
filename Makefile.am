@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Wed May  4 11:32:01 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Fri May 27 14:59:32 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FFLAGS = $(FCFLAGS)
@@ -18,6 +18,7 @@ bin_PROGRAMS = mass2
 check_PROGRAMS = solver_test
 
 mass2_SOURCES =					\
+     constants.f90				\
      gas_coeffs_module.f90			\
      gas_functions_module.f90			\
      scalars_module.f90				\
@@ -87,7 +88,7 @@ block_flux_output.$(OBJEXT): block_flux_output.f90 global_module_023.$(OBJEXT)
 
 diffenencing.$(OBJEXT): differencing.f90
 
-energy_flux_module.$(OBJEXT): energy_flux_module.f90
+energy_flux_module.$(OBJEXT): energy_flux_module.f90 constants.$(OBJEXT)
 
 gage_output_module.$(OBJEXT): gage_output_module.f90 global_module_023.$(OBJEXT) \
 	scalars_module.$(OBJEXT) gas_functions_module.$(OBJEXT)  bed.$(OBJEXT) time_series/libts.a
@@ -96,7 +97,7 @@ gas_coeffs_module.$(OBJEXT): gas_coeffs_module.f90
 
 gas_functions_module.$(OBJEXT): gas_functions_module.f90 gas_coeffs_module.$(OBJEXT)
 
-generic_source.$(OBJEXT): generic_source.f90 misc_vars_module.$(OBJEXT) bed_source.$(OBJEXT)
+generic_source.$(OBJEXT): generic_source.f90 misc_vars_module.$(OBJEXT) bed_source.$(OBJEXT) constants.$(OBJEXT)
 
 global_module_023.$(OBJEXT): global_module_023.f90 misc_vars_module.$(OBJEXT) time_series/libts.a
 
@@ -170,7 +171,8 @@ tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) gas_functions_mo
 	met_data_module.$(OBJEXT) time_series/libts.a
 
 temperature_source.$(OBJEXT): temperature_source.f90 met_data_module.$(OBJEXT) \
-	misc_vars_module.$(OBJEXT) energy_flux_module.$(OBJEXT) time_series/libts.a
+	misc_vars_module.$(OBJEXT) energy_flux_module.$(OBJEXT) global_module_023.$(OBJEXT) \
+	time_series/libts.a
 
 total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 
