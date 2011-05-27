@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Mar 21 13:17:34 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Thu May  5 08:21:57 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -36,7 +36,6 @@ MODULE plot_cgns
   INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_cgns_name = "grid.cgns"
-  LOGICAL, PRIVATE, PARAMETER :: do2D = .FALSE.
   INTEGER, PRIVATE :: pfileidx
   INTEGER, PRIVATE :: pbaseidx
   CHARACTER (LEN=1024), PRIVATE :: plot_file_name
@@ -50,6 +49,12 @@ MODULE plot_cgns
 
   INTEGER, PRIVATE :: plot_cgns_outstep = 0
   DOUBLE PRECISION, PRIVATE :: plot_cgns_start_time = -1
+
+                                ! If 2D, the resulting CGNS file has 2
+                                ! physical dimension and bottom
+                                ! elevation is not output
+
+  LOGICAL, PRIVATE, PARAMETER :: do2D = .TRUE.
 
 CONTAINS
 
@@ -173,6 +178,9 @@ CONTAINS
 
     DO iblock = 1, max_blocks
        CALL plot_cgns_write_grid(fileidx, baseidx, block(iblock), iblock, docoord, zoneidx)
+       IF (docoord) THEN
+          CALL plot_cgns_write_bc(fileidx, baseidx, zoneidx,  block(iblock), iblock)
+       END IF
     END DO
 
 
@@ -243,8 +251,8 @@ CONTAINS
        END IF
 
        
-       ! CALL cg_discrete_write_f(fileidx, baseidx, zoneidx, "GridMetrics", ddataidx, ierr)
-       
+!!$       CALL cg_discrete_write_f(fileidx, baseidx, zoneidx, "GridMetrics", ddataidx, ierr)
+!!$       
 !!$       CALL block_collect(blk, blk%bv_hp1)
 !!$       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "hp1", &
 !!$            &blk%buffer(1:size(1), 1:size(2)))
@@ -394,14 +402,127 @@ CONTAINS
        CALL cg_link_write_f('GridCoordinates', grid_cgns_name, buffer, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
             &"cannot link to grid coordinates path: " // buffer, fatal=.TRUE.)
-       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
-       CALL cg_link_write_f('GridMetrics', grid_cgns_name, buffer, ierr)
+!!$       WRITE(buffer, '("MASS2/Block", I2.2, "/GridMetrics")') zoneidx
+!!$       CALL cg_link_write_f('GridMetrics', grid_cgns_name, buffer, ierr)
+!!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+!!$            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
+
+       WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneBC")') zoneidx
+       CALL cg_link_write_f('ZoneBC', grid_cgns_name, buffer, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
+            &"cannot link to zone bc: " // buffer, fatal=.TRUE.)
+
+       IF (nzones .GT. 1) THEN
+          WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneGridConnectivity")') zoneidx
+          CALL cg_link_write_f('ZoneGridConnectivity', grid_cgns_name, buffer, ierr)
+          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+               &"cannot link to zone connection path: " // buffer, fatal=.TRUE.)
+       END IF
+
        
     END DO
   END SUBROUTINE plot_cgns_link_coord
 
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE plot_cgns_write_all_bc
+  ! ----------------------------------------------------------------
+  SUBROUTINE plot_cgns_write_bc(fileidx, baseidx, zoneidx, blk, iblock)
+
+    USE block_hydro_bc
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: fileidx, baseidx, zoneidx, iblock
+    TYPE (block_struct), INTENT(IN) :: blk
+    INTEGER :: b
+
+    INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: p, ierr, pts(2,2), bctype, bcidx
+    LOGICAL :: isconn
+
+    CHARACTER (LEN=32) :: bcname, dname
+    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_bc"
+
+    DO b = 1, block_bc(iblock)%num_bc
+
+       ! indexes used for BC's are vertex based
+       
+       imin = 1
+       jmin = 1
+       IF (plot_cgns_docell) THEN
+          imax = blk%xmax
+          jmax = blk%ymax
+       ELSE
+          imax = blk%xmax + 1
+          jmax = blk%ymax + 1
+       END IF
+       
+       SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_loc)
+       CASE ("US")
+          imax = imin
+       CASE ("DS")
+          imin = imax
+       CASE ("LB")
+          jmax = jmin
+       CASE ("RB")
+          jmin = jmax
+       CASE DEFAULT
+          CONTINUE
+       END SELECT
+
+       isconn = (block_bc(iblock)%bc_spec(b)%bc_type .EQ. "BLOCK")
+
+       IF (.NOT. isconn) THEN
+          SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_kind)
+          CASE ("FLUX", "VELO", "UVEL", "VVEL", "ELEVELO")
+             bctype = BCInflow
+          CASE ("ELEV")
+             bctype = BCOutflow
+          CASE DEFAULT
+             CONTINUE
+          END SELECT
+       END IF
+
+       DO p = 1, block_bc(iblock)%bc_spec(b)%num_cell_pairs
+
+          SELECT CASE (block_bc(iblock)%bc_spec(b)%bc_loc)
+          CASE ("US", "DS")
+             jmin = block_bc(iblock)%bc_spec(b)%start_cell(p)
+             jmax = block_bc(iblock)%bc_spec(b)%end_cell(p) + 1
+          CASE ("LB", "RB")
+             imin = block_bc(iblock)%bc_spec(b)%start_cell(p)
+             imax = block_bc(iblock)%bc_spec(b)%end_cell(p) + 1
+          END SELECT
+          
+          pts(1,1) = imin
+          pts(2,1) = jmin
+          pts(1,2) = imax
+          pts(2,2) = jmax
+          
+          ierr = 0
+          IF (isconn) THEN
+             WRITE(bcname, '("CONN", I2.2, ".", I2.2)') b, p
+             WRITE(dname, '("Block", I2.2)') &
+                  &block_bc(iblock)%bc_spec(b)%con_block
+             CALL cg_conn_write_short_f(fileidx, baseidx, zoneidx, bcname, &
+                  &Vertex, Abutting1to1, PointRange, 2, pts, dname, bcidx, ierr)
+             ! CALL cg_conn_write_f(fileidx, baseidx, zoneidx, bcname, &
+             !      &Vertex, Abutting1to1, PointRange, 2, pts, &
+             !      &dname, Structured, PointRangeDonor, Integer, 2, pts, bcidx, ierr)
+          ELSE 
+             WRITE(bcname, '("BC", I2.2, ".", I2.2)') b, p
+             CALL cg_boco_write_f(fileidx, baseidx, zoneidx, bcname, bctype, &
+                  &PointRange, 2, pts, bcidx, ierr)
+          END IF
+          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+               &"cannot write bc", fatal=.TRUE.)
+          
+       END DO
+    END DO
+  
+
+  END SUBROUTINE plot_cgns_write_bc
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE plot_print_cgns
