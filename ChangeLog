@@ -1,3 +1,10 @@
+2011-05-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* plot_cgns.f90 (plot_cgns_write_bc): write BC's to output
+	(plot_cgns_link_coord): link to BC's but not to	GridMetrics 
+	(plot_cgns_file_setup): write BC's to grid file
+	(plot_cgns): It appears that a 2D CGNS file is best
+
 2011-04-19  William A. Perkins  <william.perkins@pnl.gov>
 
 	* profile_init.f90: put routines in a module and make it parallel 
