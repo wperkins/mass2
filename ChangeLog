@@ -1,5 +1,7 @@
 2011-07-05  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* Makefile.mpi: minor compilation flag changes
+
 	* block_bc_module.f90 (read_scalar_bcspecs): make sure x_start is
 	initialized
 
