@@ -1,3 +1,14 @@
+2011-07-05  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* block_bc_module.f90 (read_scalar_bcspecs): make sure x_start is
+	initialized
+
+	* scalar_bc.f90 (read_scalar_bcspecs): make sure x_start is
+	initialized 
+
+	* scalar_solve.f90 (apply_scalar_source): make sure source term is
+	zero when cell is dead
+
 2011-05-06  William A. Perkins  <william.perkins@pnl.gov>
 
 	* plot_cgns.f90 (plot_cgns_write_bc): write BC's to output

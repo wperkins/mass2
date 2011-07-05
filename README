@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Mon Jan  3 06:18:00 2011 by William A. Perkins <d3g096@PE10588.pnl.gov>
+Last Change: Tue Jun  7 15:15:40 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -237,6 +237,20 @@ On mac laptop:
         --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
         --with-f90=g95
 
+On PE10900:
+
+    setenv FC "gfortran-mp-4.3"
+    setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
+    configure \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/usr/unsupported/CGNSLib
+
+    setenv FC "ifort"
+    setenv FCFLAGS "-g -CB -fpe1"
+    setenv FCFLAGS "-O3 -fpe0"
+    configure \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/usr/unsupported/CGNSLib
 
 On bearflag:
 
@@ -254,7 +268,9 @@ On bearflag:
 
     sh bootstrap.sh
     set path = ( /usr/software/intel101/x86_64/bin $path)
-    setenv FCFLAGS ""
+    setenv FC "ifort"
+    setenv FCFLAGS "-g -fpe1 -CB"
+    setenv FCFLAGS "-O3 -fpe0"
     configure \
         --with-f90=ifort \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
