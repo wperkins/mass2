@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Thu May  5 08:21:57 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Tue Jul  5 10:45:11 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -671,6 +671,12 @@ CONTAINS
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridFluxEta', 'Lateral Flux', 'feet^3/second')
+
+             
+             CALL block_collect(block(iblock), block(iblock)%bv_mass_source)
+             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                  &block(iblock)%buffer, &
+                  &'MassSource', 'Mass Imbalance', 'feet^3/second')
 
           END IF
 
