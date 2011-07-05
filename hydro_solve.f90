@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Wed Mar 16 13:43:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jul  5 11:53:11 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -1247,6 +1247,7 @@ CONTAINS
     CALL block_var_put(blk%bv_dp)
     CALL block_var_put(blk%bv_depth)
     CALL block_var_put(blk%bv_wsel)
+    CALL block_var_put(blk%bv_mass_source)
     CALL ga_sync()
     CALL block_var_get(blk%bv_dp)
     CALL block_var_get(blk%bv_depth)
