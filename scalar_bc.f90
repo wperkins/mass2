@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 20, 2011 by William A. Perkins
-! Last Change: Wed Feb 16 10:29:47 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jun  7 15:13:04 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE scalar_bc_module
@@ -201,6 +201,7 @@ CONTAINS
              CALL error_message(msg, fatal=.FALSE.)
 
           CASE("TABLE")
+             x_start = 1
              SELECT CASE(bc_extent)
              CASE("ALL")
                 READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start

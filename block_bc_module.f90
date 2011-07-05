@@ -805,6 +805,7 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
         CASE("TABLE")
            SELECT CASE(bc_extent)
            CASE("ALL")
+              x_start = 1
               READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start
               table_count = table_count + 1 ! keep a running count of the number of tables
               scalar_bc(block)%bc_spec(num_bc)%table_num = table_count
@@ -814,6 +815,7 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
               scalar_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
               scalar_bc(block)%bc_spec(num_bc)%end_cell(1) = maxidx
            CASE("PART")
+              x_start = 1
               cells = -999
               READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,x_start,cells(:)
               table_count = table_count + 1 ! keep a running count of the number of tables
