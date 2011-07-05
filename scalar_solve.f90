@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Wed Feb 16 15:31:41 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Jun 14 14:26:58 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -624,6 +624,8 @@ CONTAINS
                   &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                   &t_water, salinity)
              src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+          ELSE 
+             src = 0.0
           END IF
 
           species(ispecies)%scalar(iblock)%srcterm(i,j) = src
