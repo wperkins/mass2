@@ -1,5 +1,8 @@
 2011-07-05  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* plot_cgns.f90 (plot_cgns_write): output mass_source with other
+	flow diagnostics
+
 	* Makefile.mpi: minor compilation flag changes
 
 	* block_bc_module.f90 (read_scalar_bcspecs): make sure x_start is
