@@ -1,3 +1,8 @@
+2011-07-19  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* solver_petsc.F90 (solver_initialize_block): report what solver
+	and pre-conditioner were used.
+
 2011-07-05  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* hydro_solve.f90 (depth_solve): put computed mass source after
