@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Fri Feb 25 10:26:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Thu Jul 14 13:57:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -149,7 +149,7 @@ CONTAINS
     INTEGER :: ieq, its
     INTEGER :: i, j, idx
     CHARACTER (LEN=10) :: prefix
-    CHARACTER (LEN=1024) :: buf
+    CHARACTER (LEN=1024) :: buf, buf1
     LOGICAL :: build
 
     KSP :: subksp
@@ -189,9 +189,25 @@ CONTAINS
           build = do_transport
        END SELECT
 
+       ! create a solver context for this
+       ! block and equation. The options are
+       ! renamed with a prefix of either
+       ! 'scalar' or 'depth'.  
+       
+       SELECT CASE (ieq)
+       CASE (SOLVE_DP)
+          prefix = 'depth_'
+          its = depth_sweep
+          rtol = depth_rtol
+          atol = depth_atol
+       CASE DEFAULT
+          prefix = 'scalar_'
+          its = scalar_sweep
+          rtol = scalar_rtol
+          atol = scalar_atol
+       END SELECT
+
        IF (build) THEN 
-          WRITE (*,*) 'Solver Initialize, Block ', iblock, &
-               &', equation ', ieq, ', local size = ', pinfo(iblock)%nlocal
 
           ! create a coefficient matrix of
           ! appropriate size for this block and
@@ -268,25 +284,6 @@ CONTAINS
           CHKERRQ(ierr)
 
 
-          ! create a solver context for this
-          ! block and equation. The options are
-          ! renamed with a prefix of either
-          ! 'scalar' or 'depth'.  
-
-          SELECT CASE (ieq)
-          CASE (SOLVE_DP)
-             prefix = 'depth_'
-             its = depth_sweep
-             rtol = depth_rtol
-             atol = depth_atol
-          CASE DEFAULT
-             prefix = 'scalar_'
-             its = scalar_sweep
-             rtol = scalar_rtol
-             atol = scalar_atol
-          END SELECT
-
-
           CALL KSPCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
           CHKERRQ(ierr)
           CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
@@ -313,6 +310,18 @@ CONTAINS
           ! (does PC and KSP too)
           CALL KSPSetFromOptions(pinfo(iblock)%eq(ieq)%ksp, ierr)
           CHKERRQ(ierr)
+
+          ! report what methods were actually used
+          
+          CALL KSPGetType(pinfo(iblock)%eq(ieq)%ksp, buf, ierr)
+          CHKERRQ(ierr)
+          CALL PCGetType(pc, buf1, ierr)
+          CHKERRQ(ierr)
+
+          WRITE (*,*) 'Solver Initialize, Block ', iblock, &
+               &', equation ', ieq, '(', TRIM(prefix), &
+               &'), local size = ', pinfo(iblock)%nlocal, &
+               &', KSP = ', TRIM(buf), ', PC = ', TRIM(buf1)
 
           pinfo(iblock)%eq(ieq)%built = .TRUE.
 
