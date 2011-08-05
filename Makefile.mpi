@@ -73,10 +73,12 @@ GA = /share/apps/ga/5.0.1/intel
 GA_LIB = -libverbs -llapack -lblas 
 CGNS_FCFLAGS = -I/home/d3g096/stuff/include
 CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns -lhdf5 -lsz -lz
-# PETSC_DIR defined by environment variable
-# PETSC_ARCH defined by environment variable
-PETSC_LIB = -lX11
+PETSC_DIR = /home/d3g096/stuff/src/petsc-3.1-p7
+PETSC_ARCH = linux-gnu-c-opt
+PETSC_LIB = -lHYPRE -lX11
 FCPP_FLAG = -fpp
+DBFLAGS = -g
+OPTFLAGS = -O2 -fpe1
 
 endif
 
