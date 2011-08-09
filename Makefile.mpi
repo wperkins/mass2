@@ -61,8 +61,8 @@ PETSC_DIR = /usr/local/openmpi-intel
 PETSC_ARCH =
 PETSC_LIB =
 FCPP_FLAG = -fpp
-DBFLAGS = -g -CB -fpe1
-OPTFLAGS = -O3 -fpe0
+DBFLAGS = -g -CB -fpe1 -heap-arrays
+OPTFLAGS = -O2 -fpe0 -heap-arrays
 
 endif
 
@@ -90,12 +90,12 @@ GA = /share/apps/ga/5.0.1/intel
 GA_LIB = -libverbs -llapack -lblas 
 CGNS_FCFLAGS = -I/home/d3g096/stuff/include
 CGNS_FLIBS = -L/home/d3g096/stuff/lib -lcgns 
-# PETSC_DIR defined by environment variable
-# PETSC_ARCH defined by environment variable
-PETSC_LIB = -lX11
+PETSC_DIR = /home/d3g096/stuff/src/petsc-3.1-p7
+PETSC_ARCH = linux-gnu-c-opt
+PETSC_LIB = -lHYPRE
 FCPP_FLAG = -fpp
-DBFLAGS = -g
-OPTFLAGS = -O2 -fpe1
+DBFLAGS = -g -fpe1
+OPTFLAGS = -O2 -fpe0 -heap-arrays
 
 
 endif
