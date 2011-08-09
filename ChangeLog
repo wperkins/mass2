@@ -1,3 +1,7 @@
+2011-08-09  William A Perkins  <d3g096@briareus.local>
+
+	* Makefile.mpi: use a PETSc with Hypre on briareus
+
 2011-08-05  William A Perkins  <d3g096@grapes.local>
 
 	* Makefile.mpi: use a PETSc with Hypre on grapes
