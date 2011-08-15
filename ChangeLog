@@ -1,3 +1,10 @@
+2011-08-15  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* plot_cgns.f90 (plot_cgns_write): output shear always, not just
+	with diagnostic fields
+
+	* Makefile.mpi (PETSC_LIB): use hypre on pe10900
+
 2011-08-09  William A Perkins  <d3g096@briareus.local>
 
 	* Makefile.mpi: use a PETSc with Hypre on briareus
