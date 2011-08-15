@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Tue Jul  5 10:45:11 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Mon Aug 15 13:37:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -598,6 +598,13 @@ CONTAINS
                &block(iblock)%buffer, &
                &'depth', 'Water Depth', 'feet')
 
+                                ! average bed shear
+
+          CALL block_collect(block(iblock), block(iblock)%bv_shear)
+          CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+               &block(iblock)%buffer, &
+               &'shear', 'Bed Shear Stress', 'pound/foot^2')
+
           IF (do_flow_diag) THEN
 
                                 ! average u
@@ -628,13 +635,6 @@ CONTAINS
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'VelocityMagnitude', 'Velocity Magnitude', 'feet/second')
-
-                                ! average bed shear
-
-             CALL block_collect(block(iblock), block(iblock)%bv_shear)
-            CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
-                  &block(iblock)%buffer, &
-                  &'shear', 'Bed Shear Stress', 'pound/foot^2')
 
                                 ! Froude number
 
