@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Mar  7 08:06:24 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Thu Sep 29 12:47:53 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -48,8 +48,8 @@ PROGRAM mass2_parallel
   IF (ierr .NE. 0) CALL error_message("MPI: initialization failure", fatal=.TRUE.)
   CALL ga_initialize()
 
-  heap = 100
-  stack= 100
+  heap = 10000
+  stack= 10000
   ok = ma_init(MT_DBL, heap, stack)
 
 
