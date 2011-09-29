@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Thu Jul 14 13:57:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Jul 20 13:14:28 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -433,6 +433,8 @@ CONTAINS
     call KSPSolve(pinfo(iblock)%eq(ieq)%ksp, &
          &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, ierr)
     CHKERRQ(ierr)
+
+    ! FIXME: Report divergence problems
 
     ! WRITE(*,*) "Solver: Solution complete"
 
