@@ -1,6 +1,7 @@
 2011-10-04  William A. Perkins  <william.perkins@pnnl.gov>
 
-	* missing, install-sh, configure, aclocal.m4, Makefile.in: added:
+	* missing, install-sh, configure, aclocal.m4, Makefile.in,
+	util/cart_grid/Makefile.in, util/Makefile.in: added:
 	keep autotools in version control
 
 	* configure.in: modernize initialization; look for MPI F90
