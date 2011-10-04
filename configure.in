@@ -8,158 +8,101 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Fri Dec 17 06:55:54 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Tue Oct  4 12:26:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
 # Initialization
 # -------------------------------------------------------------
-AC_INIT(mass2.f90)
-AM_INIT_AUTOMAKE(mass2,0.30)
-dnl AC_CANONICAL_HOST()
-
-# -------------------------------------------------------------
-# Stuff to include subdirectories
-# -------------------------------------------------------------
-SUBDIRS="time_series util"
-AC_SUBST(SUBDIRS)
-
-                                # variables to define the solver used
-AC_SUBST(SOLVERSRC)
-AC_SUBST(SOLVEROBJ)
-AC_SUBST(SOLVERLDFLAGS)
-
-# -------------------------------------------------------------
-# Initialization/Defaults
-# -------------------------------------------------------------
-
-                                # use the internal TDMA solver by default
-SOLVERSRC=solver_tdma.f90
-SOLVEROBJ='solver_tdma.o'
-SOLVERFFLAGS=
-SOLVERLDFLAGS=
-
-# -------------------------------------------------------------
-# Need to check for MPI first
-# -------------------------------------------------------------
-dnl AC_LANG_PUSH(Fortran 77)
-
-dnl AC_ARG_ENABLE(mpi, 
-dnl     [  --enable-mpi            use MPI (try --help for more options)])
-
-dnl if test x"$enable_mpi" = x"yes"; then
-dnl     mpiok=""
-dnl     ACX_MPI(mpiok=1)
-dnl     if test x"$mpiok" = x; then
-dnl         AC_MSG_ERROR([Failed to find MPI or F90 MPI compiler for --enable-mpi], 10)
-dnl     fi
-dnl     AC_MSG_NOTICE([Configuring parallel MASS2 using MPI])
-dnl     F90=$MPIF90
-dnl     F77=$MPIF77
-dnl else
-dnl     AC_MSG_NOTICE([Configuring single processor MASS2]) 
-dnl fi
+AC_INIT(MASS2, 0.5)
+AM_INIT_AUTOMAKE()
+AC_CANONICAL_HOST()
 
 # -------------------------------------------------------------
 # Checks for Programs we need
 # -------------------------------------------------------------
-AC_PROG_RANLIB()
 AC_PROG_INSTALL()
-AC_PROG_LN_S()
-AC_PROG_MAKE_SET()
-AC_PROG_FC()
-AC_PROG_F90()
-
-# FCFLAGS="$FCFLAGS $F90FLAGS"
+AC_LANG(Fortran)
 
 # -------------------------------------------------------------
-# check some command line options
+# We need an MPI compiler, so check for that first
 # -------------------------------------------------------------
 
-                                # choose the sixpack solver library
+ACX_MPI([mpi_ok=1])
+if test "x$mpi_ok" != "x1" ; then 
+    AC_MSG_ERROR([Failed to find MPI or F90 MPI compiler], 10)
+fi
+FC="$MPIFC"
+AC_MSG_NOTICE([Configuring parallel MASS2 using MPI])
 
-AC_ARG_WITH(sixpack,
-    [  --with-sixpack=dir           use the sixpack solver library in dir],
-    SOLVERSRC=solver_sixpack.f90
-    SOLVEROBJ='solver_sixpack.$(OBJEXT)'
-    SOLVERLDFLAGS="-L$withval/lib -lsixpack")
+dnl Make sure the compiler choice is passed to subdirectories
+ac_configure_args="$ac_configure_args FC=$FC"
 
-                                # choose the aztec solver library
+AX_F90_MODULE_EXTENSION()
+if test x$ax_cv_f90_modext = x ; then
+   AC_MSG_ERROR([unable to find f90 modules extension])
+fi
+AC_SUBST(F90MODEXT)
+F90MODEXT=$ax_cv_f90_modext
 
-AC_ARG_WITH(aztec,
-    [  --with-aztec=dir             use the Aztec solver library in dir],
-    SOLVERSRC=solver_aztec.f90
-    SOLVEROBJ='solver_aztec.$(OBJEXT)'
-    SOLVERFFLAGS="-I$withval/lib"
-    SOLVERLDFLAGS="-L$withval/lib -laztec")
+AX_F90_MODULE_FLAG()
+if test x$ax_cv_f90_modflag = x"not found" ; then
+   AC_MSG_ERROR([unable to determine f90 modules flag])
+fi
+AC_SUBST(F90MODFLAG)
+F90MODFLAG="$ax_cv_f90_modflag"
 
-FCFLAGS="$FCFLAGS $SOLVERFFLAGS"
+AC_ARG_VAR(FC_CPPFLAG, [Fortran compiler flag to run C-preprocessor])
 
 # -------------------------------------------------------------
-# make sure the NetCDF library works
-# -------------------------------------------------------------
-ACX_NetCDF77()
-
-FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDES_PATH"
-
-# -------------------------------------------------------------
-# make sure the CGNS library works
+# Check CGNS library
 # -------------------------------------------------------------
 ACX_CGNS77()
 
-FCFLAGS="$FCFLAGS -I$CGNS_INCLUDE_PATH"
+# -------------------------------------------------------------
+# Check Global Arrays, version 5.0 required
+# -------------------------------------------------------------
+# Define and check the Global Arrays library
+
+AC_SUBST(GA_FCFLAGS)
+AC_SUBST(GA_LIBS)
+AC_ARG_VAR(GA_MPILIBS, [extra libraries required by Global Arrays])
+
+AC_ARG_WITH(global-arrays,
+    AC_HELP_STRING([--with-global-arrays=dir], [Specify the Global Arrays directory]),
+    GA_DIR=$withval,
+    GA_DIR="")
+
+# if no target is set, assume GA 5.0 or later which has a different
+# set of libraries
+
+GA_LIBS="-lga++ -lga -larmci ${GA_MPILIBS} -lm"
+if test -n "$GA_DIR"; then
+   GA_FCFLAGS="$GA_FCFLAGS -I${GA_DIR}/include"
+   GA_LIBS="-L${GA_DIR}/lib ${GA_LIBS}"
+   if test -n "$GA_TARGET"; then
+      GA_FCFLAGS="$GA_FCFLAGS -D${GA_TARGET}"
+      GA_LIBS="-L${GA_DIR}/lib/${GA_TARGET} -lga++ -lglobal -lma  -llinalg  -larmci -ltcgmsg-mpi ${GA_MPILIBS} -lm"
+   fi
+fi
 
 # -------------------------------------------------------------
-# check the solver library
+# Check PETSc
 # -------------------------------------------------------------
-
-                                # special flags may be needed
-                                # depending on the solver and compiler
-
-case $host in
-    i?86*linux*)
-        case $F77 in
-                            # The Absoft compiler
-            f95|f90)
-                case $SOLVERSRC in
-                    *aztec*)
-                        SOLVERLDFLAGS="$SOLVERLDFLAGS -lm -lg2c"
-                        ;;
-                    *)
-                esac
-                ;;
-            *)
-        esac
-        ;;
-    alpha*linux*|alphaev*-dec-osf*)
-                            # The DEC/Compaq/HP compiler on Alpha Platforms
-        case $F77 in
-            f90|f95|fort)
-                case $SOLVERSRC in
-                    *aztec*)
-                        SOLVERLDFLAGS="$SOLVERLDFLAGS -lm -lg2c"
-                        ;;
-                    *)
-                esac
-                ;;
-            *)
-        esac
-        ;;
-    *)
-        
-esac
+petsc_ok=
+ACX_PETSC([petsc_ok=1], [petsc_ok=0])
+if test x$petsc_ok != x1; then
+    AC_MSG_ERROR([A working PETSc version 3.x library is required])
+fi
 
 # -------------------------------------------------------------
-# assemble compiler flags and test
+# Output
 # -------------------------------------------------------------
-AC_LANG(Fortran)
-                                # search for modules in the
-                                # time_series directory
-
-FCFLAGS="$FCFLAGS ${F90MODPATH}time_series"
-FFLAGS="$FCFLAGS"
-LIBS="$LIBS $F90LIBS"
-
+AC_CONFIG_FILES([
+    Makefile
+    util/Makefile
+    util/cart_grid/Makefile
+])
 AC_CONFIG_SUBDIRS(time_series)
-AC_OUTPUT(Makefile util/Makefile util/cart_grid/Makefile)
+AC_OUTPUT()
 
