@@ -7,11 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Tue Oct  4 12:30:16 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Oct  5 07:22:44 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
-    -I$(CGNS_INCLUDE_PATH) \
+    $(CGNS_FCFLAGS) \
     $(F90MODFLAG)time_series \
     $(GA_FCFLAGS) $(PETSC_FCFLAGS)
 
@@ -60,7 +60,7 @@ mass2_SOURCES = \
 	solver_petsc.F90
 mass2_LDADD = \
 	$(TSLIB) \
-	-L$(CGNS_LIBS_PATH) $(CGNS_LIBS) \
+	$(CGNS_LIBS) \
 	$(PETSC_FLIBS) \
 	$(GA_LIBS)
 
