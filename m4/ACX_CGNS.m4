@@ -62,7 +62,7 @@ AC_COMPILE_IFELSE(
     [AC_MSG_RESULT([yes])],
     [acx_cgns_ok=no; AC_MSG_RESULT([no])])
                 
-AC_CHECK_LIB(cgns, cg_open_f, ,
+AC_CHECK_LIB(cgns, cg_open_f, [ ],
              [acx_cgns_ok=no])
 AC_LANG_POP()
 FCFLAGS=$tmp_FCFLAGS
