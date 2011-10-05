@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: Tue Oct  4 12:26:54 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Oct  5 09:26:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -57,7 +57,10 @@ AC_ARG_VAR(FC_CPPFLAG, [Fortran compiler flag to run C-preprocessor])
 # -------------------------------------------------------------
 # Check CGNS library
 # -------------------------------------------------------------
+top_FCFLAGS="$FCFLAGS"
+FCFLAGS="$top_FCFLAGS $FC_CPPFLAG"
 ACX_CGNS77()
+FCFLAGS="$top_FCFLAGS"
 
 # -------------------------------------------------------------
 # Check Global Arrays, version 5.0 required
@@ -76,13 +79,13 @@ AC_ARG_WITH(global-arrays,
 # if no target is set, assume GA 5.0 or later which has a different
 # set of libraries
 
-GA_LIBS="-lga++ -lga -larmci ${GA_MPILIBS} -lm"
+GA_LIBS="-lga -larmci ${GA_MPILIBS} -lm"
 if test -n "$GA_DIR"; then
    GA_FCFLAGS="$GA_FCFLAGS -I${GA_DIR}/include"
    GA_LIBS="-L${GA_DIR}/lib ${GA_LIBS}"
    if test -n "$GA_TARGET"; then
       GA_FCFLAGS="$GA_FCFLAGS -D${GA_TARGET}"
-      GA_LIBS="-L${GA_DIR}/lib/${GA_TARGET} -lga++ -lglobal -lma  -llinalg  -larmci -ltcgmsg-mpi ${GA_MPILIBS} -lm"
+      GA_LIBS="-L${GA_DIR}/lib/${GA_TARGET} ${GA_LIBS}"
    fi
 fi
 
