@@ -18,7 +18,7 @@
 # -----------------------------------------------------------
 # -----------------------------------------------------------
 # Created December 12, 2003 by William A. Perkins
-# Last Change: Tue Oct  4 10:41:48 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Oct  5 09:11:05 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -----------------------------------------------------------
 
 # -----------------------------------------------------------
@@ -121,7 +121,7 @@ tmpCPPFLAGS=$CPPFLAGS
 
 AC_LANG_PUSH(Fortran)
 
-LIBS="$PETSC_FLIBS -lm"
+LIBS="$PETSC_FLIBS -lm $LIBS"
 CPPFLAGS="$PETSC_FCFLAGS $CPPFLAGS"
 
 if test $acx_petsc_ok = yes; then
