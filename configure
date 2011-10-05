@@ -3332,6 +3332,8 @@ F90MODFLAG="$ax_cv_f90_modflag"
 # -------------------------------------------------------------
 # Check CGNS library
 # -------------------------------------------------------------
+top_FCFLAGS="$FCFLAGS"
+FCFLAGS="$top_FCFLAGS $FC_CPPFLAG"
 DEPDIR="${am__leading_dot}deps"
 
 ac_config_commands="$ac_config_commands depfiles"
@@ -4320,6 +4322,7 @@ CGNS_LIBS="$acx_cgns_ldflags"
 
 
 
+FCFLAGS="$top_FCFLAGS"
 
 # -------------------------------------------------------------
 # Check Global Arrays, version 5.0 required
@@ -4342,13 +4345,13 @@ fi
 # if no target is set, assume GA 5.0 or later which has a different
 # set of libraries
 
-GA_LIBS="-lga++ -lga -larmci ${GA_MPILIBS} -lm"
+GA_LIBS="-lga -larmci ${GA_MPILIBS} -lm"
 if test -n "$GA_DIR"; then
    GA_FCFLAGS="$GA_FCFLAGS -I${GA_DIR}/include"
    GA_LIBS="-L${GA_DIR}/lib ${GA_LIBS}"
    if test -n "$GA_TARGET"; then
       GA_FCFLAGS="$GA_FCFLAGS -D${GA_TARGET}"
-      GA_LIBS="-L${GA_DIR}/lib/${GA_TARGET} -lga++ -lglobal -lma  -llinalg  -larmci -ltcgmsg-mpi ${GA_MPILIBS} -lm"
+      GA_LIBS="-L${GA_DIR}/lib/${GA_TARGET} ${GA_LIBS}"
    fi
 fi
 
@@ -4620,7 +4623,7 @@ ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
-LIBS="$PETSC_FLIBS -lm"
+LIBS="$PETSC_FLIBS -lm $LIBS"
 CPPFLAGS="$PETSC_FCFLAGS $CPPFLAGS"
 
 if test $acx_petsc_ok = yes; then

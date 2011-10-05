@@ -8,25 +8,58 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Oct  5 07:28:30 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: Wed Oct  5 11:46:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
+MASS2 is now exclusively parallel.  The serial version is no longer
+functional.  
+
 -------------------------------------------------------------
-Configuration
+Requirements
+-------------------------------------------------------------
+
+CGNS, Version 2.5, or later
+---------------------------
+
+Global Arrays, Version 5.0, or later
+------------------------------------
+
+PETSc, Version 3.0 or later
+---------------------------
+
+-------------------------------------------------------------
+Example Configuration
 -------------------------------------------------------------
 
 
 PE10900:
 
 configure \
-    --with-cgns=/opt/local \
-    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac \
+    FC=openmpif90 \
     MPIFC=openmpif90 \
     FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
     FC_CPPFLAG="-x f95-cpp-input" \
     PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
-    PETSC_ARCH="darwin9.8.0-c-opt"
+    PETSC_ARCH="darwin9.8.0-c-opt" \
+    --with-cgns=/opt/local \
+    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac
+
+Flophouse, with Intel compiler:
+
+source /usr/software/intel101/x86_64/bin/ifortvars.csh
+set path = (/usr/local/openmpi-intel/bin $path)
+configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FC_CPPFLAG=-fpp \
+    FCFLAGS="-O2 -fpe0 -heap-arrays" \
+    GA_MPILIBS="-llapack -lblas" \
+    PETSC_DIR="/usr/local/openmpi-intel" \
+    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-global-arrays=/usr/local/openmpi-intel
+    
+
 
 Grapes:
 
@@ -35,14 +68,52 @@ sh configure \
     MPIFC=mpif90 \
     FC_CPPFLAG=-fpp \
     FCFLAGS="-O2 -fpe0 -heap-arrays" \
-    GA_LIBS="-libverbs -llapack -lblas" \
+    GA_MPILIBS="-libverbs -llapack -lblas" \
+    PETSC_DIR="/home/d3g096/stuff/src/petsc-3.1-p7" \
+    PETSC_ARCH="linux-gnu-c-opt" \
+    LIBS="-L$HOME/stuff/lib -lhdf5 -lsz -lz" \
+    --with-global-arrays=/share/apps/ga/5.0.1/intel \
+    --with-cgns=$HOME/stuff
+
+
+Briareus:
+
+module load intel/11.1
+module load mpi/openmpi/1.4.3/intel
+module load petsc/3.1p7/intel
+
+sh configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FC_CPPFLAG=-fpp \
+    FCFLAGS="-O2 -fpe0 -heap-arrays" \
+    GA_MPILIBS="-libverbs -llapack -lblas" \
     PETSC_DIR="/home/d3g096/stuff/src/petsc-3.1-p7" \
     PETSC_ARCH="linux-gnu-c-opt" \
     --with-global-arrays=/share/apps/ga/5.0.1/intel \
     --with-cgns=$HOME/stuff
 
+Franklin:
 
+module load PrgEnv-pgi
+module load ga/5.0
+module load petsc/3.1_O
+module load hdf5
+sh configure \
+    FC=ftn \
+    MPIFC=ftn \
+    FC_CPPFLAG="-Mpreprocess" \
+    FCFLAGS="-fast" \
+    LDFLAGS="-L$CRAY_HDF5_DIR/hdf5-pgi/lib" \
+    LIBS="-ldl" \
+    --with-global-arrays=/usr/common/usg/ga/5.0.2.i4/pgi \
+    --with-cgns=$HOME/stuff/$NERSC_HOST \
+    --prefix=$HOME/stuff/$NERSC_HOST
+
+
+-------------------------------------------------------------
 The stuff below is very dated ...
+-------------------------------------------------------------
 
 -------------------------------------------------------------
 CGNS
