@@ -53,7 +53,7 @@ acx_cgns_finc="cgnslib_f.h"
 acx_cgns_ok=yes
 tmp_FCFLAGS="$FCFLAGS"
 tmp_LDFLAGS="$LDFLAGS"
-AC_LANG_PUSH([Fortran 77])
+AC_LANG_PUSH([Fortran])
 FCFLAGS="$FCFLAGS $acx_cgns_cppflags"
 LDFLAGS="$LDFLAGS $acx_cgns_ldflags"
 AC_MSG_CHECKING([checking CGNS Fortran include file $acx_cgns_finc])
