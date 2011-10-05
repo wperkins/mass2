@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Wed Oct  5 07:22:44 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Wed Oct  5 09:12:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -15,7 +15,7 @@ AM_FCFLAGS = \
     $(F90MODFLAG)time_series \
     $(GA_FCFLAGS) $(PETSC_FCFLAGS)
 
-SUBDIRS = time_series
+SUBDIRS = time_series . util
 
 TSLIB = time_series/libts.a
 
