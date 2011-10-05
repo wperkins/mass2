@@ -1,3 +1,10 @@
+2011-10-05  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (AM_FCFLAGS, mass2_LDADD): use new names for CGNS
+	flags 
+
+	* m4/ACX_CGNS.m4: recode to make it work
+
 2011-10-04  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* missing, install-sh, configure, aclocal.m4, Makefile.in,

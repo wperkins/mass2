@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Thu Feb  1 19:02:35 2007 by William A. Perkins <perk@mcperktop.local>
+# Last Change: Wed Feb 16 15:31:45 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -------------------------------------------------------------
 # $Id$
 
@@ -42,27 +42,27 @@ all: $(EPSFILES)
 # -------------------------------------------------------------
 # the base case -- comparison to analytic solution
 # -------------------------------------------------------------
-plot.mix.nc: $(MODELFILES) $(MODEL) bcspecs.base
-	cp mass2_v027.base mass2_v027.cfg
+plot.mix.cgns: $(MODELFILES) $(MODEL) bcspecs.base
+	cp mass2_v027.base mass2.cfg
 	cp bcspecs.base bcspecs.dat
 	$(MODEL)
-	mv plot.nc plot.mix.nc
+	mv plot000.cgns plot.mix.cgns
 
 clean:: 
 	rm -f plot.mix.nc mass2_v027.cfg bcspecs.dat
 
-mixing.eps: plot.mix.nc mixing.base.lay
-	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay
+mixing.eps: plot.mix.cgns mixing.base.lay
+	sed -e 's/plot000/plot.mix/g' mixing.base.lay > mixing.lay
 	$(TECPLOT) -b -y $@ -p ../../../tecplot/macros/export_eps.mcr mixing.lay 
 
 mixing-metric.eps: plot.mix.nc mixing.base.lay metric.mcr
-	sed -e 's/plot\.nc/plot.mix.nc/g' mixing.base.lay > mixing.lay
+	sed -e 's/plot000/plot.mix/g' mixing.base.lay > mixing.lay
 	$(TECPLOT) -b -y $@ mixing.lay -p metric.mcr 
 
 clean::
 	rm -f mixing.lay
 
-plot-lat-1.mix.eps: plot-lat-1.gp solution.pl plot.mix.nc
+plot-lat-1.mix.eps: plot-lat-1.gp solution.pl plot.mix.cgns
 	sed -e 's/plot\.nc/plot.mix.nc/g' plot-lat-1.gp | gnuplot > $@
 
 plot-lat-2.mix.eps: plot-lat-2.gp solution.pl plot.mix.nc

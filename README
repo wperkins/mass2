@@ -8,39 +8,41 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Jun  7 15:15:40 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Wed Oct  5 07:28:30 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
 -------------------------------------------------------------
-NetCDF
+Configuration
 -------------------------------------------------------------
 
-MASS2 requires version 3.4 of the NetCDF library.  Some initial tests
-with the 3.5 version were veerrry slow, so the older version must be
-used. 
 
-On Intel Linux, one has to be careful how NetCDF is compiled.  With
-the original 3.4 distribution, there is really only one way to go.
-First, compile and install NetCDF with g77.  Then, use the Absoft
-compiler with these flags:
+PE10900:
 
-    -B108 -YEXT_NAMES=LCS -YCFRL=1
+configure \
+    --with-cgns=/opt/local \
+    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac \
+    MPIFC=openmpif90 \
+    FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
+    FC_CPPFLAG="-x f95-cpp-input" \
+    PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
+    PETSC_ARCH="darwin9.8.0-c-opt"
 
-If you want to use another compiler, then NetCDF must be compiled
-differently.  Unpack the 3.4 distribution and replace 
-src/fortran/cfortran.h with the cfortran.h from the 3.5
-distribution. Configure and compile NetCDF specifying the following 
+Grapes:
 
-    FC=g77
-    FFLAGS=-fno-second-underscore
-    CPPFLAGS=-DNDEBUG -DpgiFortran
+sh configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FC_CPPFLAG=-fpp \
+    FCFLAGS="-O2 -fpe0 -heap-arrays" \
+    GA_LIBS="-libverbs -llapack -lblas" \
+    PETSC_DIR="/home/d3g096/stuff/src/petsc-3.1-p7" \
+    PETSC_ARCH="linux-gnu-c-opt" \
+    --with-global-arrays=/share/apps/ga/5.0.1/intel \
+    --with-cgns=$HOME/stuff
 
-When the NetCDF library is built this way, it can be linked using any
-of the available compilers.  The Absoft compiler flags need to be
-changed to
 
-    -YEXT_SFX=_ -YEXT_NAMES=LCS -YCFRL=1
+The stuff below is very dated ...
 
 -------------------------------------------------------------
 CGNS
