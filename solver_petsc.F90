@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Jul 20 13:14:28 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Fri Oct 14 09:40:21 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -22,6 +22,7 @@ MODULE solver_module
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
 #include "finclude/petscsys.h"
+#include "finclude/petsclog.h"
 #include "finclude/petscdef.h"
 #include "finclude/petscvec.h"
 #include "finclude/petscvec.h90"
@@ -57,6 +58,10 @@ MODULE solver_module
                                 ! remember the number of blocks for
                                 ! finalization
   INTEGER, PRIVATE :: myblocks
+
+  DOUBLE PRECISION, PRIVATE :: tmp1_time, tmp2_time
+  DOUBLE PRECISION, PRIVATE :: total_time, depth_time, scalar_time
+  CHARACTER (LEN=1028), PRIVATE :: msg
   
   CHARACTER (LEN=80), PRIVATE :: petscoptfile = "mass2.petscrc"
 
@@ -93,6 +98,12 @@ CONTAINS
 
     ! CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
+
+    CALL PetscGetTime(total_time, ierr);
+    CHKERRQ(ierr)
+
+    scalar_time = 0.0;
+    depth_time = 0.0;
 
     myblocks = blocks
 
@@ -318,15 +329,19 @@ CONTAINS
           CALL PCGetType(pc, buf1, ierr)
           CHKERRQ(ierr)
 
-          WRITE (*,*) 'Solver Initialize, Block ', iblock, &
+          WRITE (msg,*) 'Solver Initialize, Block ', iblock, &
                &', equation ', ieq, '(', TRIM(prefix), &
                &'), local size = ', pinfo(iblock)%nlocal, &
-               &', KSP = ', TRIM(buf), ', PC = ', TRIM(buf1)
+               &', KSP = ', TRIM(buf), ', PC = ', TRIM(buf1), '\n'
+          CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD, msg, ierr)
+          CHKERRQ(ierr)
 
           pinfo(iblock)%eq(ieq)%built = .TRUE.
 
        END IF
     END DO
+    CALL PetscSynchronizedFlush(PETSC_COMM_WORLD, ierr)
+    CHKERRQ(ierr)
     solver_initialize_block =  ierr
   END FUNCTION solver_initialize_block
 
@@ -351,6 +366,9 @@ CONTAINS
     
     PetscScalar v
     PetscScalar, pointer :: x_vv(:)
+
+    CALL PetscGetTime(tmp1_time, ierr);
+    CHKERRQ(ierr)
 
     gimin = pinfo(iblock)%gimin
     gimax = pinfo(iblock)%gimax
@@ -463,6 +481,17 @@ CONTAINS
     CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%lx, x_vv, ierr)
     CHKERRQ(ierr)
 
+    CALL PetscGetTime(tmp2_time, ierr);
+    CHKERRQ(ierr)
+
+
+    SELECT CASE (ieq)
+    CASE (SOLVE_U, SOLVE_V, SOLVE_SCALAR)
+       scalar_time = scalar_time + (tmp2_time - tmp1_time)
+    CASE (SOLVE_DP)
+       depth_time = depth_time + (tmp2_time - tmp1_time)
+    END SELECT
+
     ! WRITE(*,*) "Solver: Solution written to array"
 
     solver = ierr
@@ -496,10 +525,27 @@ CONTAINS
           END IF
        END DO
     END DO
+
+    CALL PetscGetTime(tmp2_time, ierr);
+    CHKERRQ(ierr)
+    total_time = tmp2_time - total_time
+
+    WRITE(msg, 100) total_time,  &
+         &scalar_time, scalar_time/total_time*100.0, &
+         &depth_time, depth_time/total_time*100.0
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD, msg, ierr)
+    CHKERRQ(ierr)
+    CALL PetscSynchronizedFlush(PETSC_COMM_WORLD, ierr)
+    CHKERRQ(ierr)
+    
     DEALLOCATE(pinfo)
     CALL PetscFinalize(ierr)
     CHKERRQ(ierr)
     solver_finalize = ierr
+
+100 FORMAT('Total =', F10.2, &
+         &', Scalar = ', F10.2, ' (', F4.1, '%)', &
+         &', Depth = ', F10.2, ' (', F4.1, '%)', '\n')
   END FUNCTION solver_finalize
 
 END MODULE solver_module
