@@ -1,3 +1,7 @@
+2011-10-14  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* solver_petsc.F90: add some timers
+
 2011-10-05  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* m4/acx_petsc.m4: needed to *add* petsc stuff to $LIBS
