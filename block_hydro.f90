@@ -298,6 +298,7 @@ CONTAINS
 #include "global.fh"
 
     INTEGER :: x_beg, x_end, y_beg, y_end, i, j
+    INTEGER :: imin, imax, jmin, jmax
     INTEGER :: crash(1)
 
     crash(1) = 0
@@ -307,9 +308,14 @@ CONTAINS
     y_beg = 2
     y_end = blk%ymax
 
-    DO i = x_beg, x_end
-       DO j = y_beg, y_end
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    CALL block_owned_window(blk, imin, jmin, imax, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MIN(jmax, y_end)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
           IF (blk%depth(i,j) <= 0.0) THEN
              IF (do_wetdry) THEN
                 WRITE(utility_error_iounit,*)" ERROR: Negative Depth = ",blk%depth(i,j)
@@ -365,10 +371,16 @@ CONTAINS
     INTEGER :: i, j
     DOUBLE PRECISION :: roughness, u, v
 
+    INTEGER :: imin, imax, jmin, jmax
+
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, 1)
+    imax = MIN(imax, blk%xmax+1)
+    jmin = MAX(jmin, 2)
+    jmax = MIN(jmax, blk%ymax)
     blk%shear = 0 
-    DO i = 1, blk%xmax + 1
-       DO j = 2, blk%ymax
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    DO i = imin, imax
+       DO j = jmin, jmax
           IF (i .EQ. 1) THEN
              u = blk%uvel(i,j)
              v = 0.0
@@ -409,15 +421,20 @@ CONTAINS
 
     INTEGER :: i, j
     DOUBLE PRECISION :: eddystar
+    INTEGER :: imin, imax, jmin, jmax
 
-    DO i = 2, blk%xmax
-       DO j = 2, blk%ymax
-          IF (block_owns(blk, i, j)) THEN
-             eddystar = viscosity_water + &
-                  &vonkarmon/6.0*sqrt(blk%shear(i,j)/density)*blk%depth(i,j)
-             blk%eddy(i,j) = relax_eddy*eddystar +&
-                  &(1.0 - relax_eddy)*blk%eddy(i,j)
-          END IF
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, 2)
+    imax = MIN(imax, blk%xmax)
+    jmin = MAX(jmin, 2)
+    jmax = MIN(jmax, blk%ymax)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          eddystar = viscosity_water + &
+               &vonkarmon/6.0*sqrt(blk%shear(i,j)/density)*blk%depth(i,j)
+          blk%eddy(i,j) = relax_eddy*eddystar +&
+               &(1.0 - relax_eddy)*blk%eddy(i,j)
        END DO
     END DO
 
@@ -441,14 +458,21 @@ CONTAINS
     INTEGER :: i1, j1, n
     LOGICAL :: flag
     DOUBLE PRECISION :: wsavg, wscell, wsn
+    INTEGER :: imin, imax, jmin, jmax
 
     nx = blk%xmax
     ny = blk%ymax
 
     blk%isdrystar = blk%isdry
 
-    DO i = 2, nx + 1
-       DO j = 2, ny + 1 
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, 2)
+    imax = MIN(imax, blk%xmax+1)
+    jmin = MAX(jmin, 2)
+    jmax = MIN(jmax, blk%ymax+1)
+
+    DO i = imin, imax
+       DO j = jmin, jmax
 
           IF (.NOT. block_owns(blk, i, j)) CYCLE
 
