@@ -49,6 +49,7 @@ CONTAINS
     LOGICAL :: ds_flux_given
     INTEGER :: iblock
     INTEGER :: iteration
+    INTEGER :: imin, imax, jmin, jmax
 
     ! Assign U,V,D BCs for this time
     ! set U boundary conditions for this time
@@ -102,21 +103,23 @@ CONTAINS
 
           alldry = .FALSE.
           IF (do_wetdry) THEN
+             CALL block_used_window(block(iblock), imin, imax, jmin, jmax)
+             imin = MAX(imin, x_beg-1)
+             imax = MIN(imax, x_end+1)
+             jmin = MAX(jmin, y_beg-1)
+             jmax = MIN(jmax, y_end+1)
+
              alldry = .TRUE.
-             DO i=1,x_end+1
-                DO j=1,y_end+1
-                   IF (block_uses(block(iblock), i, j)) THEN
-                      IF (block(iblock)%isdry(i,j)) THEN
-                         block(iblock)%isdead(i  , j  )%p = .TRUE.
-                         IF (block_uses(block(iblock), i-1, j)) &
-                              &block(iblock)%isdead(i-1, j  )%u = .TRUE.
-                         block(iblock)%isdead(i  , j  )%u = .TRUE.
-                         IF (block_uses(block(iblock), i, j-1)) &
-                              &block(iblock)%isdead(i  , j-1)%v = .TRUE.
-                         block(iblock)%isdead(i  , j  )%v = .TRUE.
-                      ELSE 
-                         alldry = .FALSE.
-                      END IF
+             DO i=imin,imax
+                DO j=jmin,jmax
+                   IF (block(iblock)%isdry(i,j)) THEN
+                      block(iblock)%isdead(i  , j  )%p = .TRUE.
+                      IF (i .GT. imin) block(iblock)%isdead(i-1, j  )%u = .TRUE.
+                      block(iblock)%isdead(i  , j  )%u = .TRUE.
+                      IF (j .GT. jmin) block(iblock)%isdead(i  , j-1)%v = .TRUE.
+                      block(iblock)%isdead(i  , j  )%v = .TRUE.
+                   ELSE 
+                      alldry = .FALSE.
                    END IF
                 END DO
              END DO
@@ -1263,6 +1266,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE (block_struct), INTENT(INOUT) :: blk
     INTEGER :: x_beg, y_beg, x_end, y_end, i, j
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: correction
 
     x_beg = 2
@@ -1270,11 +1274,16 @@ CONTAINS
     y_beg = 2
     y_end = blk%ymax
 
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, x_beg)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, y_beg)
+    jmax = MIN(jmax, y_end)
+
     ! correct u velocity
 
-    DO i=x_beg,x_end
-       DO j=y_beg,y_end
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    DO i=imin,imax
+       DO j=jmin,jmax
           correction = blk%lud(i,j)*(blk%dp(i,j)-blk%dp(i+1,j))
           IF (i .EQ. x_end) THEN
              SELECT CASE (blk%cell(i,j)%xtype)
@@ -1294,9 +1303,8 @@ CONTAINS
        END DO
     END DO
 
-    DO i=x_beg,x_end
-       DO j=y_beg,y_end
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    DO i=imin,imax
+       DO j=jmin,jmax
           correction =  blk%lvd(i,j)*(blk%dp(i,j)-blk%dp(i,j+1))
           IF (j .EQ. y_end) THEN
              SELECT CASE (blk%cell(i,j)%ytype)
