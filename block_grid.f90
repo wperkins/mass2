@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Tue Apr 19 10:56:55 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Tue Oct 18 08:34:21 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -77,7 +77,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x_grid, BLK_VAR_CURRENT)
     CALL block_var_put(blk%bv_y_grid, BLK_VAR_CURRENT)
     CALL block_var_put(blk%bv_zbot_grid, BLK_VAR_CURRENT)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_x_grid, BLK_VAR_CURRENT)
     CALL block_var_get(blk%bv_y_grid, BLK_VAR_CURRENT)
     CALL block_var_get(blk%bv_zbot_grid, BLK_VAR_CURRENT)
@@ -182,7 +182,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x_grid)
     CALL block_var_put(blk%bv_y_grid)
     CALL block_var_put(blk%bv_zbot_grid)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_x_grid)
     CALL block_var_get(blk%bv_y_grid)
     CALL block_var_get(blk%bv_zbot_grid)
@@ -212,7 +212,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x_grid)
     CALL block_var_put(blk%bv_y_grid)
     CALL block_var_put(blk%bv_zbot_grid)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_x_grid)
     CALL block_var_get(blk%bv_y_grid)
     CALL block_var_get(blk%bv_zbot_grid)
@@ -460,7 +460,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x)
     CALL block_var_put(blk%bv_y)
     CALL block_var_put(blk%bv_zbot)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_x)
     CALL block_var_get(blk%bv_y)
     CALL block_var_get(blk%bv_zbot)
@@ -685,7 +685,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x_eta)
     CALL block_var_put(blk%bv_y_eta)
     CALL block_var_put(blk%bv_slope)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_hp1)
     CALL block_var_get(blk%bv_hp2)
     CALL block_var_get(blk%bv_hu1)
@@ -806,7 +806,7 @@ CONTAINS
     CALL block_var_put(blk%bv_x_out)
     CALL block_var_put(blk%bv_y_out)
     CALL block_var_put(blk%bv_zbot_out)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_x_out)
     CALL block_var_get(blk%bv_y_out)
     CALL block_var_get(blk%bv_zbot_out)
