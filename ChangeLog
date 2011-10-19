@@ -1,5 +1,7 @@
 2011-10-18  William A Perkins  <d3g096@olympus.local>
 
+	* block_hydro.f90 (velocity_shift): avoid the use of block_owns()
+
 	* hydro_solve.f90 (hydro, correct_velocity): avoid the use of
 	block_owns()
 
