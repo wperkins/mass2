@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Tue Jun 14 14:26:58 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Oct 18 08:46:56 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -289,7 +289,7 @@ CONTAINS
          &scalar%conc(imin:imax,jmin:jmax))
 
     CALL block_var_put(scalar%concvar, BLK_VAR_CURRENT)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(scalar%concvar, BLK_VAR_CURRENT)
 
   END SUBROUTINE scalar_solve
