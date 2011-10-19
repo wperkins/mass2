@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Mar 17 08:49:12 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Fri Oct 14 10:26:57 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -768,8 +768,8 @@ CONTAINS
        END DO
     END DO
 95  FORMAT('Block ', I2, ':      Global MASS2: ', I5, ': ', I5, ': ', I5, ': ', I5)
-100 FORMAT('Block ', I2, ': Process ', I2, ': MASS2: ', I5, ': ', I5, ': ', I5, ': ', I5)
-101 FORMAT('Block ', I2, ': Process ', I2, ': GA:    ', I5, ': ', I5, ': ', I5, ': ', I5)
+100 FORMAT('Block ', I2, ': Process ', I5, ': MASS2: ', I5, ': ', I5, ': ', I5, ': ', I5)
+101 FORMAT('Block ', I2, ': Process ', I5, ': GA:    ', I5, ': ', I5, ': ', I5, ': ', I5)
 
   END SUBROUTINE block_distribution_report
 
