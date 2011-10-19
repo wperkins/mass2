@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Thu Sep 29 12:47:53 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Tue Oct 18 08:46:58 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -314,7 +314,7 @@ SUBROUTINE update()
 
      block(iblock)%wsel = block(iblock)%depth + block(iblock)%zbot
      CALL block_var_put(block(iblock)%bv_wsel)
-     CALL ga_sync()
+     CALL block_var_sync()
      CALL block_var_get(block(iblock)%bv_wsel)
      block(iblock)%dp = 0.0
 
