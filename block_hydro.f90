@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Wed Mar 16 10:31:22 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Wed Oct 19 09:05:47 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 
@@ -96,7 +96,7 @@ CONTAINS
 
     END DO
 
-    CALL ga_sync()
+    CALL block_var_sync()
 
     ! Next, compute the p-cell center velocity components from the fluxes
 
@@ -373,7 +373,7 @@ CONTAINS
     CALL ga_igop(MT_F_INT, crash, 1, '+');
 
     CALL block_var_put(blk%bv_depth)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_depth)
 
   END SUBROUTINE depth_check
@@ -458,7 +458,7 @@ CONTAINS
     END DO
 
     CALL block_var_put(blk%bv_eddy)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_eddy)
 
   END SUBROUTINE calc_eddy_viscosity
@@ -627,7 +627,7 @@ CONTAINS
     IF (block_owns_i(blk, nx + 1)) blk%isdry(nx + 1,:)  = blk%isdry(nx+1,:)
 
     CALL block_var_put_logical(blk%bv_isdry, blk%isdry)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get_logical(blk%bv_isdry, blk%isdry)
 
   END SUBROUTINE check_wetdry
