@@ -1,3 +1,42 @@
+2011-10-19  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* block_grid.f90 (block_read_grid, block_extrap_ghost) 
+	(block_extrap_ghost_corners, block_interp_grid, block_metrics) 
+	(block_plot_geometry): use block_var_sync() instead of ga_sync()
+
+	* block_hydro.f90 (velocity_shift, depth_check) 
+	(calc_eddy_viscosity, check_wetdry):  use block_var_sync() instead
+	of ga_sync() 
+
+	* block_hydro_bc.f90 (block_build_ghost, fillghost):  use
+	block_var_sync() instead of ga_sync() 
+
+	* block_initialization.f90 (initialize):  use block_var_sync()
+	instead of ga_sync() 
+
+	* block_parallel.f90 (block_distribution_report): increase digits
+	for process id in format
+
+	* hotstart.f90 (read_hotstart, write_restart):  use
+	block_var_sync() instead of ga_sync() 
+
+	* hydro_solve.f90 (hydro, uvel_solve, vvel_solve, depth_solve) 
+	(correct_velocity):  use block_var_sync() instead of ga_sync() 
+
+	* mass2_parallel.f90 (update):  use block_var_sync() instead of
+	ga_sync() 
+
+	* profile_init.f90 (stage_init_file, vel_init, vel_init_file):
+	use block_var_sync() instead of ga_sync() 
+
+	* scalar_solve.f90 (scalar_solve):  use block_var_sync() instead
+	of ga_sync() 
+
+	* scalars_module.f90 (allocate_scalarblock_components):  use
+	block_var_sync() instead of ga_sync() 
+
+	* block_var.f90 (block_var_sync): hide the use of ga_sync()
+
 2011-10-18  William A Perkins  <d3g096@olympus.local>
 
 	* block_hydro.f90 (velocity_shift): avoid the use of block_owns()
