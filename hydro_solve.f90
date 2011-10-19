@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Tue Jul  5 11:53:11 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: Tue Oct 18 08:45:18 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -80,7 +80,7 @@ CONTAINS
           CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
           CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
           CALL block_var_put_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
-          CALL ga_sync()
+          CALL block_var_sync()
           CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
           CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
           CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
@@ -561,7 +561,7 @@ CONTAINS
 
     CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_put(blk%bv_lud)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_get(blk%bv_lud)
 
@@ -902,7 +902,7 @@ CONTAINS
 
     CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
     CALL block_var_put(blk%bv_lvd)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
     CALL block_var_get(blk%bv_lvd)
     
@@ -1251,7 +1251,7 @@ CONTAINS
     CALL block_var_put(blk%bv_depth)
     CALL block_var_put(blk%bv_wsel)
     CALL block_var_put(blk%bv_mass_source)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_dp)
     CALL block_var_get(blk%bv_depth)
     CALL block_var_get(blk%bv_wsel)
@@ -1324,7 +1324,7 @@ CONTAINS
     CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_put(blk%bv_vvel)
     CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(blk%bv_uvel)
     CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_get(blk%bv_vvel)
