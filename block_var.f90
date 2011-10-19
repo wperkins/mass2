@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Thu Feb 24 12:03:53 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Oct 18 11:14:36 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -520,6 +520,18 @@ CONTAINS
     CALL nga_get(var%ga_handle, lo, hi, buffer(imin:imax, jmin:jmax), ld)
 
   END SUBROUTINE block_var_get_some
+
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_sync
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_sync()
+
+    IMPLICIT NONE
+
+    CALL ga_sync()
+
+  END SUBROUTINE block_var_sync
 
 
 END MODULE block_variable
