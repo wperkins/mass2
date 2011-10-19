@@ -1408,7 +1408,7 @@ CONTAINS
           CALL block_var_put(block(iblk)%bv_y_grid)
           CALL block_var_put(block(iblk)%bv_zbot_grid)
        END IF
-       CALL ga_sync()
+       CALL block_var_sync()
        CALL block_var_get(block(iblk)%bv_x_grid)
        CALL block_var_get(block(iblk)%bv_y_grid)
        CALL block_var_get(block(iblk)%bv_zbot_grid)
@@ -1652,7 +1652,7 @@ CONTAINS
     CALL block_var_put(block(iblock)%bv_kx_diff)
     CALL block_var_put(block(iblock)%bv_ky_diff)
     CALL block_var_put(block(iblock)%bv_chezy)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(block(iblock)%bv_eddy)
     CALL block_var_get(block(iblock)%bv_kx_diff)
     CALL block_var_get(block(iblock)%bv_ky_diff)
