@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Tue Apr 19 10:40:55 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Tue Oct 18 08:44:38 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 
@@ -102,7 +102,7 @@ CONTAINS
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
-             CALL ga_sync()
+             CALL block_var_sync()
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
@@ -154,7 +154,7 @@ CONTAINS
        CALL block_var_put(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
        CALL block_var_put(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
-       CALL ga_sync()
+       CALL block_var_sync()
 
        ! don't block_var_get old or oldolod because the ghosted values
        ! are not needed locally (except for depth)
