@@ -157,7 +157,7 @@ CONTAINS
        ALLOCATE(species(ispecies)%scalar(iblock)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)
        IF (alloc_stat .NE. 0) ierr(1) = ierr(1) + 1
 
-       CALL ga_sync()
+       CALL block_var_sync()
 
        IF (ierr(1) .EQ. 0) THEN
           species(ispecies)%scalar(iblock)%conc = 0.0
