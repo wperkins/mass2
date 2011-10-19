@@ -40,6 +40,7 @@ CONTAINS
 
     INTEGER :: iblk, i, j
     DOUBLE PRECISION :: flux1, flux2
+    INTEGER :: imin, imax, jmin, jmax
 
     ! compute fluxes for all blocks first
 
@@ -49,37 +50,46 @@ CONTAINS
        ! with fluxes !
        block(iblk)%uflux = 0.0
        block(iblk)%vflux = 0.0
-       DO i = i_index_min+1, block(iblk)%xmax+i_index_extra
-          DO j=2, block(iblk)%ymax 
-             IF (block_owns(block(iblk), i, j)) THEN
-                flux2 = uflux(block(iblk), i, j, j)
-                block(iblk)%uflux(i,j) = flux2
-             END IF
-          END DO
-          IF (block_owns(block(iblk), i, 1)) THEN
-             block(iblk)%uflux(i,1) = block(iblk)%uflux(i,2)
-          END IF
-          IF (block_owns(block(iblk), i, block(iblk)%ymax+1)) THEN
-             block(iblk)%uflux(i,block(iblk)%ymax+1) = &
-                  &block(iblk)%uflux(i,block(iblk)%ymax)
-          END IF
-       END DO
 
-       DO j= j_index_min+1, block(iblk)%ymax + j_index_extra
-          DO i = 2, block(iblk)%xmax
-             IF (block_owns(block(iblk), i, j)) THEN
-                flux2 = vflux(block(iblk), i, i, j)
-                block(iblk)%vflux(i,j) = flux2
-             END IF
+       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       imin = MAX(imin, i_index_min+1)
+       imax = MIN(imax, block(iblk)%xmax+i_index_extra)
+       jmin = MAX(jmin, 2)
+       jmax = MIN(jmax, block(iblk)%ymax)
+
+       DO i = imin, imax
+          DO j = jmin, jmax
+             flux2 = uflux(block(iblk), i, j, j)
+             block(iblk)%uflux(i,j) = flux2
           END DO
-          IF (block_owns(block(iblk), 1, j)) THEN
-             block(iblk)%vflux(1,j) = block(iblk)%vflux(2,j)
-          END IF
-          IF (block_owns(block(iblk), block(iblk)%xmax+1, j)) THEN
-             block(iblk)%vflux(block(iblk)%xmax+1, j) = &
-                  &block(iblk)%vflux(block(iblk)%xmax, j)
-          END IF
        END DO
+       IF (block_owns_j(block(iblk), 1)) THEN
+          block(iblk)%uflux(imin:imax,1) = block(iblk)%uflux(imin:imax,2)
+       END IF
+       IF (block_owns_j(block(iblk), block(iblk)%ymax+1)) THEN
+          block(iblk)%uflux(imin:imax,block(iblk)%ymax+1) = &
+               &block(iblk)%uflux(imin:imax,block(iblk)%ymax)
+       END IF
+
+       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       imin = MAX(imin, 2)
+       imax = MIN(imax, block(iblk)%xmax)
+       jmin = MAX(jmin, j_index_min+1)
+       jmax = MIN(jmax, block(iblk)%ymax + j_index_extra)
+
+       DO j= jmin, jmax
+          DO i = imin, imax
+             flux2 = vflux(block(iblk), i, i, j)
+             block(iblk)%vflux(i,j) = flux2
+          END DO
+       END DO
+       IF (block_owns_i(block(iblk), 1)) THEN
+          block(iblk)%vflux(1,jmin:jmax) = block(iblk)%vflux(2,jmin:jmax)
+       END IF
+       IF (block_owns_i(block(iblk), block(iblk)%xmax+1)) THEN
+          block(iblk)%vflux(block(iblk)%xmax+1, jmin:jmax) = &
+               &block(iblk)%vflux(block(iblk)%xmax, jmin:jmax)
+       END IF
 
        CALL block_var_put(block(iblk)%bv_uflux)
        CALL block_var_put(block(iblk)%bv_vflux)
@@ -95,56 +105,65 @@ CONTAINS
        CALL block_var_get(block(iblk)%bv_uflux)
        CALL block_var_get(block(iblk)%bv_vflux)
 
-       DO i = i_index_min+1, block(iblk)%xmax+i_index_extra
-          DO j=2, block(iblk)%ymax 
-             IF (block_owns(block(iblk), i, j)) THEN
-                flux1 = block(iblk)%uflux(i-1,j)
-                flux2 = block(iblk)%uflux(i,j)
-                block(iblk)%uvel_p(i,j) = &
-                     &0.5*(flux1+flux2)/block(iblk)%hp2(i,j)/&
-                     &block(iblk)%depth(i,j)
-             END IF
+       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       imin = MAX(imin, i_index_min+1)
+       imax = MIN(imax, block(iblk)%xmax+i_index_extra)
+       jmin = MAX(jmin, 2)
+       jmax = MIN(jmax, block(iblk)%ymax)
+
+       DO i = imin, imax
+          DO j = jmin, jmax
+             flux1 = block(iblk)%uflux(i-1,j)
+             flux2 = block(iblk)%uflux(i,j)
+             block(iblk)%uvel_p(i,j) = &
+                  &0.5*(flux1+flux2)/block(iblk)%hp2(i,j)/&
+                  &block(iblk)%depth(i,j)
           END DO
        END DO
 
-       DO j= j_index_min+1, block(iblk)%ymax + j_index_extra
-          DO i = 2, block(iblk)%xmax
-             IF (block_owns(block(iblk), i, j)) THEN
-                flux1 = block(iblk)%vflux(i,j-1)
-                flux2 = block(iblk)%vflux(i,j)
-                block(iblk)%vvel_p(i,j) = 0.5*(flux1+flux2)/&
-                     &block(iblk)%hp1(i,j)/block(iblk)%depth(i,j)
-             END IF
+       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       imin = MAX(imin, 2)
+       imax = MIN(imax, block(iblk)%xmax)
+       jmin = MAX(jmin, j_index_min+1)
+       jmax = MIN(jmax, block(iblk)%ymax + j_index_extra)
+
+       DO j= jmin, jmax
+          DO i = imin, imax
+             flux1 = block(iblk)%vflux(i,j-1)
+             flux2 = block(iblk)%vflux(i,j)
+             block(iblk)%vvel_p(i,j) = 0.5*(flux1+flux2)/&
+                  &block(iblk)%hp1(i,j)/block(iblk)%depth(i,j)
           END DO
-          IF (block_owns(block(iblk), 1, j)) THEN
-             block(iblk)%vflux(1,j) = block(iblk)%vflux(2,j)
-          END IF
-          IF (block_owns(block(iblk), block(iblk)%xmax+1, j)) THEN
-             block(iblk)%vflux(block(iblk)%xmax+1, j) = &
-                  &block(iblk)%vflux(block(iblk)%xmax, j)
-          END IF
        END DO
+       IF (block_owns_i(block(iblk), 1)) THEN
+          block(iblk)%vflux(1,jmin:jmax) = block(iblk)%vflux(2,jmin:jmax)
+       END IF
+       IF (block_owns_i(block(iblk), block(iblk)%xmax+1)) THEN
+          block(iblk)%vflux(block(iblk)%xmax+1, jmin:jmax) = &
+               &block(iblk)%vflux(block(iblk)%xmax, jmin:jmax)
+       END IF
+
+       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       imin = MAX(imin, 2)
+       imax = MIN(imax, block(iblk)%xmax)
+       jmin = MAX(jmin, 2)
+       jmax = MIN(jmax, block(iblk)%ymax)
 
        i = 1
-       DO j = 2, block(iblk)%ymax
-          IF (block_owns(block(iblk), i, j)) THEN
-             block(iblk)%uvel_p(i,j) = block(iblk)%uvel(i+1,j)
-          END IF
-       END DO
-       j = 1
-       DO i = 2, block(iblk)%xmax
-          IF (block_owns(block(iblk), i, j)) THEN
-             block(iblk)%vvel_p(i,j) = block(iblk)%vvel(i,j+1)
-          END IF
-       END DO
+       IF (block_owns_i(block(iblk), i)) THEN
+          block(iblk)%uvel_p(i,jmin:jmax) = block(iblk)%uvel(i+1,jmin:jmax)
+       END IF
 
-       DO i = 2, block(iblk)%xmax
-          DO j= 2, block(iblk)%ymax
-             IF (block_owns(block(iblk), i, j)) THEN
-                block(iblk)%vmag(i, j) = SQRT(&
-                     &block(iblk)%uvel_p(i,j)*block(iblk)%uvel_p(i,j) + &
-                     &block(iblk)%vvel_p(i,j)*block(iblk)%vvel_p(i,j))
-             END IF
+       j = 1
+       IF (block_owns_j(block(iblk), j)) THEN
+          block(iblk)%vvel_p(imin:imax,j) = block(iblk)%vvel(imin:imax,j+1)
+       END IF
+
+       DO i = imin, imax
+          DO j= jmin, jmax
+             block(iblk)%vmag(i, j) = SQRT(&
+                  &block(iblk)%uvel_p(i,j)*block(iblk)%uvel_p(i,j) + &
+                  &block(iblk)%vvel_p(i,j)*block(iblk)%vvel_p(i,j))
           END DO
        END DO
        
@@ -473,8 +492,6 @@ CONTAINS
 
     DO i = imin, imax
        DO j = jmin, jmax
-
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
 
           IF (blk%isdrystar(i,j)) THEN
 
