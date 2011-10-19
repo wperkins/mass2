@@ -140,7 +140,7 @@ CONTAINS
        CALL status_message('done reading hotstart file')
     END IF
 
-    CALL ga_sync()
+    CALL block_var_sync()
 
     DO iblk=1,max_blocks
        CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_STAR)
@@ -162,7 +162,7 @@ CONTAINS
 
        block(iblk)%wsel = block(iblk)%depth + block(iblk)%zbot
        CALL block_var_put(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
-       CALL ga_sync()
+       CALL block_var_sync()
        CALL block_var_get(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
     END DO
 
@@ -262,7 +262,7 @@ CONTAINS
           END DO
        END IF
 
-       CALL ga_sync()
+       CALL block_var_sync()
 
        IF (me .EQ. 0) THEN
 
