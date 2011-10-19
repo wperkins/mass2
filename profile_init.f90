@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created November 19, 1998 by William A. Perkins
-! Last Change: Tue Apr 19 12:43:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Tue Oct 18 08:49:42 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -191,7 +191,7 @@ CONTAINS
     CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_STAR)
     CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_OLD)
     CALL block_var_put(block(iblk)%bv_depth, BLK_VAR_OLDOLD)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_CURRENT)
     CALL block_var_get(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
     CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_STAR)
@@ -295,7 +295,7 @@ CONTAINS
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_STAR)
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLD)
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLDOLD)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_CURRENT)
     CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_STAR)
     CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_CURRENT)
@@ -397,7 +397,7 @@ CONTAINS
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_STAR)
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLD)
     CALL block_var_put(block(iblk)%bv_vvel, BLK_VAR_OLDOLD)
-    CALL ga_sync()
+    CALL block_var_sync()
     CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_CURRENT)
     CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_STAR)
     CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_CURRENT)
