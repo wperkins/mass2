@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Tue Oct 18 08:46:56 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Thu Oct 20 10:25:26 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -40,6 +40,7 @@ CONTAINS
     DOUBLE PRECISION :: hp1,hp2,he1,he2,hw1,hw2,hn1,hn2,hs1,hs2	! metric coefficients at p,e,w,n,s
     DOUBLE PRECISION :: xdiffp, ydiffp
     INTEGER :: i, j, x_end, y_end
+    INTEGER :: imin, imax, jmin, jmax
 
     x_end = blk%xmax
     y_end = blk%ymax
@@ -51,10 +52,15 @@ CONTAINS
     blk%k_w = 0.0
     blk%k_n = 0.0
     blk%k_s = 0.0
-    DO i= 2,x_end
-       DO j=2,y_end
 
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
+    imin = MAX(imin, 2)
+    imax = MIN(imax, x_end)
+    jmin = MAX(jmin, 2)
+    jmax = MIN(jmax, y_end)
+
+    DO i= imin, imax
+       DO j=jmin, jmax
 
           hp1 = blk%hp1(i,j)
           hp2 = blk%hp2(i,j)
@@ -179,10 +185,8 @@ CONTAINS
     jmin = MAX(jmin, ystart)
     jmax = MIN(jmax, yend)
 
-    DO i= xstart,xend
-       DO j=ystart,yend
-
-          IF (.NOT. block_owns(blk, i, j)) CYCLE
+    DO i= imin, imax
+       DO j=jmin, jmax
 
           CALL differ2(scheme, blk%flux_w(i,j), blk%diffu_w(i,j), blk%flux_e(i,j), blk%diffu_e(i,j), &
                &scalar%conc(i-2,j), scalar%conc(i-1,j), scalar%conc(i,j), scalar%conc(i+1,j), scalar%conc(i+2,j),&
