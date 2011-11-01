@@ -1,3 +1,16 @@
+2011-11-01  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* block_hydro_bc.f90 (apply_hydro_bc): indexes used to set
+	SOURCE/SINK BC's were exceeding local boundaries
+
+2011-10-20  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* scalar_solve.f90 (transport_precalc, scalar_solve): avoid the
+	use of block_owns() 
+
+	* solver_petsc.F90 (solver): insert values for an entire row of
+	the matrix instead of one value at a time
+
 2011-10-19  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* block_grid.f90 (block_read_grid, block_extrap_ghost) 

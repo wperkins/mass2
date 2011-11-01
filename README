@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed Oct  5 11:46:14 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: Tue Nov  1 10:34:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -38,6 +38,16 @@ PE10900:
 configure \
     FC=openmpif90 \
     MPIFC=openmpif90 \
+    FCFLAGS="-g -fbounds-check -ffpe-trap=invalid,zero,overflow" \
+    FC_CPPFLAG="-x f95-cpp-input" \
+    PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
+    PETSC_ARCH="darwin9.8.0-c-opt" \
+    --with-cgns=/opt/local \
+    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac
+
+configure \
+    FC=openmpif90 \
+    MPIFC=openmpif90 \
     FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
     FC_CPPFLAG="-x f95-cpp-input" \
     PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
@@ -54,6 +64,16 @@ configure \
     MPIFC=mpif90 \
     FC_CPPFLAG=-fpp \
     FCFLAGS="-O2 -fpe0 -heap-arrays" \
+    GA_MPILIBS="-llapack -lblas" \
+    PETSC_DIR="/usr/local/openmpi-intel" \
+    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-global-arrays=/usr/local/openmpi-intel
+
+configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FC_CPPFLAG=-fpp \
+    FCFLAGS="-g -check bounds -fpe1 -heap-arrays" \
     GA_MPILIBS="-llapack -lblas" \
     PETSC_DIR="/usr/local/openmpi-intel" \
     --with-cgns=/usr/unsupported/CGNSLib \
