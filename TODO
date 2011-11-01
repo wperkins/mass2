@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov  1 10:26:03 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: Tue Nov  1 11:41:20 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 -------------------------------------------------------------
 
 $Id$
@@ -16,6 +16,9 @@ $Id$
 High Priority:
  
     * FLUX SOURCE/SINK in parallel
+
+    * need to count transported scalars in scalar_source.dat not use
+      the limit in the configuration file
 
     * check the id of a scalar source specification to make sure it
       has not already been specified
