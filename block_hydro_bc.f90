@@ -503,6 +503,7 @@ CONTAINS
 
     INTEGER :: x_end, y_end, i, j, k, jj, ii
     INTEGER :: i_beg, i_end, j_beg, j_end
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: input_total
 
     CHARACTER (LEN=1024) :: buf
@@ -1028,6 +1029,12 @@ CONTAINS
              bc%end_cell(2) = y_end - 1
           END SELECT
 
+          CALL block_owned_window(blk, imin, imax, jmin, jmax)
+          i_beg = MAX(bc%start_cell(1)+1, imin)
+          i_end = MIN(bc%end_cell(1)+1, imax)
+          j_beg = MAX(bc%start_cell(2)+1, jmin)
+          j_end = MIN(bc%end_cell(2)+1, jmax)
+
           SELECT CASE (bc%bc_kind)
           CASE("FLUX")
 
@@ -1035,12 +1042,16 @@ CONTAINS
              ! total area over which it applies
 
              input_total = 0.0
-             DO i = bc%start_cell(1), bc%end_cell(1)
-                DO j =  bc%start_cell(2), bc%end_cell(2)
+             DO i = i_beg, i_end
+                DO j =  j_beg, j_end
                    IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
                         &input_total = input_total + blk%hp1(i+1,j+1)*blk%hp2(i+1,j+1)
                 END DO
              END DO
+
+             ! FIXME: need to sum input_total over all processors
+
+             CALL error_message("FLUX SOURCE/SINK not working", fatal=.TRUE.)
           CASE ("VELO")
              ! if a rate is specified, do not alter
              ! the table value
@@ -1049,10 +1060,10 @@ CONTAINS
              GOTO 100
           END SELECT
 
-          DO i = bc%start_cell(1), bc%end_cell(1)
-             DO j = bc%start_cell(2), bc%end_cell(2)
-                IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
-                     &blk%xsource(i+1, j+1) = table_input(1)/input_total
+          DO i = i_beg, i_end
+             DO j = j_beg, j_end
+                IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
+                     &blk%xsource(i, j) = table_input(1)/input_total
              END DO
           END DO
 
