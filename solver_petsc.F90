@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Fri Oct 14 09:40:21 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Thu Oct 20 12:09:51 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -359,12 +359,13 @@ CONTAINS
          &ap, aw, ae, as, an, bp
     DOUBLE PRECISION, INTENT(INOUT), &
          &DIMENSION(imin:imax, jmin:jmax) :: x
-    INTEGER :: i, j, ip, ie, iw, in, is
+    INTEGER :: i, j, ip, ie, iw, in, is, idx
     DOUBLE PRECISION :: dtmp
     INTEGER :: lidx, gimin, gimax, gjmin, gjmax
     INTEGER :: ierr
     
-    PetscScalar v
+    PetscScalar :: v(5)
+    PetscInt :: ridx, cidx(5)
     PetscScalar, pointer :: x_vv(:)
 
     CALL PetscGetTime(tmp1_time, ierr);
@@ -383,33 +384,43 @@ CONTAINS
           in = solver_global_index(pinfo(iblock), i  , j+1)
           is = solver_global_index(pinfo(iblock), i  , j-1)
 
-          v = ap(i,j)
-          call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ip, v, INSERT_VALUES, ierr)
-          CHKERRQ(ierr)
+          idx = 1
+          v = 0.0;
+          ridx = ip
 
-          IF (j .LT. gjmax) THEN
-             v = -an(i,j)
-             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, in, v, INSERT_VALUES,ierr)
-             CHKERRQ(ierr)
-          END IF
-
-          IF (j .GT. gjmin) THEN
-             v = -as(i,j)
-             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, is, v, INSERT_VALUES,ierr)
-             CHKERRQ(ierr)
-          END IF
+          cidx(idx) = ip
+          v(idx) = ap(i,j)
+          idx = idx + 1
 
           IF (i .LT. gimax) THEN
-             v = -ae(i,j)
-             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, ie, v, INSERT_VALUES,ierr)
-             CHKERRQ(ierr)
+             cidx(idx) = ie
+             v(idx) = -ae(i,j)
+             idx = idx + 1
           END IF
 
           IF (i .GT. gimin) THEN
-             v = -aw(i,j)
-             call MatSetValue(pinfo(iblock)%eq(ieq)%A, ip, iw, v, INSERT_VALUES,ierr)
-             CHKERRQ(ierr)
+             cidx(idx) = iw
+             v(idx) = -aw(i,j)
+             idx = idx + 1
           END IF
+
+          IF (j .LT. gjmax) THEN
+             cidx(idx) = in
+             v(idx) = -an(i,j)
+             idx = idx + 1
+          END IF
+
+          IF (j .GT. gjmin) THEN
+             cidx(idx) = is
+             v(idx) = -as(i,j)
+             idx = idx + 1
+          END IF
+          idx = idx - 1
+
+          call MatSetValues(pinfo(iblock)%eq(ieq)%A, &
+               &1, ridx, idx, cidx, &
+               &v, INSERT_VALUES, ierr)
+          CHKERRQ(ierr)
 
           v = bp(i,j)
           call VecSetValue(pinfo(iblock)%eq(ieq)%b, ip, v, INSERT_VALUES, ierr)
