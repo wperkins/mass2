@@ -1,3 +1,16 @@
+2011-11-07  William A Perkins  <d3g096@olympus.local>
+
+	* hydro_solve.f90 (harmonic): try to make faster
+	(uvel_solve, vvel_solve): reduce the number of calls to harmonic() 
+	(linear_friction): use c*c instead of c**2; don't check depth
+
+	* solver_petsc.F90 (solver_global_index): return -1 if the
+	specified i, j are outside the global window
+	(solver_map_indexes): create an index map
+	(solver_initialize_block): use solver_map_indexes instead of a
+	VecScatter
+	(solver): use mapped global indexes
+
 2011-11-01  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* block_hydro_bc.f90 (apply_hydro_bc): indexes used to set
