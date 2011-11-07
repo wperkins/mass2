@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Thu Oct 20 12:09:51 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Wed Nov  2 10:48:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -50,6 +50,8 @@ MODULE solver_module
      INTEGER :: gimin, gimax, gjmin, gjmax
      INTEGER :: limin, limax, ljmin, ljmax
      INTEGER :: nlocal, nglobal
+     INTEGER :: pidxmin, pidxmax
+     INTEGER, POINTER :: pidx(:,:)
      TYPE (petsc_save_rec) :: eq(NUM_SOLVE)
   END TYPE petsc_blk_rec
 
@@ -96,7 +98,7 @@ CONTAINS
     CALL PetscInitialize(petscoptfile, ierr)
     CHKERRQ(ierr)
 
-    ! CALL PetscPopSignalHandler(ierr)
+    CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
 
     CALL PetscGetTime(total_time, ierr);
@@ -108,6 +110,7 @@ CONTAINS
     myblocks = blocks
 
     DO b = 1, blocks
+       pinfo(b)%pidx => NULL()
        DO ieq = 1,  4
           pinfo(b)%eq(ieq)%built = .FALSE.
        END DO
@@ -121,6 +124,9 @@ CONTAINS
   ! the indexes i and j are in the global window.  
   !
   ! the result is a global, 0-based index into a global vector
+  ! 
+  ! the result is the index used by MASS2, it should not be used as a
+  ! global index by PETSc
   ! ----------------------------------------------------------------
   INTEGER FUNCTION solver_global_index(pinfo, i, j) RESULT (ip)
 
@@ -131,16 +137,97 @@ CONTAINS
 
     ! 0-based indexes in global window
 
-    itmp = i - pinfo%gimin
-    jtmp = j - pinfo%gjmin
+    ! if the i and j are outside the global window return -1
 
-    ! size of global window
-    jsize = pinfo%gjmax - pinfo%gjmin + 1
+    ip = -1
+    IF ((pinfo%gimin .LE. i .AND. i .LE. pinfo%gimax) .AND. &
+         &(pinfo%gjmin .LE. j .AND. j .LE. pinfo%gjmax)) THEN
 
-    ! 0-based global vector index
-    ip = itmp*jsize + jtmp
+       itmp = i - pinfo%gimin
+       jtmp = j - pinfo%gjmin
+
+       ! size of global window
+       jsize = pinfo%gjmax - pinfo%gjmin + 1
+       
+       ! 0-based global vector index
+       ip = itmp*jsize + jtmp
+    END IF
 
   END FUNCTION solver_global_index
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE solver_map_indexes
+  ! Collective
+  ! ----------------------------------------------------------------
+  SUBROUTINE solver_map_indexes(brec)
+
+    IMPLICIT NONE
+
+    TYPE (petsc_blk_rec), INTENT(INOUT) :: brec
+    INTEGER :: i, j, n
+    INTEGER :: imin, imax, jmin, jmax
+    
+    AO :: theorder
+    PetscInt, ALLOCATABLE :: mass2gidx(:), petscgidx(:)
+    PetscInt :: thesize
+    PetscErrorCode :: ierr
+
+    ! create a mapping between the indexes and the indexes used by
+    ! petsc by using the locally owned indexes
+
+    thesize = (brec%limax - brec%limin + 3)*(brec%ljmax - brec%ljmin + 3)
+
+    ALLOCATE(mass2gidx(thesize), petscgidx(thesize))
+    
+    n = 1
+    DO i = brec%limin, brec%limax
+       DO j = brec%ljmin, brec%ljmax
+          mass2gidx(n) = solver_global_index(brec, i, j)
+          petscgidx(n) = brec%pidxmin + n - 1
+          n = n + 1
+       END DO
+    END DO
+
+    CALL AOCreateBasic(MPI_COMM_WORLD, brec%nlocal, mass2gidx, petscgidx, theorder, ierr)
+    CHKERRQ(ierr)
+
+    ! get the petsc indexes for a window one index larger than what is
+    ! owned by this process
+
+    mass2gidx = -1
+
+    n = 1
+    DO i = brec%limin - 1, brec%limax + 1
+       DO j = brec%ljmin - 1, brec%ljmax + 1
+          mass2gidx(n) = solver_global_index(brec, i, j)
+          n = n + 1
+       END DO
+    END DO
+
+    CALL AOApplicationToPetsc(theorder, thesize, mass2gidx, ierr)
+    CHKERRQ(ierr)
+
+    ! CALL AOView(theorder, PETSC_VIEWER_STDOUT_WORLD, ierr)
+    ! CHKERRQ(ierr)
+
+    ALLOCATE(brec%pidx(brec%limin - 1:brec%limax + 1, brec%ljmin - 1:brec%ljmax + 1))
+
+    n = 1
+    DO i = brec%limin - 1, brec%limax + 1
+       DO j = brec%ljmin - 1, brec%ljmax + 1
+          brec%pidx(i, j) = mass2gidx(n)
+          n = n + 1
+       END DO
+    END DO
+
+    CALL AODestroy(theorder, ierr)
+    CHKERRQ(ierr)
+
+    DEALLOCATE(mass2gidx, petscgidx)
+
+    
+  END SUBROUTINE solver_map_indexes
+
 
 
   ! ----------------------------------------------------------------
@@ -156,7 +243,6 @@ CONTAINS
     INTEGER, INTENT(IN) :: gimin, gimax, gjmin, gjmax
     INTEGER, INTENT(IN) :: limin, ljmin, limax, ljmax
     LOGICAL, INTENT(IN) :: do_flow, do_transport
-    INTEGER :: ierr
     INTEGER :: ieq, its
     INTEGER :: i, j, idx
     CHARACTER (LEN=10) :: prefix
@@ -169,6 +255,7 @@ CONTAINS
     PetscInt, ALLOCATABLE :: lidx(:), gidx(:)
     PetscInt :: mylo, myhi
     IS :: lset, gset
+    PetscErrorCode :: ierr
 
     INTEGER :: nproc
 
@@ -225,7 +312,7 @@ CONTAINS
           ! equation and another matrix that may
           ! store a preconditioner
 
-          CALL MatCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
+          CALL MatCreate(MPI_COMM_WORLD, pinfo(iblock)%eq(ieq)%A, ierr)
           CHKERRQ(ierr)
           CALL MatSetType(pinfo(iblock)%eq(ieq)%A, MATMPIAIJ, ierr)
           CHKERRQ(ierr)
@@ -238,7 +325,7 @@ CONTAINS
           ! create vectors to hold the
           ! right-hand side and estimate
 
-          CALL VecCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
+          CALL VecCreate(MPI_COMM_WORLD, pinfo(iblock)%eq(ieq)%x,ierr)
           CHKERRQ(ierr)
           CALL VecSetType(pinfo(iblock)%eq(ieq)%x, VECMPI, ierr)
           CHKERRQ(ierr)
@@ -255,47 +342,17 @@ CONTAINS
           CALL VecDuplicate(pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx,ierr)
           CHKERRQ(ierr)
 
-          ! build an index set for global indexes on the local processor
-          
-          ALLOCATE(lidx(pinfo(iblock)%nlocal))
-          ALLOCATE(gidx(pinfo(iblock)%nlocal))
-
           CALL VecGetOwnershipRange(pinfo(iblock)%eq(ieq)%x, mylo, myhi, ierr)
           CHKERRQ(ierr)
 
-          idx = 1
-          DO i = limin, limax
-             DO j = ljmin, ljmax
-                lidx(idx) = idx + mylo - 1
-                gidx(idx) = solver_global_index(pinfo(iblock), i, j)
-                idx = idx + 1
-             END DO
-          END DO
-          CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, lidx, lset, ierr)
-          
-          ! CALL ISView(lset, PETSC_VIEWER_STDOUT_WORLD, ierr)
-          
-          CALL ISCreateGeneral(PETSC_COMM_WORLD, pinfo(iblock)%nlocal, gidx, gset, ierr)
-          
-          ! CALL ISView(gset, PETSC_VIEWER_STDOUT_WORLD, ierr)
+          IF (.NOT. ASSOCIATED(pinfo(iblock)%pidx)) THEN
+             ! this only needs to be done once per block
+             pinfo(iblock)%pidxmin = mylo
+             pinfo(iblock)%pidxmax = myhi
+             CALL solver_map_indexes(pinfo(iblock))
+          END IF
 
-          DEALLOCATE(lidx)
-          DEALLOCATE(gidx)
-
-          CALL VecScatterCreate(pinfo(iblock)%eq(ieq)%x, gset, &
-               &pinfo(iblock)%eq(ieq)%lx, lset, &
-               &pinfo(iblock)%eq(ieq)%vscat, ierr)
-          CHKERRQ(ierr)
-
-          ! CALL VecScatterView(pinfo(iblock)%eq(ieq)%vscat, PETSC_VIEWER_STDOUT_WORLD, ierr)
-
-          CALL ISDestroy(lset, ierr)
-          CHKERRQ(ierr)
-          CALL ISDestroy(gset, ierr)
-          CHKERRQ(ierr)
-
-
-          CALL KSPCreate(PETSC_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
+          CALL KSPCreate(MPI_COMM_WORLD, pinfo(iblock)%eq(ieq)%ksp, ierr)
           CHKERRQ(ierr)
           CALL KSPAppendOptionsPrefix(pinfo(iblock)%eq(ieq)%ksp, prefix, ierr)
           CHKERRQ(ierr)
@@ -305,9 +362,6 @@ CONTAINS
           CHKERRQ(ierr)
           CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
           CHKERRQ(ierr)
-          ! CALL KSPMonitorSet(pinfo(iblock)%eq(ieq)%ksp, KSPMonitorDefault, &
-          !      &PETSC_NULL, PETSC_NULL, ierr);
-          ! CHKERRQ(ierr)
 
           ! need to change the preconditioner, since the default
           ! (ILU) does not work with MATMPIAIJ matrixes
@@ -333,14 +387,14 @@ CONTAINS
                &', equation ', ieq, '(', TRIM(prefix), &
                &'), local size = ', pinfo(iblock)%nlocal, &
                &', KSP = ', TRIM(buf), ', PC = ', TRIM(buf1), '\n'
-          CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD, msg, ierr)
+          CALL PetscSynchronizedPrintf(MPI_COMM_WORLD, msg, ierr)
           CHKERRQ(ierr)
 
           pinfo(iblock)%eq(ieq)%built = .TRUE.
 
        END IF
     END DO
-    CALL PetscSynchronizedFlush(PETSC_COMM_WORLD, ierr)
+    CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
     CHKERRQ(ierr)
     solver_initialize_block =  ierr
   END FUNCTION solver_initialize_block
@@ -378,11 +432,11 @@ CONTAINS
 
     DO i = imin, imax
        DO j = jmin, jmax
-          ip = solver_global_index(pinfo(iblock), i  , j  )
-          ie = solver_global_index(pinfo(iblock), i+1, j  )
-          iw = solver_global_index(pinfo(iblock), i-1, j  )
-          in = solver_global_index(pinfo(iblock), i  , j+1)
-          is = solver_global_index(pinfo(iblock), i  , j-1)
+          ip = pinfo(iblock)%pidx(i  , j  )
+          ie = pinfo(iblock)%pidx(i+1, j  )
+          iw = pinfo(iblock)%pidx(i-1, j  )
+          in = pinfo(iblock)%pidx(i  , j+1)
+          is = pinfo(iblock)%pidx(i  , j-1)
 
           idx = 1
           v = 0.0;
@@ -392,25 +446,25 @@ CONTAINS
           v(idx) = ap(i,j)
           idx = idx + 1
 
-          IF (i .LT. gimax) THEN
+          IF (ie .GE. 0) THEN
              cidx(idx) = ie
              v(idx) = -ae(i,j)
              idx = idx + 1
           END IF
 
-          IF (i .GT. gimin) THEN
+          IF (iw .GE. 0) THEN
              cidx(idx) = iw
              v(idx) = -aw(i,j)
              idx = idx + 1
           END IF
 
-          IF (j .LT. gjmax) THEN
+          IF (in .GE. 0) THEN
              cidx(idx) = in
              v(idx) = -an(i,j)
              idx = idx + 1
           END IF
 
-          IF (j .GT. gjmin) THEN
+          IF (is .GE. 0) THEN
              cidx(idx) = is
              v(idx) = -as(i,j)
              idx = idx + 1
@@ -449,12 +503,6 @@ CONTAINS
     CALL VecAssemblyEnd(pinfo(iblock)%eq(ieq)%b, ierr)
     CHKERRQ(ierr)
 
-    ! CALL MatView(pinfo(iblock)%eq(ieq)%A, PETSC_VIEWER_STDOUT_WORLD, ierr)
-
-    ! CALL VecView(pinfo(iblock)%eq(ieq)%b, PETSC_VIEWER_STDOUT_WORLD, ierr)
-
-    ! WRITE(*,*) "Solver: Matrix assembled"
-
     call KSPSetOperators(pinfo(iblock)%eq(ieq)%ksp,&
          &pinfo(iblock)%eq(ieq)%A,pinfo(iblock)%eq(ieq)%A,&
          &SAME_NONZERO_PATTERN, ierr)
@@ -463,24 +511,9 @@ CONTAINS
          &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, ierr)
     CHKERRQ(ierr)
 
-    ! FIXME: Report divergence problems
-
-    ! WRITE(*,*) "Solver: Solution complete"
-
-    ! CALL VecView(pinfo(iblock)%eq(ieq)%x, PETSC_VIEWER_STDOUT_WORLD, ierr)
-
-    CALL VecScatterBegin(pinfo(iblock)%eq(ieq)%vscat,&
-         &pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx, &
-         &INSERT_VALUES, SCATTER_FORWARD, ierr)
-    CALL VecScatterEnd(pinfo(iblock)%eq(ieq)%vscat,&
-         &pinfo(iblock)%eq(ieq)%x, pinfo(iblock)%eq(ieq)%lx, &
-         &INSERT_VALUES, SCATTER_FORWARD, ierr)
-
-    ! CALL VecView(pinfo(iblock)%eq(ieq)%lx, PETSC_VIEWER_STDOUT_WORLD, ierr)
-
-    call VecGetArrayF90(pinfo(iblock)%eq(ieq)%lx, x_vv, ierr)
+    call VecGetArrayF90(pinfo(iblock)%eq(ieq)%x, x_vv, ierr)
     CHKERRQ(ierr)
-  
+
     lidx = 1
     DO i = imin, imax
        DO j = jmin, jmax
@@ -519,6 +552,7 @@ CONTAINS
     INTEGER :: iblock, ieq, ierr
 
     DO iblock = 1, myblocks
+       DEALLOCATE(pinfo(iblock)%pidx)
        DO ieq = 1, 4
           IF (pinfo(iblock)%eq(ieq)%built) THEN
              CALL KSPDestroy(pinfo(iblock)%eq(ieq)%ksp, ierr)
@@ -544,9 +578,9 @@ CONTAINS
     WRITE(msg, 100) total_time,  &
          &scalar_time, scalar_time/total_time*100.0, &
          &depth_time, depth_time/total_time*100.0
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD, msg, ierr)
+    CALL PetscSynchronizedPrintf(MPI_COMM_WORLD, msg, ierr)
     CHKERRQ(ierr)
-    CALL PetscSynchronizedFlush(PETSC_COMM_WORLD, ierr)
+    CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
     CHKERRQ(ierr)
     
     DEALLOCATE(pinfo)
