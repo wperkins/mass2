@@ -199,12 +199,10 @@ CONTAINS
 
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: x1, x2
-
-    IF (x1 + x2 .EQ. 0.0) THEN
-       harmonic = 0.0
-    ELSE 
-       harmonic = 2.0*x1*x2/(x1 + x2)
-    END IF
+    harmonic =  2.0*x1*x2
+    If (harmonic .GT. 0.0) THEN
+       harmonic = harmonic/(x1 + x2)
+    END If
 
   END FUNCTION harmonic
 
@@ -294,9 +292,9 @@ CONTAINS
 
           k_e = blk%eddy(i,j+1)   ! replace with geometric weighted k's
           k_w = blk%eddy(i,j)
-          k_p = harmonic(k_w, k_e)
-          k_n = harmonic(k_p, harmonic(blk%eddy(i,j+1), blk%eddy(i+1,j+1)))
-          k_s = harmonic(k_p, harmonic(blk%eddy(i,j-1), blk%eddy(i+1,j-1)))
+          k_p = 0.5*(k_w + k_e)
+          k_n = harmonic(k_p, 0.5*(blk%eddy(i,j+1) + blk%eddy(i+1,j+1)))
+          k_s = harmonic(k_p, 0.5*(blk%eddy(i,j-1) + blk%eddy(i+1,j-1)))
 
           ! WRITE(*,*) i, j, k_e, k_w, k_p, k_n, k_s
 
@@ -647,9 +645,9 @@ CONTAINS
 
           k_s = blk%eddy(i,j)
           k_n = blk%eddy(i,j+1)
-          k_p = harmonic(k_s, k_n)
-          k_e = harmonic(k_p, harmonic(blk%eddy(i+1,j), blk%eddy(i+1,j+1)))
-          k_w = harmonic(k_p, harmonic(blk%eddy(i-1,j), blk%eddy(i-1,j+1)))
+          k_p = 0.5*(k_s + k_n)
+          k_e = harmonic(k_p, 0.5*(blk%eddy(i+1,j) + blk%eddy(i+1,j+1)))
+          k_w = harmonic(k_p, 0.5*(blk%eddy(i-1,j) + blk%eddy(i-1,j+1)))
 
           depth_n = blk%depth(i,j+1)
           zbot_n = blk%zbot(i,j+1)
@@ -931,11 +929,7 @@ CONTAINS
     ! Also uses: grav, density
 
     IF(manning)THEN
-       IF (do_wetdry) THEN
-          roughness = (grav*c**2)/(mann_con*MAX(depth, dry_depth)**0.3333333)
-       ELSE
-          roughness = (grav*c**2)/(mann_con*depth**0.3333333)
-       END IF
+       roughness = (grav*c*c)/(mann_con*MAX(depth, dry_depth)**0.3333333)
     ELSE
        roughness = c
     END IF
