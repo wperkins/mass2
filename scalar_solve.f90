@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Thu Oct 20 10:25:26 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Nov  7 11:52:28 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -602,18 +602,23 @@ CONTAINS
     INTEGER, INTENT(IN) :: iblock, ispecies, xstart, ystart
 
     INTEGER :: xend, yend
+    INTEGER :: imin, imax, jmin, jmax
     INTEGER :: i, j
     DOUBLE PRECISION :: src, t_water
 
     xend = block(iblock)%xmax
     yend = block(iblock)%ymax
 
+    CALL block_owned_window(block(iblock), imin, imax, jmin, jmax)
+    imin = MAX(imin, xstart)
+    imax = MIN(imax, xend)
+    jmin = MAX(jmin, ystart)
+    jmax = MIN(jmax, yend)
+
     species(ispecies)%scalar(iblock)%srcterm = 0.0
 
-    DO i = xstart, xend
-       DO j = ystart, yend
-
-          IF (.NOT. block_owns(block(iblock), i, j)) CYCLE
+    DO i = imin,imax
+       DO j = jmin,jmax
 
           IF (source_doing_temp) THEN
              t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
