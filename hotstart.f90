@@ -124,6 +124,7 @@ CONTAINS
                 CALL hotstart_read_var(hotstart_iounit, &
                      &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
                      &BLK_VAR_OLDOLD)
+                CALL block_var_iterate(species(i)%scalar(iblk)%concvar)
              END DO
           END DO
           
@@ -164,6 +165,15 @@ CONTAINS
        CALL block_var_put(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
        CALL block_var_sync()
        CALL block_var_get(block(iblk)%bv_wsel, BLK_VAR_CURRENT)
+
+       IF (do_transport) THEN
+          DO i=1,max_species
+             CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_STAR)
+             CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_OLDOLD)
+             CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_OLD)
+             CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_CURRENT)
+          END DO
+       END IF
     END DO
 
   END SUBROUTINE read_hotstart
