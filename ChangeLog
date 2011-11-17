@@ -13,6 +13,15 @@
 
 2011-11-01  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* solver_petsc.F90 (solver_global_index): check i and j to make
+	sure they're in range; if not return a bogus index
+	(solver_map_indexes): added; build an array of PETSc indexes from
+	MASS2 i and j indexes
+	(solver_initialize_block): do not create a VecScatter, map indexes
+	instead 
+	(solver): use mapped indexes for assembly, do not use a VecScatter
+	to get solution
+
 	* block_hydro_bc.f90 (apply_hydro_bc): indexes used to set
 	SOURCE/SINK BC's were exceeding local boundaries
 
