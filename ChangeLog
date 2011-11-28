@@ -1,5 +1,17 @@
 2011-11-28  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* test/temperature/pond/scalar_source.dat: change exchange
+	coefficients to see if it makes any difference
+
+	* energy_flux_module.f90: the various tunable coefficients are now
+	externally and passed in; this is now identical to the code in
+	MASS1 
+
+	* temperature_source.f90 (temperature_source): add exchange
+	coefficients to temperature_source_rec
+	(temperature_parse_options): parse exchange coefficients
+	(temperature_source_term): use exchange coefficients
+
 	* block_hydro.f90 (velocity_shift): owned window indexes were
 	incorrect -- fixed 'em
 
