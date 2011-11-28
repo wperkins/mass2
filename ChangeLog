@@ -1,3 +1,13 @@
+2011-11-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* block_hydro.f90 (velocity_shift): owned window indexes were
+	incorrect -- fixed 'em
+
+2011-11-21  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2_parallel.f90 (mass2_parallel): select number of digits in
+	output file names based on total number of processors
+
 2011-11-07  William A Perkins  <d3g096@olympus.local>
 
 	* hydro_solve.f90 (harmonic): try to make faster
