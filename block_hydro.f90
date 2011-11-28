@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Wed Oct 19 09:05:47 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Nov 21 14:16:48 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 
@@ -51,7 +51,7 @@ CONTAINS
        block(iblk)%uflux = 0.0
        block(iblk)%vflux = 0.0
 
-       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
        imin = MAX(imin, i_index_min+1)
        imax = MIN(imax, block(iblk)%xmax+i_index_extra)
        jmin = MAX(jmin, 2)
@@ -71,7 +71,7 @@ CONTAINS
                &block(iblk)%uflux(imin:imax,block(iblk)%ymax)
        END IF
 
-       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
        imin = MAX(imin, 2)
        imax = MIN(imax, block(iblk)%xmax)
        jmin = MAX(jmin, j_index_min+1)
@@ -105,7 +105,7 @@ CONTAINS
        CALL block_var_get(block(iblk)%bv_uflux)
        CALL block_var_get(block(iblk)%bv_vflux)
 
-       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
        imin = MAX(imin, i_index_min+1)
        imax = MIN(imax, block(iblk)%xmax+i_index_extra)
        jmin = MAX(jmin, 2)
@@ -121,7 +121,7 @@ CONTAINS
           END DO
        END DO
 
-       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
        imin = MAX(imin, 2)
        imax = MIN(imax, block(iblk)%xmax)
        jmin = MAX(jmin, j_index_min+1)
@@ -143,7 +143,7 @@ CONTAINS
                &block(iblk)%vflux(block(iblk)%xmax, jmin:jmax)
        END IF
 
-       CALL block_owned_window(block(iblk), imin, jmin, imax, jmax)
+       CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
        imin = MAX(imin, 2)
        imax = MIN(imax, block(iblk)%xmax)
        jmin = MAX(jmin, 2)
@@ -327,7 +327,7 @@ CONTAINS
     y_beg = 2
     y_end = blk%ymax
 
-    CALL block_owned_window(blk, imin, jmin, imax, jmax)
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
     imin = MAX(imin, x_beg)
     imax = MIN(imax, x_end)
     jmin = MAX(jmin, y_beg)
@@ -650,7 +650,7 @@ CONTAINS
     hi = 1
     ld = 1
     
-    CALL block_owned_window(blk, imin, jmin, imax, jmax)
+    CALL block_owned_window(blk, imin, imax, jmin, jmax)
     djunk = &
          &SUM(ABS(blk%mass_source))
     blk%mass_source_sum(1) = djunk
