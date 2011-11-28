@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Tue Oct 18 08:46:58 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Nov 21 10:32:42 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -33,9 +33,9 @@ PROGRAM mass2_parallel
 #include "global.fh"
 
   CHARACTER (LEN=80), SAVE :: rcsid = "$Id$"
-  CHARACTER (LEN=1024) :: buffer
+  CHARACTER (LEN=1024) :: buffer, fmt, fmt2
   INTEGER :: ierr
-  INTEGER :: mpi_rank
+  INTEGER :: mpi_rank, mpi_size, digits
   INTEGER :: maxsteps
   INTEGER :: junk, heap, stack, iblk, i, j
   LOGICAL :: ok
@@ -56,9 +56,19 @@ PROGRAM mass2_parallel
   CALL mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierr)
   IF (ierr .NE. 0) CALL error_message("MPI: cannot get rank", fatal=.TRUE.)
 
-  WRITE(buffer, '("status.", I0.3, ".out")') mpi_rank
+  CALL mpi_comm_size(MPI_COMM_WORLD, mpi_size, ierr)
+  IF (ierr .NE. 0) CALL error_message("MPI: cannot get size", fatal=.TRUE.)
+
+  digits = int(log10(real(mpi_size)) + 1)
+
+  WRITE(fmt, '("I0.", I1)') digits
+
+  fmt2 = '("status.", ' // TRIM(fmt) // ', ".out")'
+  WRITE(buffer, fmt2) mpi_rank
   CALL open_new(buffer, utility_status_iounit)
-  WRITE(buffer, '("error-warning.", I0.3, ".out")') mpi_rank
+
+  fmt2 = '("error-warning.", ' // TRIM(fmt) // ', ".out")'
+  WRITE(buffer, fmt2) mpi_rank
   CALL open_new(buffer, utility_error_iounit)
 
   IF (mpi_rank .EQ. 0) THEN
