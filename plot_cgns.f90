@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Aug 15 13:37:51 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Dec  5 13:43:17 2011 by William A. Perkins <d3g096@flophouse>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -598,6 +598,13 @@ CONTAINS
                &block(iblock)%buffer, &
                &'depth', 'Water Depth', 'feet')
 
+                                ! average wsel
+
+          CALL block_collect(block(iblock), block(iblock)%bv_wsel)
+          CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+               &block(iblock)%buffer, &
+               &'wsel', 'Water Surface Elevation', 'feet')
+
                                 ! average bed shear
 
           CALL block_collect(block(iblock), block(iblock)%bv_shear)
@@ -620,14 +627,6 @@ CONTAINS
              CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                   &block(iblock)%buffer, &
                   &'GridVelocityEta', 'Lateral Velocity', 'feet/second')
-
-                                ! average wsel
-
-             CALL block_collect(block(iblock), block(iblock)%bv_wsel)
-             CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
-                  &block(iblock)%buffer, &
-                  &'wsel', 'Water Surface Elevation', 'feet')
-
 
                                 ! average velocity magnitude
 
