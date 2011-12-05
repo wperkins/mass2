@@ -1,2 +1,2 @@
 1 TEMP      temperature     "Water Temperature"     Celcius 
-    AIREXCH COEFF  0.46  6.9 0.47 0.80 /
+    RELAX 0.9 AIREXCH COEFF  0.46  6.9 0.47 0.80 /

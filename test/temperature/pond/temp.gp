@@ -98,7 +98,7 @@ set trange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/0
 set urange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/01/00,00:00"] )
 set vrange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/01/00,00:00"] )
 set xlabel "" 
-set xrange [ "01-01-1985 00:00:00" : "01-01-2001 00:00:00" ] noreverse nowriteback
+set xrange [ "01-01-1995 00:00:00" : "01-01-2001 00:00:00" ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
 set ylabel "Temperature, C" 
 set y2label "" 
