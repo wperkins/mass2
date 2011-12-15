@@ -18,7 +18,7 @@
 # -----------------------------------------------------------
 # -----------------------------------------------------------
 # Created December 12, 2003 by William A. Perkins
-# Last Change: Wed Oct  5 09:11:05 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: Thu Dec 15 08:04:09 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 # -----------------------------------------------------------
 
 # -----------------------------------------------------------
@@ -98,9 +98,12 @@ if test $acx_petsc_ok = yes; then
 # This assumes that Make variables are not used in the specific
 # entries.  We need some error checking here, and handling make
 # variables link $(VAR).
+#
+# 3.1: PACKAGE_LIBS 
+# 3.2: PETSC_EXTERNAL_LIB_BASIC
 # 
 
-list="PACKAGES_LIBS"
+list="PACKAGES_LIBS PETSC_EXTERNAL_LIB_BASIC"
 for i in $list; do
     AC_MSG_CHECKING([Looking for $i in $PETSC_PKG])
     eval `$GREP "^$i  *=" $PETSC_PKG | $SED -e 's/  *=  */=\"/' -e 's/$/\"/' `
@@ -113,7 +116,7 @@ fi
 AC_SUBST([PETSC_FCFLAGS])
 AC_SUBST([PETSC_FLIBS])
 PETSC_FCFLAGS="-I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include"
-PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS"
+PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS $PETSC_EXTERNAL_LIB_BASIC"
 
 # Ensure the comiler finds the library...
 tmpLIBS=$LIBS

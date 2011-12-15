@@ -4595,8 +4595,11 @@ if test $acx_petsc_ok = yes; then
 # entries.  We need some error checking here, and handling make
 # variables link $(VAR).
 #
+# 3.1: PACKAGE_LIBS
+# 3.2: PETSC_EXTERNAL_LIB_BASIC
+#
 
-list="PACKAGES_LIBS"
+list="PACKAGES_LIBS PETSC_EXTERNAL_LIB_BASIC"
 for i in $list; do
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking Looking for $i in $PETSC_PKG" >&5
 $as_echo_n "checking Looking for $i in $PETSC_PKG... " >&6; }
@@ -4611,7 +4614,7 @@ fi
 
 
 PETSC_FCFLAGS="-I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include"
-PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS"
+PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS $PETSC_EXTERNAL_LIB_BASIC"
 
 # Ensure the comiler finds the library...
 tmpLIBS=$LIBS
