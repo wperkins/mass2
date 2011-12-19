@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Mon Dec 19 12:38:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: Mon Dec 19 12:54:40 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -303,14 +303,13 @@ CONTAINS
 
     IF (PRESENT(doghost)) mydoghost = doghost
 
-#ifndef NOOUTPUT
-    CALL open_new(fname, grid_iounit)
-#endif
-
     nblk = UBOUND(block)
 
+#ifndef NOOUTPUT
+    CALL open_new(fname, grid_iounit)
     WRITE(grid_iounit,*)"title=""2d Depth-Averaged Flow MASS2 Code - Grid"""
     WRITE(grid_iounit,*)"variables=""x"" ""y"" ""zbot"""
+#endif
 
     DO iblk= 1, nblk(1)
 
