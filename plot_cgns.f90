@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Dec  5 13:43:17 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Dec 19 12:07:06 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -83,16 +83,21 @@ CONTAINS
                                 ! make a grid file with coordinates in it
 
     CALL plot_cgns_file_setup(grid_cgns_name, .TRUE., pfileidx, pbaseidx)
+#ifndef NOOUTPUT
     CALL cg_close_f(pfileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
          &"cannot close grid file", fatal=.TRUE.)
+#endif
 
                                 ! make another file to hold the data
                                 ! (but leave this one open)
 
     CALL plot_cgns_make_name(plot_file_name)
     CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
+
+#ifndef NOOUTPUT
     CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
+#endif
 
   END SUBROUTINE plot_cgns_setup
 
@@ -158,6 +163,7 @@ CONTAINS
 
                                 ! open the CGNS file for writing
 
+#ifndef NOOUTPUT
     CALL cg_open_f(filename, MODE_WRITE, fileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
          &"cannot open " // TRIM(filename), fatal=.TRUE.)
@@ -173,14 +179,17 @@ CONTAINS
     CALL cg_base_write_f(fileidx, "MASS2", 2, physdim, baseidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write base in " //&
          &TRIM(filename), fatal=.TRUE.)
+#endif
 
                                 ! create a zone for each block, and write the grid
 
     DO iblock = 1, max_blocks
        CALL plot_cgns_write_grid(fileidx, baseidx, block(iblock), iblock, docoord, zoneidx)
+#ifndef NOOUTPUT
        IF (docoord) THEN
           CALL plot_cgns_write_bc(fileidx, baseidx, zoneidx,  block(iblock), iblock)
        END IF
+#endif
     END DO
 
 
@@ -220,8 +229,10 @@ CONTAINS
     size(3) = size(1) - 1       ! cells
     size(4) = size(2) - 1
 
+#ifndef NOOUTPUT
     CALL cg_zone_write_f(fileidx, baseidx, buffer, size, Structured, zoneidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write zone", fatal=.TRUE.)
+#endif
 
     IF (docoord) THEN
        IF (plot_cgns_docell) THEN
@@ -263,9 +274,11 @@ CONTAINS
 !!$       CALL plot_cgns_write_metric(fileidx, baseidx, zoneidx, ddataidx, size, "gp12", &
 !!$            &blk%buffer(1:size(1), 1:size(2)))
 
+#ifndef NOOUTPUT
        CALL cg_sol_write_f(fileidx, baseidx, zoneidx, "GridMetrics", CellCenter, &
             &ddataidx, ierr)
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write solution", fatal=.TRUE.)
+#endif
 
        CALL block_collect(blk, blk%bv_x)
        CALL plot_cgns_write_var(zoneidx, ddataidx, blk%xmax,  blk%ymax, &
@@ -329,13 +342,14 @@ CONTAINS
           tmp_double(pos) = coord(i,j)
        END DO
     END DO
-
+#ifndef NOOUTPUT
     CALL cg_coord_write_f(fileidx, baseidx, zoneidx, RealDouble, &
          &name, tmp_double, coordidx, ierr)
     IF (ierr .EQ. ERROR) THEN 
        WRITE(buffer, *) 'cannot write coord "', name, '"'
        CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
     END IF
+#endif
 
   END SUBROUTINE plot_cgns_write_coord
 
@@ -353,6 +367,7 @@ CONTAINS
     CHARACTER (LEN=1024) :: buffer
     INTEGER :: i, j, pos, ierr
 
+#ifndef NOOUTPUT
     CALL cg_goto_f(fileidx, baseidx, ierr, &
          &'Zone_t', zoneidx, &
          &'DiscreteData_t', ddataidx, &
@@ -362,6 +377,7 @@ CONTAINS
             & ddataidx, zoneidx
        CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
     END IF
+#endif
 
     DO j = 1, size(2)
        DO i = 1, size(1)
@@ -370,11 +386,13 @@ CONTAINS
        END DO
     END DO
 
+#ifndef NOOUTPUT
     CALL cg_array_write_f(name, RealDouble, 2, size, tmp_double, ierr)
     IF (ierr .EQ. ERROR) THEN
        WRITE(buffer, *) "cannot write ", TRIM(name), " in zone ", zoneidx
        CALL plot_cgns_error(func, buffer, fatal=.TRUE.)
     END IF
+#endif
 
   END SUBROUTINE plot_cgns_write_metric
 
@@ -562,6 +580,7 @@ CONTAINS
 
        xmax =  block(iblock)%xmax
        ymax =  block(iblock)%ymax
+#ifndef NOOUTPUT
        IF (plot_cgns_docell) THEN
           CALL cg_sol_write_f(pfileidx, pbaseidx, iblock, timestamp, CellCenter, &
                &solidx, ierr)
@@ -570,6 +589,7 @@ CONTAINS
                &solidx, ierr)
        END IF
        IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot write solution", fatal=.TRUE.)
+#endif
 
        ! Solution Field Names: I have stuck to the traditional MASS2
        ! short names here.  They do not follow the CGNS rules for
@@ -853,12 +873,14 @@ CONTAINS
                                 ! file
 
     plot_cgns_outstep = plot_cgns_outstep + 1
+#ifndef NOOUTPUT
     IF (MOD(plot_cgns_outstep, plot_cgns_maxtime) .EQ. 0) THEN
        CALL plot_cgns_file_close(pfileidx, pbaseidx)
        CALL plot_cgns_make_name(plot_file_name)
        CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
        CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
     END IF
+#endif
 
   END SUBROUTINE plot_cgns_write
 
@@ -915,6 +937,7 @@ CONTAINS
        END DO
     END IF
 
+#ifndef NOOUTPUT
     buffer = name
     CALL cg_field_write_f(pfileidx, pbaseidx, zoneidx, solidx, &
          &RealSingle, buffer, tmp_real, fldidx, ierr)
@@ -939,6 +962,7 @@ CONTAINS
        CALL cg_descriptor_write_f('Description', desc, ierr)
        CALL cg_descriptor_write_f('Units', units, ierr)
     END IF
+#endif
 
 
   END SUBROUTINE plot_cgns_write_var
@@ -980,6 +1004,7 @@ CONTAINS
 
     END IF
 
+#ifndef NOOUTPUT
     buffer = name
     CALL cg_field_write_f(pfileidx, pbaseidx, zoneidx, solidx, &
          &Integer, buffer, tmp_int, fldidx, ierr)
@@ -1004,6 +1029,7 @@ CONTAINS
 
        CALL cg_descriptor_write_f('Description', desc, ierr)
     END IF
+#endif
 
   END SUBROUTINE plot_cgns_write_flag
 
@@ -1059,7 +1085,9 @@ CONTAINS
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_close"
 
+#ifndef NOOUTPUT
     CALL plot_cgns_file_close(pfileidx, pbaseidx)
+#endif
 
     DEALLOCATE(tmp_real, tmp_double, tmp_times)
 

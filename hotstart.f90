@@ -224,7 +224,9 @@ CONTAINS
     CALL block_var_get_all(var, buffer, myindex)
     WHERE(abs(buffer) < tiny) &
          &buffer = sign(tiny, buffer)
+#ifndef NOOUTPUT
     WRITE(iunit,*) buffer
+#endif
 
   END SUBROUTINE restart_write_var
 
@@ -278,8 +280,9 @@ CONTAINS
 
           restart_filename = hotstart_name(current_time%date_string, current_time%time_string)
 
+#ifndef NOOUTPUT
           CALL open_new(restart_filename, restart_iounit)
-          
+#endif          
           IF (do_transport) THEN
              do_transport_restart = .TRUE.
              WRITE(restart_iounit,*) do_transport_restart, max_species
@@ -340,7 +343,9 @@ CONTAINS
 !!$          IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
           END IF
 
+#ifndef NOOUTPUT
           CLOSE(restart_iounit)
+#endif
        END IF
     END IF
 
