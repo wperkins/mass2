@@ -1,5 +1,9 @@
 2011-12-19  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* block_grid.f90 (block_gridplot): #ifdef around the actual file
+	operations, so block variable reductions can be performed with
+	output
+
 	* plot_cgns.f90: #ifdef around the actual file operations, so
 	block variable reductions can be performed with output
 

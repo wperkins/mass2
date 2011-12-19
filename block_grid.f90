@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 21, 2010 by William A. Perkins
-! Last Change: Tue Oct 18 08:34:21 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: Mon Dec 19 12:38:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -303,7 +303,9 @@ CONTAINS
 
     IF (PRESENT(doghost)) mydoghost = doghost
 
+#ifndef NOOUTPUT
     CALL open_new(fname, grid_iounit)
+#endif
 
     nblk = UBOUND(block)
 
@@ -327,17 +329,28 @@ CONTAINS
        ni = imax - imin + 1
        nj = jmax - jmin + 1
 
+
+#ifndef NOOUTPUT
        WRITE(grid_iounit,*)"zone f=block"," t=""block ",iblk,""""," i=", ni, " j= ",nj
+#endif
        CALL block_var_get_all(block(iblk)%bv_x_grid, block(iblk)%buffer)
+#ifndef NOOUTPUT
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
+#endif
        CALL block_var_get_all(block(iblk)%bv_y_grid, block(iblk)%buffer)
+#ifndef NOOUTPUT
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
+#endif
        CALL block_var_get_all(block(iblk)%bv_zbot_grid, block(iblk)%buffer)
+#ifndef NOOUTPUT
        WRITE(grid_iounit,'(8G16.8)')block(iblk)%buffer(imin:imax,jmin:jmax)
+#endif
 
     END DO
 
+#ifndef NOOUTPUT
     CLOSE(grid_iounit)
+#endif
 
   END SUBROUTINE block_gridplot
 
