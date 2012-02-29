@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 30, 2011 by William A. Perkins
-# Last Change: Tue Oct 25 10:17:01 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Wed Feb 29 14:01:44 2012 by William A. Perkins <d3g096@flophouse>
 # -------------------------------------------------------------
 
 # RCS ID: $Id: dewaterred.py,v 1.6 2011/10/25 17:56:04 d3g096 Exp $
@@ -17,7 +17,7 @@
 import sys, os
 from optparse import OptionParser
 import CGNS
-import Numeric
+import numarray
 
 # to see how to use sets
 
@@ -58,7 +58,7 @@ class Block(object):
                 tmp = self.readfld(cgns, b, z, s, "hp2")
                 self.cellarea *= tmp
                 
-        self.segment = Numeric.array(Numeric.ones((self.jmax, self.imax), Numeric.Int32))
+        self.segment = numarray.array(numarray.ones((self.jmax, self.imax), numarray.Int32))
         self.segmentlist = set0
         self.lastriver = None
         self.river = None
@@ -112,7 +112,7 @@ class Block(object):
                                CGNS.RealDouble,
                                (1,1,0),
                                (self.imax, self.jmax, 0))
-        result = Numeric.reshape(tmp, (self.jmax, self.imax) )
+        result = numarray.reshape(tmp, (self.jmax, self.imax) )
         return result
 
     # -------------------------------------------------------------
@@ -122,7 +122,7 @@ class Block(object):
     # method to be consistent.
     # -------------------------------------------------------------
     def writefld(self, cgns, b, z, s, fname, fld):
-        tmp = Numeric.reshape(fld, (self.imax, self.jmax))
+        tmp = numarray.reshape(fld, (self.imax, self.jmax))
         cgns.fieldwrite(b, z, s, CGNS.RealDouble, fname, tmp)
         return
 
@@ -149,24 +149,24 @@ class Block(object):
 
         isdry = self.readfld(cgns, b, z, s, "isdry")
 
-        if self.river:
+        if self.river != None:
             self.lastriver = self.river
 
-        self.river = Numeric.array(Numeric.zeros(isdry.shape, Numeric.Float))
+        self.river = numarray.array(numarray.zeros(isdry.shape, numarray.Float))
 
         self.flood(self.iriver, self.jriver, isdry)
 
         if (modify):
             self.writefld(cgns, b, z, s, "InRiver", self.river)
         
-        if not self.lastriver:
+        if self.lastriver == None:
             self.lastriver = self.river
 
-        outriver = Numeric.logical_not(self.river)
-        outriver = Numeric.logical_and(outriver, self.lastriver)
-        strand = Numeric.logical_and(outriver, isdry)
-        iswet = Numeric.logical_not(isdry)
-        entrap = Numeric.logical_and(outriver, iswet)
+        outriver = numarray.logical_not(self.river)
+        outriver = numarray.logical_and(outriver, self.lastriver)
+        strand = numarray.logical_and(outriver, isdry)
+        iswet = numarray.logical_not(isdry)
+        entrap = numarray.logical_and(outriver, iswet)
 
         if (modify):
             self.writefld(cgns, b, z, s, "StrandingArea", strand)
@@ -175,7 +175,7 @@ class Block(object):
         allstats = []
 
         for seg in self.segmentlist:
-            cellarea = Numeric.where(self.segment == seg, 1.0, 0.0)
+            cellarea = numarray.where(self.segment == seg, 1.0, 0.0)
             cellarea *= self.cellarea
             
             stats = {}
@@ -183,16 +183,16 @@ class Block(object):
 
             # areas are reported in ha = 9.290304e-06*ft^2
             area = self.river*cellarea
-            areasum = Numeric.sum(Numeric.sum(area))*9.290304e-06
+            areasum = numarray.sum(numarray.sum(area))*9.290304e-06
             # stats['riverchange'] = areasum - stats['river']
             stats['river'] = areasum
 
             area = strand*cellarea
-            areasum = Numeric.sum(Numeric.sum(area))*9.290304e-06
+            areasum = numarray.sum(numarray.sum(area))*9.290304e-06
             stats['strand'] = areasum
 
             area = entrap*cellarea
-            areasum = Numeric.sum(Numeric.sum(area))*9.290304e-06
+            areasum = numarray.sum(numarray.sum(area))*9.290304e-06
             stats['entrap'] = areasum
 
             allstats.append(stats)
