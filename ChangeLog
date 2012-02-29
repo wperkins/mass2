@@ -1,5 +1,8 @@
 2012-02-29  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* scripts/dewaterred.py: add script to do dewatered and entrapped
+	area calculations
+
 	* scripts/mass2_setup.py: add a script to set up VisIt to view
 	MASS2 output in a nice way
 
