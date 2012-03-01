@@ -343,7 +343,11 @@ for f in files:
         sys.stderr.write("%s: info: processing file %s\n" %
                          (program, f));
 
-    cgns = CGNS.pyCGNS(f, CGNS.MODE_MODIFY)
+    if domodify:
+        cgns = CGNS.pyCGNS(f, CGNS.MODE_MODIFY)
+    else:
+        cgns = CGNS.pyCGNS(f, CGNS.MODE_READ)
+        
     if doverbose:
         sys.stderr.write("%s: info: zone has %d x %d cells\n" %
                          (program, blk.imax, blk.jmax))
