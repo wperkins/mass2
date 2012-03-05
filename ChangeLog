@@ -1,3 +1,13 @@
+2012-03-05  William A Perkins  <d3g096@briareus.local>
+
+	* scripts/dewaterred.py: add --begin and --end options to limit
+	the time period.
+
+2012-03-01  William A Perkins  <d3g096@briareus.local>
+
+	* scripts/dewaterred.py: only open the CGNS file MODE_MODIFY if
+	it's to be bodified
+
 2012-02-29  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* scripts/dewaterred.py: add script to do dewatered and entrapped

@@ -18,6 +18,8 @@ import sys, os
 from optparse import OptionParser
 import CGNS
 import numarray
+from datetime import *
+from time import *
 
 # to see how to use sets
 
@@ -29,6 +31,8 @@ else:
     set0 = set([1])
     
 # some string constants
+
+thefmt = "%m-%d-%Y %H:%M:%S"
 
 # -------------------------------------------------------------
 # Block
@@ -228,7 +232,15 @@ def scanlist(file):
         elif (name == files[-1]):
             end[-1] = sidx
     return (files, start, end)
-            
+
+# -------------------------------------------------------------
+# datetime_from_string
+# -------------------------------------------------------------
+def datetime_from_string(s):
+    lt = strptime(s, thefmt)
+    now = datetime(lt.tm_year, lt.tm_mon, lt.tm_mday, lt.tm_hour, lt.tm_min, 0, 0)
+    return now
+    
     
 
 # -------------------------------------------------------------
@@ -236,6 +248,9 @@ def scanlist(file):
 # -------------------------------------------------------------
 program = os.path.basename(sys.argv[0])
 usage = "usage: " + program
+
+startdate = datetime(1900, 1, 1)
+enddate = datetime(3000, 1, 1)
 
 # -------------------------------------------------------------
 # handle command line
@@ -268,6 +283,14 @@ parser.add_option("-M", "--modify",
 parser.add_option("-L", "--list", type="string",
                   dest="sollist", action="store",
                   help="take solutions from a file instead of the command line")
+
+parser.add_option("-b", "--begin", type="string",
+                  dest="dbegin", action="store",
+                  help="begin processing with specified date time (mm-dd-YYYY HH:MM:SS)")
+
+parser.add_option("-e", "--end", type="string",
+                  dest="dend", action="store",
+                  help="end processing with specified date time (mm-dd-YYYY HH:MM:SS)")
 
 parser.add_option("-o", "--output", type="string",
                   dest="output", action="store")
@@ -312,6 +335,21 @@ else:
 
 domodify = options.modify
 
+if options.dbegin:
+    try:
+        startdate = datetime_from_string(options.dbegin)
+        startdate -= timedelta(0, 3600)
+    except:
+        sys.stderr.write("Error parsing --begin argument (%s)\n" % (options.dbegin))
+        sys.exit(3)
+    
+if options.dend:
+    try:
+        enddate = datetime_from_string(options.dend)
+    except:
+        sys.stderr.write("Error parsing --end argument (%s)\n" % (options.dend))
+        sys.exit(3)
+
 base = 1
 zone = 1
 
@@ -338,6 +376,8 @@ if segfile:
 
 # print files
 
+done = None
+first = 1
 for f in files:
     if doverbose:
         sys.stderr.write("%s: info: processing file %s\n" %
@@ -362,17 +402,29 @@ for f in files:
         sys.stderr.write("%s: info: %s: extracting solutions %d to %d\n" %
                          (program, f, idx0, idx1))
 
-    for s in range(idx0, idx1+1):
-        (sloc, sname) = cgns.solinfo(base, zone, s)
+    for sidx in range(idx0, idx1+1):
+        (sloc, sname) = cgns.solinfo(base, zone, sidx)
+        thedate = datetime_from_string(sname)
+
+        sstat = "skipped"
+        if (startdate <= thedate and thedate <= enddate):
+            sstat = "processed"
+            allstats = blk.in_river(cgns, 1, 1, sidx, domodify)
+            # print allstats
+            if (not first):
+                for s in allstats:
+                    output.write("%s %3d %10.6e %10.6e %10.6e\n" %
+                                 (sname, s['segment'], s['river'],
+                                  s['strand'], s['entrap']))
+            first = None
+        elif (thedate > enddate):
+            done = 1
+            break
         if doverbose:
-            sys.stderr.write("%s: info: processing solution %d \"%s\"\n" %
-                         (program, s, sname));
-        allstats = blk.in_river(cgns, 1, 1, s, domodify)
-        # print allstats
-        for s in allstats:
-            output.write("%s %3d %10.6e %10.6e %10.6e\n" %
-                         (sname, s['segment'], s['river'],
-                          s['strand'], s['entrap']))
+            sys.stderr.write("%s: info: %s solution %d \"%s\"\n" %
+                         (program, sstat, sidx, sname))
     cgns.close()
+    if (done):
+        break
 output.close()
     
