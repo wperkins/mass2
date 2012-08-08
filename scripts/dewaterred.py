@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 30, 2011 by William A. Perkins
-# Last Change: Wed Feb 29 14:01:44 2012 by William A. Perkins <d3g096@flophouse>
+# Last Change: Wed Aug  8 15:14:47 2012 by William A. Perkins <d3g096@flophouse>
 # -------------------------------------------------------------
 
 # RCS ID: $Id: dewaterred.py,v 1.6 2011/10/25 17:56:04 d3g096 Exp $
@@ -126,8 +126,8 @@ class Block(object):
     # method to be consistent.
     # -------------------------------------------------------------
     def writefld(self, cgns, b, z, s, fname, fld):
-        tmp = numarray.reshape(fld, (self.imax, self.jmax))
-        cgns.fieldwrite(b, z, s, CGNS.RealDouble, fname, tmp)
+        tmp = numarray.reshape(fld, (self.imax, self.jmax)).astype(numarray.Float32)
+        cgns.fieldwrite(b, z, s, CGNS.RealSingle, fname, tmp)
         return
 
     # -------------------------------------------------------------
@@ -156,7 +156,7 @@ class Block(object):
         if self.river != None:
             self.lastriver = self.river
 
-        self.river = numarray.array(numarray.zeros(isdry.shape, numarray.Float))
+        self.river = numarray.array(numarray.zeros(isdry.shape, numarray.Float32))
 
         self.flood(self.iriver, self.jriver, isdry)
 

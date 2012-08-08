@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov  1 10:34:15 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: Wed May 23 10:33:24 2012 by William A. Perkins <d3g096@flophouse>
 $Id$
 -------------------------------------------------------------
 
@@ -111,7 +111,7 @@ sh configure \
     PETSC_DIR="/home/d3g096/stuff/src/petsc-3.1-p7" \
     PETSC_ARCH="linux-gnu-c-opt" \
     --with-global-arrays=/share/apps/ga/5.0.1/intel \
-    --with-cgns=$HOME/stuff
+    --with-cgns="$HOME/stuff/cgns2"
 
 Franklin:
 
