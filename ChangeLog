@@ -1,5 +1,7 @@
 2012-11-21  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* test/flow/180bend: parallelize the test and add some pictures
+
 	* test/benchmark/jda/jda-cgns.lay: update 
 
 	* test/benchmark/jda/Makefile (MPIRUN): make parallel
