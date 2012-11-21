@@ -122,13 +122,13 @@ set loadpath
 set fontpath 
 set fit noerrorvariables
 set arrow 1 from 6,6.4 to 6,6.1 lt 1
-set label 1 "Bend Exit" at 6,6.45 center font "Helvectica,12" nopoint
+set label 1 "Bend Entrance" at 6,6.45 center font "Helvectica,12" nopoint
 set arrow 2 from 8.513,6.4 to 8.513,6.1 lt 1
-set label 2 "Bend Entrance" at 8.513,6.45 center font "Helvectica,12" nopoint
-plot 'depth.txt' using ($3*0.3048):($8*30.48) title 'Simulated MASS2' w lines 1, \
-     'depth.txt' using ($3*0.3048):($12*30.48) notitle w lines 1, \
-     'Observed/molls_stage_sim_inner.dat' using ($1*0.8+5.5):($2) title "Simulated, Molls and Chauhdry (1995)" w lines 2, \
-     'Observed/molls_stage_sim_outer.dat' using ($1*0.8+5.5):($2) notitle w lines 2, \
-     'Observed/molls_stage_obs_outer.dat' using 1:2 title "Observed" w points 7, \
-     'Observed/molls_stage_obs_inner.dat' using 1:2 notitle w points 7
+set label 2 "Bend Exit" at 8.513,6.45 center font "Helvectica,12" nopoint
+plot 'depth.txt' using ($2*0.3048):($3*30.48) title 'Simulated MASS2' w lines ls 1, \
+     'depth.txt' using ($2*0.3048):($4*30.48) notitle w lines ls 1, \
+     'Observed/molls_stage_sim_inner.dat' using ($1*0.8+5.5):($2) title "Simulated, Molls and Chauhdry (1995)" w lines ls 2, \
+     'Observed/molls_stage_sim_outer.dat' using ($1*0.8+5.5):($2) notitle w lines ls 2, \
+     'Observed/molls_stage_obs_outer.dat' using 1:2 title "Observed" w points ls 7, \
+     'Observed/molls_stage_obs_inner.dat' using 1:2 notitle w points ls 7
 #    EOF

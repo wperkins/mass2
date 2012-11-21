@@ -1,0 +1,25 @@
+\begin{picture}(0,0)%
+\includegraphics{bend-plan.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(6894,2878)(2389,-3341)
+\put(5101,-1186){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$d$ = 0.0584 m (0.192 ft)}%
+}}}}
+\put(4351,-1336){\makebox(0,0)[rb]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.8~m (2.62~ft)}%
+}}}}
+\put(6076,-586){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}3.0~m (9.84~ft)}%
+}}}}
+\put(8176,-2761){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}0.4~m (1.31~ft)}%
+}}}}
+\put(4951,-3286){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}6.0~m (19.69~ft)}%
+}}}}
+\put(4126,-2536){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\rmdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$U_{o}$ = 0.265 ~m/s (0.869~ft/s)}%
+}}}}
+\end{picture}%
