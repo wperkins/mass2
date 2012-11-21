@@ -1,3 +1,9 @@
+2012-11-21  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/benchmark/jda/jda-cgns.lay: update 
+
+	* test/benchmark/jda/Makefile (MPIRUN): make parallel
+
 2012-08-08  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* scripts/dewaterred.py (Block.writefld): convert the array to

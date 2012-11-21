@@ -7,14 +7,16 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 18, 2003 by William A. Perkins
-# Last Change: Thu Nov  6 08:35:24 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Mon Nov 19 08:54:46 2012 by William A. Perkins <d3g096@flophouse>
 # -------------------------------------------------------------
 
+MPIRUN = mpirun
+NPROC = 8
 MODEL = ../../../mass2
 
 TECPLOT=tecplot
 
-EPSFILES = jda-cgns.eps jda-netcdf.eps
+EPSFILES = jda-cgns.eps
 
 MODELFILES = \
 	bcspecs.dat \
@@ -26,26 +28,23 @@ MODELFILES = \
 all: $(EPSFILES)
 
 hotstart.bin: $(MODELFILES) $(MODEL) mass2_v027.warmup
-	cp mass2_v027.warmup mass2_v027.cfg
-	$(MODEL)
+	cp mass2_v027.warmup mass2.cfg
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 	cp hotstart_04-03-2000_070000.bin hotstart.bin
 
-plot.nc: $(MODELFILES) $(MODEL) mass2_v027.run hotstart.bin
-	cp mass2_v027.run mass2_v027.cfg
-	time $(MODEL)
+plot000.cgns: $(MODELFILES) $(MODEL) mass2_v027.run hotstart.bin
+	cp mass2_v027.run mass2.cfg
+	time $(MPIRUN) -np $(NPROC) $(MODEL)
 	touch $@
-
-plot000.cgns: plot.nc
 
 jda-cgns.eps: jda-cgns.lay plot000.cgns
 	$(TECPLOT) -y $@ -b -p ../../../tecplot/macros/export_eps.mcr jda-cgns.lay
 
-jda-netcdf.eps: jda-netcdf.lay plot.nc
-	$(TECPLOT) -y $@ -b -p ../../../tecplot/macros/export_eps.mcr jda-netcdf.lay
-
 clean:: 
 	rm -f *~ batch.log tecplot.phy
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
+	rm -f error-warning*.out mass_source_monitor.out output.out status*.out
+	rm -f gage_block*.out
+	rm -f mass2.cfg mass2_v027.cfg
 	rm -f gridplot1.dat
 	rm -f plot.nc grid.cgns plot*.cgns
 	rm -f hotstart_* hotstart.bin
