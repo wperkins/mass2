@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Fri May 27 15:03:30 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+Last Change: Tue Nov  1 09:26:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
 $Id$
 -------------------------------------------------------------
 
@@ -243,12 +243,21 @@ On mac laptop:
 
 On PE10900:
 
+    sh bootstrap.sh
+    setenv FC gfortran-mp-4.3
+    setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
         FC="gfortran-mp-4.3" FCFLAGS="-g" \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/usr/unsupported/CGNSLib
+
+    sh bootstrap.sh
+    setenv FC ifort
+    setenv FCFLAGS "-O2 -fpe1 -fpp -m32"
+    sh configure \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
         --with-cgns=/usr/unsupported/CGNSLib \
-        --with-f90=gfortran-mp-4.3 \
-        --with-extra-f90flags="-fno-second-underscore -ffpe-trap=invalid,zero,overflow"
+        --with-f90=ifort 
 
     configure \
         FC=ifort FCFLAGS="-O2 -fpe1" \
