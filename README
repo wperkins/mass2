@@ -243,10 +243,8 @@ On mac laptop:
 
 On PE10900:
 
-    sh bootstrap.sh
-    setenv FC gfortran-mp-4.3
-    setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
+        FC="gfortran-mp-4.3" FCFLAGS="-g" \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
         --with-cgns=/usr/unsupported/CGNSLib
 
@@ -258,6 +256,11 @@ On PE10900:
         --with-cgns=/usr/unsupported/CGNSLib \
         --with-f90=ifort 
 
+    configure \
+        FC=ifort FCFLAGS="-O2 -fpe1" \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-f90=ifort
 
 On bearflag:
 
@@ -276,10 +279,8 @@ On bearflag:
     sh bootstrap.sh
 
     source /usr/software/intel101/x86_64/bin/ifortvars.csh
-    setenv FC ifort
-    setenv FCFLAGS "-g -fpe1"
-    setenv FCFLAGS "-O2 -fpe1"
     configure \
+        FC=ifort FCFLAGS="-O2 -fpe1" \
         --with-f90=ifort \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
         --with-cgns=/usr/unsupported/CGNSLib \
