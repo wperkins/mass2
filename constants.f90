@@ -29,7 +29,6 @@ MODULE constants
   DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
   DOUBLE PRECISION, PARAMETER :: vonkarmon = 0.4
   DOUBLE PRECISION, PARAMETER :: viscosity_water = 1.22e-05 ! ft^2/s @ 60F
-  DOUBLE PRECISION, PARAMETER :: stephan_boltz = 5.67e-8 !stephan-boltzmann constant in W/m2-K4
   DOUBLE PRECISION, PARAMETER :: specific_heat = 4186.0 ! J/kg
 
 END MODULE constants

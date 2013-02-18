@@ -1,21 +1,21 @@
 
 MODULE energy_flux
 
-  USE constants
+  IMPLICIT NONE
 
-IMPLICIT NONE
-
-PRIVATE :: net_solar_rad, net_longwave, back_radiation
-PRIVATE :: conduction, windspeed, rel_humid, sat_vapor_press
-
-DOUBLE PRECISION, PARAMETER, PRIVATE :: coeff(4) = (/ &
-     &0.46, &           ! wind function modifier
-     &9.2, &            ! wind function offset
-     &0.47, &           ! conduction coefficient
-     &0.80 &            ! "brunt" coefficient for lw back radiation
-     &/)
-
-
+  PRIVATE :: net_solar_rad, net_longwave, back_radiation
+  PRIVATE :: conduction, windspeed, rel_humid, sat_vapor_press
+  
+  DOUBLE PRECISION, PARAMETER, PRIVATE :: coeff(4) = (/ &
+       &0.46, &           ! wind function modifier
+       &9.2, &            ! wind function offset
+       &0.47, &           ! conduction coefficient
+       &0.80 &            ! "brunt" coefficient for lw back radiation
+       &/)
+  
+  DOUBLE PRECISION, PUBLIC, PARAMETER :: &
+       & stephan_boltz = 5.67e-8  ! stephan-boltzmann constant in W/m2-K4
+  
 CONTAINS
 !######################################################################
 DOUBLE PRECISION FUNCTION net_heat_flux(net_solar, t_water, t_air, t_dew, wind_speed)

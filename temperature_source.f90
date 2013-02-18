@@ -28,6 +28,10 @@
 ! ----------------------------------------------------------------
 MODULE temperature_source
 
+  USE constants
+
+  IMPLICIT NONE
+
   TYPE temperature_source_block_rec
      DOUBLE PRECISION, POINTER :: evaporation(:,:) ! Evaporation rate, ft/s
   END TYPE temperature_source_block_rec
