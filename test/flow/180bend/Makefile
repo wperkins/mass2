@@ -12,7 +12,7 @@
 # $Id$
 
 MPIRUN = mpirun
-NPROC = 8
+NPROC = 4
 MODEL = ../../../mass2
 
 MASS2SLICE = ../../../scripts/mass2slice.pl
@@ -20,7 +20,7 @@ TECPLOT = tecplot
 PYTHON = python
 
 MESH = mesh.csv
-MESH = coarse.csv 
+# MESH = coarse.csv 
 
 RBIDX = 1
 CLIDX = 11
@@ -72,5 +72,5 @@ clean::
 	rm -f gridplot1.dat
 	rm -f plot.nc grid.cgns plot000.cgns
 	rm -f depth.txt depth.cl.txt depth.rb.txt depth.lb.txt
-	rm -f batch.log
+	rm -f batch.log mass2.cfg
 	rm -f $(EPSFILES)
