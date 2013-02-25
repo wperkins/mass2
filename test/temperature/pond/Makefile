@@ -26,7 +26,8 @@ MODELFILES = \
 	scalar_bcspecs.dat \
 	scalar_source.dat \
 	pond.dat \
-	met.dat
+	met.dat \
+	specific_heat.dat
 
 all: $(EPSFILES)
 

@@ -101,23 +101,23 @@ set ztics border nomirror norotate autofreq
 set nox2tics
 set noy2tics
 set cbtics border mirror norotate autofreq 
-set title "" 0.000000,0.000000  font ""
-set timestamp "%a %b %d %H:%M:%S %Y" bottom norotate 0.000000,0.000000  ""
+set title "" 
+set timestamp "%a %b %d %H:%M:%S %Y" bottom norotate 
 set rrange [ * : * ] noreverse nowriteback  # (currently [0.00000:10.0000] )
 set trange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/01/00,00:00"] )
 set urange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/01/00,00:00"] )
 set vrange [ * : * ] noreverse nowriteback  # (currently ["31/12/99,23:59":"01/01/00,00:00"] )
-set xlabel "" 0.000000,0.000000  font ""
-set x2label "" 0.000000,0.000000  font ""
+set xlabel "" 
+set x2label "" 
 set xrange [ "04-01-1992 00:00:00" : "10-01-1992 00:00:00" ] noreverse nowriteback
 set x2range [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
-set ylabel "Evaporation Rate, mm/day" 0.000000,0.000000  font ""
-set y2label "" 0.000000,0.000000  font ""
+set ylabel "Evaporation Rate, mm/day" 
+set y2label "" 
 set yrange [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
 set y2range [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
-set zlabel "" 0.000000,0.000000  font ""
+set zlabel "" 
 set zrange [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
-set cblabel "" 0.000000,0.000000  font ""
+set cblabel "" 
 set cbrange [ * : * ] noreverse nowriteback  # (currently [-10.0000:10.0000] )
 set zero 1e-08
 set lmargin -1
@@ -134,5 +134,5 @@ set colorbox vertical origin 0.9,0.2 size 0.1,0.63 bdefault
 set loadpath 
 set fontpath 
 set fit noerrorvariables
-plot "gage_1.out" using 1:($11*25.4) with lines 1
+plot "gage_1.out" using 1:($11*25.4) with lines ls 1
 #    EOF

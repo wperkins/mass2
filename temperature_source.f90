@@ -29,6 +29,7 @@
 MODULE temperature_source
 
   USE constants
+  USE time_series
 
   IMPLICIT NONE
 
@@ -38,8 +39,12 @@ MODULE temperature_source
 
   TYPE temperature_source_rec
      LOGICAL :: doexchange
+     TYPE (time_series_rec), POINTER :: specific_heat_ts ! J/kg
      TYPE (temperature_source_block_rec), POINTER :: block(:)
   END TYPE temperature_source_rec
+
+  DOUBLE PRECISION, PARAMETER, PRIVATE :: metric_density = density*515.379 ! kg/m^3
+  DOUBLE PRECISION, PARAMETER, PRIVATE :: const_specific_heat = 4186.0 ! J/kg
 
 CONTAINS
 
@@ -61,17 +66,27 @@ CONTAINS
     INTEGER :: nopt
     INTEGER :: i = 1
     INTEGER :: iblk
+    INTEGER :: iounit = 50
 
     nopt = UBOUND(options, 1)
 
     ALLOCATE(temperature_parse_options)
 
     temperature_parse_options%doexchange = .FALSE.
+    NULLIFY(temperature_parse_options%specific_heat_ts)
 
     DO WHILE ((LEN_TRIM(options(i)) .GT. 0) .AND. (i .LE. nopt))
        SELECT CASE (options(i))
        CASE ('AIREXCH')
           temperature_parse_options%doexchange = .TRUE.
+       CASE ('SPECIFIC_HEAT') 
+          IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
+             WRITE(msg, 100) 'SPECIFIC_HEAT'
+             CALL error_message(msg, fatal=.TRUE.)
+          END IF
+          temperature_parse_options%specific_heat_ts => &
+               &time_series_read(options(i+1), 1, iounit) 
+          i = i + 1
        CASE DEFAULT
           WRITE(msg, *) 'temperature option "', &
                &TRIM(options(i)), '" not understood and ignored'
@@ -87,7 +102,7 @@ CONTAINS
             &j_index_min:block(iblk)%ymax + i_index_extra))
        temperature_parse_options%block(iblk)%evaporation = 0.0
     END DO
-
+100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION temperature_parse_options
 
   ! ----------------------------------------------------------------
@@ -102,13 +117,20 @@ CONTAINS
 
     TYPE(temperature_source_rec) :: rec
     DOUBLE PRECISION :: t
+    DOUBLE PRECISION :: spheat
+
 
     temperature_source_term = 0.0
 
     IF (rec%doexchange) THEN
+       spheat = const_specific_heat
+       IF (ASSOCIATED(rec%specific_heat_ts)) THEN
+          spheat = rec%specific_heat_ts%current(1)
+       END IF
+       
        temperature_source_term = &
             &net_heat_flux(net_solar, t, t_air, t_dew, windspeed) &
-            &/(metric_density*specific_heat/3.2808) ! rho*specifc heat*depth in feet
+            &/(metric_density*spheat/3.2808) ! rho*specifc heat*depth in feet
     END IF
     RETURN
   END FUNCTION temperature_source_term

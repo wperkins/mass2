@@ -24,11 +24,9 @@ MODULE constants
   DOUBLE PRECISION, PARAMETER :: grav = 32.2 ! ft/s/s
   DOUBLE PRECISION, PARAMETER :: tiny = 1.0D-100
   DOUBLE PRECISION, PARAMETER :: density = 1.94 ! slug/ft^3
-  DOUBLE PRECISION, PARAMETER :: metric_density = density*515.379 ! kg/m^3
   DOUBLE PRECISION, PARAMETER :: density_air = 0.00237  ! 60 degrees F
   DOUBLE PRECISION, PARAMETER :: bigfactor = 1.0d80
   DOUBLE PRECISION, PARAMETER :: vonkarmon = 0.4
   DOUBLE PRECISION, PARAMETER :: viscosity_water = 1.22e-05 ! ft^2/s @ 60F
-  DOUBLE PRECISION, PARAMETER :: specific_heat = 4186.0 ! J/kg
 
 END MODULE constants

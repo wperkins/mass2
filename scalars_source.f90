@@ -344,6 +344,10 @@ CONTAINS
              CALL bedsrc_interp(time, delta_t, scalar_source(i)%generic_param%bedsrc)
              IF (ASSOCIATED(bedflowsrc)) CALL bedsrc_interp(time, delta_t, bedflowsrc)
           END IF
+       CASE (TEMP)
+          IF (ASSOCIATED(scalar_source(i)%temp_param%specific_heat_ts)) THEN
+             CALL time_series_interp(scalar_source(i)%temp_param%specific_heat_ts, time)
+          END IF
        END SELECT
     END DO
 
