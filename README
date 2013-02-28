@@ -260,9 +260,10 @@ On PE10900:
         --with-f90=ifort 
 
     configure \
-        FC=ifort FCFLAGS="-O2 -fpe1" \
+        FC=ifort FCFLAGS="-O2 -fpe1" LDFLAGS="-L/opt/local/lib" \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns=/opt/local/include \
+        --with-cgns-lib=cgns \
         --with-f90=ifort
 
 On bearflag:
