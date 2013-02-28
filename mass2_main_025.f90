@@ -177,6 +177,7 @@ SUBROUTINE initialize()
               species(i)%scalar(iblock)%conc = conc_initial
               species(i)%scalar(iblock)%concold = conc_initial
               species(i)%scalar(iblock)%concoldold = conc_initial
+              species(i)%scalar(iblock)%srcconc = conc_initial
            END DO
         END DO
      END IF
@@ -2706,7 +2707,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
            input_total = 0.0
            DO i = bc%start_cell(1), bc%end_cell(1)
               DO j =  bc%start_cell(2), bc%end_cell(2)
-                 IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
+                 IF (.NOT. blk%isdry(i+1,j+1)) &
                       &input_total = input_total + blk%hp1(i+1,j+1)*blk%hp2(i+1,j+1)
               END DO
            END DO
@@ -2720,8 +2721,9 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
         
         DO i = bc%start_cell(1), bc%end_cell(1)
            DO j = bc%start_cell(2), bc%end_cell(2)
-              IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
-                   &blk%xsource(i+1, j+1) = table_input(1)/input_total
+              IF (.NOT. blk%isdry(i+1,j+1)) THEN
+                 blk%xsource(i+1, j+1) = table_input(1)/input_total
+              END IF
            END DO
         END DO
         
@@ -3303,6 +3305,17 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
                 &species(ispecies)%scalar(iblock)%conc(i,j),&
                 &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                 &t_water, salinity)
+
+           ! Include the affects of any fluid sources.  A positive xsource (ft/s)
+           ! indicates an increase in fluid volume. This must include a
+           ! scalar concentration or temperature from the scalar bc specifications.  
+        
+           IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
+              src = src + block(iblock)%xsource(i,j)*&
+                   &species(ispecies)%scalar(iblock)%srcconc(i,j)
+              !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
+           END IF
+
            src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
         END IF
 

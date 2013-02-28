@@ -758,6 +758,8 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
         maxidx = ymax(block) - 1
      CASE ("RB", "LB")
         maxidx = xmax(block) - 1
+     CASE ("IN")
+        ! decide maxidx below
      CASE DEFAULT
         lerr = lerr + 1
         WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
@@ -772,6 +774,33 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
         BACKSPACE(iounit)
 
         SELECT CASE(bc_type)
+
+        CASE("SOURCE")
+           cells = -999
+           READ(iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,cells
+           table_count = table_count + 1
+           scalar_bc(block)%bc_spec(num_bc)%table_num = table_count
+           scalar_table_bc(table_count)%file_name = file_name
+
+           SELECT CASE(bc_extent)
+           CASE("PART")
+              CALL area_cell_check(cells, xmax(block) - 1, ymax(block) - 1, &
+                   &scalar_bc(block)%bc_spec(num_bc)%num_cell_pairs, &
+                   &scalar_bc(block)%bc_spec(num_bc)%start_cell, &
+                   &scalar_bc(block)%bc_spec(num_bc)%end_cell, &
+                   &line, ierr)
+           CASE("ALL")
+              scalar_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
+              scalar_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+              scalar_bc(block)%bc_spec(num_bc)%end_cell(1) = xmax(block) - 1
+              scalar_bc(block)%bc_spec(num_bc)%start_cell(2) = 1
+              scalar_bc(block)%bc_spec(num_bc)%end_cell(2) = ymax(block) - 1
+           CASE DEFAULT
+              lerr = lerr + 1
+              WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+                   &": ", TRIM(bc_extent), "?"
+              CALL error_message(msg, fatal=.FALSE.)
+           END SELECT
            
         CASE("ZEROG")
            SELECT CASE(bc_extent)
@@ -931,17 +960,18 @@ SUBROUTINE set_bc_part(iounit, spec, cells, maxidx, line, ierr)
 END SUBROUTINE set_bc_part
 
 ! ----------------------------------------------------------------
-! SUBROUTINE set_bc_area
+! SUBROUTINE area_cell_check
 ! ----------------------------------------------------------------
-SUBROUTINE set_bc_area(spec, cells, xmax, ymax, line, ierr)
+SUBROUTINE area_cell_check(cells, xmax, ymax, &
+     &num_cell_pairs, start_cell, end_cell, line, ierr)
 
   IMPLICIT NONE
 
-  INTEGER, INTENT(IN) :: cells(:), xmax, ymax, line
-  TYPE (bc_spec_struct), INTENT(INOUT) :: spec
+  INTEGER, INTENT(IN) :: cells(:), xmax, ymax
+  INTEGER, INTENT(OUT) :: num_cell_pairs, start_cell(:), end_cell(:)
+  INTEGER, INTENT(IN) :: line
   INTEGER, INTENT(INOUT) :: ierr
-
-  INTEGER :: num_cells, num_cell_pairs, i
+  INTEGER :: num_cells
   CHARACTER (LEN=1024) :: msg
 
   num_cells = COUNT(cells /= -999)
@@ -953,59 +983,76 @@ SUBROUTINE set_bc_area(spec, cells, xmax, ymax, line, ierr)
      CALL error_message(msg, fatal=.FALSE.)
   ELSE
      num_cell_pairs = num_cells/2
-     spec%num_cell_pairs = num_cells/2
-     spec%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
-     spec%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
+     start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
+     end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
      
-     IF (spec%start_cell(1) .LT. 1 .OR. &
-          &spec%start_cell(1) .GT. xmax) THEN
+     IF (start_cell(1) .LT. 1 .OR. &
+          &start_cell(1) .GT. xmax) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": minimum x index out of range: ", spec%start_cell(1)
+             &": minimum x index out of range: ", start_cell(1)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
 
-     IF (spec%end_cell(1) .LT. 1 .OR. &
-          &spec%end_cell(1) .GT. xmax) THEN
+     IF (end_cell(1) .LT. 1 .OR. &
+          &end_cell(1) .GT. xmax) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": maximum x index out of range: ", spec%end_cell(1)
+             &": maximum x index out of range: ", end_cell(1)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
 
-     IF (spec%end_cell(1) .LT. spec%start_cell(1)) THEN
+     IF (end_cell(1) .LT. start_cell(1)) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": invalid x index range: ", spec%start_cell(1), " to ", &
-             &spec%end_cell(1)
+             &": invalid x index range: ", start_cell(1), " to ", &
+             &end_cell(1)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
 
-     IF (spec%start_cell(2) .LT. 1 .OR. &
-          &spec%start_cell(2) .GT. ymax) THEN
+     IF (start_cell(2) .LT. 1 .OR. &
+          &start_cell(2) .GT. ymax) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": minimum y index out of range: ", spec%start_cell(2)
+             &": minimum y index out of range: ", start_cell(2)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
      
-     IF (spec%end_cell(2) .LT. 1 .OR. &
-          &spec%end_cell(2) .GT. ymax) THEN
+     IF (end_cell(2) .LT. 1 .OR. &
+          &end_cell(2) .GT. ymax) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": maximum y index out of range: ", spec%end_cell(2)
+             &": maximum y index out of range: ", end_cell(2)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
 
-     IF (spec%end_cell(2) .LT. spec%start_cell(2)) THEN
+     IF (end_cell(2) .LT. start_cell(2)) THEN
         ierr = ierr + 1
         WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
-             &": invalid y index range: ", spec%start_cell(2), " to ", &
-             &spec%end_cell(2)
+             &": invalid y index range: ", start_cell(2), " to ", &
+             &end_cell(2)
         CALL error_message(msg, fatal=.FALSE.)
      END IF
 
   END IF
+  
+
+END SUBROUTINE area_cell_check
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE set_bc_area
+! ----------------------------------------------------------------
+SUBROUTINE set_bc_area(spec, cells, xmax, ymax, line, ierr)
+
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: cells(:), xmax, ymax, line
+  TYPE (bc_spec_struct), INTENT(INOUT) :: spec
+  INTEGER, INTENT(INOUT) :: ierr
+  
+  CALL area_cell_check(cells, xmax, ymax, &
+       &spec%num_cell_pairs, spec%start_cell, spec%end_cell, line, ierr)
 
 END SUBROUTINE set_bc_area
 

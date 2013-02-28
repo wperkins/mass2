@@ -1,3 +1,16 @@
+2013-02-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/transport/pointsource2: test of scalar 'SOURCE' boundary
+	condition 
+
+	* block_bc_module.f90 (read_scalar_bcspecs): add a 'SOURCE'
+	boundary condition
+	(area_cell_check): routine to check indexes of 'IN' boundary
+	condition 
+
+	* scalars_module.f90 (scalars): add srcconc to block scalar
+	variables 
+
 2013-02-25  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* test/temperature/pond: specify specific heat as a time series

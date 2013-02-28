@@ -54,6 +54,8 @@ TYPE scalar_struct
    DOUBLE PRECISION, POINTER :: concold(:,:) ! c old depth-ave concentration
    DOUBLE PRECISION, POINTER :: concoldold(:,:) ! c old depth-ave concentration
    DOUBLE PRECISION, POINTER :: srcterm(:,:) ! precomputed source term
+   DOUBLE PRECISION, POINTER :: srcconc(:,:) ! c used for hydro sources
+
    TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
 
                                 ! keep track of the mass of the
@@ -130,6 +132,14 @@ SUBROUTINE allocate_scalarblock_components(i, block, xmax, ymax)
      CALL status_message('allocation successful for source term')
   ENDIF
   species(i)%scalar(block)%srcterm = 0.0
+
+  ALLOCATE(species(i)%scalar(block)%srcconc(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
+  IF(alloc_stat /= 0)THEN
+     CALL error_message('allocation failed for the source concentration', fatal=.TRUE.)
+  ELSE
+     CALL status_message('allocation successful for source concentration')
+  ENDIF
+  species(i)%scalar(block)%srcconc = 0.0
 
   ALLOCATE(species(i)%scalar(block)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)	! c old depth-ave concentration
   IF(alloc_stat /= 0)THEN
