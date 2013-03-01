@@ -39,6 +39,7 @@ MODULE temperature_source
 
   TYPE temperature_source_rec
      LOGICAL :: doexchange
+     LOGICAL :: doevaporate
      TYPE (time_series_rec), POINTER :: specific_heat_ts ! J/kg
      TYPE (temperature_source_block_rec), POINTER :: block(:)
   END TYPE temperature_source_rec
@@ -73,12 +74,15 @@ CONTAINS
     ALLOCATE(temperature_parse_options)
 
     temperature_parse_options%doexchange = .FALSE.
+    temperature_parse_options%doevaporate = .FALSE.
     NULLIFY(temperature_parse_options%specific_heat_ts)
 
     DO WHILE ((LEN_TRIM(options(i)) .GT. 0) .AND. (i .LE. nopt))
        SELECT CASE (options(i))
        CASE ('AIREXCH')
           temperature_parse_options%doexchange = .TRUE.
+       CASE ('EVAPORATE')
+          temperature_parse_options%doevaporate = .TRUE.
        CASE ('SPECIFIC_HEAT') 
           IF ((i + 1 .GT. nopt) .OR. (LEN_TRIM(options(i+1)) .LE. 0)) THEN
              WRITE(msg, 100) 'SPECIFIC_HEAT'
@@ -159,7 +163,7 @@ CONTAINS
     evaporation_rate = evaporation(t, t_dew, windspeed)     ! W/m^2 = J/s/m^2
     evaporation_rate = evaporation_rate/lheat ! m/s
     evaporation_rate = evaporation_rate/0.3048 ! ft/s
-    evaporation_rate = evaporation_rate*12.0*3600.0*24.0 ! in/day
+    !evaporation_rate = evaporation_rate*12.0*3600.0*24.0 ! in/day
     evaporation_rate = -evaporation_rate
   END FUNCTION evaporation_rate
 

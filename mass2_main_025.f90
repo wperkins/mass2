@@ -3316,6 +3316,15 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
               !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
            END IF
 
+           ! If there is condensation (negative evaporation) then give
+           ! it air temperature; other scalars would get zero
+           IF (block(iblock)%evaporation(i,j) .GT. 0.0) THEN
+              SELECT CASE (scalar_source(ispecies)%srctype)
+              CASE (TEMP)
+                 src = src + block(iblock)%evaporation(i,j)*t_air
+              END SELECT
+           END IF
+
            src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
         END IF
 
@@ -3336,6 +3345,7 @@ SUBROUTINE update(status_flag)
 IMPLICIT NONE
 
 INTEGER :: status_flag, iblock, ispecies, i, j
+DOUBLE PRECISION :: e
 
 
 DO iblock=1,max_blocks
@@ -3371,8 +3381,21 @@ IF (do_transport) THEN
             IF (scalar_source(ispecies)%temp_param%doexchange) THEN
                DO i = 2, block(iblock)%xmax
                   DO j = 2, block(iblock)%ymax
+
+                     ! compute the evaporation rate in this cell (ft/s)
+                     e = evaporation_rate(species(ispecies)%scalar(iblock)%conc(i,j))
+
+                     ! set the hydrodynamic evaporation rate (ft/s) if specified
+                     IF (scalar_source(ispecies)%temp_param%doevaporate) THEN 
+                        block(iblock)%evaporation(i,j) = -e
+                     ELSE
+                        block(iblock)%evaporation(i,j) = 0.0
+                     END IF
+
+                     ! this is used for output and is converted to in/day
                      scalar_source(ispecies)%temp_param%block(iblock)%evaporation(i,j) = &
-                          &evaporation_rate(species(ispecies)%scalar(iblock)%conc(i,j))
+                          &e*12.0*3600.0*24.0
+
                   END DO
                END DO
             END IF
