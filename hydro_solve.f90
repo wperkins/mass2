@@ -1100,7 +1100,8 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
              &cpo*(blk%depthold(i,j) - blk%depth(i,j)) + &
              &cpo*blend_time*(-0.5*blk%depth(i,j) + blk%depthold(i,j) - 0.5*blk%deptholdold(i,j)) + &
              &flux_w - flux_e + flux_s - flux_n + &
-             &blk%xsource(i,j)*hp1*hp2
+             &blk%xsource(i,j)*hp1*hp2 + &
+             &blk%evaporation(i,j)*hp1*hp2
               
 
         ce(i,j) = he2*depth_e*blk%lud(i,j)

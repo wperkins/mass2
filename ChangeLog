@@ -1,5 +1,11 @@
 2013-03-04  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* test/temperature/evaporation: a test for evaporation with
+	recharge 
+
+	* hydro_solve.f90 (depth_solve): add evaporation into depth
+	correction equation
+
 	* block_bc_module.f90 (read_scalar_bcspecs): correct table count
 	when 'SOURCE' bc's are specified
 
