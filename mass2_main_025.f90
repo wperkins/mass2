@@ -3096,6 +3096,9 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
   CASE("TABLE")
      CALL scalar_table_interp(current_time%time, spec%table_num,&
           & table_input, spec%num_cell_pairs)
+  CASE("SOURCE")
+     CALL scalar_table_interp(current_time%time, spec%table_num,&
+          & table_input, spec%num_cell_pairs)
   END SELECT
 
   x_end = blk%xmax
@@ -3256,8 +3259,21 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
         GOTO 100
      END SELECT
 
+  CASE ("IN")
+     SELECT CASE(spec%bc_type)
+     CASE("SOURCE")
+        i_beg = spec%start_cell(1)+1
+        i_end = spec%end_cell(1)+1
+        j_beg = spec%start_cell(2)+1
+        j_end = spec%end_cell(2)+1
+        sclr%srcconc(i_beg:i_end, j_beg:j_end) = table_input(1)
      CASE DEFAULT
         GOTO 100
+     END SELECT
+
+  CASE DEFAULT
+     GOTO 100
+        
   END SELECT
 
   RETURN
@@ -3266,6 +3282,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
   WRITE(buf,*) " apply_scalar_bc: cannot handle: ", &
        &TRIM(spec%bc_loc), " ", TRIM(spec%bc_type), " ", &
        &TRIM(spec%bc_kind), " for scalar "
+  CALL error_message(buf, fatal=.FALSE.)
+
 END SUBROUTINE apply_scalar_bc
 
 ! ----------------------------------------------------------------

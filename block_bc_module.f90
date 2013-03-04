@@ -702,7 +702,8 @@ SUBROUTINE read_scalar_bcspecs(iounit, max_blocks, max_species, xmax, ymax)
 
   DO WHILE(.TRUE.)
      READ(iounit,*,END=100)junk1,junk_char1,junk_char2
-     IF(junk_char2 == "TABLE") max_scalar_tables = max_scalar_tables + 1
+     IF(junk_char2 == "TABLE" .OR. junk_char2 == "SOURCE") &
+          &max_scalar_tables = max_scalar_tables + 1
   END DO
 	
   ! now allocate the number of table bc structs that we need
