@@ -29,7 +29,7 @@
 MODULE temperature_source
 
   USE constants
-  USE time_series
+  USE const_series
 
   IMPLICIT NONE
 
@@ -40,7 +40,7 @@ MODULE temperature_source
   TYPE temperature_source_rec
      LOGICAL :: doexchange
      LOGICAL :: doevaporate
-     TYPE (time_series_rec), POINTER :: specific_heat_ts ! J/kg
+     TYPE (const_series_rec), POINTER :: specific_heat_ts ! J/kg
      TYPE (temperature_source_block_rec), POINTER :: block(:)
   END TYPE temperature_source_rec
 
@@ -89,7 +89,7 @@ CONTAINS
              CALL error_message(msg, fatal=.TRUE.)
           END IF
           temperature_parse_options%specific_heat_ts => &
-               &time_series_read(options(i+1), 1, iounit) 
+               &const_series_read(options(i+1)) 
           i = i + 1
        CASE DEFAULT
           WRITE(msg, *) 'temperature option "', &
@@ -98,6 +98,11 @@ CONTAINS
        END SELECT
        i = i + 1
     END DO
+
+    IF (.NOT. ASSOCIATED(temperature_parse_options%specific_heat_ts)) THEN
+       temperature_parse_options%specific_heat_ts => &
+            &const_series_alloc(const_specific_heat)
+    END IF
 
     ALLOCATE(temperature_parse_options%block(max_blocks))
     DO iblk = 1, max_blocks
@@ -129,7 +134,7 @@ CONTAINS
     IF (rec%doexchange) THEN
        spheat = const_specific_heat
        IF (ASSOCIATED(rec%specific_heat_ts)) THEN
-          spheat = rec%specific_heat_ts%current(1)
+          spheat = rec%specific_heat_ts%current
        END IF
        
        temperature_source_term = &
