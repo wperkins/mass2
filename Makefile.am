@@ -17,7 +17,9 @@ ACLOCAL_AMFLAGS = -I time_series  -I m4
 SUBDIRS = @SUBDIRS@
 
 bin_PROGRAMS = mass2
-check_PROGRAMS = solver_test
+check_PROGRAMS = \
+	solver_test \
+	met_spec_test
 
 mass2_SOURCES =					\
      constants.f90				\
@@ -32,6 +34,7 @@ mass2_SOURCES =					\
      table_bc_module.f90			\
      block_bc_module.f90			\
      met_data_module.f90			\
+	met_zone.f90 \
      profile_init.f90				\
      misc_vars_module.f90			\
      transport_only_module.f90			\
@@ -67,6 +70,9 @@ solver_test_SOURCES =				\
 	solver_backup.f90
 solver_test_DEPENDENCIES = $(SOLVEROBJ)
 solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
+
+met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
+met_spec_test_LDADD = time_series/libts.a
 
 # dependancies for individual object files
 
@@ -173,6 +179,7 @@ total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 transport_only_module.$(OBJEXT): transport_only_module.f90  \
 	global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) time_series/libts.a
 
+met_spec_test.$(OBJEXT): met_spec_test.f90 met_zone.$(OBJEXT) time_series/libts.a
 clean-local:
 	rm -f *.$(F90MODULEEXT)
 	rm -f *.il work.*

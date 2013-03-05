@@ -63,7 +63,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = mass2$(EXEEXT)
-check_PROGRAMS = solver_test$(EXEEXT)
+check_PROGRAMS = solver_test$(EXEEXT) met_spec_test$(EXEEXT)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) ChangeLog README \
@@ -88,14 +88,14 @@ am_mass2_OBJECTS = constants.$(OBJEXT) scalars_module.$(OBJEXT) \
 	netcdferror.$(OBJEXT) global_module_023.$(OBJEXT) \
 	io_routines_module.$(OBJEXT) table_bc_module.$(OBJEXT) \
 	block_bc_module.$(OBJEXT) met_data_module.$(OBJEXT) \
-	profile_init.$(OBJEXT) misc_vars_module.$(OBJEXT) \
-	transport_only_module.$(OBJEXT) mass2_main_025.$(OBJEXT) \
-	mass2.$(OBJEXT) scalars_source.$(OBJEXT) \
-	scalar_solve.$(OBJEXT) temperature_source.$(OBJEXT) \
-	tdg_source.$(OBJEXT) generic_source.$(OBJEXT) \
-	bed_source.$(OBJEXT) sediment_source.$(OBJEXT) \
-	particulate_source.$(OBJEXT) bed.$(OBJEXT) \
-	bed_functions.$(OBJEXT) accumulator.$(OBJEXT) \
+	met_zone.$(OBJEXT) profile_init.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) transport_only_module.$(OBJEXT) \
+	mass2_main_025.$(OBJEXT) mass2.$(OBJEXT) \
+	scalars_source.$(OBJEXT) scalar_solve.$(OBJEXT) \
+	temperature_source.$(OBJEXT) tdg_source.$(OBJEXT) \
+	generic_source.$(OBJEXT) bed_source.$(OBJEXT) \
+	sediment_source.$(OBJEXT) particulate_source.$(OBJEXT) \
+	bed.$(OBJEXT) bed_functions.$(OBJEXT) accumulator.$(OBJEXT) \
 	total_conc.$(OBJEXT) hydro_solve.$(OBJEXT) \
 	scalar_mass_balance.$(OBJEXT) solver_backup.$(OBJEXT) \
 	solver_common.$(OBJEXT) distance.$(OBJEXT) \
@@ -104,6 +104,9 @@ mass2_OBJECTS = $(am_mass2_OBJECTS)
 am__DEPENDENCIES_1 =
 mass2_DEPENDENCIES = $(am__DEPENDENCIES_1) gastemp/libgastemp.a \
 	time_series/libts.a
+am_met_spec_test_OBJECTS = met_spec_test.$(OBJEXT) met_zone.$(OBJEXT)
+met_spec_test_OBJECTS = $(am_met_spec_test_OBJECTS)
+met_spec_test_DEPENDENCIES = time_series/libts.a
 am_solver_test_OBJECTS = solver_test.$(OBJEXT) solver_common.$(OBJEXT) \
 	solver_backup.$(OBJEXT)
 solver_test_OBJECTS = $(am_solver_test_OBJECTS)
@@ -132,8 +135,10 @@ AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
-SOURCES = $(mass2_SOURCES) $(solver_test_SOURCES)
-DIST_SOURCES = $(mass2_SOURCES) $(solver_test_SOURCES)
+SOURCES = $(mass2_SOURCES) $(met_spec_test_SOURCES) \
+	$(solver_test_SOURCES)
+DIST_SOURCES = $(mass2_SOURCES) $(met_spec_test_SOURCES) \
+	$(solver_test_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -345,6 +350,7 @@ mass2_SOURCES = \
      table_bc_module.f90			\
      block_bc_module.f90			\
      met_data_module.f90			\
+	met_zone.f90 \
      profile_init.f90				\
      misc_vars_module.f90			\
      transport_only_module.f90			\
@@ -382,6 +388,8 @@ solver_test_SOURCES = \
 
 solver_test_DEPENDENCIES = $(SOLVEROBJ)
 solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
+met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
+met_spec_test_LDADD = time_series/libts.a
 
 # extra files to distribute
 EXTRA_DIST = \
@@ -489,6 +497,9 @@ clean-checkPROGRAMS:
 mass2$(EXEEXT): $(mass2_OBJECTS) $(mass2_DEPENDENCIES) $(EXTRA_mass2_DEPENDENCIES) 
 	@rm -f mass2$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(mass2_OBJECTS) $(mass2_LDADD) $(LIBS)
+met_spec_test$(EXEEXT): $(met_spec_test_OBJECTS) $(met_spec_test_DEPENDENCIES) $(EXTRA_met_spec_test_DEPENDENCIES) 
+	@rm -f met_spec_test$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(met_spec_test_OBJECTS) $(met_spec_test_LDADD) $(LIBS)
 solver_test$(EXEEXT): $(solver_test_OBJECTS) $(solver_test_DEPENDENCIES) $(EXTRA_solver_test_DEPENDENCIES) 
 	@rm -f solver_test$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(solver_test_OBJECTS) $(solver_test_LDADD) $(LIBS)
@@ -1029,6 +1040,7 @@ total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 transport_only_module.$(OBJEXT): transport_only_module.f90  \
 	global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) time_series/libts.a
 
+met_spec_test.$(OBJEXT): met_spec_test.f90 met_zone.$(OBJEXT) time_series/libts.a
 clean-local:
 	rm -f *.$(F90MODULEEXT)
 	rm -f *.il work.*
