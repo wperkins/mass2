@@ -144,6 +144,12 @@ CONTAINS
           CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_CONDUCTION)%c, options, i, ierr)
        CASE (energy_coeff_name(ENERGY_COEFF_BRUNT))
           CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_BRUNT)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_EMISS))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_EMISS)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_REFLECT))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_REFLECT)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_ALBEDO))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_ALBEDO)%c, options, i, ierr)
        CASE DEFAULT
           WRITE(msg, *) "unknown ZONE keyword: ", TRIM(options(i))
           CALL error_message(msg, fatal=.FALSE.)

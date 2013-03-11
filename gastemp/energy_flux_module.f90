@@ -13,22 +13,30 @@ MODULE energy_flux
        &ENERGY_COEFF_WINDA = 1, &
        &ENERGY_COEFF_WINDB = 2, &
        &ENERGY_COEFF_CONDUCTION = 3, &
-       &ENERGY_COEFF_BRUNT = 4
+       &ENERGY_COEFF_BRUNT = 4, &
+       &ENERGY_COEFF_EMISS = 5, &
+       &ENERGY_COEFF_REFLECT = 6, &
+       &ENERGY_COEFF_ALBEDO = 7
 
-  INTEGER, PUBLIC, PARAMETER :: ENERGY_COEFF_MAX = ENERGY_COEFF_BRUNT
+  INTEGER, PUBLIC, PARAMETER :: ENERGY_COEFF_MAX = ENERGY_COEFF_ALBEDO
 
   DOUBLE PRECISION, PARAMETER, PUBLIC :: energy_coeff_default(ENERGY_COEFF_MAX) = (/ &
        &0.46, &           ! wind function modifier
        &9.2, &            ! wind function offset
        &0.47, &           ! conduction coefficient
-       &0.80 &            ! "brunt" coefficient for lw back radiation
-       &/)
+       &0.80, &           ! "brunt" coefficient for lw back radiation
+       &0.97, &           ! emissivity for outgoing lw radiation
+       &0.03, &           ! reflectivity for lw back radiation
+       &0.00 /)           ! albedo/reflectivity for incoming sw radiation
 
   CHARACTER (len=20), PARAMETER, PUBLIC :: energy_coeff_name(ENERGY_COEFF_MAX) = (/&
        &'WINDA', &
        &'WINDB', &
        &'CONDUCTION', &
-       &'BRUNT' /)
+       &'BRUNT', &
+       &'EMISS', &
+       &'REFLECT', &
+       &'ALBEDO' /)
 
 CONTAINS
   !######################################################################
@@ -44,23 +52,21 @@ CONTAINS
     DOUBLE PRECISION :: net_solar,t_water, t_air, t_dew, wind_speed
 
 
-    net_heat_flux = net_solar + &
+    net_heat_flux = net_solar_rad(coeff, net_solar) + &
          &net_longwave(coeff, t_air, t_dew) + &
-         &back_radiation(t_water) + &
+         &back_radiation(coeff, t_water) + &
          &evaporation(coeff, t_water, t_dew, wind_speed) + &
          &conduction(coeff, t_water, t_air, wind_speed) 
 
   END FUNCTION net_heat_flux
   !######################################################################
-  DOUBLE PRECISION FUNCTION net_solar_rad()
+  DOUBLE PRECISION FUNCTION net_solar_rad(coeff, sr0)
     IMPLICIT NONE
-    ! Hsn
-    !
-    ! computes the net incoming short-wave solar radiation using the 
-    ! equations in the report
-    !
-    ! currently not implemented as it is an input in the weather file
-    net_solar_rad = 0.0
+    ! Hso
+    DOUBLE PRECISION :: coeff(*)
+    DOUBLE PRECISION :: sr0
+
+    net_solar_rad = sr0*(1.0 - coeff(ENERGY_COEFF_ALBEDO))
 
   END FUNCTION net_solar_rad
 
@@ -74,7 +80,9 @@ CONTAINS
     IMPLICIT NONE
     DOUBLE PRECISION :: coeff(*)
     DOUBLE PRECISION :: t_air, t_dew
-    DOUBLE PRECISION :: reflect = 0.03			! relflectance assumed to be 0.03 
+    DOUBLE PRECISION :: reflect ! relflectance 
+
+    reflect = coeff(ENERGY_COEFF_REFLECT)
 
     net_longwave = 4.4e-8*(t_air + 273.15)**4 * &
          ( coeff(ENERGY_COEFF_BRUNT) + &
@@ -83,16 +91,17 @@ CONTAINS
   END FUNCTION net_longwave
 
   !#########################################################################
-  DOUBLE PRECISION FUNCTION back_radiation(t_water)
+  DOUBLE PRECISION FUNCTION back_radiation(coeff, t_water)
     !
     ! Hb - (Watts/meter^2)
     !
     ! longwave back radiation (heat flux OUT) (black body radiation)
     ! formula 2.1.4 in Edinger, Brady, Geyer (1974)
     IMPLICIT NONE
+    DOUBLE PRECISION :: coeff(*)
     DOUBLE PRECISION :: t_water				! water surface temperature in degrees C
-    DOUBLE PRECISION :: emiss = 0.97	! emissivity of water
-
+    DOUBLE PRECISION :: emiss   ! emissivity of water
+    emiss = coeff(ENERGY_COEFF_EMISS)
     back_radiation = -emiss*stephan_boltz*(t_water + 273.15)**4
 
   END FUNCTION back_radiation

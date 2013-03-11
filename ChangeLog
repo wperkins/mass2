@@ -1,5 +1,11 @@
 2013-03-11  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* met_zone.f90 (met_zone_read): set emissivity,
+	reflectivity, and albedo coefficients
+
+	* gastemp/energy_flux_module.f90 (energy_flux): add emissivity,
+	reflectivity, and albedo coefficients
+
 	* met_zone.f90 (met_zone): put the coefficient series in an array
 	sized the same a the energy coefficients
 
