@@ -71,7 +71,7 @@ solver_test_DEPENDENCIES = $(SOLVEROBJ)
 solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
 
 met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
-met_spec_test_LDADD = time_series/libts.a
+met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
 
 # dependancies for individual object files
 

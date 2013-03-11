@@ -106,7 +106,7 @@ mass2_DEPENDENCIES = $(am__DEPENDENCIES_1) gastemp/libgastemp.a \
 	time_series/libts.a
 am_met_spec_test_OBJECTS = met_spec_test.$(OBJEXT) met_zone.$(OBJEXT)
 met_spec_test_OBJECTS = $(am_met_spec_test_OBJECTS)
-met_spec_test_DEPENDENCIES = time_series/libts.a
+met_spec_test_DEPENDENCIES = gastemp/libgastemp.a time_series/libts.a
 am_solver_test_OBJECTS = solver_test.$(OBJEXT) solver_common.$(OBJEXT) \
 	solver_backup.$(OBJEXT)
 solver_test_OBJECTS = $(am_solver_test_OBJECTS)
@@ -388,7 +388,7 @@ solver_test_SOURCES = \
 solver_test_DEPENDENCIES = $(SOLVEROBJ)
 solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
 met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
-met_spec_test_LDADD = time_series/libts.a
+met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
 
 # extra files to distribute
 EXTRA_DIST = \
