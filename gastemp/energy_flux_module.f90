@@ -6,13 +6,6 @@ MODULE energy_flux
   PRIVATE :: net_solar_rad, net_longwave, back_radiation
   PRIVATE :: conduction, windspeed, rel_humid, sat_vapor_press
 
-  DOUBLE PRECISION, PARAMETER, PRIVATE :: coeff(4) = (/ &
-       &0.46, &           ! wind function modifier
-       &9.2, &            ! wind function offset
-       &0.47, &           ! conduction coefficient
-       &0.80 &            ! "brunt" coefficient for lw back radiation
-       &/)
-
   DOUBLE PRECISION, PUBLIC, PARAMETER :: &
        & stephan_boltz = 5.67e-8  ! stephan-boltzmann constant in W/m2-K4
 
@@ -23,6 +16,19 @@ MODULE energy_flux
        &ENERGY_COEFF_BRUNT = 4
 
   INTEGER, PUBLIC, PARAMETER :: ENERGY_COEFF_MAX = ENERGY_COEFF_BRUNT
+
+  DOUBLE PRECISION, PARAMETER, PUBLIC :: energy_coeff_default(ENERGY_COEFF_MAX) = (/ &
+       &0.46, &           ! wind function modifier
+       &9.2, &            ! wind function offset
+       &0.47, &           ! conduction coefficient
+       &0.80 &            ! "brunt" coefficient for lw back radiation
+       &/)
+
+  CHARACTER (len=20), PARAMETER, PUBLIC :: energy_coeff_name(ENERGY_COEFF_MAX) = (/&
+       &'WINDA', &
+       &'WINDB', &
+       &'CONDUCTION', &
+       &'BRUNT' /)
 
 CONTAINS
   !######################################################################

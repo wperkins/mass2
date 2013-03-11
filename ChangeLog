@@ -1,5 +1,11 @@
 2013-03-11  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* met_zone.f90 (met_zone): put the coefficient series in an array
+	sized the same a the energy coefficients
+
+	* gastemp/energy_flux_module.f90 (energy_flux): add coefficient
+	default values and keywords
+
 	* met_zone.f90 (met_zone_heat_flux_zone)
 	(met_zone_heat_flux_byid, met_zone_evaporation_zone): added
 

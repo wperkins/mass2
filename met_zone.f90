@@ -24,14 +24,15 @@ MODULE met_zone
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
+  TYPE met_coeff_rec
+     TYPE (const_series_rec), POINTER :: c
+  END type met_coeff_rec
+
   TYPE met_zone_rec
      INTEGER :: id
      TYPE (met_time_series_rec), POINTER :: met
      DOUBLE PRECISION, POINTER :: current(:)
-     TYPE (const_series_rec), POINTER :: winda
-     TYPE (const_series_rec), POINTER :: windb
-     TYPE (const_series_rec), POINTER :: conduction
-     TYPE (const_series_rec), POINTER :: brunt
+     TYPE (met_coeff_rec) :: coeff_series(ENERGY_COEFF_MAX)
      DOUBLE PRECISION :: coeff(ENERGY_COEFF_MAX)
   END type met_zone_rec
 
@@ -104,7 +105,7 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ierr
     
     CHARACTER (LEN=1024) :: msg
-    INTEGER :: i, nopt
+    INTEGER :: i, nopt, k
     DOUBLE PRECISION :: tmp
 
     nopt = UBOUND(options, 1)
@@ -125,10 +126,9 @@ CONTAINS
 
     ! set the zone coefficients to default
 
-    mzone%winda => const_series_alloc(0.46d00)
-    mzone%windb => const_series_alloc(9.2d00)
-    mzone%brunt => const_series_alloc(0.8d00)
-    mzone%conduction => const_series_alloc(0.47d00)
+    DO k = 1, ENERGY_COEFF_MAX
+       mzone%coeff_series(k)%c => const_series_alloc(energy_coeff_default(k))
+    END DO
 
     DO WHILE ((LEN_TRIM(options(i)) .GT. 0) .AND. (i .LE. nopt))
        SELECT CASE (options(i))
@@ -136,14 +136,14 @@ CONTAINS
           mzone%met => met_time_series_read(options(i+1))
           mzone%current => mzone%met%current
           i = i + 1
-       CASE ("WINDA")
-          CALL met_zone_set_coeff(mzone%winda, options, i, ierr)
-       CASE ("WINDB")
-          CALL met_zone_set_coeff(mzone%windb, options, i, ierr)
-       CASE ("CONDUCTION")
-          CALL met_zone_set_coeff(mzone%conduction, options, i, ierr)
-       CASE ("BRUNT")
-          CALL met_zone_set_coeff(mzone%brunt, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_WINDA))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_WINDA)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_WINDB))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_WINDB)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_CONDUCTION))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_CONDUCTION)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_BRUNT))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_BRUNT)%c, options, i, ierr)
        CASE DEFAULT
           WRITE(msg, *) "unknown ZONE keyword: ", TRIM(options(i))
           CALL error_message(msg, fatal=.FALSE.)
@@ -238,18 +238,14 @@ CONTAINS
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: time
-    INTEGER :: i
+    INTEGER :: i, k
 
     DO i = 1, UBOUND(met_zones, 1)
-       CALL const_series_update(met_zones(i)%winda, time)
-       CALL const_series_update(met_zones(i)%windb, time)
-       CALL const_series_update(met_zones(i)%conduction, time)
-       CALL const_series_update(met_zones(i)%brunt, time)
+       DO k = 1, ENERGY_COEFF_MAX
+          CALL const_series_update(met_zones(i)%coeff_series(k)%c, time)
+          met_zones(i)%coeff(k) = met_zones(i)%coeff_series(k)%c%current
+       END DO
        CALL met_time_series_update(met_zones(i)%met, time)
-       met_zones(i)%coeff(ENERGY_COEFF_WINDA) = met_zones(i)%winda%current
-       met_zones(i)%coeff(ENERGY_COEFF_WINDB) = met_zones(i)%windb%current
-       met_zones(i)%coeff(ENERGY_COEFF_CONDUCTION) = met_zones(i)%conduction%current
-       met_zones(i)%coeff(ENERGY_COEFF_BRUNT) = met_zones(i)%brunt%current
     END DO
   END SUBROUTINE met_zone_update
 
@@ -261,13 +257,12 @@ CONTAINS
 
     IMPLICIT NONE
 
-    INTEGER :: i
+    INTEGER :: i, k
 
     DO i = 1, UBOUND(met_zones, 1)
-       CALL const_series_destroy(met_zones(i)%winda)
-       CALL const_series_destroy(met_zones(i)%windb)
-       CALL const_series_destroy(met_zones(i)%brunt)
-       CALL const_series_destroy(met_zones(i)%conduction)
+       DO k = 1, ENERGY_COEFF_MAX
+          CALL const_series_destroy(met_zones(i)%coeff_series(k)%c)
+       END DO
        CALL met_time_series_destroy(met_zones(i)%met)
     END DO
     DEALLOCATE(met_zones)
@@ -283,7 +278,7 @@ CONTAINS
 
     INTEGER, INTENT(IN) :: iounit
 
-    INTEGER :: i, nzone
+    INTEGER :: i, nzone, k
 
     nzone = UBOUND(met_zones, 1)
 
@@ -298,34 +293,17 @@ CONTAINS
           WRITE(iounit, 12) 'none'
        END IF
        WRITE (iounit, 15)
-       IF (ASSOCIATED(met_zones(i)%winda%ts)) THEN
-          WRITE(iounit, 14) 'WINDA', TRIM(met_zones(i)%winda%ts%filename), &
-               &met_zones(i)%winda%current
-       ELSE 
-          WRITE(iounit, 13) 'WINDA', met_zones(i)%winda%current
-       END IF
 
-       IF (ASSOCIATED(met_zones(i)%windb%ts)) THEN
-          WRITE(iounit, 14) 'WINDB', TRIM(met_zones(i)%windb%ts%filename), &
-               &met_zones(i)%windb%current
-       ELSE 
-          WRITE(iounit, 13) 'WINDB', met_zones(i)%windb%current
-       END IF
-
-       IF (ASSOCIATED(met_zones(i)%brunt%ts)) THEN
-          WRITE(iounit, 14) 'BRUNT', TRIM(met_zones(i)%brunt%ts%filename), &
-               &met_zones(i)%brunt%current
-       ELSE 
-          WRITE(iounit, 13) 'BRUNT', met_zones(i)%brunt%current
-       END IF
-
-       IF (ASSOCIATED(met_zones(i)%conduction%ts)) THEN
-          WRITE(iounit, 14) 'CONDUCTION', TRIM(met_zones(i)%conduction%ts%filename), &
-               &met_zones(i)%conduction%current
-       ELSE 
-          WRITE(iounit, 13) 'CONDUCTION', met_zones(i)%conduction%current
-       END IF
-
+       DO k = 1, ENERGY_COEFF_MAX
+          IF (ASSOCIATED(met_zones(i)%coeff_series(k)%c%ts)) THEN
+             WRITE(iounit, 14) energy_coeff_name(k), &
+                  &TRIM(met_zones(i)%coeff_series(k)%c%ts%filename), &
+                  &met_zones(i)%coeff_series(k)%c%current
+          ELSE 
+             WRITE(iounit, 13) energy_coeff_name(k), &
+                  &met_zones(i)%coeff_series(k)%c%current
+          END IF
+       END DO
        WRITE (iounit, 10)
        
     END DO
