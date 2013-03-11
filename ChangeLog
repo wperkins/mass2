@@ -1,3 +1,24 @@
+2013-03-11  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* met_zone.f90 (met_zone_heat_flux_zone)
+	(met_zone_heat_flux_byid, met_zone_evaporation_zone): added
+
+	* accumulator.f90 (accumulate_tdg): use met zone 1 for barometric
+	pressure
+
+	* scalars_source.f90 (scalar_source_timestep): call met_zone_update
+
+	* tdg_source.f90 (tdg_source_term): use met zone 1
+
+	* temperature_source.f90 (temperature_source_term): use met zone 1
+
+	* constants.f90 (constants): metric_density needs to be here
+
+	* gastemp/energy_flux_module.f90 (net_heat_flux): make a
+	coefficient array and pass to all atmospheric exchange routines
+
+	* met_data_module.f90: no longer used
+
 2013-03-05  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* Makefile.am (check_PROGRAMS): add met_spec_test

@@ -35,7 +35,7 @@ USE plot_output
 USE block_flux_output
 USE scalars
 USE scalars_source
-USE met_data_module
+USE met_zone
 USE energy_flux
 USE gas_functions
 
@@ -76,8 +76,6 @@ SUBROUTINE start_up()
 
   INTEGER :: imax, jmax
   INTEGER :: i, j 
-
-  baro_press = 760.0              ! in case weather is not read
 
   CALL read_grid(max_blocks, grid_file_name, readpts=.FALSE.)
 
@@ -326,8 +324,9 @@ SUBROUTINE bc_init()
 
   ! read in met data from a file
   IF (source_need_met) THEN
-     CALL read_met_data(weather_filename)
-     CALL update_met_data(current_time%time)
+     CALL met_zone_read_specs(weather_filename)
+     CALL met_zone_update(current_time%time)
+     CALL met_zone_summary(status_iounit)
   END IF
 
   DO iblock=1,max_blocks
@@ -347,6 +346,14 @@ SUBROUTINE output_init()
   IMPLICIT NONE
 
   INTEGER :: system_time(8)
+
+  DOUBLE PRECISION :: baro_press
+
+  IF (ALLOCATED(met_zones)) THEN
+     baro_press = met_zones(1)%current(MET_BARO)
+  ELSE 
+     baro_press = 760.0
+  END IF
 
   !------------------------------------------------------------------------------------
   ! set up the gage print files
@@ -3301,7 +3308,7 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
 
   INTEGER :: xend, yend
   INTEGER :: i, j
-  DOUBLE PRECISION :: src
+  DOUBLE PRECISION :: src, t_water
 
   xend = block(iblock)%xmax
   yend = block(iblock)%ymax
@@ -3339,7 +3346,8 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
            IF (block(iblock)%evaporation(i,j) .GT. 0.0) THEN
               SELECT CASE (scalar_source(ispecies)%srctype)
               CASE (TEMP)
-                 src = src + block(iblock)%evaporation(i,j)*t_air
+                 src = src + block(iblock)%evaporation(i,j)*&
+                      &met_zones(1)%current(MET_AIRT)
               END SELECT
            END IF
 
@@ -3401,7 +3409,8 @@ IF (do_transport) THEN
                   DO j = 2, block(iblock)%ymax
 
                      ! compute the evaporation rate in this cell (ft/s)
-                     e = evaporation_rate(species(ispecies)%scalar(iblock)%conc(i,j))
+                     e = met_zone_evaporation_rate(met_zones(1), &
+                          &species(ispecies)%scalar(iblock)%conc(i,j))
 
                      ! set the hydrodynamic evaporation rate (ft/s) if specified
                      IF (scalar_source(ispecies)%temp_param%doevaporate) THEN 
@@ -3440,10 +3449,17 @@ SUBROUTINE output(status_flag)
 IMPLICIT NONE
 
 
-DOUBLE PRECISION :: depth_e, flux_e, conc_TDG
+DOUBLE PRECISION :: depth_e, flux_e, conc_TDG, t_water
 
 INTEGER :: iblock, ispecies, num_bc
 INTEGER :: i, j, status_flag
+DOUBLE PRECISION :: baro_press
+
+IF (ALLOCATED(met_zones)) THEN
+   baro_press = met_zones(1)%current(MET_BARO)
+ELSE 
+   baro_press = 760.0
+END IF
 
 !-----------------------------------------------------------------------------
 ! format definitions all placed here

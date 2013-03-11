@@ -44,7 +44,6 @@ MODULE temperature_source
      TYPE (temperature_source_block_rec), POINTER :: block(:)
   END TYPE temperature_source_rec
 
-  DOUBLE PRECISION, PARAMETER, PRIVATE :: metric_density = density*515.379 ! kg/m^3
   DOUBLE PRECISION, PARAMETER, PRIVATE :: const_specific_heat = 4186.0 ! J/kg
 
 CONTAINS
@@ -120,7 +119,7 @@ CONTAINS
   DOUBLE PRECISION FUNCTION temperature_source_term(rec, t)
 
     USE energy_flux
-    USE met_data_module
+    USE met_zone
 
     IMPLICIT NONE
 
@@ -138,7 +137,7 @@ CONTAINS
        END IF
        
        temperature_source_term = &
-            &net_heat_flux(net_solar, t, t_air, t_dew, windspeed) &
+            &met_zone_heat_flux(met_zones(1), t)&
             &/(metric_density*spheat/3.2808) ! rho*specifc heat*depth in feet
     END IF
     RETURN
@@ -153,22 +152,13 @@ CONTAINS
   DOUBLE PRECISION FUNCTION evaporation_rate(t)
     
     USE energy_flux
-    USE met_data_module, ONLY: t_dew, windspeed
+    USE met_zone
 
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: t ! water surface temperature in degrees C
-    
-    DOUBLE PRECISION :: lheat
-    
-    lheat = latent_heat(t)  ! kJ/kg
-    lheat = lheat*metric_density  ! kJ/m^3
-    lheat = 1000.0*lheat          ! J/m^3
-    
-    evaporation_rate = evaporation(t, t_dew, windspeed)     ! W/m^2 = J/s/m^2
-    evaporation_rate = evaporation_rate/lheat ! m/s
-    evaporation_rate = evaporation_rate/0.3048 ! ft/s
-    !evaporation_rate = evaporation_rate*12.0*3600.0*24.0 ! in/day
+
+    evaporation_rate = met_zone_evaporation_rate(met_zones(1), t)     ! W/m^2 = J/s/m^2
     evaporation_rate = -evaporation_rate
   END FUNCTION evaporation_rate
 

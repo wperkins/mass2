@@ -15,13 +15,14 @@
 ! ----------------------------------------------------------------
 MODULE met_zone
 
+  USE constants
   USE const_series
   USE met_time_series
+  USE energy_flux
 
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
 
   TYPE met_zone_rec
      INTEGER :: id
@@ -29,15 +30,29 @@ MODULE met_zone
      DOUBLE PRECISION, POINTER :: current(:)
      TYPE (const_series_rec), POINTER :: winda
      TYPE (const_series_rec), POINTER :: windb
-     TYPE (const_series_rec), POINTER :: brunt
      TYPE (const_series_rec), POINTER :: conduction
+     TYPE (const_series_rec), POINTER :: brunt
+     DOUBLE PRECISION :: coeff(ENERGY_COEFF_MAX)
   END type met_zone_rec
 
   TYPE (met_zone_rec), ALLOCATABLE, PUBLIC :: met_zones(:)
+  INTEGER, ALLOCATABLE, PUBLIC :: met_zone_index(:)
 
   INTEGER, PARAMETER, PRIVATE :: metspec_iounit = 21
-  INTEGER, PARAMETER :: metspec_max_option = 100
+  INTEGER, PARAMETER, PRIVATE :: metspec_max_option = 100
 
+  DOUBLE PRECISION, PARAMETER, PUBLIC :: default_baro_press = 760.0
+
+  INTERFACE met_zone_heat_flux
+     MODULE PROCEDURE met_zone_heat_flux_zone
+     MODULE PROCEDURE met_zone_heat_flux_byid
+  END INTERFACE met_zone_heat_flux
+     
+  INTERFACE met_zone_evaporation_rate
+     MODULE PROCEDURE met_zone_evaporation_zone
+     MODULE PROCEDURE met_zone_evaporation_byid
+  END INTERFACE met_zone_evaporation_rate
+     
 CONTAINS
 
   ! ----------------------------------------------------------------
@@ -154,7 +169,7 @@ CONTAINS
     CHARACTER (LEN=*), INTENT(IN) :: filename
     CHARACTER (LEN=1024) :: msg
     CHARACTER (LEN=256) :: kword, options(metspec_max_option)
-    INTEGER :: nzone, izone, i, nopt, ierr
+    INTEGER :: nzone, izone, i, nopt, ierr, maxzoneid
 
     CALL open_existing(filename, metspec_iounit)
     CALL status_message("Reading met specs from " // &
@@ -201,6 +216,12 @@ CONTAINS
 
     CLOSE(metspec_iounit)
 
+    maxzoneid = MAXVAL(met_zones(:)%id)
+    ALLOCATE(met_zone_index(maxzoneid))
+    DO izone = 1, nzone
+       met_zone_index(met_zones(izone)%id) = izone
+    END DO
+       
     RETURN
 
 300 CONTINUE
@@ -222,9 +243,13 @@ CONTAINS
     DO i = 1, UBOUND(met_zones, 1)
        CALL const_series_update(met_zones(i)%winda, time)
        CALL const_series_update(met_zones(i)%windb, time)
-       CALL const_series_update(met_zones(i)%brunt, time)
        CALL const_series_update(met_zones(i)%conduction, time)
+       CALL const_series_update(met_zones(i)%brunt, time)
        CALL met_time_series_update(met_zones(i)%met, time)
+       met_zones(i)%coeff(ENERGY_COEFF_WINDA) = met_zones(i)%winda%current
+       met_zones(i)%coeff(ENERGY_COEFF_WINDB) = met_zones(i)%windb%current
+       met_zones(i)%coeff(ENERGY_COEFF_CONDUCTION) = met_zones(i)%conduction%current
+       met_zones(i)%coeff(ENERGY_COEFF_BRUNT) = met_zones(i)%brunt%current
     END DO
   END SUBROUTINE met_zone_update
 
@@ -268,31 +293,35 @@ CONTAINS
        WRITE (iounit, 10)
        WRITE (iounit, 16) met_zones(i)%id
        IF (ASSOCIATED(met_zones(i)%met)) THEN
-          WRITE(iounit, 12) met_zones(i)%met%ts%filename
+          WRITE(iounit, 12) TRIM(met_zones(i)%met%ts%filename)
        ELSE 
           WRITE(iounit, 12) 'none'
        END IF
        WRITE (iounit, 15)
        IF (ASSOCIATED(met_zones(i)%winda%ts)) THEN
-          WRITE(iounit, 14) 'WINDA', met_zones(i)%winda%ts%filename
+          WRITE(iounit, 14) 'WINDA', TRIM(met_zones(i)%winda%ts%filename), &
+               &met_zones(i)%winda%current
        ELSE 
           WRITE(iounit, 13) 'WINDA', met_zones(i)%winda%current
        END IF
 
        IF (ASSOCIATED(met_zones(i)%windb%ts)) THEN
-          WRITE(iounit, 14) 'WINDB', met_zones(i)%windb%ts%filename
+          WRITE(iounit, 14) 'WINDB', TRIM(met_zones(i)%windb%ts%filename), &
+               &met_zones(i)%windb%current
        ELSE 
           WRITE(iounit, 13) 'WINDB', met_zones(i)%windb%current
        END IF
 
        IF (ASSOCIATED(met_zones(i)%brunt%ts)) THEN
-          WRITE(iounit, 14) 'BRUNT', met_zones(i)%brunt%ts%filename
+          WRITE(iounit, 14) 'BRUNT', TRIM(met_zones(i)%brunt%ts%filename), &
+               &met_zones(i)%brunt%current
        ELSE 
           WRITE(iounit, 13) 'BRUNT', met_zones(i)%brunt%current
        END IF
 
        IF (ASSOCIATED(met_zones(i)%conduction%ts)) THEN
-          WRITE(iounit, 14) 'CONDUCTION', met_zones(i)%conduction%ts%filename
+          WRITE(iounit, 14) 'CONDUCTION', TRIM(met_zones(i)%conduction%ts%filename), &
+               &met_zones(i)%conduction%current
        ELSE 
           WRITE(iounit, 13) 'CONDUCTION', met_zones(i)%conduction%current
        END IF
@@ -303,12 +332,92 @@ CONTAINS
     
 10  FORMAT(50(1H-))
 11  FORMAT("MET ZONE ", I2, ' OF ', I2)
-12  FORMAT("DATA: ", A44)
+12  FORMAT("DATA: ", A)
 13  FORMAT(A13, ': CONSTANT: ', G10.5)
-14  FORMAT(A13, ': VARIABLE: ', A30)
+14  FORMAT(A13, ': VARIABLE: ', A, ', current = ', G10.5)
 15  FORMAT("COEFFICIENTS:")
 16  FORMAT("ID: ", I2)
   END SUBROUTINE met_zone_summary
 
+  ! ----------------------------------------------------------------
+  ! DOUBLE PRECISION FUNCTION met_zone_heat_flux
+  ! ----------------------------------------------------------------
+  DOUBLE PRECISION FUNCTION met_zone_heat_flux_zone(mzone, t_water)
+
+    IMPLICIT NONE
+
+    TYPE (met_zone_rec), INTENT(IN) :: mzone
+    DOUBLE PRECISION, INTENT(IN) :: t_water
+
+    met_zone_heat_flux_zone = net_heat_flux(&
+         &mzone%coeff, &
+         &mzone%met%current(MET_SWRAD), &
+         &t_water, &
+         &mzone%met%current(MET_AIRT), &
+         &mzone%met%current(MET_DEWT), &
+         &mzone%met%current(MET_WIND))
+  END FUNCTION met_zone_heat_flux_zone
+
+  ! ----------------------------------------------------------------
+  ! DOUBLE PRECISION FUNCTION met_zone_heat_flux_byid
+  ! ----------------------------------------------------------------
+  DOUBLE PRECISION FUNCTION met_zone_heat_flux_byid(zoneid, t_water)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: zoneid
+    DOUBLE PRECISION, INTENT(IN) :: t_water
+
+    INTEGER :: izone
+
+    izone = met_zone_index(zoneid)
+
+    met_zone_heat_flux_byid = met_zone_heat_flux_zone(met_zones(izone), t_water)
+    
+  END FUNCTION met_zone_heat_flux_byid
+
   
+  ! ----------------------------------------------------------------
+  ! DOUBLE PRECISION FUNCTION met_zone_evaporation_zone
+  ! ----------------------------------------------------------------
+  DOUBLE PRECISION FUNCTION met_zone_evaporation_zone(mzone, t_water)
+
+    IMPLICIT NONE
+    
+    TYPE (met_zone_rec), INTENT(IN) :: mzone
+    DOUBLE PRECISION, INTENT(IN) :: t_water
+
+    DOUBLE PRECISION :: lheat, evaporation_rate
+    
+    lheat = latent_heat(t_water)  ! kJ/kg
+    lheat = lheat*metric_density  ! kJ/m^3
+    lheat = 1000.0*lheat          ! J/m^3
+    
+    evaporation_rate = evaporation(mzone%coeff, &
+         &t_water, mzone%current(MET_DEWT), mzone%current(MET_WIND))     ! W/m^2 = J/s/m^2
+    evaporation_rate = evaporation_rate/lheat ! m/s
+    evaporation_rate = evaporation_rate/0.3048 ! ft/s
+    !evaporation_rate = evaporation_rate*12.0*3600.0*24.0 ! in/day
+    evaporation_rate = -evaporation_rate
+
+    met_zone_evaporation_zone = evaporation_rate
+  END FUNCTION met_zone_evaporation_zone
+
+  ! ----------------------------------------------------------------
+  ! DOUBLE PRECISION FUNCTION met_zone_evaporation_byid
+  ! ----------------------------------------------------------------
+  DOUBLE PRECISION FUNCTION met_zone_evaporation_byid(zoneid, t_water)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: zoneid
+    DOUBLE PRECISION, INTENT(IN) :: t_water
+    
+    INTEGER :: izone
+
+    izone = met_zone_index(zoneid)
+
+    met_zone_evaporation_byid = met_zone_evaporation_zone(met_zones(izone), t_water)
+  END FUNCTION met_zone_evaporation_byid
+
 END MODULE met_zone

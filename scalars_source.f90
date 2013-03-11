@@ -323,7 +323,7 @@ CONTAINS
   ! interactions with the bed.
   ! ----------------------------------------------------------------
   SUBROUTINE scalar_source_timestep(time, delta_t)
-    USE met_data_module
+    USE met_zone
     USE scalars, ONLY: max_species
     IMPLICIT NONE
     DOUBLE PRECISION :: time, delta_t
@@ -332,7 +332,7 @@ CONTAINS
 
                                 ! update meteorologic data, if used
 
-    IF (source_need_met) CALL update_met_data(time)
+    IF (source_need_met) CALL met_zone_update(time)
 
                                 ! necessary activities to prepare
                                 ! individual scalar species

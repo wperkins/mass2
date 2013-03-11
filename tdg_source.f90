@@ -111,16 +111,19 @@ CONTAINS
   DOUBLE PRECISION FUNCTION tdg_source_term(rec, conc, temp, sal)
 
     USE gas_functions
-    USE met_data_module
+    USE met_zone
 
     IMPLICIT NONE
 
     TYPE(tdg_source_rec) :: rec
     DOUBLE PRECISION :: conc, temp, sal
     DOUBLE PRECISION :: ccstar, transfer_coeff
+    DOUBLE PRECISION :: baro_press, windspeed
 
     tdg_source_term = 0.0
     IF (rec%doexchange) THEN
+       baro_press = met_zones(1)%current(MET_BARO)
+       windspeed = met_zones(1)%current(MET_WIND)
        ! c* will be the conc at Barometric Press.
        ccstar = TDGasConc( baro_press, temp,  sal ) 
        transfer_coeff = &
