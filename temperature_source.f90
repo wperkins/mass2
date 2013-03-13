@@ -116,7 +116,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION temperature_source_term
   ! ----------------------------------------------------------------
-  DOUBLE PRECISION FUNCTION temperature_source_term(rec, t)
+  DOUBLE PRECISION FUNCTION temperature_source_term(rec, t, d)
 
     USE energy_flux
     USE met_zone
@@ -124,7 +124,7 @@ CONTAINS
     IMPLICIT NONE
 
     TYPE(temperature_source_rec) :: rec
-    DOUBLE PRECISION :: t
+    DOUBLE PRECISION :: t, d
     DOUBLE PRECISION :: spheat
 
 
@@ -137,29 +137,29 @@ CONTAINS
        END IF
        
        temperature_source_term = &
-            &met_zone_heat_flux(met_zones(1), t)&
+            &met_zone_heat_flux(met_zones(1), t, d)&
             &/(metric_density*spheat/3.2808) ! rho*specifc heat*depth in feet
     END IF
     RETURN
   END FUNCTION temperature_source_term
 
-  ! ----------------------------------------------------------------
-  ! DOUBLE PRECISION FUNCTION evaporation_rate
-  !
-  ! This routine uses the evaporation() function to estimate a an water
-  ! evaporation rate, in in/day.
-  ! ----------------------------------------------------------------
-  DOUBLE PRECISION FUNCTION evaporation_rate(t)
+  ! ! ----------------------------------------------------------------
+  ! ! DOUBLE PRECISION FUNCTION evaporation_rate
+  ! !
+  ! ! This routine uses the evaporation() function to estimate a an water
+  ! ! evaporation rate, in in/day.
+  ! ! ----------------------------------------------------------------
+  ! DOUBLE PRECISION FUNCTION evaporation_rate(t)
     
-    USE energy_flux
-    USE met_zone
+  !   USE energy_flux
+  !   USE met_zone
 
-    IMPLICIT NONE
+  !   IMPLICIT NONE
 
-    DOUBLE PRECISION, INTENT(IN) :: t ! water surface temperature in degrees C
+  !   DOUBLE PRECISION, INTENT(IN) :: t ! water surface temperature in degrees C
 
-    evaporation_rate = met_zone_evaporation_rate(met_zones(1), t)     ! W/m^2 = J/s/m^2
-    evaporation_rate = -evaporation_rate
-  END FUNCTION evaporation_rate
+  !   evaporation_rate = met_zone_evaporation_rate(met_zones(1), t) 
+  !   evaporation_rate = -evaporation_rate
+  ! END FUNCTION evaporation_rate
 
 END MODULE temperature_source

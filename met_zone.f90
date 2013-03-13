@@ -150,6 +150,8 @@ CONTAINS
           CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_REFLECT)%c, options, i, ierr)
        CASE (energy_coeff_name(ENERGY_COEFF_ALBEDO))
           CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_ALBEDO)%c, options, i, ierr)
+       CASE (energy_coeff_name(ENERGY_COEFF_EXTINCT))
+          CALL met_zone_set_coeff(mzone%coeff_series(ENERGY_COEFF_EXTINCT)%c, options, i, ierr)
        CASE DEFAULT
           WRITE(msg, *) "unknown ZONE keyword: ", TRIM(options(i))
           CALL error_message(msg, fatal=.FALSE.)
@@ -326,17 +328,17 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION met_zone_heat_flux
   ! ----------------------------------------------------------------
-  DOUBLE PRECISION FUNCTION met_zone_heat_flux_zone(mzone, t_water)
+  DOUBLE PRECISION FUNCTION met_zone_heat_flux_zone(mzone, t_water, depth)
 
     IMPLICIT NONE
 
     TYPE (met_zone_rec), INTENT(IN) :: mzone
-    DOUBLE PRECISION, INTENT(IN) :: t_water
+    DOUBLE PRECISION, INTENT(IN) :: t_water, depth
 
     met_zone_heat_flux_zone = net_heat_flux(&
          &mzone%coeff, &
          &mzone%met%current(MET_SWRAD), &
-         &t_water, &
+         &t_water, depth, &
          &mzone%met%current(MET_AIRT), &
          &mzone%met%current(MET_DEWT), &
          &mzone%met%current(MET_WIND))
@@ -345,18 +347,18 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION met_zone_heat_flux_byid
   ! ----------------------------------------------------------------
-  DOUBLE PRECISION FUNCTION met_zone_heat_flux_byid(zoneid, t_water)
+  DOUBLE PRECISION FUNCTION met_zone_heat_flux_byid(zoneid, t_water, depth)
 
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: zoneid
-    DOUBLE PRECISION, INTENT(IN) :: t_water
+    DOUBLE PRECISION, INTENT(IN) :: t_water, depth
 
     INTEGER :: izone
 
     izone = met_zone_index(zoneid)
 
-    met_zone_heat_flux_byid = met_zone_heat_flux_zone(met_zones(izone), t_water)
+    met_zone_heat_flux_byid = met_zone_heat_flux_zone(met_zones(izone), t_water, depth)
     
   END FUNCTION met_zone_heat_flux_byid
 

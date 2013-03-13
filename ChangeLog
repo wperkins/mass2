@@ -1,3 +1,21 @@
+2013-03-13  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/temperature/pond: test the light extinction coefficient
+
+	* scalars_source.f90 (scalar_source_term): heat flux
+	calculation now requires depth
+
+	* temperature_source.f90 (temperature_source_term): heat flux
+	calculation now requires depth
+
+	* met_zone.f90 (met_zone_read): read the light extinction
+	coefficient 
+	(met_zone_heat_flux_zone): heat flux calculations now require
+	depth 
+
+	* gastemp/energy_flux_module.f90 (net_solar_rad): add and use a
+	light extinction coefficient 
+
 2013-03-11  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* met_zone.f90 (met_zone_read): set emissivity,

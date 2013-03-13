@@ -16,9 +16,10 @@ MODULE energy_flux
        &ENERGY_COEFF_BRUNT = 4, &
        &ENERGY_COEFF_EMISS = 5, &
        &ENERGY_COEFF_REFLECT = 6, &
-       &ENERGY_COEFF_ALBEDO = 7
+       &ENERGY_COEFF_ALBEDO = 7, &
+       &ENERGY_COEFF_EXTINCT = 8
 
-  INTEGER, PUBLIC, PARAMETER :: ENERGY_COEFF_MAX = ENERGY_COEFF_ALBEDO
+  INTEGER, PUBLIC, PARAMETER :: ENERGY_COEFF_MAX = ENERGY_COEFF_EXTINCT
 
   DOUBLE PRECISION, PARAMETER, PUBLIC :: energy_coeff_default(ENERGY_COEFF_MAX) = (/ &
        &0.46, &           ! wind function modifier
@@ -27,7 +28,8 @@ MODULE energy_flux
        &0.80, &           ! "brunt" coefficient for lw back radiation
        &0.97, &           ! emissivity for outgoing lw radiation
        &0.03, &           ! reflectivity for lw back radiation
-       &0.00 /)           ! albedo/reflectivity for incoming sw radiation
+       &0.00, &           ! albedo/reflectivity for incoming sw radiation
+       &0.00 /)           ! light extinction coefficient
 
   CHARACTER (len=20), PARAMETER, PUBLIC :: energy_coeff_name(ENERGY_COEFF_MAX) = (/&
        &'WINDA', &
@@ -36,11 +38,12 @@ MODULE energy_flux
        &'BRUNT', &
        &'EMISS', &
        &'REFLECT', &
-       &'ALBEDO' /)
+       &'ALBEDO', &
+       &'EXTINCT' /)
 
 CONTAINS
   !######################################################################
-  DOUBLE PRECISION FUNCTION net_heat_flux(coeff, net_solar, t_water, t_air, t_dew, wind_speed)
+  DOUBLE PRECISION FUNCTION net_heat_flux(coeff, net_solar, t_water, depth, t_air, t_dew, wind_speed)
     !
     ! Hnet - (watts/m^2)
     !
@@ -49,10 +52,10 @@ CONTAINS
     !
     IMPLICIT NONE
     DOUBLE PRECISION :: coeff(*)
-    DOUBLE PRECISION :: net_solar,t_water, t_air, t_dew, wind_speed
+    DOUBLE PRECISION :: net_solar,t_water, depth, t_air, t_dew, wind_speed
 
 
-    net_heat_flux = net_solar_rad(coeff, net_solar) + &
+    net_heat_flux = net_solar_rad(coeff, net_solar, depth) + &
          &net_longwave(coeff, t_air, t_dew) + &
          &back_radiation(coeff, t_water) + &
          &evaporation(coeff, t_water, t_dew, wind_speed) + &
@@ -60,13 +63,19 @@ CONTAINS
 
   END FUNCTION net_heat_flux
   !######################################################################
-  DOUBLE PRECISION FUNCTION net_solar_rad(coeff, sr0)
+  DOUBLE PRECISION FUNCTION net_solar_rad(coeff, sr0, depth)
     IMPLICIT NONE
     ! Hso
     DOUBLE PRECISION :: coeff(*)
-    DOUBLE PRECISION :: sr0
+    DOUBLE PRECISION :: sr0, depth, srbed
 
     net_solar_rad = sr0*(1.0 - coeff(ENERGY_COEFF_ALBEDO))
+    IF (coeff(ENERGY_COEFF_EXTINCT) .GT. 0.0) THEN
+       srbed = net_solar_rad*exp(-coeff(ENERGY_COEFF_EXTINCT)*depth)
+    ELSE 
+       srbed = 0.0
+    END IF
+    net_solar_rad = net_solar_rad - srbed
 
   END FUNCTION net_solar_rad
 

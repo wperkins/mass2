@@ -378,7 +378,7 @@ CONTAINS
     SELECT CASE (scalar_source(ispecies)%srctype)
     CASE (TEMP)
        scalar_source_term = scalar_source_term + &
-            &temperature_source_term(scalar_source(ispecies)%temp_param, conc)
+            &temperature_source_term(scalar_source(ispecies)%temp_param, conc, depth)
     CASE (TDG)
        scalar_source_term = scalar_source_term + &
             &tdg_source_term(scalar_source(ispecies)%tdg_param, conc, t_water, salinity)
