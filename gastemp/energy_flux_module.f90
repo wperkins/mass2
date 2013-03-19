@@ -137,18 +137,27 @@ CONTAINS
   ! DOUBLE PRECISION FUNCTION latent_heat
   !
   ! Computes the latent heat of vaporization for water (kJ/kg) given the
-  ! temperature (degree C).  Got this from Wikipedia (I know, I know),
-  ! which referenced
-  !
-  !   Quartic fit to Table 2.1,p.16, Textbook: R.R.Rogers & M.K. Yau, A
-  !   Short Course in Cloud Physics, 2e,(1989), Pergamon press
+  ! temperature (degree C).  
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION latent_heat(T)
 
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: T
 
-    latent_heat = - 0.0000614342*T**3 + 0.00158927*T**2 - 2.36418*T + 2500.79
+    ! Got this from Wikipedia (I know, I know), which referenced
+    !
+    !   Quartic fit to Table 2.1,p.16, Textbook: R.R.Rogers & M.K. Yau, A
+    !   Short Course in Cloud Physics, 2e,(1989), Pergamon press
+
+    ! latent_heat = - 0.0000614342*T**3 + 0.00158927*T**2 - 2.36418*T + 2500.79
+
+    ! This is a little more defendable and very close to the above, from
+    !
+    !   Sinokrot B and H Stefan. 1994. “Stream Water-Temperature
+    !   Sensitivity to Weather and Bed Pa- rameters.”  Journal of
+    !   Hydraulic Engineering 120(6):722–736.
+
+    latent_heat = 597.31 - 0.5631*T
 
   END FUNCTION latent_heat
 
@@ -222,6 +231,11 @@ CONTAINS
     ! Note that the air vapor pressure is the air saturation vapor pressure
     !			evaluated at the dew point temperature
     !
+    ! See also: 
+    !   Sinokrot B and H Stefan. 1994. “Stream WaterTemperature
+    !   Sensitivity to Weather and Bed Pa- rameters.” Journal of
+    !   Hydraulic Engineering 120(6):722–736.
+    ! equation 15
     IMPLICIT NONE
     DOUBLE PRECISION :: t_air
 

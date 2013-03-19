@@ -1,3 +1,8 @@
+2013-03-18  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* gastemp/energy_flux_module.f90 (latent_heat): use a little more
+	defensible formula
+
 2013-03-13  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* test/temperature/pond: test the light extinction coefficient
