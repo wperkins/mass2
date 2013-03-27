@@ -1,3 +1,11 @@
+2013-03-27  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (check_PROGRAMS): add diffusive_bed_test
+
+	* diffusive_bed_test.f90, diffusive_bed.f90: add
+
+	* gastemp/energy_flux_module.f90 (latent_heat): correct formula
+
 2013-03-18  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* gastemp/energy_flux_module.f90 (latent_heat): use a little more

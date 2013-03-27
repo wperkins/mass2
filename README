@@ -247,7 +247,7 @@ On PE10900:
     setenv FC gfortran-mp-4.3
     setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
-        FC="gfortran-mp-4.3" FCFLAGS="-g"LDFLAGS="-L/opt/local/lib"  \
+        FC="gfortran-mp-4.3" FCFLAGS="-g" LDFLAGS="-L/opt/local/lib"  \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
         --with-cgns=/opt/local/include \
         --with-cgns-lib=cgns

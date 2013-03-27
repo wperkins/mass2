@@ -157,7 +157,7 @@ CONTAINS
     !   Sensitivity to Weather and Bed Pa- rameters.”  Journal of
     !   Hydraulic Engineering 120(6):722–736.
 
-    latent_heat = 597.31 - 0.5631*T
+    latent_heat = (597.31 - 0.5631*T)*4.186
 
   END FUNCTION latent_heat
 

@@ -19,7 +19,8 @@ SUBDIRS = @SUBDIRS@
 bin_PROGRAMS = mass2
 check_PROGRAMS = \
 	solver_test \
-	met_spec_test
+	met_spec_test \
+	diffusive_bed_test
 
 mass2_SOURCES =					\
      constants.f90				\
@@ -73,6 +74,9 @@ solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
 met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
 met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
 
+diffusive_bed_test_SOURCES = diffusive_bed_test.f90 diffusive_bed.f90
+diffusive_bed_test_LDADD =
+
 # dependancies for individual object files
 
 accumulator.$(OBJEXT): accumulator.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
@@ -92,6 +96,8 @@ block_bc_module.$(OBJEXT): block_bc_module.f90 table_bc_module.$(OBJEXT) global_
 block_flux_output.$(OBJEXT): block_flux_output.f90 global_module_023.$(OBJEXT) 
 
 diffenencing.$(OBJEXT): differencing.f90
+
+diffusive_bed_test.$(OBJEXT): diffusive_bed_test.f90 diffusive_bed.$(OBJEXT)
 
 gage_output_module.$(OBJEXT): gage_output_module.f90 global_module_023.$(OBJEXT) \
 	scalars_module.$(OBJEXT) bed.$(OBJEXT) time_series/libts.a
