@@ -20,7 +20,8 @@ bin_PROGRAMS = mass2
 check_PROGRAMS = \
 	solver_test \
 	met_spec_test \
-	diffusive_bed_test
+	diffusive_bed_test \
+	thermal_bed_test
 
 mass2_SOURCES =					\
      constants.f90				\
@@ -76,6 +77,10 @@ met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
 
 diffusive_bed_test_SOURCES = diffusive_bed_test.f90 diffusive_bed.f90
 diffusive_bed_test_LDADD =
+
+thermal_bed_test_SOURCES = thermal_bed_test.f90 thermal_bed.f90 diffusive_bed.f90 \
+	constants.f90
+thermal_bed_test_LDADD =
 
 # dependancies for individual object files
 
@@ -179,6 +184,10 @@ tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) \
 temperature_source.$(OBJEXT): temperature_source.f90 met_zone.$(OBJEXT) \
 	misc_vars_module.$(OBJEXT) global_module_023.$(OBJEXT) \
 	time_series/libts.a
+
+thermal_bed_test.$(OBJEXT): thermal_bed_test.f90 thermal_bed.$(OBJEXT)
+
+thermal_bed.$(OBJEXT): thermal_bed.f90 constants.$(OBJEXT) diffusive_bed.$(OBJEXT)
 
 total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 

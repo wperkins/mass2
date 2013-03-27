@@ -1,5 +1,14 @@
 2013-03-27  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* thermal_bed_test.f90 (thermal_bed_test): add
+
+	* thermal_bed.f90 (thermal_bed): add
+
+	* diffusive_bed_test.f90 (diffusive_bed_test): compute the water
+	phi with a sine function
+
+	* diffusive_bed.f90 (solveit): use zero gradient BC at bottom 
+
 	* Makefile.am (check_PROGRAMS): add diffusive_bed_test
 
 	* diffusive_bed_test.f90, diffusive_bed.f90: add

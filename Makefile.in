@@ -64,7 +64,7 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = mass2$(EXEEXT)
 check_PROGRAMS = solver_test$(EXEEXT) met_spec_test$(EXEEXT) \
-	diffusive_bed_test$(EXEEXT)
+	diffusive_bed_test$(EXEEXT) thermal_bed_test$(EXEEXT)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) ChangeLog README \
@@ -115,6 +115,11 @@ met_spec_test_DEPENDENCIES = gastemp/libgastemp.a time_series/libts.a
 am_solver_test_OBJECTS = solver_test.$(OBJEXT) solver_common.$(OBJEXT) \
 	solver_backup.$(OBJEXT)
 solver_test_OBJECTS = $(am_solver_test_OBJECTS)
+am_thermal_bed_test_OBJECTS = thermal_bed_test.$(OBJEXT) \
+	thermal_bed.$(OBJEXT) diffusive_bed.$(OBJEXT) \
+	constants.$(OBJEXT)
+thermal_bed_test_OBJECTS = $(am_thermal_bed_test_OBJECTS)
+thermal_bed_test_DEPENDENCIES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -141,9 +146,11 @@ am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
 SOURCES = $(diffusive_bed_test_SOURCES) $(mass2_SOURCES) \
-	$(met_spec_test_SOURCES) $(solver_test_SOURCES)
+	$(met_spec_test_SOURCES) $(solver_test_SOURCES) \
+	$(thermal_bed_test_SOURCES)
 DIST_SOURCES = $(diffusive_bed_test_SOURCES) $(mass2_SOURCES) \
-	$(met_spec_test_SOURCES) $(solver_test_SOURCES)
+	$(met_spec_test_SOURCES) $(solver_test_SOURCES) \
+	$(thermal_bed_test_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -396,6 +403,10 @@ met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
 met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
 diffusive_bed_test_SOURCES = diffusive_bed_test.f90 diffusive_bed.f90
 diffusive_bed_test_LDADD = 
+thermal_bed_test_SOURCES = thermal_bed_test.f90 thermal_bed.f90 diffusive_bed.f90 \
+	constants.f90
+
+thermal_bed_test_LDADD = 
 
 # extra files to distribute
 EXTRA_DIST = \
@@ -512,6 +523,9 @@ met_spec_test$(EXEEXT): $(met_spec_test_OBJECTS) $(met_spec_test_DEPENDENCIES) $
 solver_test$(EXEEXT): $(solver_test_OBJECTS) $(solver_test_DEPENDENCIES) $(EXTRA_solver_test_DEPENDENCIES) 
 	@rm -f solver_test$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(solver_test_OBJECTS) $(solver_test_LDADD) $(LIBS)
+thermal_bed_test$(EXEEXT): $(thermal_bed_test_OBJECTS) $(thermal_bed_test_DEPENDENCIES) $(EXTRA_thermal_bed_test_DEPENDENCIES) 
+	@rm -f thermal_bed_test$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(thermal_bed_test_OBJECTS) $(thermal_bed_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1046,6 +1060,10 @@ tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) \
 temperature_source.$(OBJEXT): temperature_source.f90 met_zone.$(OBJEXT) \
 	misc_vars_module.$(OBJEXT) global_module_023.$(OBJEXT) \
 	time_series/libts.a
+
+thermal_bed_test.$(OBJEXT): thermal_bed_test.f90 thermal_bed.$(OBJEXT)
+
+thermal_bed.$(OBJEXT): thermal_bed.f90 constants.$(OBJEXT) diffusive_bed.$(OBJEXT)
 
 total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 

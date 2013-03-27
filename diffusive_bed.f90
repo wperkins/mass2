@@ -19,9 +19,10 @@ MODULE diffusive_bed
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   TYPE diffusive_bed_rec
-     DOUBLE PRECISION :: kdiff
-     DOUBLE PRECISION :: phi_inf
-     DOUBLE PRECISION :: dz
+     DOUBLE PRECISION :: kdiff    ! diffusivity, ft^2/s
+     DOUBLE PRECISION :: phi_inf  ! bed bottom temperature, C (if used)
+     DOUBLE PRECISION :: dz       ! bed layer thickness, ft
+                                  ! whatever is diffusing in the bed 
      DOUBLE PRECISION, ALLOCATABLE :: phi(:)
   END type diffusive_bed_rec
 
@@ -111,20 +112,13 @@ CONTAINS
        b(l) = 1.0 + 2.0*Fo
        d(l) = phi(l)
        IF (l .EQ. 1) THEN
-          ! b(l) = 1 + 2.0*Fo + 2*Fo*Bi
-          ! d(l) = 2*Fo*Bi*phi_w + phi(l)
           a(l) = 0.0
           c(l) = 0.0
           b(l) = 1.0
           d(l) = phi_w
        ELSE IF (l .EQ. n) THEN
-          !a(l) = -2.0*Fo
-          !b(l) = 1.0 + 2*Fo
-          !d(l) = phi(l)
-          a(l) = 0.0
-          b(l) = 1.0
+          b(l) = 1 + Fo
           c(l) = 0.0
-          d(l) = phi_o
        END IF
     END DO
 
@@ -137,14 +131,21 @@ CONTAINS
 
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION diffusive_bed_flux
+  ! 
+  ! Computes the heat flux from the bed into the water column.  This
+  ! can be estimated in a couple of ways.  The simplest is to just
+  ! compute the diffusive flux in the topmost layer.
+  !
+  ! a positive flux is INTO the bed
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION diffusive_bed_flux(dbed)
 
     IMPLICIT NONE
 
-    TYPE (diffusive_bed_rec), INTENT(INOUT) :: dbed
+    TYPE (diffusive_bed_rec), INTENT(IN) :: dbed
 
-    diffusive_bed_flux = 0.0
+    diffusive_bed_flux = -dbed%kdiff*(dbed%phi(2) - dbed%phi(1))/dbed%dz
+
   END FUNCTION diffusive_bed_flux
 
 
