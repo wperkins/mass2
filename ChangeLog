@@ -1,5 +1,8 @@
 2013-03-29  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* temperature_source.f90 (temperature_source_timestep):
+	DOH! Only advance thermal bed when there is one.
+
 	* thermal_bed.f90 (thermal_bed_layers): added
 
 	* test/temperature/pond/scalar_source.dat: try out a thermal bed

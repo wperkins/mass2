@@ -246,16 +246,17 @@ CONTAINS
     DOUBLE PRECISION :: t_water
 
     CALL const_series_update(rec%specific_heat_ts, time)
-    
-    DO iblk = 1, max_blocks
-       DO i = 2, block(iblk)%xmax
-          DO j = 2, block(iblk)%ymax
-             t_water = species(tempidx)%scalar(iblk)%conc(i, j)
-             CALL thermal_bed_solve(rec%block(iblk)%bed(i,j), delta_t, t_water)
+
+    IF (rec%dobed) THEN
+       DO iblk = 1, max_blocks
+          DO i = 2, block(iblk)%xmax
+             DO j = 2, block(iblk)%ymax
+                t_water = species(tempidx)%scalar(iblk)%conc(i, j)
+                CALL thermal_bed_solve(rec%block(iblk)%bed(i,j), delta_t, t_water)
+             END DO
           END DO
        END DO
-    END DO
-
+    END IF
   END SUBROUTINE temperature_source_timestep
 
 
