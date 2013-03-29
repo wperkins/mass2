@@ -1,3 +1,31 @@
+2013-03-29  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* thermal_bed.f90 (thermal_bed_layers): added
+
+	* test/temperature/pond/scalar_source.dat: try out a thermal bed
+
+	* scalars_source.f90 (scalar_source_term): adjust for changes to
+	temperature source term
+	(scalar_source_timestep): advance temperature (bed)
+
+	* temperature_source.f90 (temperature_parse_options): read bed
+	related phrases and create thermal bed if called for
+	(temperature_source_term): use thermal bed if called for
+	(temperature_source_timestep): advance thermal bed state
+
+	* gage_output_module.f90 (gage_print_text): write out bed
+	temperatures if thermal bed is enabled
+
+	* diffusive_bed.f90 (diffusive_bed_layers): added
+
+	* Makefile.am (mass2_SOURCES): add thermal_bed.f90 and
+	diffusive_bed.f90 
+
+2013-03-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* diffusive_bed_test.f90 (diffusive_bed_test): make this test
+	match thermal_bed_test 
+
 2013-03-27  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* thermal_bed_test.f90 (thermal_bed_test): add

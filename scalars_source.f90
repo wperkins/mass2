@@ -345,7 +345,10 @@ CONTAINS
              IF (ASSOCIATED(bedflowsrc)) CALL bedsrc_interp(time, delta_t, bedflowsrc)
           END IF
        CASE (TEMP)
-          CALL const_series_update(scalar_source(i)%temp_param%specific_heat_ts, time)
+          
+          CALL temperature_source_timestep(scalar_source(i)%temp_param, &
+               &source_temp_idx, time, delta_t)
+          ! CALL const_series_update(scalar_source(i)%temp_param%specific_heat_ts, time)
        END SELECT
     END DO
 
@@ -378,7 +381,7 @@ CONTAINS
     SELECT CASE (scalar_source(ispecies)%srctype)
     CASE (TEMP)
        scalar_source_term = scalar_source_term + &
-            &temperature_source_term(scalar_source(ispecies)%temp_param, conc, depth)
+            &temperature_source_term(scalar_source(ispecies)%temp_param, iblock, i, j, conc, depth)
     CASE (TDG)
        scalar_source_term = scalar_source_term + &
             &tdg_source_term(scalar_source(ispecies)%tdg_param, conc, t_water, salinity)

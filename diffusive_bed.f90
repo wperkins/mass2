@@ -62,6 +62,21 @@ CONTAINS
 
   END SUBROUTINE diffusive_bed_release
 
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION diffusive_bed_layers
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION diffusive_bed_layers(dbed)
+
+    IMPLICIT NONE
+    TYPE (diffusive_bed_rec), INTENT(IN) :: dbed
+
+    INTEGER :: layers(1)
+
+    layers = UBOUND(dbed%phi)
+
+    diffusive_bed_layers = layers(1) 
+
+  END FUNCTION diffusive_bed_layers
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE diffusive_bed_solve
@@ -72,11 +87,11 @@ CONTAINS
     
     TYPE (diffusive_bed_rec), INTENT(INOUT) :: dbed
     DOUBLE PRECISION, INTENT(IN) :: deltat, phi_w
-    INTEGER :: layers(1), l
+    INTEGER :: layers, l
 
-    layers = UBOUND(dbed%phi)
+    layers = diffusive_bed_layers(dbed)
 
-    CALL solveit(layers(1), deltat, dbed%dz, dbed%kdiff, dbed%phi_inf, phi_w, dbed%phi)
+    CALL solveit(layers, deltat, dbed%dz, dbed%kdiff, dbed%phi_inf, phi_w, dbed%phi)
 
   END SUBROUTINE diffusive_bed_solve
 

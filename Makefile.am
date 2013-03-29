@@ -28,14 +28,14 @@ mass2_SOURCES =					\
      scalars_module.f90				\
      gage_output_module.f90			\
      plot_cgns.f90				\
-	 plot_netcdf.f90			\
+     plot_netcdf.f90			\
      plot_output.f90				\
      netcdferror.f90				\
      global_module_023.f90			\
      io_routines_module.f90			\
      table_bc_module.f90			\
      block_bc_module.f90			\
-	met_zone.f90 \
+     met_zone.f90				\
      profile_init.f90				\
      misc_vars_module.f90			\
      transport_only_module.f90			\
@@ -44,6 +44,8 @@ mass2_SOURCES =					\
 	 scalars_source.f90			\
 	 scalar_solve.f90			\
 	 temperature_source.f90			\
+	thermal_bed.f90				\
+	diffusive_bed.f90 \
 	 tdg_source.f90				\
 	 generic_source.f90			\
 	 bed_source.f90				\
@@ -58,8 +60,10 @@ mass2_SOURCES =					\
 	 solver_backup.f90			\
 	 solver_common.f90			\
 	 distance.f90				\
-	 differencing.f90                       \
+	 differencing.f90			\
 	 block_flux_output.f90
+
+
 mass2_LDADD = $(SOLVEROBJ) gastemp/libgastemp.a time_series/libts.a \
 	@SOLVERLDFLAGS@ \
 	-L@NETCDF_LIBS_PATH@ @NETCDF_LIBS@ \
@@ -182,10 +186,10 @@ tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) \
 	met_zone.$(OBJEXT) time_series/libts.a gastemp/libgastemp.a
 
 temperature_source.$(OBJEXT): temperature_source.f90 met_zone.$(OBJEXT) \
-	misc_vars_module.$(OBJEXT) global_module_023.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) global_module_023.$(OBJEXT) thermal_bed.$(OBJEXT) \
 	time_series/libts.a
 
-thermal_bed_test.$(OBJEXT): thermal_bed_test.f90 thermal_bed.$(OBJEXT)
+thermal_bed_test.$(OBJEXT): thermal_bed_test.f90 thermal_bed.$(OBJEXT) diffusive_bed.$(OBJEXT)
 
 thermal_bed.$(OBJEXT): thermal_bed.f90 constants.$(OBJEXT) diffusive_bed.$(OBJEXT)
 

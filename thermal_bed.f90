@@ -23,9 +23,9 @@ MODULE thermal_bed
 
   TYPE thermal_bed_rec
      TYPE (diffusive_bed_rec) :: dbed
-     DOUBLE PRECISION :: density
-     DOUBLE PRECISION :: specific_heat
-     DOUBLE PRECISION :: conductivity
+     DOUBLE PRECISION :: density         ! kg/m^3
+     DOUBLE PRECISION :: specific_heat   ! J/kg/C
+     DOUBLE PRECISION :: conductivity    ! W/m/C
   END type thermal_bed_rec
 
 CONTAINS
@@ -119,6 +119,20 @@ CONTAINS
     thermal_bed_flux = thermal_bed_flux*tbed%density*tbed%specific_heat ! W/m^2
     
   END FUNCTION thermal_bed_flux
+
+  ! ----------------------------------------------------------------
+  ! INTEGER FUNCTION thermal_bed_layers
+  ! ----------------------------------------------------------------
+  INTEGER FUNCTION thermal_bed_layers(tbed)
+
+    IMPLICIT NONE
+
+    TYPE (thermal_bed_rec), INTENT(IN) :: tbed
+
+    thermal_bed_layers = diffusive_bed_layers(tbed%dbed)
+
+  END FUNCTION thermal_bed_layers
+
 
 
 

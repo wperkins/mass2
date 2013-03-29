@@ -21,11 +21,11 @@ PROGRAM diffusive_bed_test
 
   DOUBLE PRECISION :: phi_delta, phi_o, phi_w
 
-  layers = 15
-  kdiff = 2.5e-05
-  depth = 15.0
+  layers = 10
+  kdiff = 2.52e-06
+  depth = 2.0
   phi_o = 10.0
-  phi_delta = 10.0
+  phi_delta = 5.0
 
   CALL diffusive_bed_initialize(dbed, depth, layers, kdiff, phi_o, phi_o)
 
@@ -36,7 +36,7 @@ PROGRAM diffusive_bed_test
 
   CALL printit(t, dbed)
 
-  DO WHILE (t .LT. tmax)
+  DO WHILE (t .LT. 2*tmax)
      t = t + deltat
      phi_w = phi_o + phi_delta*SIN(2.0*3.14159*t/tmax)
      CALL diffusive_bed_solve(dbed, deltat, phi_w)
