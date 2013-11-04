@@ -1,0 +1,6 @@
+ZONE 1 
+    TABLE "test/temperature/evaporation/met.dat" 
+    BRUNT 0.74 /
+ZONE 2 
+    TABLE "test/temperature/evaporation/met.dat" 
+    WINDA 0.74 /

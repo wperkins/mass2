@@ -1,1 +1,6 @@
-1 TEMP      temperature     "Water Temperature"     Celcius AIREXCH /
+1 TEMP      temperature     "Water Temperature"     Celcius 
+    RELAX 0.80
+    AIREXCH SPECIFIC_HEAT "specific_heat.dat" 
+    BED_DEPTH 15.0
+    BED_LAYERS 10
+    BED_INITIAL 5.0 /

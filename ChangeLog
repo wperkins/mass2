@@ -1,3 +1,176 @@
+2013-03-29  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* temperature_source.f90 (temperature_source_timestep):
+	DOH! Only advance thermal bed when there is one.
+
+	* thermal_bed.f90 (thermal_bed_layers): added
+
+	* test/temperature/pond/scalar_source.dat: try out a thermal bed
+
+	* scalars_source.f90 (scalar_source_term): adjust for changes to
+	temperature source term
+	(scalar_source_timestep): advance temperature (bed)
+
+	* temperature_source.f90 (temperature_parse_options): read bed
+	related phrases and create thermal bed if called for
+	(temperature_source_term): use thermal bed if called for
+	(temperature_source_timestep): advance thermal bed state
+
+	* gage_output_module.f90 (gage_print_text): write out bed
+	temperatures if thermal bed is enabled
+
+	* diffusive_bed.f90 (diffusive_bed_layers): added
+
+	* Makefile.am (mass2_SOURCES): add thermal_bed.f90 and
+	diffusive_bed.f90 
+
+2013-03-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* diffusive_bed_test.f90 (diffusive_bed_test): make this test
+	match thermal_bed_test 
+
+2013-03-27  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* thermal_bed_test.f90 (thermal_bed_test): add
+
+	* thermal_bed.f90 (thermal_bed): add
+
+	* diffusive_bed_test.f90 (diffusive_bed_test): compute the water
+	phi with a sine function
+
+	* diffusive_bed.f90 (solveit): use zero gradient BC at bottom 
+
+	* Makefile.am (check_PROGRAMS): add diffusive_bed_test
+
+	* diffusive_bed_test.f90, diffusive_bed.f90: add
+
+	* gastemp/energy_flux_module.f90 (latent_heat): correct formula
+
+2013-03-18  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* gastemp/energy_flux_module.f90 (latent_heat): use a little more
+	defensible formula
+
+2013-03-13  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/temperature/pond: test the light extinction coefficient
+
+	* scalars_source.f90 (scalar_source_term): heat flux
+	calculation now requires depth
+
+	* temperature_source.f90 (temperature_source_term): heat flux
+	calculation now requires depth
+
+	* met_zone.f90 (met_zone_read): read the light extinction
+	coefficient 
+	(met_zone_heat_flux_zone): heat flux calculations now require
+	depth 
+
+	* gastemp/energy_flux_module.f90 (net_solar_rad): add and use a
+	light extinction coefficient 
+
+2013-03-11  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* met_zone.f90 (met_zone_read): set emissivity,
+	reflectivity, and albedo coefficients
+
+	* gastemp/energy_flux_module.f90 (energy_flux): add emissivity,
+	reflectivity, and albedo coefficients
+
+	* met_zone.f90 (met_zone): put the coefficient series in an array
+	sized the same a the energy coefficients
+
+	* gastemp/energy_flux_module.f90 (energy_flux): add coefficient
+	default values and keywords
+
+	* met_zone.f90 (met_zone_heat_flux_zone)
+	(met_zone_heat_flux_byid, met_zone_evaporation_zone): added
+
+	* accumulator.f90 (accumulate_tdg): use met zone 1 for barometric
+	pressure
+
+	* scalars_source.f90 (scalar_source_timestep): call met_zone_update
+
+	* tdg_source.f90 (tdg_source_term): use met zone 1
+
+	* temperature_source.f90 (temperature_source_term): use met zone 1
+
+	* constants.f90 (constants): metric_density needs to be here
+
+	* gastemp/energy_flux_module.f90 (net_heat_flux): make a
+	coefficient array and pass to all atmospheric exchange routines
+
+	* met_data_module.f90: no longer used
+
+2013-03-05  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (check_PROGRAMS): add met_spec_test
+	(mass2_SOURCES): add met_zone.f90
+
+	* met_spec_test.f90 (met_spec_test): a test for reading met zone
+	specs 
+
+	* met_zone.f90 (met_zone): add a module for dealing with separate
+	met zones
+
+	* met_data_module.f90 (read_met_data, update_met_data): use a
+	met_time_series instead of a plain time_series
+
+2013-03-04  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* scalars_source.f90 (scalar_source_timestep): update the
+	"const_series_rec" 
+
+	* temperature_source.f90 (temperature_source): use a
+	"const_series_rec" instead of a time_series_rec
+
+	* test/temperature/evaporation: a test for evaporation with
+	recharge 
+
+	* hydro_solve.f90 (depth_solve): add evaporation into depth
+	correction equation
+
+	* block_bc_module.f90 (read_scalar_bcspecs): correct table count
+	when 'SOURCE' bc's are specified
+
+	* mass2_main_025.f90 (apply_scalar_bc): actually handle 'SOURCE'
+	bc's 
+
+2013-03-01  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2_main_025.f90 (apply_scalar_source): if condensation
+	occurs, give it the air temperature
+	(update): set hydrodynamic evaporation if called for
+
+	* temperature_source.f90 (temperature_source): add evaporate flag
+	and code to read it
+	(evaporation_rate): output is now in ft/s
+
+2013-02-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/transport/pointsource2: test of scalar 'SOURCE' boundary
+	condition 
+
+	* block_bc_module.f90 (read_scalar_bcspecs): add a 'SOURCE'
+	boundary condition
+	(area_cell_check): routine to check indexes of 'IN' boundary
+	condition 
+
+	* scalars_module.f90 (scalars): add srcconc to block scalar
+	variables 
+
+2013-02-25  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/temperature/pond: specify specific heat as a time series
+
+	* scalars_source.f90 (scalar_source_timestep): update specific
+	heat time series
+
+	* temperature_source.f90 (temperature_parse_options): allow the
+	specific heat (domain-wide) to be specified as a time series
+
+	* constants.f90 (constants): remove temperature related constants 
+
 2011-11-17  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* gage_output_module.f90 (gage_file_setup_text): fix typo not

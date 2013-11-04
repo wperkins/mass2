@@ -195,6 +195,7 @@ CONTAINS
              WRITE(iounit, 100, ADVANCE='NO') TRIM(scalar_source(i)%name) // '-bed'
           CASE (TEMP)
              WRITE(iounit, 100, ADVANCE='NO') "evap"
+             WRITE(iounit, '(A)', ADVANCE='NO') "Bed temperature by layer"
           END SELECT
        END DO
        IF (source_doing_sed) THEN
@@ -247,7 +248,7 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN) :: elapsed, salinity, baro_press
     LOGICAL, INTENT(IN) :: do_transport
 
-    INTEGER :: i, j, iblock, icell, jcell, ifract
+    INTEGER :: i, j, iblock, icell, jcell, ifract, layers, l
     DOUBLE PRECISION :: conc_TDG, t_water
     DOUBLE PRECISION :: value
     CHARACTER (LEN=tslen) :: timestamp
@@ -347,6 +348,13 @@ CONTAINS
              CASE (TEMP)
                 WRITE(gunit, 102, ADVANCE='NO')&
                      scalar_source(j)%temp_param%block(iblock)%evaporation(icell, jcell)
+                IF (scalar_source(j)%temp_param%dobed) THEN
+                   layers = thermal_bed_layers(scalar_source(j)%temp_param%block(iblock)%bed(icell, jcell))
+                   DO l = 1, layers
+                      WRITE(gunit, 102, ADVANCE='NO')&
+                           scalar_source(j)%temp_param%block(iblock)%bed(icell, jcell)%dbed%phi(l)
+                   END DO
+                END IF
              END SELECT
 
           END DO

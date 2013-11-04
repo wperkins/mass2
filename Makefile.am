@@ -10,29 +10,32 @@
 # Last Change: Fri May 27 14:59:32 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
 # -------------------------------------------------------------
 
-AM_FFLAGS = $(FCFLAGS)
+AM_FFLAGS = $(FCFLAGS) 
+
+ACLOCAL_AMFLAGS = -I time_series  -I m4 
 
 SUBDIRS = @SUBDIRS@
 
 bin_PROGRAMS = mass2
-check_PROGRAMS = solver_test
+check_PROGRAMS = \
+	solver_test \
+	met_spec_test \
+	diffusive_bed_test \
+	thermal_bed_test
 
 mass2_SOURCES =					\
      constants.f90				\
-     gas_coeffs_module.f90			\
-     gas_functions_module.f90			\
      scalars_module.f90				\
-     energy_flux_module.f90			\
      gage_output_module.f90			\
      plot_cgns.f90				\
-	 plot_netcdf.f90			\
+     plot_netcdf.f90			\
      plot_output.f90				\
      netcdferror.f90				\
      global_module_023.f90			\
      io_routines_module.f90			\
      table_bc_module.f90			\
      block_bc_module.f90			\
-     met_data_module.f90			\
+     met_zone.f90				\
      profile_init.f90				\
      misc_vars_module.f90			\
      transport_only_module.f90			\
@@ -41,6 +44,8 @@ mass2_SOURCES =					\
 	 scalars_source.f90			\
 	 scalar_solve.f90			\
 	 temperature_source.f90			\
+	thermal_bed.f90				\
+	diffusive_bed.f90 \
 	 tdg_source.f90				\
 	 generic_source.f90			\
 	 bed_source.f90				\
@@ -55,18 +60,31 @@ mass2_SOURCES =					\
 	 solver_backup.f90			\
 	 solver_common.f90			\
 	 distance.f90				\
-	 differencing.f90                       \
+	 differencing.f90			\
 	 block_flux_output.f90
-mass2_LDADD = $(SOLVEROBJ) time_series/libts.a \
+
+
+mass2_LDADD = $(SOLVEROBJ) gastemp/libgastemp.a time_series/libts.a \
 	@SOLVERLDFLAGS@ \
 	-L@NETCDF_LIBS_PATH@ @NETCDF_LIBS@ \
 	-L@CGNS_LIBS_PATH@ @CGNS_LIBS@
 
-solver_test_SOURCES =							\
-	solver_test.f90								\
+solver_test_SOURCES =				\
+	solver_test.f90				\
+	solver_common.f90 \
 	solver_backup.f90
 solver_test_DEPENDENCIES = $(SOLVEROBJ)
 solver_test_LDADD = $(SOLVEROBJ) time_series/libts.a @SOLVERLDFLAGS@
+
+met_spec_test_SOURCES = met_spec_test.f90 met_zone.f90
+met_spec_test_LDADD = gastemp/libgastemp.a time_series/libts.a
+
+diffusive_bed_test_SOURCES = diffusive_bed_test.f90 diffusive_bed.f90
+diffusive_bed_test_LDADD =
+
+thermal_bed_test_SOURCES = thermal_bed_test.f90 thermal_bed.f90 diffusive_bed.f90 \
+	constants.f90
+thermal_bed_test_LDADD =
 
 # dependancies for individual object files
 
@@ -88,14 +106,10 @@ block_flux_output.$(OBJEXT): block_flux_output.f90 global_module_023.$(OBJEXT)
 
 diffenencing.$(OBJEXT): differencing.f90
 
-energy_flux_module.$(OBJEXT): energy_flux_module.f90 constants.$(OBJEXT)
+diffusive_bed_test.$(OBJEXT): diffusive_bed_test.f90 diffusive_bed.$(OBJEXT)
 
 gage_output_module.$(OBJEXT): gage_output_module.f90 global_module_023.$(OBJEXT) \
-	scalars_module.$(OBJEXT) gas_functions_module.$(OBJEXT)  bed.$(OBJEXT) time_series/libts.a
-
-gas_coeffs_module.$(OBJEXT): gas_coeffs_module.f90
-
-gas_functions_module.$(OBJEXT): gas_functions_module.f90 gas_coeffs_module.$(OBJEXT)
+	scalars_module.$(OBJEXT) bed.$(OBJEXT) time_series/libts.a
 
 generic_source.$(OBJEXT): generic_source.f90 misc_vars_module.$(OBJEXT) bed_source.$(OBJEXT) constants.$(OBJEXT)
 
@@ -108,8 +122,8 @@ io_routines_module.$(OBJEXT): io_routines_module.f90
 
 mass2_main_025.$(OBJEXT): mass2_main_025.f90 \
 	global_module_023.$(OBJEXT) io_routines_module.$(OBJEXT) block_bc_module.$(OBJEXT) table_bc_module.$(OBJEXT) \
-	 scalars_module.$(OBJEXT) met_data_module.$(OBJEXT) energy_flux_module.$(OBJEXT) \
-	gas_functions_module.$(OBJEXT) plot_output.$(OBJEXT) gage_output_module.$(OBJEXT) misc_vars_module.$(OBJEXT) \
+	 scalars_module.$(OBJEXT) met_zone.$(OBJEXT) \
+	plot_output.$(OBJEXT) gage_output_module.$(OBJEXT) misc_vars_module.$(OBJEXT) \
 	transport_only_module.$(OBJEXT) scalars_source.$(OBJEXT) bed.$(OBJEXT) accumulator.$(OBJEXT) scalar_mass_balance.$(OBJEXT) \
 	differencing.$(OBJEXT) block_flux_output.$(OBJEXT) $(SOLVEROBJ)
 
@@ -117,7 +131,8 @@ mass2.$(OBJEXT): mass2.f90 mass2_main_025.$(OBJEXT)
 
 misc_vars_module.$(OBJEXT): misc_vars_module.f90 
 
-met_data_module.$(OBJEXT): met_data_module.f90 table_bc_module.$(OBJEXT) 
+met_zone.$(OBJEXT): met_zone.f90 constants.$(OBJEXT) \
+	time_series/libts.a gastemp/libgastemp.a
 
 netcdferror.$(OBJEXT): netcdferror.f90
 
@@ -127,15 +142,15 @@ particulate_source.$(OBJEXT): particulate_source.f90 \
 
 plot_cgns.$(OBJEXT): plot_cgns.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
 	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
-	gas_functions_module.$(OBJEXT) bed.$(OBJEXT) block_bc_module.$(OBJEXT) time_series/libts.a
+	bed.$(OBJEXT) block_bc_module.$(OBJEXT) time_series/libts.a
 
 plot_netcdf.$(OBJEXT): plot_netcdf.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
 	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
-	gas_functions_module.$(OBJEXT) bed.$(OBJEXT)
+	bed.$(OBJEXT)
 
 plot_output.$(OBJEXT): plot_output.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
 	scalars_source.$(OBJEXT) bed.$(OBJEXT) misc_vars_module.$(OBJEXT) accumulator.$(OBJEXT) \
-	gas_functions_module.$(OBJEXT) plot_cgns.$(OBJEXT) plot_netcdf.$(OBJEXT)
+	plot_cgns.$(OBJEXT) plot_netcdf.$(OBJEXT)
 
 profile_init.$(OBJEXT): profile_init.f90 global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) \
 	time_series/libts.a
@@ -149,7 +164,7 @@ scalar_solve.$(OBJEXT): scalar_solve.f90 global_module_023.$(OBJEXT) misc_vars_m
 scalars_module.$(OBJEXT): scalars_module.f90 misc_vars_module.$(OBJEXT) time_series/libts.a
 
 scalars_source.$(OBJEXT): scalars_source.f90 temperature_source.$(OBJEXT) misc_vars_module.$(OBJEXT) \
-	tdg_source.$(OBJEXT) generic_source.$(OBJEXT) scalars_module.$(OBJEXT) met_data_module.$(OBJEXT) \
+	tdg_source.$(OBJEXT) generic_source.$(OBJEXT) scalars_module.$(OBJEXT) met_zone.$(OBJEXT) \
 	sediment_source.$(OBJEXT) particulate_source.$(OBJEXT) differencing.$(OBJEXT) time_series/libts.a 
 
 sediment_source.$(OBJEXT): sediment_source.f90 global_module_023.$(OBJEXT) scalars_module.$(OBJEXT) \
@@ -167,18 +182,23 @@ solver_test.$(OBJEXT): solver_test.f90 $(SOLVEROBJ)
 
 table_bc_module.$(OBJEXT): table_bc_module.f90  time_series/libts.a
 
-tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) gas_functions_module.$(OBJEXT) \
-	met_data_module.$(OBJEXT) time_series/libts.a
+tdg_source.$(OBJEXT): tdg_source.f90 misc_vars_module.$(OBJEXT) \
+	met_zone.$(OBJEXT) time_series/libts.a gastemp/libgastemp.a
 
-temperature_source.$(OBJEXT): temperature_source.f90 met_data_module.$(OBJEXT) \
-	misc_vars_module.$(OBJEXT) energy_flux_module.$(OBJEXT) global_module_023.$(OBJEXT) \
+temperature_source.$(OBJEXT): temperature_source.f90 met_zone.$(OBJEXT) \
+	misc_vars_module.$(OBJEXT) global_module_023.$(OBJEXT) thermal_bed.$(OBJEXT) \
 	time_series/libts.a
+
+thermal_bed_test.$(OBJEXT): thermal_bed_test.f90 thermal_bed.$(OBJEXT) diffusive_bed.$(OBJEXT)
+
+thermal_bed.$(OBJEXT): thermal_bed.f90 constants.$(OBJEXT) diffusive_bed.$(OBJEXT)
 
 total_conc.$(OBJEXT): total_conc.f90 scalars_source.$(OBJEXT)
 
 transport_only_module.$(OBJEXT): transport_only_module.f90  \
 	global_module_023.$(OBJEXT) misc_vars_module.$(OBJEXT) time_series/libts.a
 
+met_spec_test.$(OBJEXT): met_spec_test.f90 met_zone.$(OBJEXT) time_series/libts.a
 clean-local:
 	rm -f *.$(F90MODULEEXT)
 	rm -f *.il work.*

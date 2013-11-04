@@ -35,7 +35,7 @@ USE plot_output
 USE block_flux_output
 USE scalars
 USE scalars_source
-USE met_data_module
+USE met_zone
 USE energy_flux
 USE gas_functions
 
@@ -76,8 +76,6 @@ SUBROUTINE start_up()
 
   INTEGER :: imax, jmax
   INTEGER :: i, j 
-
-  baro_press = 760.0              ! in case weather is not read
 
   CALL read_grid(max_blocks, grid_file_name, readpts=.FALSE.)
 
@@ -177,6 +175,7 @@ SUBROUTINE initialize()
               species(i)%scalar(iblock)%conc = conc_initial
               species(i)%scalar(iblock)%concold = conc_initial
               species(i)%scalar(iblock)%concoldold = conc_initial
+              species(i)%scalar(iblock)%srcconc = conc_initial
            END DO
         END DO
      END IF
@@ -325,8 +324,9 @@ SUBROUTINE bc_init()
 
   ! read in met data from a file
   IF (source_need_met) THEN
-     CALL read_met_data(weather_filename)
-     CALL update_met_data(current_time%time)
+     CALL met_zone_read_specs(weather_filename)
+     CALL met_zone_update(current_time%time)
+     CALL met_zone_summary(status_iounit)
   END IF
 
   DO iblock=1,max_blocks
@@ -346,6 +346,14 @@ SUBROUTINE output_init()
   IMPLICIT NONE
 
   INTEGER :: system_time(8)
+
+  DOUBLE PRECISION :: baro_press
+
+  IF (ALLOCATED(met_zones)) THEN
+     baro_press = met_zones(1)%current(MET_BARO)
+  ELSE 
+     baro_press = 760.0
+  END IF
 
   !------------------------------------------------------------------------------------
   ! set up the gage print files
@@ -2706,7 +2714,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
            input_total = 0.0
            DO i = bc%start_cell(1), bc%end_cell(1)
               DO j =  bc%start_cell(2), bc%end_cell(2)
-                 IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
+                 IF (.NOT. blk%isdry(i+1,j+1)) &
                       &input_total = input_total + blk%hp1(i+1,j+1)*blk%hp2(i+1,j+1)
               END DO
            END DO
@@ -2720,8 +2728,9 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
         
         DO i = bc%start_cell(1), bc%end_cell(1)
            DO j = bc%start_cell(2), bc%end_cell(2)
-              IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
-                   &blk%xsource(i+1, j+1) = table_input(1)/input_total
+              IF (.NOT. blk%isdry(i+1,j+1)) THEN
+                 blk%xsource(i+1, j+1) = table_input(1)/input_total
+              END IF
            END DO
         END DO
         
@@ -3094,6 +3103,9 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
   CASE("TABLE")
      CALL scalar_table_interp(current_time%time, spec%table_num,&
           & table_input, spec%num_cell_pairs)
+  CASE("SOURCE")
+     CALL scalar_table_interp(current_time%time, spec%table_num,&
+          & table_input, spec%num_cell_pairs)
   END SELECT
 
   x_end = blk%xmax
@@ -3254,8 +3266,21 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
         GOTO 100
      END SELECT
 
+  CASE ("IN")
+     SELECT CASE(spec%bc_type)
+     CASE("SOURCE")
+        i_beg = spec%start_cell(1)+1
+        i_end = spec%end_cell(1)+1
+        j_beg = spec%start_cell(2)+1
+        j_end = spec%end_cell(2)+1
+        sclr%srcconc(i_beg:i_end, j_beg:j_end) = table_input(1)
      CASE DEFAULT
         GOTO 100
+     END SELECT
+
+  CASE DEFAULT
+     GOTO 100
+        
   END SELECT
 
   RETURN
@@ -3264,6 +3289,8 @@ SUBROUTINE apply_scalar_bc(blk, sclr, spec, xstart, ystart)
   WRITE(buf,*) " apply_scalar_bc: cannot handle: ", &
        &TRIM(spec%bc_loc), " ", TRIM(spec%bc_type), " ", &
        &TRIM(spec%bc_kind), " for scalar "
+  CALL error_message(buf, fatal=.FALSE.)
+
 END SUBROUTINE apply_scalar_bc
 
 ! ----------------------------------------------------------------
@@ -3281,7 +3308,7 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
 
   INTEGER :: xend, yend
   INTEGER :: i, j
-  DOUBLE PRECISION :: src
+  DOUBLE PRECISION :: src, t_water
 
   xend = block(iblock)%xmax
   yend = block(iblock)%ymax
@@ -3303,6 +3330,27 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
                 &species(ispecies)%scalar(iblock)%conc(i,j),&
                 &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                 &t_water, salinity)
+
+           ! Include the affects of any fluid sources.  A positive xsource (ft/s)
+           ! indicates an increase in fluid volume. This must include a
+           ! scalar concentration or temperature from the scalar bc specifications.  
+        
+           IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
+              src = src + block(iblock)%xsource(i,j)*&
+                   &species(ispecies)%scalar(iblock)%srcconc(i,j)
+              !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
+           END IF
+
+           ! If there is condensation (negative evaporation) then give
+           ! it air temperature; other scalars would get zero
+           IF (block(iblock)%evaporation(i,j) .GT. 0.0) THEN
+              SELECT CASE (scalar_source(ispecies)%srctype)
+              CASE (TEMP)
+                 src = src + block(iblock)%evaporation(i,j)*&
+                      &met_zones(1)%current(MET_AIRT)
+              END SELECT
+           END IF
+
            src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
         END IF
 
@@ -3323,6 +3371,7 @@ SUBROUTINE update(status_flag)
 IMPLICIT NONE
 
 INTEGER :: status_flag, iblock, ispecies, i, j
+DOUBLE PRECISION :: e
 
 
 DO iblock=1,max_blocks
@@ -3358,8 +3407,22 @@ IF (do_transport) THEN
             IF (scalar_source(ispecies)%temp_param%doexchange) THEN
                DO i = 2, block(iblock)%xmax
                   DO j = 2, block(iblock)%ymax
+
+                     ! compute the evaporation rate in this cell (ft/s)
+                     e = met_zone_evaporation_rate(met_zones(1), &
+                          &species(ispecies)%scalar(iblock)%conc(i,j))
+
+                     ! set the hydrodynamic evaporation rate (ft/s) if specified
+                     IF (scalar_source(ispecies)%temp_param%doevaporate) THEN 
+                        block(iblock)%evaporation(i,j) = -e
+                     ELSE
+                        block(iblock)%evaporation(i,j) = 0.0
+                     END IF
+
+                     ! this is used for output and is converted to in/day
                      scalar_source(ispecies)%temp_param%block(iblock)%evaporation(i,j) = &
-                          &evaporation_rate(species(ispecies)%scalar(iblock)%conc(i,j))
+                          &e*12.0*3600.0*24.0
+
                   END DO
                END DO
             END IF
@@ -3386,10 +3449,17 @@ SUBROUTINE output(status_flag)
 IMPLICIT NONE
 
 
-DOUBLE PRECISION :: depth_e, flux_e, conc_TDG
+DOUBLE PRECISION :: depth_e, flux_e, conc_TDG, t_water
 
 INTEGER :: iblock, ispecies, num_bc
 INTEGER :: i, j, status_flag
+DOUBLE PRECISION :: baro_press
+
+IF (ALLOCATED(met_zones)) THEN
+   baro_press = met_zones(1)%current(MET_BARO)
+ELSE 
+   baro_press = 760.0
+END IF
 
 !-----------------------------------------------------------------------------
 ! format definitions all placed here

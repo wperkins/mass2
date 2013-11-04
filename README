@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov  1 09:26:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: 2013-11-01 14:54:30 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -243,12 +243,16 @@ On mac laptop:
 
 On PE10900:
 
+    setenv FC gfortran-mp-4.3
+    setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
-        FC="gfortran-mp-4.3" FCFLAGS="-g" \
+        FC="gfortran-mp-4.3" \
+        FCFLAGS="-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
+        LDFLAGS="-L/opt/local/lib"  \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/usr/unsupported/CGNSLib
+        --with-cgns=/opt/local/include \
+        --with-cgns-lib=cgns
 
-    sh bootstrap.sh
     setenv FC ifort
     setenv FCFLAGS "-O2 -fpe1 -fpp -m32"
     sh configure \
@@ -257,9 +261,17 @@ On PE10900:
         --with-f90=ifort 
 
     configure \
-        FC=ifort FCFLAGS="-O2 -fpe1" \
+        FC=ifort FCFLAGS="-O2 -fpe1" LDFLAGS="-L/opt/local/lib" \
         --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/usr/unsupported/CGNSLib \
+        --with-cgns=/opt/local/include \
+        --with-cgns-lib=cgns \
+        --with-f90=ifort
+
+    configure \
+        FC=ifort FCFLAGS="-g -fpe1" LDFLAGS="-L/opt/local/lib" \
+        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
+        --with-cgns=/opt/local/include \
+        --with-cgns-lib=cgns \
         --with-f90=ifort
 
 On bearflag:

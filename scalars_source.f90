@@ -323,7 +323,7 @@ CONTAINS
   ! interactions with the bed.
   ! ----------------------------------------------------------------
   SUBROUTINE scalar_source_timestep(time, delta_t)
-    USE met_data_module
+    USE met_zone
     USE scalars, ONLY: max_species
     IMPLICIT NONE
     DOUBLE PRECISION :: time, delta_t
@@ -332,7 +332,7 @@ CONTAINS
 
                                 ! update meteorologic data, if used
 
-    IF (source_need_met) CALL update_met_data(time)
+    IF (source_need_met) CALL met_zone_update(time)
 
                                 ! necessary activities to prepare
                                 ! individual scalar species
@@ -344,6 +344,11 @@ CONTAINS
              CALL bedsrc_interp(time, delta_t, scalar_source(i)%generic_param%bedsrc)
              IF (ASSOCIATED(bedflowsrc)) CALL bedsrc_interp(time, delta_t, bedflowsrc)
           END IF
+       CASE (TEMP)
+          
+          CALL temperature_source_timestep(scalar_source(i)%temp_param, &
+               &source_temp_idx, time, delta_t)
+          ! CALL const_series_update(scalar_source(i)%temp_param%specific_heat_ts, time)
        END SELECT
     END DO
 
@@ -376,7 +381,7 @@ CONTAINS
     SELECT CASE (scalar_source(ispecies)%srctype)
     CASE (TEMP)
        scalar_source_term = scalar_source_term + &
-            &temperature_source_term(scalar_source(ispecies)%temp_param, conc)
+            &temperature_source_term(scalar_source(ispecies)%temp_param, iblock, i, j, conc, depth)
     CASE (TDG)
        scalar_source_term = scalar_source_term + &
             &tdg_source_term(scalar_source(ispecies)%tdg_param, conc, t_water, salinity)

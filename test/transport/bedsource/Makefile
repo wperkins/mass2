@@ -37,19 +37,19 @@ BEDFILES = \
 
 all: $(EPSFILES)
 
-plot.bc.nc gage.bc.nc: $(MODELFILES) $(MODEL) conc.dat
+plot.bc.nc plot.bc.cgns: $(MODELFILES) $(MODEL) conc.dat
 	sed -e 's/@FILE@/conc.dat/' scalar_bcspecs.base > scalar_bcspecs.dat
 	cp scalar_source.base scalar_source.dat
 	$(MODEL)
-	mv gage.nc gage.bc.nc
 	mv plot.nc plot.bc.nc
+	cgnsversion -r -k 2.5 plot000.cgns plot.bc.cgns
 
-plot.bed.nc gage.bed.nc: $(MODELFILES) $(MODEL) $(BEDFILES)
+plot.bed.nc plot.bed.cgns: $(MODELFILES) $(MODEL) $(BEDFILES)
 	sed -e 's/@FILE@/background.dat/' scalar_bcspecs.base > scalar_bcspecs.dat
 	sed -e '2s,/,BEDSOURCE "stuff-list.dat" "stuff-map.dat" /,' scalar_source.base > scalar_source.dat
 	$(MODEL)
-	mv gage.nc gage.bed.nc
 	mv plot.nc plot.bed.nc
+	cgnsversion -r -k 2.5 plot000.cgns plot.bed.cgns
 
 
 plot-mass-bc.eps: plot-mass-bc.gp plot.bc.nc
@@ -62,7 +62,9 @@ clean::
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
 	rm -f gridplot1.dat
+	rm -f gage_*.out
 	rm -f plot.nc gage.nc plot.bed.nc gage.bed.nc plot.bc.nc gage.bc.nc
+	rm -f plot000.cgns grid.cgns plot.bed.cgns plot.bc.cgns
 	rm -f batch.log
 	rm -f scalar_bcspecs.dat scalar_source.dat
 	rm -f $(EPSFILES)

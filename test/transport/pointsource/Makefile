@@ -13,13 +13,9 @@
 
 MODEL = ../../../mass2
 TECPLOT = tecplot
+CGNSVERSION = cgnsversion
 
-EPSFILES = \
-	plot-lat.eps \
-	plot-long.eps \
-	plot-mass.eps \
-	plan.eps \
-	plan-metric.eps
+EPSFILES = plan.eps
 
 MODELFILES = \
 	background.dat \
@@ -39,17 +35,18 @@ MODELFILES = \
 
 all: $(EPSFILES)
 
-plot.nc: $(MODELFILES) $(MODEL)
+plot.cgns: $(MODELFILES) $(MODEL)
 	$(MODEL)
+	$(CGNSVERSION) -r -k 2.5 plot000.cgns $@
 
-plot-lat.eps: plot-lat.gp solution.pl plot.nc
-plot-long.eps: plot-long.gp solution.pl plot.nc
-plot-mass.eps: plot-mass.gp plot.nc
+plot-lat.eps: plot-lat.gp solution.pl plot.cgns
+plot-long.eps: plot-long.gp solution.pl plot.cgns
+plot-mass.eps: plot-mass.gp plot.cgns
 
-plan.eps: plan.lay plot.nc
+plan.eps: plan.lay plot.cgns
 	$(TECPLOT) -b -y $@ plan.lay -p ../../../tecplot/macros/export_eps.mcr
 
-plan-metric.eps: plan.lay plot.nc ../mixing/metric.mcr
+plan-metric.eps: plan.lay plot.cgns ../mixing/metric.mcr
 	$(TECPLOT) -b -y $@ plan.lay -p ../mixing/metric.mcr
 
 
@@ -60,6 +57,7 @@ clean::
 	rm -f *~
 	rm -f error-warning.out mass_source_monitor.out output.out status.out
 	rm -f gridplot1.dat
-	rm -f plot.nc gage.nc
+	rm -f plot.nc gage.nc plot000.cgns grid.cgns plot.cgns
+	rm -f gage*.out
 	rm -f batch.log
 	rm -f $(EPSFILES)

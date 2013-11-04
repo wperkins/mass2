@@ -326,12 +326,20 @@ CONTAINS
   SUBROUTINE accumulate_tdg(iblk, ispec)
 
     USE gas_functions
-    USE met_data_module, ONLY: baro_press
+    USE met_zone
 
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: iblk, ispec
 
     INTEGER :: i, j
+
+    DOUBLE PRECISION :: baro_press
+
+    IF (ALLOCATED(met_zones)) THEN
+       baro_press = met_zones(1)%current(MET_BARO)
+    ELSE 
+       baro_press = 760.0
+    END IF
 
     accum_tmp = 0.0
     DO i = i_index_min, block(iblk)%xmax + i_index_extra

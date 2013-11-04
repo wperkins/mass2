@@ -1,0 +1,7 @@
+ZONE 1 
+    TABLE "met.dat" 
+    WINDB 9.2 
+    WINDA 0.46 
+    BRUNT TABLE "brunt.dat"
+    ALBEDO 0.00 
+    EXTINCT 100.0 /
