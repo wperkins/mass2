@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov  1 09:26:18 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: 2013-11-06 12:18:53 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -274,42 +274,41 @@ On PE10900:
         --with-cgns-lib=cgns \
         --with-f90=ifort
 
-On bearflag:
-
-    setenv ABSOFT /usr/software/absoft10
-    set path = ($path ${ABSOFT}/bin)
-    sh bootstrap.sh
-    configure \
-        --with-f90=f95 \
-        --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.6.1/linux64 \
-        --with-cgns=/usr/unsupported/CGNSLib \
-        --with-cgns-lib=cgns.LINUX64 \
-        --enable-f90-optimize \
-        --enable-f90-debug
-    
-
-    sh bootstrap.sh
+On flophouse:
 
     source /usr/software/intel101/x86_64/bin/ifortvars.csh
+    set prefix = /net/flophouse/files0/perksoft/linux64
     configure \
-        FC=ifort FCFLAGS="-O2 -fpe1" \
-        --with-f90=ifort \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
-        --with-cgns=/usr/unsupported/CGNSLib \
-        --with-cgns-lib=cgns.LINUX64 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+       FC=ifort \
+       FCFLAGS="-O2 -fpe1" \
+       --with-f90=ifort \
+       --with-netcdf="$prefix/netcdf3" \
+       --with-cgns="$prefix/cgns2" \
+       --with-cgns-lib=cgns \
+       --enable-f90-optimize
 
-    # Using the GNU compiler (does not seem to work with CGNS output)
-    sh bootstrap.sh
-    setenv FCFLAGS "-ffpe-trap=invalid,zero,overflow"
+    set prefix = /net/flophouse/files0/perksoft/linux64
     configure \
-        --with-f90=gfortran \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/linux64 \
-        --with-cgns=/usr/unsupported/CGNSLib \
-        --with-cgns-lib=cgns.LINUX64 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+       FC=gfortran \
+       FCFLAGS="-ffpe-trap=invalid,zero,overflow" \
+       --with-f90=gfortran \
+       --with-netcdf="$prefix/netcdf3" \
+       --with-cgns="$prefix/cgns2" \
+       --with-cgns-lib=cgns \
+       --enable-f90-optimize
+
+On olympus:
+
+    module load intel/12.1.3.293
+    ./configure \
+       FC=ifort \
+       FCFLAGS="-O2 -fpe1" \
+       --with-f90=ifort \
+       --with-netcdf="$HOME/stuff/netcdf3" \
+       --with-cgns="$HOME/stuff/intel12" \
+       --with-cgns-lib=cgns \
+       --enable-f90-optimize
+
 
 
 -------------------------------------------------------------
