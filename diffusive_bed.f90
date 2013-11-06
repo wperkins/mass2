@@ -7,7 +7,7 @@
   ! ----------------------------------------------------------------
   ! ----------------------------------------------------------------
   ! Created March 18, 2013 by William A. Perkins
-  ! Last Change: Thu Jun  3 06:45:08 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+  ! Last Change: 2013-11-06 10:52:58 d3g096
   ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE diffusive_bed
@@ -23,7 +23,7 @@ MODULE diffusive_bed
      DOUBLE PRECISION :: phi_inf  ! bed bottom temperature, C (if used)
      DOUBLE PRECISION :: dz       ! bed layer thickness, ft
                                   ! whatever is diffusing in the bed 
-     DOUBLE PRECISION, ALLOCATABLE :: phi(:)
+     DOUBLE PRECISION, POINTER :: phi(:)
   END type diffusive_bed_rec
 
   PRIVATE tridag, solveit
