@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Fri May 27 15:03:30 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: 2013-11-06 13:29:54 d3g096
 # -------------------------------------------------------------
 
 AM_FFLAGS = $(FCFLAGS) 
@@ -67,7 +67,7 @@ mass2_SOURCES =					\
 mass2_LDADD = $(SOLVEROBJ) gastemp/libgastemp.a time_series/libts.a \
 	@SOLVERLDFLAGS@ \
 	-L@NETCDF_LIBS_PATH@ @NETCDF_LIBS@ \
-	-L@CGNS_LIBS_PATH@ @CGNS_LIBS@
+	@CGNS_LIBS@
 
 solver_test_SOURCES =				\
 	solver_test.f90				\

@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2013-11-06 12:18:53 d3g096
+Last Change: 2013-11-06 13:27:55 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -183,46 +183,6 @@ The options specific to the compilation of MASS2 are as follows:
 
 Some typical configurations
 
-    configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4
-    --enable-optimize --enable-profile --with-cgns=/usr/unsupported/CGNSLib
-    --with-sixpack=/home/perk/Projects/ParallelMASS2/src/sixpack-2.3.7
-    --with-aztec=/home/perk/Projects/ParallelMASS2/src/aztec
-
-    configure --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4 \
-        --with-cgns=/usr/unsupported/CGNSLib --with-f90=ifc \
-        --enable-f90-optimize --enable-f90-debug
-        ----with-extra-f90flags="-tpp7 -xW"
-
-On leechong w/ Intel Compiler:
-
-    setenv FFLAGS ""
-    configure \
-        --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.4 \
-        --with-cgns=/usr/unsupported/CGNSLib \
-        --with-cgns-lib=cgns.LINUX \
-        --with-f90=ifc \
-        --enable-f90-optimize
-
-On mcperk w/ Absoft Compiler:
-
-setenv FCFLAGS ""
-configure \
-    --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.5.1/macosx \
-    --with-cgns=/usr/unsupported/CGNSLib \
-    --with-cgns-lib=cgns.DARWIN \
-    --with-f90=f95 \
-    --enable-f90-optimize \
-    --enable-f90-debug
-
-setenv FCFLAGS "-ffpe-trap=invalid,zero,overflow"
-configure \
-    --with-netcdf=/home/perk/Projects/ParallelMASS2/src/netcdf-3.5.1/macosx \
-    --with-cgns=/usr/unsupported/CGNSLib \
-    --with-cgns-lib=cgns.DARWIN \
-    --with-f90=gfortran \
-    --enable-f90-debug \
-    --enable-f90-optimize
-
 On mac laptop:
 
     setenv FCFLAGS "-fno-second-underscore -ffpe-trap=invalid,zero,overflow"
@@ -243,34 +203,36 @@ On mac laptop:
 
 On PE10900:
 
-    setenv FC gfortran-mp-4.3
-    setenv FCFLAGS "-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
         FC="gfortran-mp-4.3" \
         FCFLAGS="-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
         LDFLAGS="-L/opt/local/lib"  \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/opt/local/include \
+        --enable-maintainer-mode \
+        --with-netcdf="$prefix/netcdf3" \
+        --with-cgns="$prefix/cgns2" \
         --with-cgns-lib=cgns
 
-    setenv FC ifort
-    setenv FCFLAGS "-O2 -fpe1 -fpp -m32"
-    sh configure \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/usr/unsupported/CGNSLib \
-        --with-f90=ifort 
+    configure \
+        FC="gfortran-mp-4.3" \
+        FCFLAGS="-O2 -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
+        --enable-maintainer-mode \
+        --with-netcdf="$prefix/netcdf3" \
+        --with-cgns="$prefix/cgns2" \
+        --with-cgns-lib=cgns
 
     configure \
-        FC=ifort FCFLAGS="-O2 -fpe1" LDFLAGS="-L/opt/local/lib" \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/opt/local/include \
+        FC=ifort FCFLAGS="-O3 -fpe1" \
+        --enable-maintainer-mode \
+        --with-netcdf="$prefix/netcdf3" \
+        --with-cgns="$prefix/cgns2" \
         --with-cgns-lib=cgns \
         --with-f90=ifort
 
     configure \
-        FC=ifort FCFLAGS="-g -fpe1" LDFLAGS="-L/opt/local/lib" \
-        --with-netcdf=/home/d3g096/Projects/MASS2/src/netcdf-3.6.2/macosx \
-        --with-cgns=/opt/local/include \
+        FC=ifort FCFLAGS="-g -fpe1" \
+        --enable-maintainer-mode \
+        --with-netcdf="$prefix/netcdf3" \
+        --with-cgns="$prefix/cgns2" \
         --with-cgns-lib=cgns \
         --with-f90=ifort
 
