@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created December 10, 2010 by William A. Perkins
-# Last Change: Fri Dec 10 08:38:55 2010 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: 2013-11-07 06:18:23 d3g096
 # -------------------------------------------------------------
 
 SUBDIRS =
@@ -22,3 +22,8 @@ libgastemp_a_SOURCES = \
 	energy_flux_module.f90
 
 gas_functions_module.$(OBJEXT): gas_coeffs_module.$(OBJEXT) 
+
+clean-local:
+	rm -f *.$(F90MODULEEXT)
+	rm -f *.il work.*
+	rm -f *~

@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2013-11-06 13:27:55 d3g096
+Last Change: 2013-11-06 15:13:17 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -185,21 +185,28 @@ Some typical configurations
 
 On mac laptop:
 
-    setenv FCFLAGS "-fno-second-underscore -ffpe-trap=invalid,zero,overflow"
     configure \
-        --with-netcdf=/Users/d3g096/stuff \
-        --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
-        --with-f90=gfortran-mp-4.3 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+        FC="gfortran-mp-4.5" \
+        FCFLAGS="-g -fbounds-check -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
+        --enable-maintainer-mode \
+        --with-netcdf="/Users/d3g096/ProjectStuff/mass2/netcdf3" \
+        --with-cgns="/opt/local" \
+        --with-cgns-lib=cgns
 
-    setenv FCFLAGS "-fno-second-underscore"
     configure \
-        --with-netcdf=/Users/d3g096/stuff \
-        --with-cgns=/Users/d3g096/stuff/src/cgnslib_2.5 \
-        --with-f90=g95 \
-        --enable-f90-debug \
-        --enable-f90-optimize
+        FC="gfortran-mp-4.5" \
+        FCFLAGS="-O2 -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
+        --enable-maintainer-mode \
+        --with-netcdf="/Users/d3g096/ProjectStuff/mass2/netcdf3" \
+        --with-cgns="/opt/local" \
+        --with-cgns-lib=cgns
+
+    configure \
+        FC=ifort FCFLAGS="-O3 -fpe1 -m32" \
+        --enable-maintainer-mode \
+        --with-netcdf="/Users/d3g096/ProjectStuff/mass2/netcdf3" \
+        --with-cgns="/opt/local" \
+        --with-cgns-lib=cgns
 
 On PE10900:
 
@@ -213,7 +220,7 @@ On PE10900:
         --with-cgns-lib=cgns
 
     configure \
-        FC="gfortran-mp-4.3" \
+        FC="gfortran-mp-4.5" \
         FCFLAGS="-O2 -fno-second-underscore -ffpe-trap=invalid,zero,overflow" \
         --enable-maintainer-mode \
         --with-netcdf="$prefix/netcdf3" \
