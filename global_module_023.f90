@@ -148,6 +148,7 @@ TYPE block_struct
 
   DOUBLE PRECISION, POINTER :: xsource(:,:)
   DOUBLE PRECISION, POINTER :: evaporation(:,:) ! Evaporation rate, ft/s
+  DOUBLE PRECISION, POINTER :: precip(:, :)     ! Precipitation, ft/s
 
 END TYPE block_struct
 
@@ -309,8 +310,11 @@ SUBROUTINE allocate_block_components(n, status_iounit)
 
   ALLOCATE(block(n)%xsource(imin:imax, jmin:jmax))
   ALLOCATE(block(n)%evaporation(imin:imax, jmin:jmax))
+  ALLOCATE(block(n)%precip(imin:imax, jmin:jmax))
 
   block(n)%xsource = 0.0
+  block(n)%evaporation = 0.0
+  block(n)%precip = 0.0
 
   WRITE(msg,*)'completed component allocation for block number - ',n
   CALL status_message(msg)

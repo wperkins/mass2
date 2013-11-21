@@ -25,12 +25,14 @@
 MODULE table_boundary_conditions
 
 USE utility
-USE time_series
+USE cumulative_time_series
 
 IMPLICIT NONE
 
 INTEGER, PARAMETER  :: max_cell_values = 40
-INTEGER :: max_tables = 0, max_scalar_tables = 0
+INTEGER :: max_tables = 0
+INTEGER :: max_precip_tables = 0
+INTEGER :: max_scalar_tables = 0
 
 
                                 ! this is a (hopefully) temporary
@@ -38,25 +40,30 @@ INTEGER :: max_tables = 0, max_scalar_tables = 0
                                 ! be more directly integrated
 
 TYPE table_bc_struct
-	CHARACTER (LEN=80) :: file_name
-    TYPE(time_series_rec), POINTER :: ts
+   CHARACTER (LEN=80) :: file_name
+   TYPE(time_series_rec), POINTER :: ts
 END TYPE table_bc_struct
-
 
 TYPE(table_bc_struct), ALLOCATABLE :: table_bc(:)
 TYPE(table_bc_struct), ALLOCATABLE :: scalar_table_bc(:)
 
-CHARACTER (LEN=1024), PRIVATE :: buffer
+TYPE cumulative_bc_struct
+   CHARACTER (LEN=80) :: file_name
+   TYPE(cumulative_time_series_rec), POINTER :: ts
+END type cumulative_bc_struct
 
+TYPE (cumulative_bc_struct), ALLOCATABLE :: precip_bc(:)
+
+CHARACTER (LEN=1024), PRIVATE :: buffer
 
 !#########################################################################
 CONTAINS
 
-SUBROUTINE allocate_table_bc(max_tables)
+SUBROUTINE allocate_table_bc()
 	IMPLICIT NONE
-	INTEGER :: max_tables, alloc_stat
+	INTEGER :: alloc_stat
 
-	ALLOCATE(table_bc(max_tables), STAT = alloc_stat)
+	ALLOCATE(table_bc(max_tables), precip_bc(max_precip_tables), STAT = alloc_stat)
     
 	IF(alloc_stat /= 0)THEN
        CALL error_message('allocation failed for the array of table bc ', fatal=.TRUE.)
@@ -92,6 +99,10 @@ SUBROUTINE read_bc_tables
        table_bc(i)%ts => time_series_read(table_bc(i)%file_name, fields = max_cell_values)
 	END DO
 
+ DO i = 1, max_precip_tables
+    precip_bc(i)%ts => cumulative_time_series_read(precip_bc(i)%file_name)
+ END DO
+
 END SUBROUTINE read_bc_tables
 !########################################################################
 
@@ -119,6 +130,21 @@ SUBROUTINE table_interp(time, table_num, table_input, num_values)
     CALL time_series_interp(table_bc(table_num)%ts, time)
 	table_input(1:num_values) = table_bc(table_num)%ts%current(1:num_values)
 END SUBROUTINE table_interp
+
+!############################################################################################
+
+SUBROUTINE precip_table_interp(time, table_num, table_input)
+
+! returns a VECTOR of the linearly interpolated values in a bc table
+
+  IMPLICIT NONE
+  DOUBLE PRECISION, INTENT(IN) :: time
+  INTEGER, INTENT(IN) :: table_num
+  DOUBLE PRECISION :: table_input
+ 
+  CALL cumulative_time_series_update(precip_bc(table_num)%ts, time)
+  table_input = precip_bc(table_num)%ts%rate
+END SUBROUTINE precip_table_interp
 
 !############################################################################################################
 

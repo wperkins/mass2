@@ -129,7 +129,7 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
   INTEGER, INTENT(IN) :: iounit, max_blocks, xmax(:), ymax(:)
 
   INTEGER :: junk1, block, num_bc, con_block, cells(2*max_cell_values) = -999 
-  INTEGER :: table_count = 0, num_cells, num_cell_pairs
+  INTEGER :: table_count = 0, precip_table_count = 0, num_cells, num_cell_pairs
   CHARACTER (LEN=10) :: junk_char1, junk_char2
   CHARACTER (LEN=10) :: bc_loc, bc_type, bc_kind, bc_extent
   CHARACTER (LEN=80) :: file_name
@@ -147,11 +147,13 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
      SELECT CASE (junk_char2)
      CASE ("TABLE", "SOURCE", "SINK")
         max_tables = max_tables + 1
+     CASE ("PRECIP")
+        max_precip_tables = max_precip_tables + 1
      END SELECT
   END DO
 	
 	! now allocate the number of table bc structs that we need
-100 CALL allocate_table_bc(max_tables)
+100 CALL allocate_table_bc()
 
   ! now start over to fill and parse
   REWIND(iounit)
@@ -302,7 +304,39 @@ SUBROUTINE read_bcspecs(iounit, max_blocks, xmax, ymax)
               CALL error_message(msg, fatal=.FALSE.)
               READ (iounit, *)
            END SELECT
-        
+
+        CASE ("PRECIP")
+           
+           cells = -999
+           
+           READ(iounit,*)block,bc_loc,bc_type,bc_kind,bc_extent,file_name, cells
+           precip_table_count = precip_table_count + 1
+           block_bc(block)%bc_spec(num_bc)%table_num = precip_table_count
+           precip_bc(precip_table_count)%file_name = file_name
+
+           ! precipitation can only be a 'VELO' kind
+           SELECT CASE(bc_kind)
+           CASE ("VELO")
+           CASE DEFAULT
+           END SELECT
+
+           SELECT CASE(bc_extent)
+           CASE ("PART")
+              CALL set_bc_area(block_bc(block)%bc_spec(num_bc), cells, &
+                   &xmax(block) - 1, ymax(block) - 1, line, lerr)
+           CASE ("ALL") 
+              block_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+              block_bc(block)%bc_spec(num_bc)%end_cell(1) = xmax(block) - 1
+              block_bc(block)%bc_spec(num_bc)%start_cell(2) = 1
+              block_bc(block)%bc_spec(num_bc)%end_cell(2) = ymax(block) - 1
+           CASE DEFAULT
+              lerr = lerr + 1
+              WRITE(msg, *) TRIM(bcspecs_name), ": error: line ", line, &
+                   &": ", TRIM(bc_extent), "?"
+              CALL error_message(msg, fatal=.FALSE.)
+              READ (iounit, *)
+           END SELECT
+
         CASE ("WALL")
            cells = -999
            READ(iounit,*)block,bc_loc,bc_type,bc_kind,junk1,cells(:)
