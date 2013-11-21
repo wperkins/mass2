@@ -2207,6 +2207,7 @@ SUBROUTINE default_hydro_bc(blk)
   blk%isdead(:,:)%v = .FALSE.
   blk%isdead(:,:)%p = .FALSE.
   blk%xsource = 0.0
+  blk%precip = 0.0
 
 END SUBROUTINE default_hydro_bc
 
@@ -2254,9 +2255,11 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      CALL table_interp(current_time%time,&
           & bc%table_num,&
           & table_input, 1)
-
+  CASE ("PRECIP")
+     CALL precip_table_interp(current_time%time,&
+          & bc%table_num,&
+          & table_input(1))
   CASE ("BLOCK")
-
      CALL fillghost_hydro(blk, block(bc%con_block), bc)
      RETURN
      
@@ -2683,7 +2686,7 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
      IF (dsonly) RETURN
      SELECT CASE(bc%bc_type)
         
-     CASE ("SOURCE", "SINK")
+     CASE ("SOURCE", "SINK", "PRECIP")
         
         ! if this is labeled as a "SINK"
         ! negate whatever is in the table
@@ -2729,11 +2732,15 @@ SUBROUTINE apply_hydro_bc(blk, bc, dsonly, ds_flux_given)
         DO i = bc%start_cell(1), bc%end_cell(1)
            DO j = bc%start_cell(2), bc%end_cell(2)
               IF (.NOT. blk%isdry(i+1,j+1)) THEN
-                 blk%xsource(i+1, j+1) = table_input(1)/input_total
+                 SELECT CASE (bc%bc_type)
+                 CASE ("PRECIP")
+                    blk%precip(i+1, j+1) = table_input(1)
+                 CASE DEFAULT
+                    blk%xsource(i+1, j+1) = table_input(1)/input_total
+                 END SELECT
               END IF
            END DO
         END DO
-        
         
      CASE ("WALL")
         SELECT CASE(bc%bc_kind)
@@ -3308,7 +3315,7 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
 
   INTEGER :: xend, yend
   INTEGER :: i, j
-  DOUBLE PRECISION :: src, t_water
+  DOUBLE PRECISION :: src, t_water, t_precip
 
   xend = block(iblock)%xmax
   yend = block(iblock)%ymax
@@ -3320,6 +3327,7 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
 
         IF (source_doing_temp) THEN
            t_water = species(source_temp_idx)%scalar(iblock)%conc(i,j)
+           t_precip = t_water
         ELSE
            t_water = 0
         END IF
@@ -3341,19 +3349,35 @@ SUBROUTINE apply_scalar_source(iblock, ispecies, xstart, ystart)
               !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
            END IF
 
-           ! If there is condensation (negative evaporation) then give
-           ! it air temperature; other scalars would get zero
+           ! If there is condensation (negative evaporation) then some
+           ! water has been added to the cell.  The energy in the
+           ! condensation has already been accounted for. Give the
+           ! added water the same temperature as the cell, so the
+           ! energy balance is not upset.
            IF (block(iblock)%evaporation(i,j) .GT. 0.0) THEN
               SELECT CASE (scalar_source(ispecies)%srctype)
               CASE (TEMP)
-                 src = src + block(iblock)%evaporation(i,j)*&
-                      &met_zones(1)%current(MET_AIRT)
+                 src = src + block(iblock)%evaporation(i,j)*t_water
               END SELECT
            END IF
 
-           src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+           ! If there is precipitation, its temperature should be at
+           ! the wet bulb temperature if atmospheric exchange is
+           ! enabled. Otherwise, it's assumed to be the water
+           ! temperature, so it has no effect on energy.
+           IF (block(iblock)%precip(i,j) .GT. 0.0) THEN
+              SELECT CASE (scalar_source(ispecies)%srctype)
+              CASE (TEMP)
+                 IF (scalar_source(ispecies)%temp_param%doexchange) THEN
+                    t_precip = wet_bulb(met_zones(1)%current(MET_AIRT), &
+                         &         met_zones(1)%current(MET_DEWT))
+                 END IF
+                 src = src + block(iblock)%precip(i,j)*t_precip
+              END SELECT
+           END IF
         END IF
 
+        src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
         species(ispecies)%scalar(iblock)%srcterm(i,j) = src
      END DO
   END DO

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Thu Jan 22 10:00:57 2009 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: 2013-11-20 11:37:58 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -1101,7 +1101,8 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
              &cpo*blend_time*(-0.5*blk%depth(i,j) + blk%depthold(i,j) - 0.5*blk%deptholdold(i,j)) + &
              &flux_w - flux_e + flux_s - flux_n + &
              &blk%xsource(i,j)*hp1*hp2 + &
-             &blk%evaporation(i,j)*hp1*hp2
+             &blk%evaporation(i,j)*hp1*hp2 + &
+             &blk%precip(i,j)*hp1*hp2
               
 
         ce(i,j) = he2*depth_e*blk%lud(i,j)
@@ -1111,10 +1112,6 @@ SUBROUTINE depth_solve(blkidx, blk, delta_t)
         cp(i,j) = ce(i,j) + cw(i,j) + cn(i,j) + cs(i,j) &
              + cpo
 
-        ! bp(i,j) = blk%mass_source(i,j) + &
-        !     &blk%xsource(i,j)*hp1*hp2
-        ! blk%mass_source(i,j) = blk%mass_source(i,j) + &
-        !      &blk%xsource(i,j)*hp1*hp2
         bp(i,j) = blk%mass_source(i,j)
 
         IF (blk%isdead(i,j)%p) THEN

@@ -221,6 +221,23 @@ CONTAINS
   END FUNCTION rel_humid
 
   !########################################################################
+  ! Formula from
+  !   Stull, Roland, 2011: Wet-Bulb Temperature from Relative Humidity
+  !   and Air Temperature. J. Appl. Meteor. Climatol., 50, 2267–2269.
+  !   doi: http://dx.doi.org/10.1175/JAMC-D-11-0143.1 
+  DOUBLE PRECISION FUNCTION wet_bulb(t_air, t_dew)
+    IMPLICIT NONE
+    DOUBLE PRECISION, INTENT(IN) :: t_air, t_dew
+    DOUBLE PRECISION :: rh
+    rh = rel_humid(t_air, t_dew)
+    wet_bulb = t_air*atan(0.151977*sqrt(rh + 8.313659)) + &
+         &atan(t_air + rh) - &
+         &atan(rh - 1.676331) + &
+         &0.00391838*(rh)**1.5*atan(0.023101*rh) - &
+         &4.68603
+  END FUNCTION wet_bulb
+
+  !########################################################################
   DOUBLE PRECISION FUNCTION sat_vapor_press(t_air)
     !
     ! returns saturation vapor pressure of air in mmHg

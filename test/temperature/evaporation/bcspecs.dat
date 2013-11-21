@@ -1,1 +1,2 @@
  1 IN SOURCE VELO ALL "recharge.dat" /
+ 1 IN PRECIP VELO ALL "cumulative_precip.dat" /
