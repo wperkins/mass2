@@ -1,3 +1,15 @@
+2013-11-21  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2_main_025.f90 (default_hydro_bc): oops, evaporation should
+	not be zeroed here
+
+	* test/temperature/evaporation/mass2_v027.cfg: tighten the
+	hydrodynamic solution to deal with precipitation
+
+	* test/temperature/evaporation/bcspecs.dat: add precipitation
+
+	* test/temperature/evaporation/cumulative_precip.dat: added
+
 2013-03-29  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* temperature_source.f90 (temperature_source_timestep):

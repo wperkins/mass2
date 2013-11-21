@@ -2207,7 +2207,6 @@ SUBROUTINE default_hydro_bc(blk)
   blk%isdead(:,:)%v = .FALSE.
   blk%isdead(:,:)%p = .FALSE.
   blk%xsource = 0.0
-  blk%evaporation = 0.0
   blk%precip = 0.0
 
 END SUBROUTINE default_hydro_bc
