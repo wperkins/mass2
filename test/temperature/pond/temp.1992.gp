@@ -122,6 +122,6 @@ set colorbox default
 set loadpath 
 set fontpath 
 set fit noerrorvariables
-plot "met.dat" using 1:3 title "Air" with lines 3, \
-     "gage_1.out" using 1:10 title "Pond" with lines 1
+plot "met.dat" using 1:3 title "Air" with lines ls 3, \
+     "gage_1.out" using 1:10 title "Pond" with lines ls 1
 #    EOF

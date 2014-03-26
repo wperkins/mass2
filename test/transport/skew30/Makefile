@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Thu Nov  6 11:44:12 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: Mon Oct 22 09:59:17 2012 by William A. Perkins <d3g096@flophouse>
 # -------------------------------------------------------------
 
 MODEL = ../../../mass2
@@ -17,6 +17,7 @@ CASES = UPWIND CDS SOU MSOU MUSCL
 
 EPSFILES = $(CASES:%=plot-%.eps)
 PLOTFILES = $(CASES:%=plot-%.cgns)
+PROFFILES = $(CASES:%=plot-%.dat)
 
 MODELFILES = \
 	bcspecs.dat \
