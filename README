@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2014-04-03 11:39:00 d3g096
+Last Change: 2014-04-03 13:02:33 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -34,6 +34,7 @@ Example Configuration
 
 
 PE10900:
+set prefix = /net/flophouse/files0/perksoft/macosx
 
 configure \
     FC=mpif90 \
@@ -41,7 +42,7 @@ configure \
     FCFLAGS="-g -fbounds-check -ffpe-trap=invalid,zero,overflow" \
     FC_CPPFLAG="-x f95-cpp-input" \
     PETSC_DIR="$prefix/../petsc-3.4.4" \
-    PETSC_ARCH="arch-macosx-fortran-opt" \
+    PETSC_ARCH="arch-macosx-fortran-debug" \
     --with-cgns="$prefix/cgns2" \
     --with-global-arrays="$prefix/mass2" \
     --prefix="$prefix/mass2"

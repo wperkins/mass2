@@ -349,6 +349,8 @@ CONTAINS
        END IF
     END IF
 
+    CALL block_var_sync()
+
   END SUBROUTINE write_restart
 
 END MODULE hotstart

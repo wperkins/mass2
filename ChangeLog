@@ -1,5 +1,8 @@
 2014-04-03  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* hotstart.f90 (write_restart): a GA sync was necessary to avoid a
+	race 
+
 	* block_initialization.f90 (block_initialization): all entries in
 	a character parameter array must be the same size?
 
