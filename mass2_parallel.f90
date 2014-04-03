@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: Mon Nov 21 10:32:42 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-04-02 14:40:00 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -490,7 +490,7 @@ SUBROUTINE banner()
   WRITE(*,'(" Using Global Arrays ", I1, ".", I1)') GA_VERSION_MAJOR, GA_VERSION_MINOR
   WRITE(*,'(" Using PETSc ",I1,".",I1,".",I1,"-p",I1," (", A, ")")') &
        &PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR, PETSC_VERSION_PATCH,&
-       &PETSC_VERSION_PATCH_DATE
+       &PETSC_VERSION_DATE
   WRITE(*,*)
   
 END SUBROUTINE banner

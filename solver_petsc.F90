@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: Wed Nov  2 10:48:38 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2014-04-03 10:34:27 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -101,7 +101,7 @@ CONTAINS
     CALL PetscPopSignalHandler(ierr)
     CHKERRQ(ierr)
 
-    CALL PetscGetTime(total_time, ierr);
+    CALL PetscTime(total_time, ierr);
     CHKERRQ(ierr)
 
     scalar_time = 0.0;
@@ -321,6 +321,8 @@ CONTAINS
                &PETSC_DETERMINE, PETSC_DETERMINE, ierr)
           CALL MatSetFromOptions(pinfo(iblock)%eq(ieq)%A, ierr)
           CHKERRQ(ierr)
+          CALL MatSetUp(pinfo(iblock)%eq(ieq)%A, ierr)
+          CHKERRQ(ierr)
 
           ! create vectors to hold the
           ! right-hand side and estimate
@@ -419,10 +421,10 @@ CONTAINS
     INTEGER :: ierr
     
     PetscScalar :: v(5)
-    PetscInt :: ridx, cidx(5)
+    PetscInt :: ridx(5), cidx(5)
     PetscScalar, pointer :: x_vv(:)
 
-    CALL PetscGetTime(tmp1_time, ierr);
+    CALL PetscTime(tmp1_time, ierr);
     CHKERRQ(ierr)
 
     gimin = pinfo(iblock)%gimin
@@ -440,7 +442,7 @@ CONTAINS
 
           idx = 1
           v = 0.0;
-          ridx = ip
+          ridx(1) = ip
 
           cidx(idx) = ip
           v(idx) = ap(i,j)
@@ -525,7 +527,7 @@ CONTAINS
     CALL VecRestoreArrayF90(pinfo(iblock)%eq(ieq)%lx, x_vv, ierr)
     CHKERRQ(ierr)
 
-    CALL PetscGetTime(tmp2_time, ierr);
+    CALL PetscTime(tmp2_time, ierr);
     CHKERRQ(ierr)
 
 
@@ -571,7 +573,7 @@ CONTAINS
        END DO
     END DO
 
-    CALL PetscGetTime(tmp2_time, ierr);
+    CALL PetscTime(tmp2_time, ierr);
     CHKERRQ(ierr)
     total_time = tmp2_time - total_time
 

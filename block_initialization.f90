@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: Tue Oct 18 08:44:38 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-04-03 11:37:44 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -27,9 +27,9 @@ MODULE block_initialization
 
   INTEGER, PARAMETER, PRIVATE :: coeff_file_count = 4
   CHARACTER (LEN=80), PARAMETER, PRIVATE :: coeff_file_name(coeff_file_count) = (/&
-       &"eddy_coeff.dat", &
-       &"kx_coeff.dat", &
-       &"ky_coeff.dat", &
+       &"eddy_coeff.dat     ", &
+       &"kx_coeff.dat       ", &
+       &"ky_coeff.dat       ", &
        &"roughness_coeff.dat"&
        &/)
 

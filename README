@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Wed May 23 10:33:24 2012 by William A. Perkins <d3g096@flophouse>
+Last Change: 2014-04-03 11:39:00 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -36,24 +36,26 @@ Example Configuration
 PE10900:
 
 configure \
-    FC=openmpif90 \
-    MPIFC=openmpif90 \
+    FC=mpif90 \
+    MPIFC=mpif90 \
     FCFLAGS="-g -fbounds-check -ffpe-trap=invalid,zero,overflow" \
     FC_CPPFLAG="-x f95-cpp-input" \
-    PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
-    PETSC_ARCH="darwin9.8.0-c-opt" \
-    --with-cgns=/opt/local \
-    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac
+    PETSC_DIR="$prefix/../petsc-3.4.4" \
+    PETSC_ARCH="arch-macosx-fortran-opt" \
+    --with-cgns="$prefix/cgns2" \
+    --with-global-arrays="$prefix/mass2" \
+    --prefix="$prefix/mass2"
 
 configure \
-    FC=openmpif90 \
-    MPIFC=openmpif90 \
+    FC=mpif90 \
+    MPIFC=mpif90 \
     FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
     FC_CPPFLAG="-x f95-cpp-input" \
-    PETSC_DIR="/home/d3g096/Projects/MASS2/src/parallel3/petsc-3.1-p7" \
-    PETSC_ARCH="darwin9.8.0-c-opt" \
-    --with-cgns=/opt/local \
-    --with-global-arrays=/home/d3g096/Projects/MASS2/src/parallel3/mac
+    PETSC_DIR="$prefix/../petsc-3.4.4" \
+    PETSC_ARCH="arch-macosx-fortran-opt" \
+    --with-cgns="$prefix/cgns2" \
+    --with-global-arrays=$prefix/mass2 \
+    --prefix="$prefix/mass2"
 
 Flophouse, with Intel compiler:
 
@@ -62,12 +64,13 @@ set path = (/usr/local/openmpi-intel/bin $path)
 configure \
     FC=mpif90 \
     MPIFC=mpif90 \
-    FC_CPPFLAG=-fpp \
+    FC_CPPFLAG="-fpp" \
     FCFLAGS="-O2 -fpe0 -heap-arrays" \
     GA_MPILIBS="-llapack -lblas" \
     PETSC_DIR="/usr/local/openmpi-intel" \
-    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-cgns="$prefix/cgns2" \
     --with-global-arrays=/usr/local/openmpi-intel
+
 
 configure \
     FC=mpif90 \
@@ -76,7 +79,7 @@ configure \
     FCFLAGS="-g -check bounds -fpe1 -heap-arrays" \
     GA_MPILIBS="-llapack -lblas" \
     PETSC_DIR="/usr/local/openmpi-intel" \
-    --with-cgns=/usr/unsupported/CGNSLib \
+    --with-cgns="$prefix/cgns2" \
     --with-global-arrays=/usr/local/openmpi-intel
     
 

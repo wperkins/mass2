@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Fri Apr  2 09:06:30 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-04-03 11:13:41 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -20,7 +20,8 @@ EPSFILES = \
 	plot-elev.eps
 
 MODELFILES = \
-	mass2_v027.cfg \
+	mass2.cfg \
+	mass2.petscrc \
 	bcspecs.dat \
 	flow.dat \
 	grid.dat \

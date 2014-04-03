@@ -1,0 +1,12 @@
+    -depth_ksp_type cg
+    -depth_pc_type bjacobi
+    -depth_sub_pc_type ilu
+    -depth_sub_ksp_type preonly 
+    -depth_sub_pc_factor_levels 1
+    -depth_sub_pc_factor_reuse_ordering
+    -scalar_ksp_type cg
+    -scalar_pc_type bjacobi
+    -scalar_sub_pc_type ilu
+    -scalar_sub_ksp_type preonly 
+    -scalar_sub_pc_factor_levels 1
+    -scalar_sub_pc_factor_reuse_ordering
