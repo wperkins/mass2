@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-04-02 14:40:00 d3g096
+! Last Change: 2014-04-04 09:49:53 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -204,6 +204,7 @@ SUBROUTINE bc_init()
   USE scalar_bc_module
   USE scalars_source
   USE met_data_module
+  USE transport_only
 
   IMPLICIT NONE
 
@@ -233,15 +234,12 @@ SUBROUTINE bc_init()
   !    IF (source_doing_sed) CALL bed_initialize()
   !    CALL scalar_mass_init()
 
-  !    ! transport only mode
-  !    IF(.NOT. do_flow)THEN
-  !       CALL allocate_hydro_interp_blocks()
-  !       DO i=1,max_blocks
-  !          CALL allocate_hydro_interp_comp(i, status_iounit)
-  !       END DO
-  !       CALL read_transport_only_dat()
-  !       CALL check_transport_only_dat(start_time%time,end_time%time)
-  !    END IF
+     ! transport only mode
+     IF(.NOT. do_flow)THEN
+        CALL transport_only_allocate()
+        CALL transport_only_read()
+        CALL transport_only_check(start_time%time, end_time%time)
+     END IF
 
   END IF
 

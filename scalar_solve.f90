@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: Mon Nov  7 11:52:28 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-04-04 10:34:52 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -21,6 +21,7 @@ MODULE scalar_solve_module
   USE scalars
   USE scalars_source
   USE scalar_bc_module
+  USE transport_only
 
   IMPLICIT NONE
 
@@ -652,20 +653,12 @@ CONTAINS
     INTEGER :: var, iter
     INTEGER :: ispecies, iblock, num_bc
     INTEGER :: x_start, y_start
+    DOUBLE PRECISION :: dum_val
 
     IF(.NOT. do_flow)THEN
-!!$       dum_val = current_time%time + delta_t/86400.0d0 ! velocity and depth are at the NEW time
-!!$       CALL hydro_restart_read(dum_val)
-!!$       DO iblock=1,max_blocks
-!!$          var = 1
-!!$          CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%uvel)
-!!$
-!!$          var = 2
-!!$          CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%vvel)
-!!$
-!!$          var = 3
-!!$          CALL hydro_restart_interp(dum_val, iblock, var, block(iblock)%depth)
-!!$       END DO
+       ! set up for next time step
+       dum_val = current_time%time + delta_t/86400.0d0
+       CALL transport_only_update(dum_val)
     END IF
 
     CALL scalar_source_timestep(current_time%time, delta_t)

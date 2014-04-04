@@ -12,7 +12,8 @@ MODULE hotstart
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: hotstart_file_name = 'hotstart.bin'
-  INTEGER, PRIVATE, PARAMETER :: hotstart_iounit = 16, restart_iounit = 17
+  INTEGER, PUBLIC, PARAMETER :: hotstart_iounit = 16 
+  INTEGER, PRIVATE, PARAMETER :: restart_iounit = 17
 
 CONTAINS
 
@@ -38,7 +39,10 @@ CONTAINS
 
     READ (iunit, *) buffer(var%base%imin_global:var%base%imax_global, &
          &var%base%jmin_global:var%base%jmax_global)
-    CALL block_var_put_all(var, buffer, myindex)
+
+    IF (myindex > 0) THEN
+       CALL block_var_put_all(var, buffer, myindex)
+    END IF
 
   END SUBROUTINE hotstart_read_var
 

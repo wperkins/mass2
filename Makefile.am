@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: Wed Oct  5 09:12:42 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: 2014-04-04 10:39:08 d3g096
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -55,6 +55,7 @@ mass2_SOURCES = \
 	scalars_source.f90 \
 	solver_common.f90 \
 	table_bc_module.f90 \
+	transport_only_module.f90 \
 	tdg_source.f90 \
 	temperature_source.f90 \
 	solver_petsc.F90
@@ -100,8 +101,13 @@ plot_output.$(OBJEXT): plot_output.f90 plot_cgns.$(OBJEXT) mass2_config.$(OBJEXT
 profile_init.$(OBJEXT): profile_init.f90 mass2_config.$(OBJEXT) block_parallel.$(OBJEXT) $(TSLIB)
 realequal.$(OBJEXT): realequal.f90
 scalar_bc.$(OBJEXT): scalar_bc.f90 table_bc_module.$(OBJEXT) mass2_config.$(OBJEXT) $(TSLIB)
-scalar_solve.$(OBJEXT): scalar_solve.f90 globals.$(OBJEXT) mass2_config.$(OBJEXT) scalars_module.$(OBJEXT) \
-	differencing.$(OBJEXT) solver_petsc.$(OBJEXT)
+scalar_solve.$(OBJEXT): scalar_solve.f90 \
+	globals.$(OBJEXT) \
+	mass2_config.$(OBJEXT) \
+	scalars_module.$(OBJEXT) \
+	differencing.$(OBJEXT) \
+	transport_only_module.$(OBJEXT) \
+	solver_petsc.$(OBJEXT)
 scalars_module.$(OBJEXT): scalars_module.f90 globals.$(OBJEXT) $(TSLIB)
 scalars_source.$(OBJEXT): scalars_source.f90 generic_source.$(OBJEXT) temperature_source.$(OBJEXT) tdg_source.$(OBJEXT) $(TSLIB)
 solver_common.$(OBJEXT): solver_common.f90
@@ -111,11 +117,23 @@ table_bc_module.$(OBJEXT): table_bc_module.f90  $(TSLIB)
 tdg_source.$(OBJEXT): tdg_source.f90 gas_functions_module.$(OBJEXT) met_data_module.$(OBJEXT)
 temperature_source.$(OBJEXT): temperature_source.f90 met_data_module.$(OBJEXT) \
 	energy_flux_module.$(OBJEXT) 
+transport_only_module.$(OBJEXT): transport_only_module.f90 hotstart.$(OBJEXT)
 
-mass2_parallel.$(OBJEXT): mass2_parallel.f90 block_grid.$(OBJEXT) block_initialization.$(OBJEXT) \
-	mass2_config.$(OBJEXT) mass_source_output.$(OBJEXT) gage_output_module.$(OBJEXT) plot_output.$(OBJEXT) \
-	hotstart.$(OBJEXT) scalar_bc.$(OBJEXT) scalars_module.$(OBJEXT) scalar_solve.$(OBJEXT) solver_petsc.$(OBJEXT) \
-	met_data_module.$(OBJEXT) $(TSLIB)
+mass2_parallel.$(OBJEXT): mass2_parallel.f90 \
+	block_grid.$(OBJEXT) \
+	block_initialization.$(OBJEXT) \
+	mass2_config.$(OBJEXT) \
+	mass_source_output.$(OBJEXT) \
+	gage_output_module.$(OBJEXT) \
+	plot_output.$(OBJEXT) \
+	hotstart.$(OBJEXT) \
+	scalar_bc.$(OBJEXT) \
+	scalars_module.$(OBJEXT) \
+	scalar_solve.$(OBJEXT) \
+	solver_petsc.$(OBJEXT) \
+	met_data_module.$(OBJEXT) \
+	transport_only_module.$(OBJEXT) \
+	$(TSLIB)
 
 .f90.o:
 	$(FCCOMPILE) $(FC_CPPFLAG) -c -o $@ $<

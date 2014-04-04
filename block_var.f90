@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Tue Oct 18 11:14:36 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-04-04 10:23:10 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -31,6 +31,7 @@ MODULE block_variable
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
   INTEGER, PUBLIC, PARAMETER :: &
+       &BLK_VAR_BOGUS = 0,&
        &BLK_VAR_CURRENT = 1, &
        &BLK_VAR_STAR = 2, &
        &BLK_VAR_OLD = 3, &
@@ -532,6 +533,38 @@ CONTAINS
     CALL ga_sync()
 
   END SUBROUTINE block_var_sync
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_var_interpolate
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_var_interpolate(v1, v2, factor, vout)
+
+    IMPLICIT NONE
+
+    TYPE (block_var), INTENT(INOUT) :: v1 
+    TYPE (block_var), INTENT(INOUT) :: v2
+    DOUBLE PRECISION, INTENT(IN) :: factor
+    TYPE (block_var), INTENT(INOUT) :: vout
+
+    INTEGER :: imin, imax, jmin, jmax, i, j
+    imin = vout%base%imin_owned
+    imax = vout%base%imax_owned
+    jmin = vout%base%jmin_owned
+    jmax = vout%base%jmax_owned
+
+    DO i = imin, imax
+       DO j = jmin, jmax
+          vout%current(i, j) = &
+               &(v2%current(i, j) - v1%current(i, j))*factor +&
+               & v1%current(i, j)
+       END DO
+    END DO
+
+    CALL block_var_put(vout, BLK_VAR_CURRENT)
+    CALL block_var_iterate(vout)
+
+  END SUBROUTINE block_var_interpolate
+
 
 
 END MODULE block_variable
