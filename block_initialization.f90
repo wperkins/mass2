@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: 2014-04-03 11:37:44 d3g096
+! Last Change: 2014-04-07 08:43:54 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -92,10 +92,7 @@ CONTAINS
     DO iblock=1,max_blocks
        CALL block_initialize(block(iblock))
     END DO
-    ! handle case if we are doing transport-only and not restarting
-    IF((.NOT. do_flow).AND.(do_transport))THEN
-       CALL error_message('transport-only initialization not implemented', fatal=.TRUE.)
-    ELSE IF (do_transport) THEN
+    IF (do_transport) THEN
        DO i = 1, max_species
           DO iblock =1, max_blocks
              CALL block_var_initialize(species(i)%scalar(iblock)%concvar, conc_initial)

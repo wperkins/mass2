@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: 2014-04-04 10:23:10 d3g096
+! Last Change: 2014-04-07 09:05:30 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -561,7 +561,6 @@ CONTAINS
     END DO
 
     CALL block_var_put(vout, BLK_VAR_CURRENT)
-    CALL block_var_iterate(vout)
 
   END SUBROUTINE block_var_interpolate
 

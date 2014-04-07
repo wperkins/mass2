@@ -338,10 +338,12 @@ CONTAINS
 
     CALL block_var_sync()
 
-    CALL block_var_get(hotstart_interp(iblk)%time2%uvel, BLK_VAR_CURRENT);
-    CALL block_var_get(hotstart_interp(iblk)%time2%vvel, BLK_VAR_CURRENT);
-    CALL block_var_get(hotstart_interp(iblk)%time2%depth, BLK_VAR_CURRENT);
-    CALL block_var_get(hotstart_interp(iblk)%time2%eddy, BLK_VAR_CURRENT);
+    DO iblk = 1, max_blocks
+       CALL block_var_get(hotstart_interp(iblk)%time2%uvel, BLK_VAR_CURRENT);
+       CALL block_var_get(hotstart_interp(iblk)%time2%vvel, BLK_VAR_CURRENT);
+       CALL block_var_get(hotstart_interp(iblk)%time2%depth, BLK_VAR_CURRENT);
+       CALL block_var_get(hotstart_interp(iblk)%time2%eddy, BLK_VAR_CURRENT);
+    END DO
 
   END SUBROUTINE transport_only_read_hotstart
 
@@ -370,14 +372,17 @@ CONTAINS
             &hotstart_interp(iblk)%time1%uvel,&
             &hotstart_interp(iblk)%time2%uvel,&
             &factor, block(iblk)%bv_uvel)
+       CALL block_var_iterate(block(iblk)%bv_uvel)
        CALL block_var_interpolate(&
             &hotstart_interp(iblk)%time1%vvel,&
             &hotstart_interp(iblk)%time2%vvel,&
             &factor, block(iblk)%bv_vvel)
+       CALL block_var_iterate(block(iblk)%bv_vvel)
        CALL block_var_interpolate(&
             &hotstart_interp(iblk)%time1%depth,&
             &hotstart_interp(iblk)%time2%depth,&
             &factor, block(iblk)%bv_depth)
+       CALL block_var_iterate(block(iblk)%bv_depth)
        CALL block_var_interpolate(&
             &hotstart_interp(iblk)%time1%eddy,&
             &hotstart_interp(iblk)%time2%eddy,&
@@ -392,7 +397,7 @@ CONTAINS
        CALL block_var_get(block(iblk)%bv_uvel, BLK_VAR_STAR)
        CALL block_var_get(block(iblk)%bv_vvel, BLK_VAR_STAR)
        CALL block_var_get(block(iblk)%bv_depth, BLK_VAR_STAR)
-       CALL block_var_get(block(iblk)%bv_eddy, BLK_VAR_STAR)
+       CALL block_var_get(block(iblk)%bv_eddy, BLK_VAR_CURRENT)
     END DO
     CALL block_var_sync()
   END SUBROUTINE transport_only_interp

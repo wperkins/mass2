@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-04-04 09:49:53 d3g096
+! Last Change: 2014-04-07 09:31:48 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -369,6 +369,9 @@ SUBROUTINE output()
      ! are correctly filled
 
      DO iblock=1,max_blocks
+        IF (.NOT. do_flow) THEN
+           CALL block_compute_bc_flux(block(iblock), block_bc(iblock))
+        END IF
         DO num_bc = 1, block_bc(iblock)%num_bc
            CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
                 &.FALSE., ds_flux_given)
