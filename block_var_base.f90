@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 20, 2010 by William A. Perkins
-! Last Change: Fri Jan  7 10:05:29 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2014-04-22 07:49:45 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -23,7 +23,6 @@ MODULE block_variable_base
 
   ! dimensions of the global array
   INTEGER, PUBLIC, PARAMETER :: ndim = 3
-  INTEGER, PUBLIC, PARAMETER :: nslice = 4
 
   ! ----------------------------------------------------------------
   ! TYPE block_var_base
@@ -55,7 +54,7 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! TYPE (block_var_base) FUNCTION block_var_base_allocate
   ! ----------------------------------------------------------------
-  TYPE (block_var_base) FUNCTION block_var_base_allocate(xmax, ymax) &
+  TYPE (block_var_base) FUNCTION block_var_base_allocate(xmax, ymax, nslice) &
        &RESULT (base)
     
     IMPLICIT NONE
@@ -63,7 +62,7 @@ CONTAINS
 #include "mafdecls.fh"
 #include "global.fh"
 
-    INTEGER, INTENT(IN) :: xmax, ymax
+    INTEGER, INTENT(IN) :: xmax, ymax, nslice
     INTEGER :: dims(ndim), chunk(ndim), lo(ndim), hi(ndim)
     INTEGER :: me, imin, imax, jmin, jmax
     LOGICAL :: ga_ok

@@ -23,7 +23,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-04-04 10:39:08 d3g096
+# Last Change: 2014-04-22 08:36:10 d3g096
 # -------------------------------------------------------------
 
 VPATH = @srcdir@
@@ -111,23 +111,24 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_mass2_OBJECTS = block_grid.$(OBJEXT) block_hydro.$(OBJEXT) \
-	block_hydro_bc.$(OBJEXT) block_initialization.$(OBJEXT) \
-	block_parallel.$(OBJEXT) block_var.$(OBJEXT) \
-	block_var_base.$(OBJEXT) differencing.$(OBJEXT) \
-	distance.$(OBJEXT) energy_flux_module.$(OBJEXT) \
-	gage_output_module.$(OBJEXT) gas_coeffs_module.$(OBJEXT) \
-	gas_functions_module.$(OBJEXT) generic_source.$(OBJEXT) \
-	globals.$(OBJEXT) hotstart.$(OBJEXT) hydro_bc.$(OBJEXT) \
-	hydro_solve.$(OBJEXT) mass2_config.$(OBJEXT) \
-	mass2_parallel.$(OBJEXT) mass_source_output.$(OBJEXT) \
-	met_data_module.$(OBJEXT) plot_cgns.$(OBJEXT) \
-	plot_output.$(OBJEXT) profile_init.$(OBJEXT) \
-	realequal.$(OBJEXT) scalar_bc.$(OBJEXT) scalar_solve.$(OBJEXT) \
-	scalars_module.$(OBJEXT) scalars_source.$(OBJEXT) \
-	solver_common.$(OBJEXT) table_bc_module.$(OBJEXT) \
-	transport_only_module.$(OBJEXT) tdg_source.$(OBJEXT) \
-	temperature_source.$(OBJEXT) solver_petsc.$(OBJEXT)
+am_mass2_OBJECTS = bed_var.$(OBJEXT) block_grid.$(OBJEXT) \
+	block_hydro.$(OBJEXT) block_hydro_bc.$(OBJEXT) \
+	block_initialization.$(OBJEXT) block_parallel.$(OBJEXT) \
+	block_var.$(OBJEXT) block_var_base.$(OBJEXT) \
+	differencing.$(OBJEXT) distance.$(OBJEXT) \
+	energy_flux_module.$(OBJEXT) gage_output_module.$(OBJEXT) \
+	gas_coeffs_module.$(OBJEXT) gas_functions_module.$(OBJEXT) \
+	generic_source.$(OBJEXT) globals.$(OBJEXT) hotstart.$(OBJEXT) \
+	hydro_bc.$(OBJEXT) hydro_solve.$(OBJEXT) \
+	mass2_config.$(OBJEXT) mass2_parallel.$(OBJEXT) \
+	mass_source_output.$(OBJEXT) met_data_module.$(OBJEXT) \
+	plot_cgns.$(OBJEXT) plot_output.$(OBJEXT) \
+	profile_init.$(OBJEXT) realequal.$(OBJEXT) scalar_bc.$(OBJEXT) \
+	scalar_solve.$(OBJEXT) scalars_module.$(OBJEXT) \
+	scalars_source.$(OBJEXT) solver_common.$(OBJEXT) \
+	table_bc_module.$(OBJEXT) transport_only_module.$(OBJEXT) \
+	tdg_source.$(OBJEXT) temperature_source.$(OBJEXT) \
+	solver_petsc.$(OBJEXT)
 mass2_OBJECTS = $(am_mass2_OBJECTS)
 am__DEPENDENCIES_1 =
 mass2_DEPENDENCIES = $(TSLIB) $(am__DEPENDENCIES_1) \
@@ -386,6 +387,7 @@ AM_FCFLAGS = \
 SUBDIRS = time_series . util
 TSLIB = time_series/libts.a
 mass2_SOURCES = \
+	bed_var.f90 \
 	block_grid.f90 \
 	block_hydro.f90 \
 	block_hydro_bc.f90 \
@@ -979,6 +981,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 # dependancies for individual object files
 
+bed_var.$(OBJEXT): bed_var.f90 block_var_base.$(OBJEXT) $(TSLIB)
 block_grid.$(OBJEXT): block_grid.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT) $(TSLIB)
 block_hydro.$(OBJEXT): block_hydro.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT)  $(TSLIB)
 block_hydro_bc.$(OBJEXT): block_hydro_bc.f90 hydro_bc.$(OBJEXT) block_grid.$(OBJEXT) 

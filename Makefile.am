@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-04-04 10:39:08 d3g096
+# Last Change: 2014-04-22 08:36:10 d3g096
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -23,6 +23,7 @@ bin_PROGRAMS = mass2
 check_PROGRAMS = solver_test
 
 mass2_SOURCES = \
+	bed_var.f90 \
 	block_grid.f90 \
 	block_hydro.f90 \
 	block_hydro_bc.f90 \
@@ -75,6 +76,7 @@ solver_test_LDADD = $(TSLIB) \
 
 # dependancies for individual object files
 
+bed_var.$(OBJEXT): bed_var.f90 block_var_base.$(OBJEXT) $(TSLIB)
 block_grid.$(OBJEXT): block_grid.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT) $(TSLIB)
 block_hydro.$(OBJEXT): block_hydro.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT)  $(TSLIB)
 block_hydro_bc.$(OBJEXT): block_hydro_bc.f90 hydro_bc.$(OBJEXT) block_grid.$(OBJEXT) 

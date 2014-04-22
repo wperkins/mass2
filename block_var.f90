@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: 2014-04-07 09:05:30 d3g096
+! Last Change: 2014-04-22 07:50:05 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -30,6 +30,7 @@ MODULE block_variable
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
 
+  INTEGER, PUBLIC, PARAMETER :: nslice = 4
   INTEGER, PUBLIC, PARAMETER :: &
        &BLK_VAR_BOGUS = 0,&
        &BLK_VAR_CURRENT = 1, &

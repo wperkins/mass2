@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: 2014-04-03 11:13:41 d3g096
+# Last Change: 2014-04-22 07:56:37 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -30,18 +30,22 @@ MODELFILES = \
 
 all: $(EPSFILES)
 
-$(EPSFILES): plot.nc
+$(EPSFILES): plot000.cgns
 
+.PHONY: run
 
-plot.nc: $(MODELFILES) $(MODEL)
-	$(MODEL)
+plot000.cgns: run
+grid.cgns: run
+
+run: $(MODELFILES) $(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 
 %.eps: %.gp
 	gnuplot $< > $@
 
 clean:: 
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat
-	rm -f plot.nc 
+	rm -f error-warning*.out mass_source_monitor.out output*.out status*.out
+	rm -f gridplot1.dat 
+	rm -f plot000.cgns grid.cgns
 	rm -f $(EPSFILES)

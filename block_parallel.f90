@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: Fri Oct 14 10:26:57 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-04-22 07:50:50 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -244,7 +244,7 @@ CONTAINS
 
     ! make a base for all (parallel) variables
 
-    blk%varbase => block_var_base_allocate(blk%xmax, blk%ymax)
+    blk%varbase => block_var_base_allocate(blk%xmax, blk%ymax, nslice)
 
     ! grid coordinates, in their various forms
 
