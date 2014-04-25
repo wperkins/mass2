@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2014-04-23 12:59:02 d3g096
+Last Change: 2014-04-25 11:37:52 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -43,6 +43,7 @@ configure \
     FC_CPPFLAG="-x f95-cpp-input" \
     PETSC_DIR="$prefix/../petsc-3.4.4" \
     PETSC_ARCH="arch-macosx-fortran-debug" \
+    --enable-maintainer-mode \
     --with-cgns="$prefix/cgns2" \
     --with-global-arrays="$prefix/mass2" \
     --prefix="$prefix/mass2"
@@ -54,6 +55,7 @@ configure \
     FC_CPPFLAG="-x f95-cpp-input" \
     PETSC_DIR="$prefix/../petsc-3.4.4" \
     PETSC_ARCH="arch-macosx-fortran-opt" \
+    --enable-maintainer-mode \
     --with-cgns="$prefix/cgns2" \
     --with-global-arrays=$prefix/mass2 \
     --prefix="$prefix/mass2"
@@ -105,7 +107,6 @@ Briareus:
 
 module load intel/11.1
 module load mpi/openmpi/1.4.3/intel
-module load petsc/3.1p7/intel
 
 sh configure \
     FC=mpif90 \
@@ -113,8 +114,8 @@ sh configure \
     FC_CPPFLAG=-fpp \
     FCFLAGS="-O2 -fpe0 -heap-arrays" \
     GA_MPILIBS="-libverbs -llapack -lblas" \
-    PETSC_DIR="/home/d3g096/stuff/src/petsc-3.1-p7" \
-    PETSC_ARCH="linux-gnu-c-opt" \
+    PETSC_DIR="/home/d3g096/stuff/petsc-3.4.4" \
+    PETSC_ARCH="intel-fortran-opt" \
     --with-global-arrays=/share/apps/ga/5.0.1/intel \
     --with-cgns="$HOME/stuff/cgns2"
 

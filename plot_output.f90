@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created May 21, 1999 by William A. Perkins
-! Last Change: Wed Feb 16 11:33:16 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2014-04-25 10:38:00 d3g096
 ! ----------------------------------------------------------------
 ! RCS ID: $Id$ Battelle PNL
 
@@ -71,9 +71,9 @@ CONTAINS
     DOUBLE PRECISION :: delta_t, salinity, baro_press
     CHARACTER (LEN=80) :: zone_name
 
+    CALL velocity_shift()
     IF (do_flow_diag) CALL calc_diag()
     !FIXME: CALL accum_calc()
-    CALL velocity_shift()
     CALL ga_sync()
     IF (plot_do_cgns .AND. ga_nodeid() .EQ. 0) THEN
        CALL plot_cgns_write(date_string, time_string)

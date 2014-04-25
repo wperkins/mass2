@@ -1,5 +1,7 @@
 2014-04-25  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* plot_output.f90 (plot_print): compute velocity shift before diag
+
 	* block_hydro_bc.f90 (block_compute_bc_flux): do not compute areas
 	for 'IN' BCs
 	(apply_hydro_bc): (re)implement IN SOURCE/SINK BC; this
