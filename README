@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2014-04-03 13:02:33 d3g096
+Last Change: 2014-04-23 12:59:02 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -70,7 +70,8 @@ configure \
     GA_MPILIBS="-llapack -lblas" \
     PETSC_DIR="/usr/local/openmpi-intel" \
     --with-cgns="$prefix/cgns2" \
-    --with-global-arrays=/usr/local/openmpi-intel
+    --with-global-arrays=/usr/local/openmpi-intel \
+    --prefix="$prefix/mass2"
 
 
 configure \

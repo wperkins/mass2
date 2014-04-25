@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-04-04 10:34:52 d3g096
+! Last Change: 2014-04-25 07:09:29 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -376,6 +376,7 @@ CONTAINS
     INTEGER :: con_block, k
     INTEGER :: i, ii, i_beg, i_end, x_end
     INTEGER :: j, jj, j_beg, j_end, y_end
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: tmp
 
     CHARACTER (LEN=1024) :: buf
@@ -386,7 +387,7 @@ CONTAINS
 !!$       CALL fillghost_scalar(blk, sclr, block(con_block), &
 !!$            &species(spec%species)%scalar(con_block), spec)
        RETURN
-    CASE("TABLE")
+    CASE("TABLE", "SOURCE")
        CALL scalar_table_interp(current_time%time, spec%table_num,&
             & table_input, spec%num_cell_pairs)
     END SELECT
@@ -511,8 +512,6 @@ CONTAINS
           SELECT CASE(spec%bc_kind)
 
           CASE("CONC")
-             j = spec%x_start
-             ystart = j + 1
              DO k = 1, spec%num_cell_pairs
                 i_beg = spec%start_cell(k)+1
                 i_end = spec%end_cell(k)+1
@@ -577,6 +576,24 @@ CONTAINS
           GOTO 100
        END SELECT
 
+    CASE ("IN")
+       CALL block_owned_window(blk, imin, imax, jmin, jmax)
+       i_beg = MAX(spec%start_cell(1)+1, imin)
+       i_end = MIN(spec%end_cell(1)+1, imax)
+       j_beg = MAX(spec%start_cell(2)+1, jmin)
+       j_end = MIN(spec%end_cell(2)+1, jmax)
+
+       SELECT CASE(spec%bc_type)
+       CASE("SOURCE")
+          DO i = i_beg, i_end
+             DO j = j_beg, j_end
+                sclr%srcconc(i, j) = table_input(1)
+             END DO
+          END DO
+       CASE DEFAULT
+          GOTO 100
+       END SELECT
+       
     CASE DEFAULT
        GOTO 100
     END SELECT
@@ -587,6 +604,7 @@ CONTAINS
     WRITE(buf,*) " apply_scalar_bc: cannot handle: ", &
          &TRIM(spec%bc_loc), " ", TRIM(spec%bc_type), " ", &
          &TRIM(spec%bc_kind), " for scalar "
+    CALL error_message(buf, FATAL=.TRUE.)
   END SUBROUTINE apply_scalar_bc
 
   ! ----------------------------------------------------------------
@@ -634,6 +652,18 @@ CONTAINS
                   &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                   &t_water, salinity)
              src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+
+           ! Include the affects of any fluid sources.  A positive xsource (ft/s)
+           ! indicates an increase in fluid volume. This must include a
+           ! scalar concentration or temperature from the scalar bc specifications.  
+        
+           IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
+              src = src + block(iblock)%xsource(i,j)*&
+                   &species(ispecies)%scalar(iblock)%srcconc(i,j)
+              !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
+           END IF
+
+
           ELSE 
              src = 0.0
           END IF

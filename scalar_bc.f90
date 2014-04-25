@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January 20, 2011 by William A. Perkins
-! Last Change: Tue Jun  7 15:13:04 2011 by William A. Perkins <d3g096@bearflag.pnl.gov>
+! Last Change: 2014-04-24 12:53:31 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE scalar_bc_module
@@ -100,7 +100,10 @@ CONTAINS
 
     DO WHILE(.TRUE.)
        READ(bcspec_iounit,*,END=100)junk1,junk_char1,junk_char2
-       IF(junk_char2 == "TABLE") max_scalar_tables = max_scalar_tables + 1
+       SELECT CASE (junk_char2) 
+       CASE ("TABLE", "SOURCE")
+          max_scalar_tables = max_scalar_tables + 1
+       END SELECT
     END DO
 
     ! now allocate the number of table bc structs that we need
@@ -156,6 +159,8 @@ CONTAINS
           maxidx = ymax(block) - 1
        CASE ("RB", "LB")
           maxidx = xmax(block) - 1
+       CASE ("IN")
+          ! decide maxidx below
        CASE DEFAULT
           lerr = lerr + 1
           WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
@@ -170,6 +175,30 @@ CONTAINS
           BACKSPACE(bcspec_iounit)
 
           SELECT CASE(bc_type)
+
+          CASE("SOURCE")
+             cells = -999
+             READ(bcspec_iounit,*)block,bc_loc,bc_type,species,bc_kind,bc_extent,file_name,cells
+             table_count = table_count + 1
+             scalar_bc(block)%bc_spec(num_bc)%table_num = table_count
+             scalar_table_bc(table_count)%file_name = file_name
+
+             SELECT CASE(bc_extent)
+             CASE("PART")
+                CALL set_scalar_area(scalar_bc(block)%bc_spec(num_bc),&
+                     &cells, xmax(block) - 1, ymax(block) - 1, line, lerr)
+             CASE("ALL")
+                scalar_bc(block)%bc_spec(num_bc)%num_cell_pairs = 1
+                scalar_bc(block)%bc_spec(num_bc)%start_cell(1) = 1
+                scalar_bc(block)%bc_spec(num_bc)%end_cell(1) = xmax(block) - 1
+                scalar_bc(block)%bc_spec(num_bc)%start_cell(2) = 1
+                scalar_bc(block)%bc_spec(num_bc)%end_cell(2) = ymax(block) - 1
+             CASE DEFAULT
+                lerr = lerr + 1
+                WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+                     &": ", TRIM(bc_extent), "?"
+                CALL error_message(msg, fatal=.FALSE.)
+             END SELECT
 
           CASE("ZEROG")
              SELECT CASE(bc_extent)
@@ -289,6 +318,85 @@ CONTAINS
 
 
   END SUBROUTINE set_scalar_part
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE set_scalar_area
+  ! ----------------------------------------------------------------
+  SUBROUTINE set_scalar_area(spec, cells, xmax, ymax, line, ierr)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: cells(:), xmax, ymax, line
+    TYPE (scalar_bc_spec_struct), INTENT(INOUT) :: spec
+    INTEGER, INTENT(INOUT) :: ierr
+
+    INTEGER :: num_cells, num_cell_pairs, i
+    CHARACTER (LEN=1024) :: msg
+
+    num_cells = COUNT(cells /= -999)
+
+    IF (num_cells .NE. 4) THEN
+       ierr = ierr + 1
+       WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+            &": four indices expected, got ", num_cells
+       CALL error_message(msg, fatal=.FALSE.)
+    ELSE
+       num_cell_pairs = num_cells/2
+       spec%num_cell_pairs = num_cells/2
+       spec%start_cell(1:num_cell_pairs) = cells(1:num_cells:2)
+       spec%end_cell(1:num_cell_pairs) = cells(2:num_cells:2)
+
+       IF (spec%start_cell(1) .LT. 1 .OR. &
+            &spec%start_cell(1) .GT. xmax) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": minimum x index out of range: ", spec%start_cell(1)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+       IF (spec%end_cell(1) .LT. 1 .OR. &
+            &spec%end_cell(1) .GT. xmax) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": maximum x index out of range: ", spec%end_cell(1)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+       IF (spec%end_cell(1) .LT. spec%start_cell(1)) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": invalid x index range: ", spec%start_cell(1), " to ", &
+               &spec%end_cell(1)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+       IF (spec%start_cell(2) .LT. 1 .OR. &
+            &spec%start_cell(2) .GT. ymax) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": minimum y index out of range: ", spec%start_cell(2)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+       IF (spec%end_cell(2) .LT. 1 .OR. &
+            &spec%end_cell(2) .GT. ymax) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": maximum y index out of range: ", spec%end_cell(2)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+       IF (spec%end_cell(2) .LT. spec%start_cell(2)) THEN
+          ierr = ierr + 1
+          WRITE(msg, *) TRIM(scalar_bcspecs_name), ": error: line ", line, &
+               &": invalid y index range: ", spec%start_cell(2), " to ", &
+               &spec%end_cell(2)
+          CALL error_message(msg, fatal=.FALSE.)
+       END IF
+
+    END IF
+
+  END SUBROUTINE set_scalar_area
 
   ! ----------------------------------------------------------------
   ! SUBROUTINE set_scalar_block_connections

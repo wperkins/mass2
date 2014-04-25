@@ -435,54 +435,59 @@ CONTAINS
        i = blkbc%bc_spec(ibc)%num_cell_pairs
        cmin = MINVAL(blkbc%bc_spec(ibc)%start_cell(1:i))+1
        cmax = MAXVAL(blkbc%bc_spec(ibc)%end_cell(1:i))+1
-       
-       SELECT CASE (blkbc%bc_spec(ibc)%bc_kind)
-       CASE ("FLUX")
 
-          blkbc%bc_spec(ibc)%flux_area = 0.0
-
-          SELECT CASE (blkbc%bc_spec(ibc)%bc_loc)
-          CASE ("US")
-             ibeg = 1
-             iend = 1
-             jbeg = cmin
-             jend = cmax
-             isu = .TRUE.
-          CASE ("DS")
-             ibeg = blk%xmax+1
-             iend = blk%xmax+1
-             jbeg = cmin
-             jend = cmax
-             isu = .TRUE.
-          CASE ("RB")
-             ibeg = cmin
-             iend = cmax
-             jbeg = 1
-             jend = 1
-             isu = .FALSE.
-          CASE ("LB")
-             ibeg = cmin
-             iend = cmax
-             jbeg = blk%ymax+1
-             jend = blk%ymax+1
-             isu = .FALSE.
-          END SELECT
-
-          DO i = ibeg, iend
-             DO j = jbeg, jend
-                IF (block_owns(blk, i, j)) THEN
-                   IF (isu) THEN
-                      CALL compute_uflow_area(blk, i, j, j, &
-                           &blkbc%bc_spec(ibc)%flux_area(j:j), junk)
-                   ELSE 
-                      CALL compute_vflow_area(blk, i, i, j, &
-                           &blkbc%bc_spec(ibc)%flux_area(i:i), junk)
+       SELECT CASE (blkbc%bc_spec(ibc)%bc_loc)
+       CASE ("IN") 
+          ! FIXME: Should compute area for internal fluxes too!
+       CASE DEFAULT
+          SELECT CASE (blkbc%bc_spec(ibc)%bc_kind)
+          CASE ("FLUX")
+             
+             blkbc%bc_spec(ibc)%flux_area = 0.0
+             
+             SELECT CASE (blkbc%bc_spec(ibc)%bc_loc)
+             CASE ("US")
+                ibeg = 1
+                iend = 1
+                jbeg = cmin
+                jend = cmax
+                isu = .TRUE.
+             CASE ("DS")
+                ibeg = blk%xmax+1
+                iend = blk%xmax+1
+                jbeg = cmin
+                jend = cmax
+                isu = .TRUE.
+             CASE ("RB")
+                ibeg = cmin
+                iend = cmax
+                jbeg = 1
+                jend = 1
+                isu = .FALSE.
+             CASE ("LB")
+                ibeg = cmin
+                iend = cmax
+                jbeg = blk%ymax+1
+                jend = blk%ymax+1
+                isu = .FALSE.
+             END SELECT
+             
+             DO i = ibeg, iend
+                DO j = jbeg, jend
+                   IF (block_owns(blk, i, j)) THEN
+                      IF (isu) THEN
+                         CALL compute_uflow_area(blk, i, j, j, &
+                              &blkbc%bc_spec(ibc)%flux_area(j:j), junk)
+                      ELSE 
+                         CALL compute_vflow_area(blk, i, i, j, &
+                              &blkbc%bc_spec(ibc)%flux_area(i:i), junk)
+                      END IF
                    END IF
-                END IF
+                END DO
              END DO
-          END DO
-          CALL ga_dgop(MT_F_DBL, blkbc%bc_spec(ibc)%flux_area(cmin:cmax), &
-               &cmax - cmin + 1, '+')
+             CALL ga_dgop(MT_F_DBL, blkbc%bc_spec(ibc)%flux_area(cmin:cmax), &
+                  &cmax - cmin + 1, '+')
+          END SELECT
        END SELECT
     END DO
   END SUBROUTINE block_compute_bc_flux
@@ -504,6 +509,7 @@ CONTAINS
     INTEGER :: x_end, y_end, i, j, k, jj, ii
     INTEGER :: i_beg, i_end, j_beg, j_end
     INTEGER :: imin, imax, jmin, jmax
+    INTEGER :: owned, unowned
     DOUBLE PRECISION :: input_total
 
     CHARACTER (LEN=1024) :: buf
@@ -1009,6 +1015,9 @@ CONTAINS
 
        CASE ("SOURCE", "SINK")
 
+          owned = 0
+          unowned = 0
+
           ! if this is labeled as a "SINK"
           ! negate whatever is in the table
 
@@ -1040,18 +1049,30 @@ CONTAINS
 
              ! if the source is a flux, we find the
              ! total area over which it applies
-
+             
+             owned = 0
              input_total = 0.0
              DO i = i_beg, i_end
                 DO j =  j_beg, j_end
-                   IF (do_wetdry .AND. .NOT. blk%isdry(i+1,j+1)) &
-                        &input_total = input_total + blk%hp1(i+1,j+1)*blk%hp2(i+1,j+1)
+                   IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
+                        &input_total = input_total + blk%hp1(i,j)*blk%hp2(i,j)
+                   owned = owned + 1
                 END DO
              END DO
 
              ! FIXME: need to sum input_total over all processors
 
-             CALL error_message("FLUX SOURCE/SINK not working", fatal=.TRUE.)
+             IF (owned .GT. 0) THEN 
+                IF ((bc%start_cell(1)+1 .LT. imin) .OR. &
+                     &(bc%end_cell(1)+1 .GT. imax) .OR. &
+                     &(bc%start_cell(2)+1 .LT. jmin) .OR. &
+                     &(bc%end_cell(2)+1 .GT. jmax)) THEN
+                   WRITE(buf,*) " apply_hydro_bc: error: partial IN area, local ownership: ", &
+                        &"(", imin, ",", jmin, ") to (", imax, ",", jmax, ")"
+                   CALL error_message(buf, fatal=.FALSE.)
+                   GOTO 100
+                END IF
+             END IF
           CASE ("VELO")
              ! if a rate is specified, do not alter
              ! the table value
@@ -1060,13 +1081,14 @@ CONTAINS
              GOTO 100
           END SELECT
 
-          DO i = i_beg, i_end
-             DO j = j_beg, j_end
-                IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
-                     &blk%xsource(i, j) = table_input(1)/input_total
+          IF (input_total .GT. 0) THEN 
+             DO i = i_beg, i_end
+                DO j = j_beg, j_end
+                   IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
+                        &blk%xsource(i, j) = table_input(1)/input_total
+                END DO
              END DO
-          END DO
-
+          END IF
 
        CASE ("WALL")
           SELECT CASE(bc%bc_kind)

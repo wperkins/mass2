@@ -1,3 +1,25 @@
+2014-04-25  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* block_hydro_bc.f90 (block_compute_bc_flux): do not compute areas
+	for 'IN' BCs
+	(apply_hydro_bc): (re)implement IN SOURCE/SINK BC; this
+	implementation requires that the area be solely owned by a single
+	process; an attempt to warn the user is made if that condition is
+	not met.  
+
+	* hydro_bc.f90 (read_bcspecs): fix the way FLUX conditions
+	allocate space for area (bank conditions only, still not adequate
+	for internal)
+
+	* scalar_bc.f90 (set_scalar_area): add
+	(read_scalar_bcspecs): recognize SOURCE BC specifications
+
+	* scalar_solve.f90 (apply_scalar_bc, apply_scalar_source):
+	(re)implement SOURCE scalar BC's
+
+	* scalars_module.f90 (allocate_scalarblock_components): declare
+	and allocate an array for SOURCE concentrations  
+
 2014-04-03  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* hotstart.f90 (write_restart): a GA sync was necessary to avoid a

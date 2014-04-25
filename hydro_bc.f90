@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 30, 2010 by William A. Perkins
-! Last Change: Thu Jan 13 14:54:01 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2014-04-24 13:05:55 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -238,6 +238,14 @@ CONTAINS
                 READ (bcspec_iounit, *)
              END SELECT
 
+             SELECT CASE (block_bc(block)%bc_spec(num_bc)%bc_kind)
+             CASE ("FLUX")
+                p = block_bc(block)%bc_spec(num_bc)%num_cell_pairs
+                cmin = MINVAL(block_bc(block)%bc_spec(num_bc)%start_cell(1:p))+1
+                cmax = MAXVAL(block_bc(block)%bc_spec(num_bc)%end_cell(1:p))+1
+                ALLOCATE(block_bc(block)%bc_spec(num_bc)%flux_area(cmin:cmax))
+             END SELECT
+
           CASE ("SOURCE","SINK")
 
              cells = -999
@@ -349,13 +357,6 @@ CONTAINS
              READ (bcspec_iounit, *)
           END SELECT
 
-          SELECT CASE (block_bc(block)%bc_spec(num_bc)%bc_kind)
-          CASE ("FLUX")
-             p = block_bc(block)%bc_spec(num_bc)%num_cell_pairs
-             cmin = MINVAL(block_bc(block)%bc_spec(num_bc)%start_cell(1:p))+1
-             cmax = MAXVAL(block_bc(block)%bc_spec(num_bc)%end_cell(1:p))+1
-             ALLOCATE(block_bc(block)%bc_spec(num_bc)%flux_area(cmin:cmax))
-          END SELECT
        END IF
        ierr = ierr + lerr
     END DO
