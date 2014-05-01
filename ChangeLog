@@ -1,3 +1,8 @@
+2014-05-01  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* scalar_solve.f90 (apply_scalar_bc, apply_scalar_source): scalar
+	concentration conversion was not applied for SOURCE BCs
+
 2014-04-25  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* plot_output.f90 (plot_print): compute velocity shift before diag

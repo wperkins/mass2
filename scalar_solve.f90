@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-04-25 07:09:29 d3g096
+! Last Change: 2014-05-01 14:57:04 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -587,7 +587,8 @@ CONTAINS
        CASE("SOURCE")
           DO i = i_beg, i_end
              DO j = j_beg, j_end
-                sclr%srcconc(i, j) = table_input(1)
+                sclr%srcconc(i, j) = table_input(1)*&
+                     &scalar_source(spec%species)%conversion
              END DO
           END DO
        CASE DEFAULT
@@ -623,7 +624,7 @@ CONTAINS
     INTEGER :: xend, yend
     INTEGER :: imin, imax, jmin, jmax
     INTEGER :: i, j
-    DOUBLE PRECISION :: src, t_water
+    DOUBLE PRECISION :: srctmp, src, t_water
 
     xend = block(iblock)%xmax
     yend = block(iblock)%ymax
@@ -651,18 +652,21 @@ CONTAINS
                   &species(ispecies)%scalar(iblock)%conc(i,j),&
                   &block(iblock)%depth(i,j), block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j), &
                   &t_water, salinity)
-             src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
 
-           ! Include the affects of any fluid sources.  A positive xsource (ft/s)
-           ! indicates an increase in fluid volume. This must include a
-           ! scalar concentration or temperature from the scalar bc specifications.  
+             ! Include the affects of any fluid sources.  A positive xsource (ft/s)
+             ! indicates an increase in fluid volume. This must include a
+             ! scalar concentration or temperature from the scalar bc specifications.  
         
-           IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
-              src = src + block(iblock)%xsource(i,j)*&
-                   &species(ispecies)%scalar(iblock)%srcconc(i,j)
-              !WRITE (*,*) i, j, block(iblock)%xsource(i,j), src
-           END IF
+             IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
+                srctmp = block(iblock)%xsource(i,j)*&
+                     &species(ispecies)%scalar(iblock)%srcconc(i,j)
+!!$                WRITE (*,*) i, j, block(iblock)%xsource(i,j), &
+!!$                     &block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j),&
+!!$                     &srctmp*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+                src = src + srctmp
+             END IF
 
+             src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
 
           ELSE 
              src = 0.0
