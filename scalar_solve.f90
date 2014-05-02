@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-05-01 14:57:04 d3g096
+! Last Change: 2014-05-02 14:10:06 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -660,7 +660,9 @@ CONTAINS
              IF (block(iblock)%xsource(i,j) .GT. 0.0) THEN
                 srctmp = block(iblock)%xsource(i,j)*&
                      &species(ispecies)%scalar(iblock)%srcconc(i,j)
-!!$                WRITE (*,*) i, j, block(iblock)%xsource(i,j), &
+!!$                WRITE (*,'(I2, 2I6, 3E12.4)') &
+!!$                     &ispecies, i, j, &
+!!$                     &block(iblock)%xsource(i,j), &
 !!$                     &block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j),&
 !!$                     &srctmp*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
                 src = src + srctmp
