@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-05-02 14:10:06 d3g096
+! Last Change: 2014-05-07 13:39:31 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -358,6 +358,9 @@ CONTAINS
        sclr%cell(imin:imax,y_end)%ybctype = SCALBC_NONE
     END IF
 
+    sclr%srcconc = 0.0
+    sclr%srcflux = 0.0
+
   END SUBROUTINE default_scalar_bc
 
 
@@ -377,7 +380,8 @@ CONTAINS
     INTEGER :: i, ii, i_beg, i_end, x_end
     INTEGER :: j, jj, j_beg, j_end, y_end
     INTEGER :: imin, imax, jmin, jmax
-    DOUBLE PRECISION :: tmp
+    INTEGER :: owned
+    DOUBLE PRECISION :: input_total, tmp
 
     CHARACTER (LEN=1024) :: buf
 
@@ -585,12 +589,55 @@ CONTAINS
 
        SELECT CASE(spec%bc_type)
        CASE("SOURCE")
-          DO i = i_beg, i_end
-             DO j = j_beg, j_end
-                sclr%srcconc(i, j) = table_input(1)*&
-                     &scalar_source(spec%species)%conversion
+          SELECT CASE(spec%bc_kind)
+          CASE ("CONC")
+             DO i = i_beg, i_end
+                DO j = j_beg, j_end
+                   sclr%srcconc(i, j) = table_input(1)*&
+                        &scalar_source(spec%species)%conversion
+                END DO
              END DO
-          END DO
+          CASE ("FLUX") 
+             ! if the source is a flux, we find the
+             ! total area over which it applies
+             
+             owned = 0
+             input_total = 0.0
+             DO i = i_beg, i_end
+                DO j =  j_beg, j_end
+                   IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
+                        &input_total = input_total + blk%hp1(i,j)*blk%hp2(i,j)
+                   owned = owned + 1
+                END DO
+             END DO
+
+             ! FIXME: need to sum input_total over all processors
+
+             IF (owned .GT. 0) THEN 
+                IF ((spec%start_cell(1)+1 .LT. imin) .OR. &
+                     &(spec%end_cell(1)+1 .GT. imax) .OR. &
+                     &(spec%start_cell(2)+1 .LT. jmin) .OR. &
+                     &(spec%end_cell(2)+1 .GT. jmax)) THEN
+                   WRITE(buf,*) " apply_scalar_bc: error: partial IN area, local ownership: ", &
+                        &"(", imin, ",", jmin, ") to (", imax, ",", jmax, ")"
+                   CALL error_message(buf, fatal=.FALSE.)
+                   GOTO 100
+                END IF
+             END IF
+
+             ! Compute the appropriate fraction of the flux for each active cell.
+
+             IF (input_total .GT. 0) THEN 
+                DO i = i_beg, i_end
+                   DO j = j_beg, j_end
+                      IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
+                           &sclr%srcflux(i, j) = table_input(1)*&
+                           &blk%hp1(i,j)*blk%hp2(i,j)/input_total
+                   END DO
+                END DO
+             END IF
+
+          END SELECT
        CASE DEFAULT
           GOTO 100
        END SELECT
@@ -669,6 +716,11 @@ CONTAINS
              END IF
 
              src = src*block(iblock)%hp1(i,j)*block(iblock)%hp2(i,j)
+
+             ! Include scalar flux sources. At this point, srcflux is
+             ! in mass/s, so just add it in
+
+             src = src + species(ispecies)%scalar(iblock)%srcflux(i,j)
 
           ELSE 
              src = 0.0

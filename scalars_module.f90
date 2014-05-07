@@ -57,6 +57,7 @@ MODULE scalars
      DOUBLE PRECISION, POINTER :: concoldold(:,:)
      DOUBLE PRECISION, POINTER :: srcterm(:,:)
      DOUBLE PRECISION, POINTER :: srcconc(:,:) ! c used for hydro sources
+     DOUBLE PRECISION, POINTER :: srcflux(:,:) ! used for flux sources
 
      TYPE (scalar_cell_type_struct), POINTER :: cell(:,:)
 
@@ -156,6 +157,9 @@ CONTAINS
        IF (alloc_stat .NE. 0) ierr(1) = ierr(1) + 1
 
        ALLOCATE(species(ispecies)%scalar(iblock)%srcconc(imin:imax,jmin:jmax), STAT = alloc_stat)
+       IF (alloc_stat .NE. 0) ierr(1) = ierr(1) + 1
+
+       ALLOCATE(species(ispecies)%scalar(iblock)%srcflux(imin:imax,jmin:jmax), STAT = alloc_stat)
        IF (alloc_stat .NE. 0) ierr(1) = ierr(1) + 1
 
        ALLOCATE(species(ispecies)%scalar(iblock)%cell(imin:imax,jmin:jmax), STAT = alloc_stat)

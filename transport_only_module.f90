@@ -178,17 +178,6 @@ CONTAINS
     END DO
     
     
-    ! check overall range
-    
-    IF(MINVAL(hotstart_datetime(1:max_files)%time) > start_time)THEN
-       CALL error_message('check_transport_only_dat: earliest date/time in transport_only.dat is after model start date/time', &
-            &fatal=.TRUE.)
-    END IF
-    IF(MAXVAL(hotstart_datetime(1:max_files)%time) < end_time)THEN
-       CALL error_message('check_transport_only_dat: latest date/time in transport_only.dat is prior to model end date/time', &
-            &fatal=.TRUE.)
-    END IF
-    
     ! check to make sure that date/time in transport.dat is always increasing
     
     DO i=2,max_files
@@ -197,7 +186,21 @@ CONTAINS
           CALL error_message(buffer, fatal=.TRUE.)
        ENDIF
     END DO
+
+    ! check overall range
     
+    IF(hotstart_datetime(1)%time > start_time)THEN
+       WRITE(*, *) TRIM(hotstart_datetime(1)%date_string), &
+            &TRIM(hotstart_datetime(1)%time_string), &
+            &hotstart_datetime(1)%time, start_time
+       CALL error_message('check_transport_only_dat: earliest date/time in transport_only.dat is after model start date/time', &
+            &fatal=.TRUE.)
+    END IF
+    IF(hotstart_datetime(max_files)%time < end_time)THEN
+       CALL error_message('check_transport_only_dat: latest date/time in transport_only.dat is prior to model end date/time', &
+            &fatal=.TRUE.)
+    END IF
+        
   END SUBROUTINE transport_only_check
 
   ! ----------------------------------------------------------------
