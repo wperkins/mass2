@@ -1,3 +1,14 @@
+2014-05-08  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* hydro_solve.f90 (depth_solve): initialize mass_source each call
+	and set mass_source to zero in dead cells
+
+	* block_hydro.f90 (block_mass_source_sum): only count locally
+	owned mass source
+
+	* mass_source_output.f90 (mass_file_setup, mass_print)
+	(mass_file_close): only write from process zero
+
 2014-05-07  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* transport_only_module.f90 (transport_only_check): do a better

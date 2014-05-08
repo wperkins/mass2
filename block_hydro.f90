@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Mon Nov 21 14:16:48 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-05-08 10:22:28 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -651,8 +651,7 @@ CONTAINS
     ld = 1
     
     CALL block_owned_window(blk, imin, imax, jmin, jmax)
-    djunk = &
-         &SUM(ABS(blk%mass_source))
+    djunk = SUM(ABS(blk%mass_source(imin:imax, jmin:jmax)))
     blk%mass_source_sum(1) = djunk
     CALL ga_dgop(MT_F_DBL, blk%mass_source_sum, 1, '+');
     ! WRITE(*,*) djunk, blk%mass_source_sum(1)

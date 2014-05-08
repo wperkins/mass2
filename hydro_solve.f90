@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: Tue Oct 18 08:45:18 2011 by William A. Perkins <d3g096@flophouse>
+! Last Change: 2014-05-08 10:29:34 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -1064,6 +1064,8 @@ CONTAINS
     imax = MIN(imax, x_end)
     jmax = MIN(jmax, y_end)
 
+    blk%mass_source = 0.0
+
     DO i=imin, imax
        DO j=jmin, jmax
           hp1 = blk%hp1(i,j)
@@ -1121,6 +1123,7 @@ CONTAINS
           IF (blk%isdead(i,j)%p) THEN
              bp(i,j) = bp(i,j) + bigfactor*0.0
              cp(i,j) = cp(i,j) + bigfactor
+             blk%mass_source(i,j) = 0.0 ! so it's not counted for convergence
           ELSE 
              IF (i .EQ. x_beg) THEN
 

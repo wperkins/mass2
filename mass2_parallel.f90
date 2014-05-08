@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-04-07 09:31:48 d3g096
+! Last Change: 2014-05-08 09:55:32 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -162,7 +162,7 @@ PROGRAM mass2_parallel
 
      CALL decimal_to_date(current_time%time, current_time%date_string, current_time%time_string)
 
-     CALL output()
+     CALL output(mpi_rank)
 
      IF(write_restart_file)THEN
         CALL write_restart()
@@ -175,7 +175,7 @@ PROGRAM mass2_parallel
 
   CALL plot_file_close()
   CALL gage_file_close()
-  CALL mass_file_close()
+  CALL mass_file_close(mpi_rank)
 !!$  IF (debug) CALL block_flux_close()
   CALL time_series_module_done()
 
@@ -277,7 +277,7 @@ SUBROUTINE output_init(mpi_rank)
   ! FIXME
   IF(do_gage_print) THEN
      CALL gage_file_setup()
-     CALL mass_file_setup()
+     CALL mass_file_setup(mpi_rank)
   END IF
 
   ! ----------------------------------------------------------------
@@ -343,7 +343,7 @@ SUBROUTINE update()
 END SUBROUTINE update
 
 
-SUBROUTINE output()
+SUBROUTINE output(mpi_rank)
 
   USE config
   USE globals
@@ -356,6 +356,7 @@ SUBROUTINE output()
 
   IMPLICIT NONE
 
+  INTEGER, INTENT(IN) :: mpi_rank
 
   DOUBLE PRECISION :: depth_e, flux_e, conc_TDG
 
@@ -411,7 +412,7 @@ SUBROUTINE output()
         CALL gage_print(current_time%date_string, current_time%time_string,&
              &DBLE((current_time%time - start_time%time)*24), &
              &do_transport, salinity, baro_press)
-        CALL mass_print(current_time%date_string, current_time%time_string)
+        CALL mass_print(mpi_rank, current_time%date_string, current_time%time_string)
 !!$        IF (debug) &
 !!$             &CALL block_flux_print(current_time%date_string, current_time%time_string)
 !!$
