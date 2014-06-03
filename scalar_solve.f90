@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-05-07 13:39:31 d3g096
+! Last Change: 2014-06-03 08:23:33 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -605,9 +605,11 @@ CONTAINS
              input_total = 0.0
              DO i = i_beg, i_end
                 DO j =  j_beg, j_end
-                   IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
-                        &input_total = input_total + blk%hp1(i,j)*blk%hp2(i,j)
+                   IF (.NOT. blk%isdry(i,j)) THEN
+                      input_total = input_total + blk%hp1(i,j)*blk%hp2(i,j)
+                   END IF
                    owned = owned + 1
+                   WRITE(*,*) "AREA: ", i, j, input_total
                 END DO
              END DO
 
@@ -630,9 +632,12 @@ CONTAINS
              IF (input_total .GT. 0) THEN 
                 DO i = i_beg, i_end
                    DO j = j_beg, j_end
-                      IF (do_wetdry .AND. .NOT. blk%isdry(i,j)) &
-                           &sclr%srcflux(i, j) = table_input(1)*&
-                           &blk%hp1(i,j)*blk%hp2(i,j)/input_total
+                      IF (.NOT. blk%isdry(i,j)) THEN
+                         sclr%srcflux(i, j) = table_input(1)*&
+                              &blk%hp1(i,j)*blk%hp2(i,j)/input_total
+                      END IF
+                      WRITE (*,*) "FLUX: ", i, j, blk%hp1(i,j)*blk%hp2(i,j), &
+                           &input_total, sclr%srcflux(i, j)
                    END DO
                 END DO
              END IF
@@ -720,7 +725,10 @@ CONTAINS
              ! Include scalar flux sources. At this point, srcflux is
              ! in mass/s, so just add it in
 
-             src = src + species(ispecies)%scalar(iblock)%srcflux(i,j)
+             IF (species(ispecies)%scalar(iblock)%srcflux(i,j) .GT. 0.0) THEN
+                src = src + species(ispecies)%scalar(iblock)%srcflux(i,j)
+                WRITE(*,*) "SCALAR: ", i, j, species(ispecies)%scalar(iblock)%srcflux(i,j)
+             END IF
 
           ELSE 
              src = 0.0
