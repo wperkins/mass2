@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: Mon Dec 19 12:07:06 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2014-06-04 13:30:05 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -733,7 +733,7 @@ CONTAINS
                   &scalar_source(ispecies)%units,&
                   &scalar_source(ispecies)%conversion) 
 
-!!$             SELECT CASE(scalar_source(ispecies)%srctype)
+             SELECT CASE(scalar_source(ispecies)%srctype)
 !!$             CASE (TDG)
 !!$                                ! TDG pressure
 !!$
@@ -789,30 +789,34 @@ CONTAINS
 !!$
 !!$                END IF
 !!$                   
-!!$             CASE (SED)
-!!$                                ! If we are doing sediment, output
-!!$                                ! sediment erosion and deposition
-!!$                                ! rates
-!!$                ifract = scalar_source(ispecies)%sediment_param%ifract
-!!$
-!!$                                ! deposition rate
-!!$
-!!$                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
-!!$                     &accum_block(iblock)%bed%deposit(ispecies)%sum, &
-!!$                     &TRIM(scalar_source(ispecies)%name) // '-depos',&
-!!$                     &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description),&
-!!$                     &"mass/foot^2/second")
-!!$
-!!$                                ! erosion rate
-!!$
-!!$                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
-!!$                     &accum_block(iblock)%bed%erosion(ispecies)%sum, &
-!!$                     &TRIM(scalar_source(ispecies)%name) // '-erode', &
-!!$                     &"Rate of Erosion of " // TRIM(scalar_source(ispecies)%description),&
-!!$                     &"mass/foot^2/second")
-!!$
-!!$                                ! bed total mass
-!!$
+             CASE (SED)
+                                ! If we are doing sediment, output
+                                ! sediment erosion and deposition
+                                ! rates
+                ifract = scalar_source(ispecies)%sediment_param%ifract
+
+                                ! deposition rate
+
+                CALL block_collect(block(iblock), &
+                     &scalar_source(ispecies)%sediment_param%block(iblock)%bv_deposition)
+                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                     &block(iblock)%buffer, &
+                     &TRIM(scalar_source(ispecies)%name) // '-depos',&
+                     &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description),&
+                     &"mass/foot^2/second")
+
+                                ! erosion rate
+
+                CALL block_collect(block(iblock), &
+                     &scalar_source(ispecies)%sediment_param%block(iblock)%bv_erosion)
+                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                     &block(iblock)%buffer, &
+                     &TRIM(scalar_source(ispecies)%name) // '-erode', &
+                     &"Rate of Erosion of " // TRIM(scalar_source(ispecies)%description),&
+                     &"mass/foot^2/second")
+
+                                ! bed total mass
+
 !!$                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
 !!$                     &accum_block(iblock)%bed%mass(ispecies)%sum, &
 !!$                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
@@ -826,7 +830,7 @@ CONTAINS
 !!$                     &TRIM(scalar_source(ispecies)%name) // '-bed', &
 !!$                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
 !!$                     &"mass/foot^2")
-!!$
+
 !!$             CASE (PART)
 !!$                                ! If we are doing particulate phases,
 !!$                                ! output erosion and deposition rates
@@ -855,11 +859,11 @@ CONTAINS
 !!$                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
 !!$                     &"mass/foot^2")
 !!$
-!!$             END SELECT
+             END SELECT
           END DO
        END IF
-!!$
-!!$                                ! bed depth if called for
+
+                                ! bed depth if called for
 !!$       IF (source_doing_sed) THEN
 !!$          CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
 !!$               &accum_block(iblock)%bed%depth%sum, &

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 23, 2000 by William A. Perkins
-! Last Change: Thu Jan 20 22:27:24 2011 by William A. Perkins <d3g096@PE10588.local>
+! Last Change: 2014-06-04 13:53:21 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE sediment_source
@@ -15,8 +15,9 @@
 MODULE sediment_source
 
   USE utility
-  USE globals
   USE config
+  USE block_module
+  USE scalars, ONLY: max_species
 
   IMPLICIT NONE
 
@@ -25,7 +26,9 @@ MODULE sediment_source
   TYPE sediment_source_block_rec
                                 ! these are rates, units: (mass)/ft^2/s
 
+     TYPE (block_var), POINTER :: bv_deposition
      DOUBLE PRECISION, POINTER :: deposition(:,:)
+     TYPE (block_var), POINTER :: bv_erosion
      DOUBLE PRECISION, POINTER :: erosion(:,:)
   END TYPE sediment_source_block_rec
 
@@ -91,14 +94,20 @@ CONTAINS
 
     ALLOCATE(sediment_parse_options%block(max_blocks))
     DO iblk = 1, max_blocks
-       ALLOCATE(sediment_parse_options%block(iblk)%deposition(&
-            &i_index_min:block(iblk)%xmax+i_index_extra, &
-            &j_index_min:block(iblk)%ymax+j_index_extra))
-       sediment_parse_options%block(iblk)%deposition = 0.0
-       ALLOCATE(sediment_parse_options%block(iblk)%erosion(&
-            &i_index_min:block(iblk)%xmax+i_index_extra, &
-            &j_index_min:block(iblk)%ymax+j_index_extra))
-       sediment_parse_options%block(iblk)%erosion = 0.0
+       sediment_parse_options%block(iblk)%bv_deposition => &
+            &block_var_allocate("deposition", block(iblk)%varbase, .TRUE.)
+       sediment_parse_options%block(iblk)%deposition => &
+            &sediment_parse_options%block(iblk)%bv_deposition%current
+
+       sediment_parse_options%block(iblk)%bv_erosion => &
+            &block_var_allocate("erosion", block(iblk)%varbase, .TRUE.)
+       sediment_parse_options%block(iblk)%erosion => &
+            &sediment_parse_options%block(iblk)%bv_erosion%current
+
+       sediment_parse_options%block(iblk)%deposition = 0
+       CALL block_var_put(sediment_parse_options%block(iblk)%bv_deposition)
+       sediment_parse_options%block(iblk)%erosion = 0
+       CALL block_var_put(sediment_parse_options%block(iblk)%bv_erosion)
     END DO
     
     DO WHILE ((LEN_TRIM(options(i)) .GT. 0) .AND. (i .LE. nopt))
@@ -218,9 +227,9 @@ CONTAINS
     shear = block(iblk)%shear(i,j)
 
     IF (shear > rec%eshear) THEN
-       sediment_erosion = &
-            &MIN((shear/rec%eshear - 1.0)*rec%erode,&
-            &bed_max_erosion(rec%ifract, iblk, i, j, delta_t))
+!!$       sediment_erosion = &
+!!$            &MIN((shear/rec%eshear - 1.0)*rec%erode,&
+!!$            &bed_max_erosion(rec%ifract, iblk, i, j, delta_t))
     END IF
   END FUNCTION sediment_erosion
 
@@ -256,9 +265,14 @@ CONTAINS
     INTEGER, INTENT(IN) :: iblk, i, j
     DOUBLE PRECISION :: sconc
 
-    sediment_source_term = &
-         &sediment_erosion(rec, iblk, i, j) - &
+    rec%block(iblk)%deposition(i, j) = &
          &sediment_deposition(rec, iblk, i, j, sconc)
+    rec%block(iblk)%erosion(i, j) = &
+         &sediment_erosion(rec, iblk, i, j)
+
+    sediment_source_term = &
+         &rec%block(iblk)%erosion(i, j) - &
+         &rec%block(iblk)%deposition(i, j)
   END FUNCTION sediment_source_term
 
 

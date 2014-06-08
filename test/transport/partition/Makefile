@@ -7,9 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Wed Mar 24 11:48:28 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-06-06 14:29:07 d3g096
 # -------------------------------------------------------------
 
+MPIRUN = mpirun
+NPROC = 4
 MODEL = ../../../mass2
 TECPLOT = tecplot
 
@@ -21,7 +23,7 @@ MODELFILES = \
 	bcspecs.dat \
 	flow.dat \
 	grid.dat \
-	mass2_v027.cfg \
+	mass2.cfg \
 	scalar_bcspecs.dat \
 	scalar_source.base \
 	sediment-bc.dat \
@@ -29,28 +31,24 @@ MODELFILES = \
 	stuff-bc.dat \
 	zero.dat
 
-all: $(EPSFILES)
+.PHONY: all run-nodecay run-decay
 
-plot-nodecay.nc: $(MODELFILES) $(MODEL)
+all: run-nodecay run-decay
+
+run-nodecay: $(MODELFILES) $(MODEL)
 	cp scalar_source.base scalar_source.dat
-	$(MODEL)
-	mv plot.nc $@
+	$(MPIRUN) -np $(NPROC) $(MODEL)
+	mv plot000.cgns plot-nodecay.cgns
 
-plot-decay.nc: $(MODELFILES) $(MODEL)
+run-decay: $(MODELFILES) $(MODEL)
 	sed -e '9s/0.0/1.584E-04/' scalar_source.base > scalar_source.dat
-	$(MODEL)
-	mv plot.nc $@
-
-plot-conc-nodecay.eps: plot-conc.gp plot-nodecay.nc
-	sed -e 's/plot\.nc/plot-nodecay.nc/' plot-conc.gp | gnuplot > $@
-
-plot-conc-decay.eps: plot-conc.gp plot-decay.nc
-	sed -e 's/plot\.nc/plot-decay.nc/' plot-conc.gp | gnuplot > $@
-
+	$(MPIRUN) -np $(NPROC) $(MODEL)
+	mv plot000.cgns plot-decay.cgns
 
 clean:: 
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
+	rm -f error-warning*.out mass_source_monitor.out output*.out status*.out
 	rm -f gridplot1.dat 
 	rm -f plot.nc gage.nc plot-nodecay.nc plot-decay.nc 
+	rm -f grid.cgns plot000.cgns plot-nodecay.cgns plot-decay.cgns
 	rm -f $(EPSFILES)

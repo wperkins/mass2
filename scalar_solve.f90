@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-06-03 09:37:34 d3g096
+! Last Change: 2014-06-08 11:38:51 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -800,6 +800,8 @@ CONTAINS
        END DO ! block loop end
 
     END DO ! internal time loop end for concentration
+
+    CALL scalar_source_post_timestep()
 
     ! end scalar transport soultion
     !----------------------------------------------------------------------------

@@ -7,10 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 19, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 13:39:23 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-06-08 11:53:29 d3g096
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MPIRUN = mpirun
+NPROC = 4
+MODEL = ../../../mass2
 
 EPSFILES = \
 	plot-sed.eps \
@@ -21,19 +23,21 @@ MODELFILES = \
 	bcspecs.dat \
 	flow.dat \
 	grid.dat \
-	mass2_v027.cfg \
+	mass2.cfg \
 	scalar_bcspecs.dat \
 	scalar_source.dat \
 	stage.dat \
 	zero.dat
 
-all: $(EPSFILES)
+.PHONY: all run
+
+all: run
 
 clean:: 
 	rm -f $(EPSFILES)
 
-plot.nc: $(MODELFILES) $(MODEL)
-	$(MODEL)
+run: $(MODELFILES) $(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 
 clean::
 	rm -f plot.nc gage.nc

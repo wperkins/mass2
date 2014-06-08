@@ -7,13 +7,19 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 28, 2000 by William A. Perkins
-! Last Change: Thu Jul 17 08:31:15 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: 2014-04-22 11:14:08 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
 ! MODULE particulate_source
 ! ----------------------------------------------------------------
 MODULE particulate_source
+
+  USE utility
+  USE config
+  USE block_module
+  USE scalars
+  USE sediment_source
 
   IMPLICIT NONE
 
@@ -27,6 +33,8 @@ MODULE particulate_source
                                 ! (i.e. erosion) and material is
                                 ! removed from the bed
 
+
+     TYPE (block_var), POINTER :: bv_bedexch
      DOUBLE PRECISION, POINTER :: bedexch(:,:)
 
   END TYPE part_source_block_rec
@@ -49,11 +57,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   TYPE(PART_SOURCE_REC) FUNCTION part_parse_options(options)
     
-    USE misc_vars, ONLY: i_index_min, i_index_extra, j_index_min, j_index_extra
-    USE scalars, ONLY: max_species
-    USE utility
-    USE globals
-
     IMPLICIT NONE
 
     POINTER part_parse_options
@@ -150,10 +153,12 @@ CONTAINS
 
     ALLOCATE(part_parse_options%block(max_blocks))
     DO iblk = 1, max_blocks
-       ALLOCATE(part_parse_options%block(iblk)%bedexch(&
-            &i_index_min:block(iblk)%xmax + i_index_extra, &
-            &j_index_min:block(iblk)%ymax + i_index_extra))
+       part_parse_options%block(iblk)%bv_bedexch => &
+            &block_var_allocate("particulate_exchange", block(iblk)%varbase, .TRUE.)
+       part_parse_options%block(iblk)%bedexch => &
+            &part_parse_options%block(iblk)%bv_bedexch%current
        part_parse_options%block(iblk)%bedexch = 0.0
+       CALL block_var_put(part_parse_options%block(iblk)%bv_bedexch)
     END DO
 100 FORMAT('additional argument missing for ', A10, ' keyword')
   END FUNCTION part_parse_options
@@ -163,9 +168,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION part_bed_exch(partrec, ispecies, sedrec, iblk, i, j, &
        &pconc, sconc, bconc)
-
-    USE sediment_source
-    USE misc_vars, ONLY: delta_t
 
     IMPLICIT NONE
     TYPE(part_source_rec) :: partrec
@@ -184,10 +186,10 @@ CONTAINS
     END IF
 
     e = sediment_erosion(sedrec, iblk, i, j)
-    IF (e .GT. 0.0) THEN
-       emax = bed_max_part_erosion(ispecies, iblk, i, j, delta_t)
-       part_bed_exch = part_bed_exch + e*bconc
-    END IF
+!!$    IF (e .GT. 0.0) THEN
+!!$       emax = bed_max_part_erosion(ispecies, iblk, i, j, delta_t)
+!!$       part_bed_exch = part_bed_exch + e*bconc
+!!$    END IF
   END FUNCTION part_bed_exch
 
 
@@ -213,10 +215,6 @@ CONTAINS
   ! ----------------------------------------------------------------
   DOUBLE PRECISION FUNCTION part_dissolve_bed_exch(partrec, sedrec, iblk, i, j, dconc, bconc)
 
-    USE scalars
-    USE sediment_source
-    USE misc_vars, ONLY: delta_t
-
     IMPLICIT NONE
     TYPE (part_source_rec) :: partrec
     TYPE(sediment_source_rec) :: sedrec
@@ -229,28 +227,28 @@ CONTAINS
      part_dissolve_bed_exch = 0.0
 
      tmp = dconc
-     IF ((bed_depth(iblk, i, j) .GT. sedrec%d50) .AND. &
-          &bed_sediment_mass(sedrec%ifract, iblk, i, j) .GT. 0.0) THEN
-        IF (tmp .LT. 0.0) tmp = 0.0
-        part_dissolve_bed_exch = &
-             &(partrec%bedkd*tmp - bconc)*partrec%rate*&
-             &sedrec%pdens*sedrec%d50*(1.0 - bed_porosity(iblk, i, j))
-
-                                ! limit the rate of contaminant
-                                ! leaving the bed to that contained in
-                                ! the affected bed volume, this is
-                                ! d50/depth*(available mass)
-
-        IF (part_dissolve_bed_exch .LT. 0.0) THEN
-           maxexch = bed_sediment_mass(sedrec%ifract, iblk, i, j)*bconc
-           maxexch = maxexch*sedrec%d50/bed_depth(iblk, i, j)
-           IF (part_dissolve_bed_exch < 0.0 .AND. &
-                &ABS(part_dissolve_bed_exch)*delta_t > maxexch) THEN
-              part_dissolve_bed_exch = -maxexch/delta_t
-           END IF
-        END IF
-     END IF
-  END FUNCTION part_dissolve_bed_exch
+!!$     IF ((bed_depth(iblk, i, j) .GT. sedrec%d50) .AND. &
+!!$          &bed_sediment_mass(sedrec%ifract, iblk, i, j) .GT. 0.0) THEN
+!!$        IF (tmp .LT. 0.0) tmp = 0.0
+!!$        part_dissolve_bed_exch = &
+!!$             &(partrec%bedkd*tmp - bconc)*partrec%rate*&
+!!$             &sedrec%pdens*sedrec%d50*(1.0 - bed_porosity(iblk, i, j))
+!!$
+!!$                                ! limit the rate of contaminant
+!!$                                ! leaving the bed to that contained in
+!!$                                ! the affected bed volume, this is
+!!$                                ! d50/depth*(available mass)
+!!$
+!!$        IF (part_dissolve_bed_exch .LT. 0.0) THEN
+!!$           maxexch = bed_sediment_mass(sedrec%ifract, iblk, i, j)*bconc
+!!$           maxexch = maxexch*sedrec%d50/bed_depth(iblk, i, j)
+!!$           IF (part_dissolve_bed_exch < 0.0 .AND. &
+!!$                &ABS(part_dissolve_bed_exch)*delta_t > maxexch) THEN
+!!$              part_dissolve_bed_exch = -maxexch/delta_t
+!!$           END IF
+!!$        END IF
+!!$     END IF
+   END FUNCTION part_dissolve_bed_exch
 
   ! ----------------------------------------------------------------
   ! DOUBLE PRECISION FUNCTION part_source_term

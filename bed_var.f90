@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 27, 2014 by William A. Perkins
-! Last Change: 2014-04-22 08:53:43 d3g096
+! Last Change: 2014-04-22 14:32:49 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE bed_variable
@@ -188,6 +188,62 @@ CONTAINS
     CALL nga_put(var%ga_handle, lo, hi, var%current(imin:imax, jmin:jmax, kmin:kmax), ld)
 
   END SUBROUTINE bed_var_put
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_var_get_all
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_var_get_all(var, buffer, index)
+
+    IMPLICIT NONE
+
+    TYPE (bed_var), INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+    
+    INTEGER :: junk, lo(ndim), hi(ndim), ld(ndim)
+
+    myindex = 1
+    IF (PRESENT(index)) myindex = index
+
+    CALL nga_inquire(var%ga_handle, junk, junk, hi)
+    lo = 1
+    ld = hi - lo + 1
+    lo(3) = myindex
+    hi(3) = myindex
+    CALL nga_get(var%ga_handle, lo, hi, buffer, ld)
+
+  END SUBROUTINE bed_var_get_all
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_var_put_all
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_var_put_all(var, buffer, index)
+
+    IMPLICIT NONE
+
+    TYPE (bed_var), INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(OUT) :: buffer(:, :)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+    
+    INTEGER :: junk, lo(ndim), hi(ndim), ld(ndim)
+
+    myindex = 1
+    IF (PRESENT(index)) myindex = index
+
+    CALL nga_inquire(var%ga_handle, junk, junk, hi)
+    lo = 1
+    ld = hi - lo + 1
+    lo(3) = myindex
+    hi(3) = myindex
+    CALL nga_put(var%ga_handle, lo, hi, buffer, ld)
+
+  END SUBROUTINE bed_var_put_all
+
+
 
 
 END MODULE bed_variable

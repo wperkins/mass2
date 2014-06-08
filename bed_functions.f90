@@ -13,7 +13,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created September  6, 2000 by William A. Perkins
-! Last Change: Thu May 15 08:24:16 2003 by William A. Perkins <perk@leechong.pnl.gov>
+! Last Change: 2014-04-22 11:16:57 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -48,7 +48,7 @@ DOUBLE PRECISION FUNCTION bed_max_part_erosion(ispecies, iblk, i, j, deltat)
 
   DOUBLE PRECISION :: mass
 
-  mass = bed(iblk)%particulate(ispecies, i, j)
+  mass = bed(iblk)%particulate(i, j, ispecies)
 
   bed_max_part_erosion = mass/deltat
 
@@ -67,8 +67,8 @@ DOUBLE PRECISION FUNCTION bed_part_conc(ispecies, ifract, iblk, i, j)
   INTEGER, INTENT(IN) ::ispecies, ifract,  iblk, i, j
 
   IF (bed(iblk)%sediment(ifract, i, j) .GT. 0.0d0) THEN
-     bed_part_conc = bed(iblk)%particulate(ispecies, i, j) / &
-          &bed(iblk)%sediment(ifract, i, j)
+     bed_part_conc = bed(iblk)%particulate(i, j, ispecies) / &
+          &bed(iblk)%sediment(i, j, ifract)
   ELSE
      bed_part_conc = 0.0
   END IF
@@ -103,7 +103,7 @@ DOUBLE PRECISION FUNCTION bed_part_vconc(ispecies, iblk, i, j)
         idiss = scalar_source(ipart)%part_param%disidx
         IF (idiss .EQ. ispecies) &
              &bed_part_vconc = bed_part_vconc + &
-             &bed(iblk)%particulate(ipart, i, j)
+             &bed(iblk)%particulate(i, j, ipart)
      END SELECT
   END DO
   
@@ -128,7 +128,8 @@ DOUBLE PRECISION FUNCTION bed_pore_conc(ispecies, iblk, i, j)
   if (.NOT. source_doing_sed) RETURN
   IF (bed(iblk)%depth(i, j) .LE. 0.0) RETURN
 
-  bed_pore_conc = bed(iblk)%pore(ispecies, i, j)/bed(iblk)%depth(i, j)/bed(iblk)%porosity(i, j)
+  bed_pore_conc = bed(iblk)%pore(i, j, ispecies)/&
+       &bed(iblk)%depth(i, j)/bed(iblk)%porosity(i, j)
 
   RETURN
 END FUNCTION bed_pore_conc
@@ -174,7 +175,7 @@ DOUBLE PRECISION FUNCTION bed_sediment_mass(ifract, iblk, i, j)
   IMPLICIT NONE
   INTEGER :: ifract, iblk, i, j
 
-  bed_sediment_mass = bed(iblk)%sediment(ifract, i, j)
+  bed_sediment_mass = bed(iblk)%sediment(i, j, ifract)
 END FUNCTION bed_sediment_mass
 
 
@@ -189,5 +190,5 @@ DOUBLE PRECISION FUNCTION bed_pore_flux(iblk, ispecies, i, j)
 
   INTEGER, INTENT(IN) :: iblk, ispecies, i, j
 
-  bed_pore_flux = bed(iblk)%poreflux(ispecies, i, j)
+  bed_pore_flux = bed(iblk)%poreflux(i, j, ispecies)
 END FUNCTION bed_pore_flux

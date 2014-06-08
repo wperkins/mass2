@@ -7,10 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 19, 2002 by William A. Perkins
-# Last Change: Tue Apr  8 13:38:47 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-06-04 13:48:28 d3g096
 # -------------------------------------------------------------
 
-MODEL = ../../../mass2_v027
+MPIRUN = mpirun
+NPROC = 4
+MODEL = ../../../mass2
 
 EPSFILES = \
 	plot-sed.eps \
@@ -22,7 +24,7 @@ MODELFILES = \
 	bcspecs.dat \
 	flow.dat \
 	grid.dat \
-	mass2_v027.cfg \
+	mass2.cfg \
 	scalar_bcspecs.dat \
 	scalar_source.dat \
 	stage.dat \
@@ -34,19 +36,22 @@ all: $(EPSFILES)
 clean:: 
 	rm -f $(EPSFILES)
 
-plot.nc: $(MODELFILES) $(MODEL)
-	$(MODEL)
-
-clean::
-	rm -f plot.nc gage.nc
-
-$(EPSFILES): plot.nc
+$(EPSFILES): plot000.cgns
 
 %.eps: %.gp
 	gnuplot $< > $@
 
+plot000.cgns grid.cgns: run
+
+run: $(MODELFILES) $(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
+.PHONY: run
+
+clean::
+	rm -f plot000.cgns grid.cgns 
+
 clean::
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
+	rm -f error-warning*.out mass_source_monitor.out output*.out status*.out
 	rm -f gridplot1.dat
 	rm -f hotstart*.bin

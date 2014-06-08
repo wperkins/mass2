@@ -34,8 +34,8 @@ MODULE scalars_source
   USE generic_source
   USE temperature_source
   USE tdg_source
-!!$  USE sediment_source
-!!$  USE particulate_source
+  USE sediment_source
+  USE particulate_source
 
   IMPLICIT NONE
 
@@ -71,8 +71,8 @@ MODULE scalars_source
      TYPE(generic_source_rec), POINTER :: generic_param
      TYPE(temperature_source_rec), POINTER :: temp_param
      TYPE(tdg_source_rec), POINTER :: tdg_param
-!!$     TYPE(sediment_source_rec), POINTER :: sediment_param
-!!$     TYPE(part_source_rec), POINTER :: part_param
+     TYPE(sediment_source_rec), POINTER :: sediment_param
+     TYPE(part_source_rec), POINTER :: part_param
   END TYPE scalar_source_rec
 
   TYPE(scalar_source_rec), ALLOCATABLE :: scalar_source(:)
@@ -148,8 +148,8 @@ CONTAINS
        NULLIFY(scalar_source(id)%generic_param)
        NULLIFY(scalar_source(id)%temp_param)
        NULLIFY(scalar_source(id)%tdg_param)
-!!$       NULLIFY(scalar_source(id)%sediment_param)
-!!$       NULLIFY(scalar_source(id)%part_param)
+       NULLIFY(scalar_source(id)%sediment_param)
+       NULLIFY(scalar_source(id)%part_param)
 
 
                                 ! look for generic options
@@ -243,31 +243,31 @@ CONTAINS
        CASE (GEN)
           scalar_source(id)%generic_param => &
                &generic_parse_options(options)
-!!$       CASE (SED)
-!!$          scalar_source(id)%sediment_param => &
-!!$               &sediment_parse_options(options)
-!!$          scalar_source(id)%sediment_param%pdens = scalar_source(id)%sediment_param%pdens*&
-!!$               &scalar_source(id)%conversion
-!!$          sediment_fractions = sediment_fractions + 1
-!!$          scalar_source(id)%sediment_param%ifract = sediment_fractions
-!!$          source_doing_sed = .TRUE.
-!!$       CASE (PART)
-!!$          scalar_source(id)%part_param => &
-!!$               &part_parse_options(options)
-!!$
-!!$                                ! Kd is expected to be in
-!!$                                ! (volume)/(mass) units (e.g. m^3/kg)
-!!$                                ! -- the same mass and volume units
-!!$                                ! used for BC and output
-!!$                                ! concentrations -- so we need to
-!!$                                ! convert this
-!!$
-!!$          scalar_source(id)%part_param%kd = &
-!!$               &scalar_source(id)%part_param%kd/scalar_source(id)%conversion
-!!$          scalar_source(id)%part_param%bedkd = &
-!!$               &scalar_source(id)%part_param%bedkd/scalar_source(id)%conversion
-!!$          particulates = particulates + 1
-!!$          source_doing_part = .TRUE.
+       CASE (SED)
+          scalar_source(id)%sediment_param => &
+               &sediment_parse_options(options)
+          scalar_source(id)%sediment_param%pdens = scalar_source(id)%sediment_param%pdens*&
+               &scalar_source(id)%conversion
+          sediment_fractions = sediment_fractions + 1
+          scalar_source(id)%sediment_param%ifract = sediment_fractions
+          source_doing_sed = .TRUE.
+       CASE (PART)
+          scalar_source(id)%part_param => &
+               &part_parse_options(options)
+
+                                ! Kd is expected to be in
+                                ! (volume)/(mass) units (e.g. m^3/kg)
+                                ! -- the same mass and volume units
+                                ! used for BC and output
+                                ! concentrations -- so we need to
+                                ! convert this
+
+          scalar_source(id)%part_param%kd = &
+               &scalar_source(id)%part_param%kd/scalar_source(id)%conversion
+          scalar_source(id)%part_param%bedkd = &
+               &scalar_source(id)%part_param%bedkd/scalar_source(id)%conversion
+          particulates = particulates + 1
+          source_doing_part = .TRUE.
        CASE DEFAULT
           WRITE(buffer, 300) TRIM(type_name), TRIM(short_name)
           CALL error_message(buffer, fatal=.TRUE.)
@@ -291,18 +291,18 @@ CONTAINS
                                 ! set up to do sediment/particulate transport
 
     IF (source_doing_sed) THEN
-!!$       CALL sediment_source_initialize()
-!!$       
-!!$       DO i = 1, max_species
-!!$          SELECT CASE (scalar_source(i)%srctype) 
-!!$          CASE (SED)
-!!$             sediment_scalar_index(scalar_source(i)%sediment_param%ifract) = i
-!!$          CASE (PART)
-!!$             disidx = scalar_source(i)%part_param%disidx
-!!$             scalar_source(disidx)%generic_param%issorbed = .TRUE.
-!!$             scalar_source(i)%part_param%lamda = scalar_source(disidx)%generic_param%lamda
-!!$          END SELECT
-!!$       END DO
+       CALL sediment_source_initialize()
+       
+       DO i = 1, max_species
+          SELECT CASE (scalar_source(i)%srctype) 
+          CASE (SED)
+             sediment_scalar_index(scalar_source(i)%sediment_param%ifract) = i
+          CASE (PART)
+             disidx = scalar_source(i)%part_param%disidx
+             scalar_source(disidx)%generic_param%issorbed = .TRUE.
+             scalar_source(i)%part_param%lamda = scalar_source(disidx)%generic_param%lamda
+          END SELECT
+       END DO
     END IF
 
     CALL status_message("Done reading scalar source information")
@@ -393,45 +393,47 @@ CONTAINS
                                 ! cooresponding particulate species
                                 ! and with bed
 
-!!$       IF (scalar_source(ispecies)%generic_param%issorbed) THEN
-!!$          DO partspec = 1, max_species
-!!$             SELECT CASE(scalar_source(partspec)%srctype)
-!!$             CASE (PART)
-!!$                IF (scalar_source(partspec)%part_param%disidx .EQ. ispecies) THEN
-!!$                   pconc = species(partspec)%scalar(iblock)%concold(i, j)
-!!$                   sphase = scalar_source(partspec)%part_param%sedidx
-!!$                   sconc = species(sphase)%scalar(iblock)%concold(i, j)
+       IF (scalar_source(ispecies)%generic_param%issorbed) THEN
+          DO partspec = 1, max_species
+             SELECT CASE(scalar_source(partspec)%srctype)
+             CASE (PART)
+                IF (scalar_source(partspec)%part_param%disidx .EQ. ispecies) THEN
+                   pconc = species(partspec)%scalar(iblock)%concold(i, j)
+                   sphase = scalar_source(partspec)%part_param%sedidx
+                   sconc = species(sphase)%scalar(iblock)%concold(i, j)
 !!$                   bconc = bed_part_conc(partspec, &
 !!$                        &scalar_source(sphase)%sediment_param%ifract, iblock, i, j)
-!!$                   scalar_source_term = scalar_source_term - &
-!!$                        &part_dissolve_exch(scalar_source(partspec)%part_param, &
-!!$                        &   conc, pconc, sconc, block(iblock)%depth(i,j)) - &
+                   scalar_source_term = scalar_source_term - &
+                        &part_dissolve_exch(scalar_source(partspec)%part_param, &
+                        &   conc, pconc, sconc, block(iblock)%depth(i,j))
+!!$ - &
 !!$                        &part_dissolve_bed_exch(scalar_source(partspec)%part_param, &
 !!$                        &   scalar_source(sphase)%sediment_param, iblock, i, j, conc, bconc)
-!!$                END IF
-!!$             END SELECT
-!!$          END DO
-!!$       END IF
+                END IF
+             END SELECT
+          END DO
+       END IF
 
-!!$    CASE (SED)
-!!$       scalar_source_term = scalar_source_term +&
-!!$            &sediment_source_term(scalar_source(ispecies)%sediment_param, iblock, i, j, conc)
-!!$
-!!$    CASE (PART)
-!!$       scalar_source_term = scalar_source_term +&
-!!$            &part_source_term(scalar_source(ispecies)%part_param, iblock, i, j, conc, depth)
-!!$
-!!$                                ! include exchange with dissolved and with bed
-!!$
-!!$       sphase = scalar_source(ispecies)%part_param%sedidx
-!!$       sconc = species(sphase)%scalar(iblock)%concold(i, j)
-!!$       dphase = scalar_source(ispecies)%part_param%disidx
-!!$       dconc = species(dphase)%scalar(iblock)%concold(i, j)
+    CASE (SED)
+       scalar_source_term = scalar_source_term +&
+            &sediment_source_term(scalar_source(ispecies)%sediment_param, iblock, i, j, conc)
+
+    CASE (PART)
+       scalar_source_term = scalar_source_term +&
+            &part_source_term(scalar_source(ispecies)%part_param, iblock, i, j, conc, depth)
+
+                                ! include exchange with dissolved and with bed
+
+       sphase = scalar_source(ispecies)%part_param%sedidx
+       sconc = species(sphase)%scalar(iblock)%concold(i, j)
+       dphase = scalar_source(ispecies)%part_param%disidx
+       dconc = species(dphase)%scalar(iblock)%concold(i, j)
 !!$       bconc = bed_part_conc(ispecies, scalar_source(sphase)%sediment_param%ifract, &
 !!$            &iblock, i, j)
-!!$       scalar_source_term = scalar_source_term + &
-!!$            &part_dissolve_exch(scalar_source(ispecies)%part_param, &
-!!$            &   dconc, conc, sconc, block(iblock)%depth(i,j)) + &
+       scalar_source_term = scalar_source_term + &
+            &part_dissolve_exch(scalar_source(ispecies)%part_param, &
+            &   dconc, conc, sconc, block(iblock)%depth(i,j))
+!!$ + &
 !!$            &part_bed_exch(scalar_source(ispecies)%part_param, ispecies, &
 !!$            &   scalar_source(sphase)%sediment_param, &
 !!$            &   iblock, i, j, conc, sconc, bconc)
@@ -439,6 +441,27 @@ CONTAINS
        scalar_source_term = 0.0
     END SELECT
   END FUNCTION scalar_source_term
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE scalar_source_post_timestep
+  ! ----------------------------------------------------------------
+  SUBROUTINE scalar_source_post_timestep()
+
+    IMPLICIT NONE
+
+    INTEGER :: i, iblock
+
+    DO i = 1, max_species
+       DO iblock = 1, max_blocks
+          SELECT CASE (scalar_source(i)%srctype)
+          CASE (SED)
+             CALL block_var_put(scalar_source(i)%sediment_param%block(iblock)%bv_deposition)
+             CALL block_var_put(scalar_source(i)%sediment_param%block(iblock)%bv_erosion)
+          CASE DEFAULT
+          END SELECT
+       END DO
+    END DO
+  END SUBROUTINE scalar_source_post_timestep
 
 END MODULE scalars_source
 
