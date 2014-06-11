@@ -31,6 +31,7 @@ MODULE gage_output
   USE block_module
   USE scalars
   USE scalars_source
+  USE bed_module
 
   IMPLICIT NONE
 
@@ -264,23 +265,23 @@ CONTAINS
                   &scalar_source(j)%conversion
              SELECT CASE(scalar_source(j)%srctype)
              CASE (GEN)
-!!$                IF (scalar_source(j)%generic_param%issorbed) THEN
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') bed(iblock)%pore(j, icell, jcell)
-!!$                   value = 0.0
-!!$                   IF (bed(iblock)%depth(icell, jcell) .GT. 0.0) value= &
-!!$                        &bed(iblock)%pore(j, icell, jcell)/ &
-!!$                        &(bed(iblock)%depth(icell, jcell)* &
-!!$                        &bed(iblock)%porosity(icell, jcell))
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') &
-!!$                        &bed(iblock)%pore(j, icell, jcell)*&
-!!$                        &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
-!!$                ELSE
-!!$                   value = 0.0
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-!!$                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-!!$                END IF
+                IF (scalar_source(j)%generic_param%issorbed) THEN
+                   WRITE(gage_iounit, 102, ADVANCE='NO') bed(iblock)%pore(icell, jcell, j)
+                   value = 0.0
+                   IF (bed(iblock)%depth(icell, jcell, 1) .GT. 0.0) &
+                        &value = bed(iblock)%pore(icell, jcell, j)/ &
+                        &(bed(iblock)%depth(icell, jcell, 1)* &
+                        &bed(iblock)%porosity(icell, jcell, 1))
+                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   WRITE(gage_iounit, 102, ADVANCE='NO') &
+                        &bed(iblock)%pore(icell, jcell, j)*&
+                        &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
+                ELSE
+                   value = 0.0
+                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                END IF
                 
              CASE (TDG)                             
 !!$                conc_TDG = species(j)%scalar(iblock)%conc(icell,jcell)
@@ -294,29 +295,33 @@ CONTAINS
 !!$                WRITE(gage_iounit, 102, ADVANCE='NO') value
 !!$
              CASE (SED)                             
-!!$                ifract = scalar_source(j)%sediment_param%ifract
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &scalar_source(j)%sediment_param%block(iblock)%deposition(icell, jcell)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &scalar_source(j)%sediment_param%block(iblock)%erosion(icell, jcell)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &bed(iblock)%sediment(ifract, icell, jcell)* &
-!!$                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &bed(iblock)%sediment(ifract, icell, jcell)
-!!$
+                ifract = scalar_source(j)%sediment_param%ifract
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &scalar_source(j)%sediment_param%block(iblock)%deposition(icell, jcell)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &scalar_source(j)%sediment_param%block(iblock)%erosion(icell, jcell)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &bed(iblock)%sediment(icell, jcell, ifract)* &
+                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &bed(iblock)%sediment(icell, jcell, ifract)
              CASE (PART)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &bed(iblock)%sediment(j, icell, jcell)* &
-!!$                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
-!!$                WRITE(gage_iounit, 102, ADVANCE='NO')&
-!!$                     &bed(iblock)%particulate(j, icell, jcell)
-!!$                
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &bed(iblock)%sediment(icell, jcell, j)* &
+                     &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
+                WRITE(gage_iounit, 102, ADVANCE='NO')&
+                     &bed(iblock)%particulate(icell, jcell, j)
              END SELECT
 
           END DO
+
+          IF (source_doing_sed) THEN
+             WRITE(gage_iounit, 102, ADVANCE='NO')&
+                  &bed(iblock)%depth(icell, jcell, 1)
+          END IF
+             
        END IF
        CLOSE(50)
     END DO

@@ -6,6 +6,7 @@ MODULE hotstart
   USE config
   USE block_module
   USE scalars
+  USE bed_module
 
   IMPLICIT NONE
 
@@ -48,6 +49,35 @@ CONTAINS
 
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_restart_read_var
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_restart_read_var(iunit, var, buffer, index)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iunit
+    TYPE (bed_var), INTENT(INOUT) :: var
+    DOUBLE PRECISION, INTENT(INOUT) :: &
+         &buffer(var%base%imin_global:var%base%imax_global, &
+         &var%base%jmin_global:var%base%jmax_global)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+
+    myindex = 1
+
+    IF (PRESENT(index)) myindex = index
+
+    READ (iunit, *) buffer(var%base%imin_global:var%base%imax_global, &
+         &var%base%jmin_global:var%base%jmax_global)
+
+    IF (myindex > 0) THEN
+       CALL bed_var_put_all(var, buffer, myindex)
+    END IF
+
+  END SUBROUTINE bed_restart_read_var
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE read_hotstart
   ! ----------------------------------------------------------------
   SUBROUTINE read_hotstart()
@@ -56,10 +86,10 @@ CONTAINS
 
 #include "global.fh"
 
-    INTEGER :: iblk, i
+    INTEGER :: iblk, i, ifract, ispecies
     CHARACTER (LEN=1024) :: msg
     LOGICAL :: do_transport_restart
-    INTEGER :: max_species_in_restart
+    INTEGER :: max_species_in_restart, restart_fractions, restart_parts
 
     IF (ga_nodeid() .EQ. 0) THEN
 
@@ -106,12 +136,12 @@ CONTAINS
           ! be the same in the hotstart as was
           ! specified for the simulation
           
-!!$          IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
-!!$             WRITE (msg,*) 'specified number of scalar species, ', &
-!!$                  &max_species, ', does not match that in hotstart file (',&
-!!$                  &max_species_in_restart, ')'
-!!$             CALL error_message(msg, fatal=.TRUE.)
-!!$          END IF
+          IF (source_doing_sed .AND. (max_species_in_restart .NE. max_species)) THEN
+             WRITE (msg,*) 'specified number of scalar species, ', &
+                  &max_species, ', does not match that in hotstart file (',&
+                  &max_species_in_restart, ')'
+             CALL error_message(msg, fatal=.TRUE.)
+          END IF
           
           ! if we don't expect a bed, don't
           ! worry about the number of scalar
@@ -135,9 +165,58 @@ CONTAINS
           ! if any sediment species were
           ! specified, we expect to find a bed
           ! in the hotstart file
-          
-!!$          IF (source_doing_sed) CALL bed_read_hotstart(hotstart_iounit)
-          
+
+          IF (source_doing_sed) THEN 
+                                ! read the number of sediment
+                                ! fractions and particulates from the
+                                ! restart
+
+             READ(hotstart_iounit,*) restart_fractions, restart_parts
+
+                                ! let's be hard-nosed and quit with a
+                                ! fatal error if the restart does not
+                                ! match the current configuration
+                                ! (this may have to change)
+
+             IF (restart_fractions .NE. sediment_fractions) THEN
+                WRITE(msg,*) 'specified number of sediment scalars, ',&
+                     &sediment_fractions, ', does not match those in restart, ',&
+                     &restart_fractions
+                CALL error_message(msg, fatal=.TRUE.)
+             END IF
+
+             IF (restart_parts .NE. particulates) THEN
+                WRITE(msg,*) 'specified number of particulate scalars, ',&
+                     &particulates, ', does not match those in restart, ',&
+                     &restart_parts
+                CALL error_message(msg, fatal=.TRUE.)
+             END IF
+
+                                ! if we're OK, read the bed part of
+                                ! the restart file
+
+             DO ifract = 1, sediment_fractions
+                DO iblk = 1, max_blocks
+                   CALL bed_restart_read_var(hotstart_iounit,&
+                        &bed(iblk)%bv_sediment, &
+                        &block(iblk)%buffer, ifract)
+                END DO
+             END DO
+             DO ispecies = 1, max_species
+                DO iblk = 1, max_blocks
+                   SELECT CASE (scalar_source(ispecies)%srctype)
+                   CASE (GEN)
+                      CALL bed_restart_read_var(hotstart_iounit,&
+                           &bed(iblk)%bv_pore, &
+                           &block(iblk)%buffer, ispecies)
+                   CASE (PART)
+                      CALL bed_restart_read_var(hotstart_iounit,&
+                           &bed(iblk)%bv_particulate, &
+                           &block(iblk)%buffer, ispecies)
+                   END SELECT
+                END DO
+             END DO
+          END IF
        END IF
 
        CLOSE(hotstart_iounit)
@@ -178,7 +257,17 @@ CONTAINS
              CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_CURRENT)
              CALL block_var_sync()
           END DO
+          IF (source_doing_sed) THEN
+             DO ifract = 1, sediment_fractions
+                CALL bed_var_get(bed(iblk)%bv_sediment, ifract)
+             END DO
+             DO ispecies = 1, max_species
+                CALL bed_var_get(bed(iblk)%bv_pore, ispecies)
+                CALL bed_var_get(bed(iblk)%bv_particulate, ispecies)
+             END DO
+          END IF
        END IF
+       CALL block_var_sync()
     END DO
 
   END SUBROUTINE read_hotstart
@@ -236,6 +325,35 @@ CONTAINS
   END SUBROUTINE restart_write_var
 
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_restart_write_var
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_restart_write_var(iunit, var, buffer, index)
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: iunit
+    TYPE (bed_var), INTENT(IN) :: var
+    DOUBLE PRECISION, INTENT(OUT) :: buffer(:,:)
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+
+    myindex = BLK_VAR_CURRENT
+
+    IF (PRESENT(index)) myindex = index
+
+    CALL bed_var_get_all(var, buffer, myindex)
+
+    WHERE(abs(buffer) < tiny) &
+         &buffer = sign(tiny, buffer)
+#ifndef NOOUTPUT
+    WRITE(iunit,*) buffer
+#endif
+
+  END SUBROUTINE bed_restart_write_var
+
+
   !##########################################################################
   !---------------------------------------------------------------------------
   ! write a  restart file
@@ -246,7 +364,7 @@ CONTAINS
 
 #include "global.fh"
 
-    INTEGER :: i, iblk
+    INTEGER :: i, iblk, ifract, ispecies
     INTEGER :: me
     LOGICAL :: do_transport_restart
     CHARACTER (LEN=1024) :: restart_filename
@@ -277,6 +395,7 @@ CONTAINS
                 CALL block_var_put(species(i)%scalar(iblk)%concvar, BLK_VAR_OLDOLD)
              END DO
           END DO
+          IF (source_doing_sed) CALL bed_put()          
        END IF
 
        CALL block_var_sync()
@@ -344,8 +463,36 @@ CONTAINS
                         &BLK_VAR_OLDOLD)
                 END DO
              END DO
+             IF (source_doing_sed) THEN 
 
-!!$          IF (source_doing_sed) CALL bed_write_hotstart(restart_iounit)
+                ! write the number of sediment
+                ! fractions and particulates that will
+                ! be written to the restart file
+                
+                WRITE(restart_iounit,*) sediment_fractions, particulates
+                
+                DO ifract = 1, sediment_fractions
+                   DO iblk = 1, max_blocks
+                      CALL bed_restart_write_var(restart_iounit,&
+                           &bed(iblk)%bv_sediment, &
+                           &block(iblk)%buffer, ifract)
+                   END DO
+                END DO
+                DO ispecies = 1, max_species
+                   DO iblk = 1, max_blocks
+                      SELECT CASE (scalar_source(ispecies)%srctype)
+                      CASE (GEN)
+                         CALL bed_restart_write_var(restart_iounit,&
+                              &bed(iblk)%bv_pore, &
+                              &block(iblk)%buffer, ispecies)
+                      CASE (PART)
+                         CALL bed_restart_write_var(restart_iounit,&
+                              &bed(iblk)%bv_particulate, &
+                              &block(iblk)%buffer, ispecies)
+                      END SELECT
+                   END DO
+                END DO
+             END IF
           END IF
 
 #ifndef NOOUTPUT

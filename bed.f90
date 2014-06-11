@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: 2014-06-09 14:27:39 d3g096
+! Last Change: 2014-06-11 13:23:58 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -645,97 +645,6 @@ CONTAINS
 
 
   ! ----------------------------------------------------------------
-  ! SUBROUTINE bed_write_hotstart
-  ! ----------------------------------------------------------------
-  SUBROUTINE bed_write_hotstart(hiounit)
-
-    IMPLICIT NONE
-
-    INTEGER, INTENT(IN) :: hiounit
-    INTEGER :: ispecies, ifract, iblock
-
-                                ! write the number of sediment
-                                ! fractions and particulates that will
-                                ! be written to the hotstart file
-
-    WRITE(hiounit,*) sediment_fractions, particulates
-
-                                ! as with other info, write bed info
-                                ! by block
-
-    DO iblock = 1, max_blocks
-       DO ifract = 1, sediment_fractions
-          WRITE(hiounit,*) bed(iblock)%sediment(ifract, :, :)
-       END DO
-       DO ispecies = 1, max_species
-          SELECT CASE (scalar_source(ispecies)%srctype)
-          CASE (GEN)
-             WRITE(hiounit,*) bed(iblock)%pore(ispecies, :, :)
-          CASE (PART)
-             WRITE(hiounit,*) bed(iblock)%particulate(ispecies, :, :)
-          END SELECT
-       END DO
-    END DO
-  END SUBROUTINE bed_write_hotstart
-
-  ! ----------------------------------------------------------------
-  ! SUBROUTINE bed_read_hotstart
-  ! ----------------------------------------------------------------
-  SUBROUTINE bed_read_hotstart(hiounit)
-
-    IMPLICIT NONE
-
-    INTEGER, INTENT(IN) :: hiounit
-    INTEGER :: hotstart_fractions, hotstart_parts
-    INTEGER :: ifract, iblock, ispecies
-    CHARACTER (LEN=1024) :: buffer
-
-                                ! read the number of sediment
-                                ! fractions and particulates from the
-                                ! hotstart
-
-    READ(hiounit,*) hotstart_fractions, hotstart_parts
-
-                                ! let's be hard-nosed and quit with a
-                                ! fatal error if the hotstart does not
-                                ! match the current configuration
-                                ! (this may have to change)
-
-    IF (hotstart_fractions .NE. sediment_fractions) THEN
-       WRITE(buffer,*) 'specified number of sediment scalars, ',&
-            &sediment_fractions, ', does not match those in hotstart, ',&
-            &hotstart_fractions
-       CALL error_message(buffer, fatal=.TRUE.)
-    END IF
-
-    IF (hotstart_parts .NE. particulates) THEN
-       WRITE(buffer,*) 'specified number of particulate scalars, ',&
-            &particulates, ', does not match those in hotstart, ',&
-            &hotstart_parts
-       CALL error_message(buffer, fatal=.TRUE.)
-    END IF
-
-                                ! if we're OK, read the bed part of
-                                ! the hotstart file
-
-    DO iblock = 1, max_blocks
-       DO ifract = 1, sediment_fractions
-          READ(hiounit,*) bed(iblock)%sediment(ifract, :, :)
-       END DO
-       DO ispecies = 1, max_species
-          SELECT CASE (scalar_source(ispecies)%srctype)
-          CASE (GEN)
-             READ(hiounit,*) bed(iblock)%pore(ispecies, :, :)
-          CASE (PART)
-             READ(hiounit,*) bed(iblock)%particulate(ispecies, :, :)
-          END SELECT
-       END DO
-    END DO
-
-
-  END SUBROUTINE bed_read_hotstart
-
-  ! ----------------------------------------------------------------
   ! SUBROUTINE bed_read_init
   ! ----------------------------------------------------------------
   SUBROUTINE bed_read_init()
@@ -773,43 +682,46 @@ CONTAINS
        CALL status_message(buffer)
 
        CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
-       DO i = imin, imax
-          DO j = jmin, jmax
+       DO i = 2, block(iblk)%xmax 
+          DO j =  2, block(iblk)%ymax 
              
-             IF (block_var_base_owns(block(iblk)%varbase, i, j)) CONTINUE 
              fract = 0.0
              READ(grid_iounit, *) ijunk, jjunk, depth, fract
              
-             IF (depth .LT. 0.0) THEN
-                bed(iblk)%depth = 0.0
-                bed(iblk)%sediment(i, j, :) = 0.0
-             ELSE
+             IF (imin .LE. i .AND. i .LE. imax .AND.&
+                  &jmin .LE. j .AND. j .LE. jmax) THEN
 
-                bed(iblk)%depth(i, j, 1) = depth
+                IF (depth .LE. 0.0) THEN
+                   bed(iblk)%depth = 0.0
+                   bed(iblk)%sediment(i, j, :) = 0.0
+                ELSE
 
-                                ! in the fraction do not sum to 1.0,
-                                ! we're going to have trouble, so
-                                ! let's make sure they do
+                   bed(iblk)%depth(i, j, 1) = depth
 
-                sum = 0.0
-                DO ifract = 1, sediment_fractions
-                   sum = sum + fract(ifract)
-                END DO
+                   ! if the fraction do not sum to 1.0,
+                   ! we're going to have trouble, so
+                   ! let's make sure they do
 
-                bdens = 0.0
-                DO ifract = 1, sediment_fractions
-                   fract(ifract) = fract(ifract)/sum
-                   bdens = bdens + fract(ifract)/&
-                        &scalar_source(sediment_scalar_index(ifract))%sediment_param%pdens
-                END DO
-                bdens = bdens/(1.0 - bed(iblk)%porosity(i, j, 1))
+                   sum = 0.0
+                   DO ifract = 1, sediment_fractions
+                      sum = sum + fract(ifract)
+                   END DO
 
-                                ! compute sediment masses
-
-                DO ifract = 1, sediment_fractions
-                   bed(iblk)%sediment(i, j, ifract) = fract(ifract)*depth/bdens
-                END DO
-             END IF             
+                   bdens = 0.0
+                   DO ifract = 1, sediment_fractions
+                      fract(ifract) = fract(ifract)/sum
+                      bdens = bdens + fract(ifract)/&
+                           &scalar_source(sediment_scalar_index(ifract))%sediment_param%pdens
+                   END DO
+                   bdens = bdens/(1.0 - bed(iblk)%porosity(i, j, 1))
+                   
+                   ! compute sediment masses
+                   
+                   DO ifract = 1, sediment_fractions
+                      bed(iblk)%sediment(i, j, ifract) = fract(ifract)*depth/bdens
+                   END DO
+                END IF
+             END IF
           END DO
        END DO
        CLOSE(grid_iounit)

@@ -1,0 +1,18 @@
+1 SED "sand" "Transported Sediment" "kg/m^3" 
+    CONVERT 0.028317 
+    DENSITY 2650.0
+    D50  0.0001
+    SETVEL      5.0e-02     DSHEAR  0.060
+    ERODIBILTY  9.3E-07     ESHEAR  0.060 /
+2 SED "silt" "Transported Sediment" "kg/m^3" 
+    CONVERT 0.028317 
+    DENSITY 2650.0
+    D50  0.0001
+    SETVEL      5.0e-02     DSHEAR  0.060
+    ERODIBILTY  9.3E-07     ESHEAR  0.060 /
+3 SED "clay" "Transported Sediment" "kg/m^3" 
+    CONVERT 0.028317 
+    DENSITY 2650.0
+    D50  0.0001
+    SETVEL      5.0e-02     DSHEAR  0.060
+    ERODIBILTY  9.3E-07     ESHEAR  0.060 /

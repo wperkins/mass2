@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-06-09 15:33:35 d3g096
+# Last Change: 2014-06-11 10:36:29 d3g096
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -105,9 +105,17 @@ energy_flux_module.$(OBJEXT): energy_flux_module.f90
 gas_coeffs_module.$(OBJEXT): gas_coeffs_module.f90
 gas_functions_module.$(OBJEXT): gas_functions_module.f90 gas_coeffs_module.$(OBJEXT)
 globals.$(OBJEXT): globals.f90  $(TSLIB)
-gage_output_module.$(OBJEXT): gage_output_module.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT) \
-	scalars_source.$(OBJEXT)  $(TSLIB)
-hotstart.$(OBJEXT): hotstart.f90 block_parallel.$(OBJEXT) mass2_config.$(OBJEXT) scalars_module.$(OBJEXT)
+gage_output_module.$(OBJEXT): gage_output_module.f90 \
+	block_parallel.$(OBJEXT) \
+	mass2_config.$(OBJEXT) \
+	scalars_source.$(OBJEXT)  \
+	bed.$(OBJEXT) \
+	$(TSLIB)
+hotstart.$(OBJEXT): hotstart.f90 \
+	block_parallel.$(OBJEXT) \
+	mass2_config.$(OBJEXT) \
+	scalars_module.$(OBJEXT) \
+	bed.$(OBJEXT)
 hydro_bc.$(OBJEXT): hydro_bc.f90 table_bc_module.$(OBJEXT) mass2_config.$(OBJEXT) $(TSLIB)
 hydro_solve.$(OBJEXT): hydro_solve.f90 block_hydro.$(OBJEXT) block_hydro_bc.$(OBJEXT) differencing.$(OBJEXT) \
 	solver_petsc.$(OBJEXT) mass2_config.$(OBJEXT)
