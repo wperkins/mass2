@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: 2014-04-22 07:50:50 d3g096
+! Last Change: 2014-06-08 12:35:28 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -776,14 +776,19 @@ CONTAINS
   ! ----------------------------------------------------------------
   ! SUBROUTINE block_collect
   ! ----------------------------------------------------------------
-  SUBROUTINE block_collect(blk, var)
+  SUBROUTINE block_collect(blk, var, index)
 
     IMPLICIT NONE
     
     TYPE (block_struct), INTENT(INOUT) :: blk
     TYPE (block_var), INTENT(IN) :: var
+    INTEGER, INTENT(IN), OPTIONAL :: index
 
-    CALL block_var_get_all(var, blk%buffer)
+    INTEGER :: myindex
+    myindex = 1
+    IF (PRESENT(index)) myindex = index
+
+    CALL block_var_get_all(var, blk%buffer, myindex)
 
   END SUBROUTINE block_collect
 

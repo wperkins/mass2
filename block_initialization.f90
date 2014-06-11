@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: 2014-04-07 08:43:54 d3g096
+! Last Change: 2014-06-09 14:48:25 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -103,6 +103,7 @@ CONTAINS
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
              CALL block_var_get(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
+             CALL block_var_sync()
           END DO
        END DO
     END IF
@@ -168,6 +169,7 @@ CONTAINS
        CALL block_var_get(block(iblock)%bv_kx_diff, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_ky_diff, BLK_VAR_CURRENT)
        CALL block_var_get(block(iblock)%bv_chezy, BLK_VAR_CURRENT)
+       CALL block_var_sync()
     END DO
 
 

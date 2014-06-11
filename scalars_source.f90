@@ -366,7 +366,7 @@ CONTAINS
     DOUBLE PRECISION :: depth, area, t_water, sal
     INTEGER :: partspec
 
-!!$    INCLUDE 'bed_functions.inc'
+    INCLUDE 'bed_functions.inc'
 
     scalar_source_term = 0.0
 
@@ -384,11 +384,11 @@ CONTAINS
                                 ! if there is a bed, exchange
                                 ! dissolved with the bed pore space
 
-!!$       IF (source_doing_sed) THEN
-!!$          scalar_source_term = scalar_source_term + &
-!!$               &bed_pore_flux(iblock, ispecies, i, j)
-!!$       END IF
-
+       IF (source_doing_sed) THEN
+          scalar_source_term = scalar_source_term + &
+               &bed_pore_flux(iblock, ispecies, i, j)
+       END IF
+       
                                 ! add in exchange with all
                                 ! cooresponding particulate species
                                 ! and with bed
@@ -401,14 +401,13 @@ CONTAINS
                    pconc = species(partspec)%scalar(iblock)%concold(i, j)
                    sphase = scalar_source(partspec)%part_param%sedidx
                    sconc = species(sphase)%scalar(iblock)%concold(i, j)
-!!$                   bconc = bed_part_conc(partspec, &
-!!$                        &scalar_source(sphase)%sediment_param%ifract, iblock, i, j)
+                   bconc = bed_part_conc(partspec, &
+                        &scalar_source(sphase)%sediment_param%ifract, iblock, i, j)
                    scalar_source_term = scalar_source_term - &
                         &part_dissolve_exch(scalar_source(partspec)%part_param, &
-                        &   conc, pconc, sconc, block(iblock)%depth(i,j))
-!!$ - &
-!!$                        &part_dissolve_bed_exch(scalar_source(partspec)%part_param, &
-!!$                        &   scalar_source(sphase)%sediment_param, iblock, i, j, conc, bconc)
+                        &   conc, pconc, sconc, block(iblock)%depth(i,j)) - &
+                        &part_dissolve_bed_exch(scalar_source(partspec)%part_param, &
+                        &   scalar_source(sphase)%sediment_param, iblock, i, j, conc, bconc)
                 END IF
              END SELECT
           END DO
@@ -428,15 +427,14 @@ CONTAINS
        sconc = species(sphase)%scalar(iblock)%concold(i, j)
        dphase = scalar_source(ispecies)%part_param%disidx
        dconc = species(dphase)%scalar(iblock)%concold(i, j)
-!!$       bconc = bed_part_conc(ispecies, scalar_source(sphase)%sediment_param%ifract, &
-!!$            &iblock, i, j)
+       bconc = bed_part_conc(ispecies, scalar_source(sphase)%sediment_param%ifract, &
+            &iblock, i, j)
        scalar_source_term = scalar_source_term + &
             &part_dissolve_exch(scalar_source(ispecies)%part_param, &
-            &   dconc, conc, sconc, block(iblock)%depth(i,j))
-!!$ + &
-!!$            &part_bed_exch(scalar_source(ispecies)%part_param, ispecies, &
-!!$            &   scalar_source(sphase)%sediment_param, &
-!!$            &   iblock, i, j, conc, sconc, bconc)
+            &   dconc, conc, sconc, block(iblock)%depth(i,j)) + &
+            &part_bed_exch(scalar_source(ispecies)%part_param, ispecies, &
+            &   scalar_source(sphase)%sediment_param, &
+            &   iblock, i, j, conc, sconc, bconc)
     CASE DEFAULT
        scalar_source_term = 0.0
     END SELECT
@@ -461,7 +459,12 @@ CONTAINS
           END SELECT
        END DO
     END DO
+
+    IF (source_doing_sed) THEN
+       CALL bed_post_timestep()
+    END IF
   END SUBROUTINE scalar_source_post_timestep
+
 
 END MODULE scalars_source
 

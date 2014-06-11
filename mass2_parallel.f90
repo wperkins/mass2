@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-05-08 09:55:32 d3g096
+! Last Change: 2014-06-09 14:51:00 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -123,10 +123,13 @@ PROGRAM mass2_parallel
   END IF
 
   CALL initialize()
+  CALL ga_sync()
   DO j =1, max_blocks
      CALL fillghost(j)
   END DO
   
+  CALL ga_sync()
+
   IF (do_flow .OR. do_transport) CALL solver_setup()
 
   CALL ga_sync()
@@ -203,6 +206,7 @@ SUBROUTINE bc_init()
   USE scalars
   USE scalar_bc_module
   USE scalars_source
+  USE bed_module
   USE met_data_module
   USE transport_only
 
@@ -231,7 +235,7 @@ SUBROUTINE bc_init()
      CALL read_scalar_bc_tables()
      CALL set_scalar_block_connections()
      CALL scalar_source_read()
-  !    IF (source_doing_sed) CALL bed_initialize()
+     IF (source_doing_sed) CALL bed_initialize()
   !    CALL scalar_mass_init()
 
      ! transport only mode
@@ -309,6 +313,7 @@ SUBROUTINE update()
   USE config
   USE block_module
   USE scalars
+  USE bed_module
 
   IMPLICIT NONE
 
@@ -335,7 +340,7 @@ SUBROUTINE update()
         END DO
      END DO
 !!$     CALL scalar_mass_balance(delta_t)
-!!$     IF (source_doing_sed) CALL bed_accounting(delta_t)
+     IF (source_doing_sed) CALL bed_accounting(delta_t)
   END IF
 !!$
 !!$  IF (do_accumulate) CALL accumulate(current_time%time)

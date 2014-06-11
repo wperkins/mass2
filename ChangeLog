@@ -1,3 +1,38 @@
+2014-06-10  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* scalar_solve.f90 (transport_precalc): need to compute bedshear
+
+	* plot_cgns.f90 (plot_cgns_write): output some bed variables; more
+	needed 
+
+	* particulate_source.f90 (part_bed_exch, part_dissolve_bed_exch):
+	enable the old calculations
+
+	* mass2_parallel.f90 (update): turn bed accounting back on
+
+	* hydro_solve.f90: add some GA after gets
+
+	* hotstart.f90: add some GA after gets
+
+	* block_parallel.f90 (block_module): require an index for the
+	variable 
+
+	* block_initialization.f90: add some GA sync's after gets
+
+	* bed_functions.f90 (bed_post_timestep): add
+
+	* Makefile.am: adjust some object/module dependencies 
+
+2014-06-09  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* sediment_source.f90 (sediment_erosion): turn erosion on
+	(sediment_source_term): deposition and erosion rates for output
+	are not set here
+
+2014-06-08  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* bed.f90 (bed_collect): added
+
 2014-05-08  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* hydro_solve.f90 (depth_solve): initialize mass_source each call

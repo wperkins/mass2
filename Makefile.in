@@ -23,7 +23,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-04-22 12:50:45 d3g096
+# Last Change: 2014-06-09 15:33:35 d3g096
 # -------------------------------------------------------------
 
 VPATH = @srcdir@
@@ -1038,6 +1038,7 @@ plot_cgns.$(OBJEXT): plot_cgns.f90 \
 	block_hydro_bc.$(OBJEXT) \
 	scalars_module.$(OBJEXT) \
 	scalars_source.$(OBJEXT)  \
+	bed.$(OBJEXT) \
 	$(TSLIB)
 plot_output.$(OBJEXT): plot_output.f90 plot_cgns.$(OBJEXT) mass2_config.$(OBJEXT) block_parallel.$(OBJEXT)
 profile_init.$(OBJEXT): profile_init.f90 mass2_config.$(OBJEXT) block_parallel.$(OBJEXT) $(TSLIB)
@@ -1045,6 +1046,7 @@ realequal.$(OBJEXT): realequal.f90
 scalar_bc.$(OBJEXT): scalar_bc.f90 table_bc_module.$(OBJEXT) mass2_config.$(OBJEXT) $(TSLIB)
 scalar_solve.$(OBJEXT): scalar_solve.f90 \
 	globals.$(OBJEXT) \
+	block_hydro.$(OBJEXT) \
 	block_hydro_bc.$(OBJEXT) \
 	scalars_module.$(OBJEXT) \
 	scalars_source.$(OBJEXT) \
@@ -1081,6 +1083,7 @@ temperature_source.$(OBJEXT): temperature_source.f90 \
 transport_only_module.$(OBJEXT): transport_only_module.f90 hotstart.$(OBJEXT)
 
 mass2_parallel.$(OBJEXT): mass2_parallel.f90 \
+	bed.$(OBJEXT) \
 	block_grid.$(OBJEXT) \
 	block_initialization.$(OBJEXT) \
 	mass2_config.$(OBJEXT) \

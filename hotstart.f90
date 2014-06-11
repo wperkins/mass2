@@ -96,6 +96,7 @@ CONTAINS
           
           CALL hotstart_read_var(hotstart_iounit, block(iblk)%bv_eddy, &
                &block(iblk)%buffer, BLK_VAR_CURRENT)
+          
        END DO
        
        IF( (do_transport).AND.(do_transport_restart) )THEN
@@ -128,7 +129,6 @@ CONTAINS
                 CALL hotstart_read_var(hotstart_iounit, &
                      &species(i)%scalar(iblk)%concvar, block(iblk)%buffer, &
                      &BLK_VAR_OLDOLD)
-                CALL block_var_iterate(species(i)%scalar(iblk)%concvar)
              END DO
           END DO
           
@@ -176,6 +176,7 @@ CONTAINS
              CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_OLDOLD)
              CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_OLD)
              CALL block_var_get(species(i)%scalar(iblk)%concvar, BLK_VAR_CURRENT)
+             CALL block_var_sync()
           END DO
        END IF
     END DO

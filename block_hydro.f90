@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: 2014-05-08 10:22:28 d3g096
+! Last Change: 2014-06-09 15:05:50 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -629,6 +629,7 @@ CONTAINS
     CALL block_var_put_logical(blk%bv_isdry, blk%isdry)
     CALL block_var_sync()
     CALL block_var_get_logical(blk%bv_isdry, blk%isdry)
+    CALL block_var_sync()
 
   END SUBROUTINE check_wetdry
 

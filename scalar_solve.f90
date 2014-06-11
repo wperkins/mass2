@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-06-08 11:38:51 d3g096
+! Last Change: 2014-06-09 15:31:48 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -17,6 +17,7 @@
 MODULE scalar_solve_module
 
   USE globals
+  USE block_hydro
   USE block_hydro_bc
   USE scalars
   USE scalars_source
@@ -140,6 +141,8 @@ CONTAINS
           blk%apo(i, j) = blk%hp1(i,j)*blk%hp2(i,j)*blk%depthold(i,j)/delta_t
        END DO
     END DO
+
+    CALL bedshear(blk)
 
   END SUBROUTINE transport_precalc
 
@@ -296,6 +299,7 @@ CONTAINS
     CALL block_var_put(scalar%concvar, BLK_VAR_CURRENT)
     CALL block_var_sync()
     CALL block_var_get(scalar%concvar, BLK_VAR_CURRENT)
+    CALL block_var_sync()
 
   END SUBROUTINE scalar_solve
 

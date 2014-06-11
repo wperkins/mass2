@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: 2014-05-08 10:29:34 d3g096
+! Last Change: 2014-06-08 13:39:27 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -88,6 +88,7 @@ CONTAINS
           CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
           CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
           CALL block_var_get_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
+          CALL block_var_sync()
           
           !-------------------------------------------------------------------------
 
@@ -562,6 +563,7 @@ CONTAINS
     CALL block_var_sync()
     CALL block_var_get(blk%bv_uvel, BLK_VAR_STAR)
     CALL block_var_get(blk%bv_lud)
+    CALL block_var_sync()
 
   END SUBROUTINE uvel_solve
 
@@ -903,7 +905,7 @@ CONTAINS
     CALL block_var_sync()
     CALL block_var_get(blk%bv_vvel, BLK_VAR_STAR)
     CALL block_var_get(blk%bv_lvd)
-    
+    CALL block_var_sync()
 
   END SUBROUTINE vvel_solve
 

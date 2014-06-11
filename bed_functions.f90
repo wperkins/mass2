@@ -13,7 +13,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created September  6, 2000 by William A. Perkins
-! Last Change: 2014-04-22 11:16:57 d3g096
+! Last Change: 2014-06-09 08:34:16 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -29,7 +29,7 @@ DOUBLE PRECISION FUNCTION bed_max_erosion(ifract, iblk, i, j, deltat)
 
   DOUBLE PRECISION :: mass
 
-  mass = bed(iblk)%sediment(ifract, i, j)
+  mass = bed(iblk)%sediment(i, j, ifract)
 
   bed_max_erosion = mass/deltat
 
@@ -66,7 +66,7 @@ DOUBLE PRECISION FUNCTION bed_part_conc(ispecies, ifract, iblk, i, j)
 
   INTEGER, INTENT(IN) ::ispecies, ifract,  iblk, i, j
 
-  IF (bed(iblk)%sediment(ifract, i, j) .GT. 0.0d0) THEN
+  IF (bed(iblk)%sediment(i, j, ifract) .GT. 0.0d0) THEN
      bed_part_conc = bed(iblk)%particulate(i, j, ispecies) / &
           &bed(iblk)%sediment(i, j, ifract)
   ELSE
@@ -95,7 +95,7 @@ DOUBLE PRECISION FUNCTION bed_part_vconc(ispecies, iblk, i, j)
 
   if (.NOT. source_doing_sed) RETURN
   
-  IF (bed(iblk)%depth(i, j) .LE. 0.0) RETURN
+  IF (bed(iblk)%depth(i, j, 1) .LE. 0.0) RETURN
   
   DO ipart = 1, max_species
      SELECT CASE (scalar_source(ipart)%srctype)
@@ -107,7 +107,7 @@ DOUBLE PRECISION FUNCTION bed_part_vconc(ispecies, iblk, i, j)
      END SELECT
   END DO
   
-  bed_part_vconc = bed_part_vconc/bed(iblk)%depth(i, j)
+  bed_part_vconc = bed_part_vconc/bed(iblk)%depth(i, j, 1)
 
   RETURN
 END FUNCTION bed_part_vconc
@@ -126,10 +126,10 @@ DOUBLE PRECISION FUNCTION bed_pore_conc(ispecies, iblk, i, j)
 
   bed_pore_conc = 0.0
   if (.NOT. source_doing_sed) RETURN
-  IF (bed(iblk)%depth(i, j) .LE. 0.0) RETURN
+  IF (bed(iblk)%depth(i, j, 1) .LE. 0.0) RETURN
 
   bed_pore_conc = bed(iblk)%pore(i, j, ispecies)/&
-       &bed(iblk)%depth(i, j)/bed(iblk)%porosity(i, j)
+       &bed(iblk)%depth(i, j, 1)/bed(iblk)%porosity(i, j, 1)
 
   RETURN
 END FUNCTION bed_pore_conc
@@ -146,7 +146,7 @@ DOUBLE PRECISION FUNCTION bed_porosity(iblk, i, j)
 
   INTEGER, INTENT(IN) :: iblk, i, j
 
-  bed_porosity = bed(iblk)%porosity(i, j)
+  bed_porosity = bed(iblk)%porosity(i, j, 1)
 
 END FUNCTION bed_porosity
 
@@ -161,7 +161,7 @@ DOUBLE PRECISION FUNCTION bed_depth(iblk, i, j)
 
   INTEGER, INTENT(IN) :: iblk, i, j
 
-  bed_depth = bed(iblk)%depth(i, j)
+  bed_depth = bed(iblk)%depth(i, j, 1)
 
 END FUNCTION bed_depth
 
@@ -192,3 +192,27 @@ DOUBLE PRECISION FUNCTION bed_pore_flux(iblk, ispecies, i, j)
 
   bed_pore_flux = bed(iblk)%poreflux(i, j, ispecies)
 END FUNCTION bed_pore_flux
+
+
+! ----------------------------------------------------------------
+! SUBROUTINE bed_post_timestep
+! ----------------------------------------------------------------
+SUBROUTINE bed_post_timestep()
+
+  USE bed_module
+  
+  IMPLICIT NONE
+  
+  INTEGER :: iblock
+  
+  DO iblock = 1, max_blocks
+     CALL bed_var_put(bed(iblock)%bv_pore)
+     CALL bed_var_put(bed(iblock)%bv_particulate)
+     CALL bed_var_put(bed(iblock)%bv_sediment)
+     CALL bed_var_put(bed(iblock)%bv_porosity)
+     CALL bed_var_put(bed(iblock)%bv_depth)
+     CALL bed_var_put(bed(iblock)%bv_poreflux)
+  END DO
+  
+END SUBROUTINE bed_post_timestep
+

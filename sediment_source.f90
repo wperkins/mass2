@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 23, 2000 by William A. Perkins
-! Last Change: 2014-06-04 13:53:21 d3g096
+! Last Change: 2014-06-09 15:49:14 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE sediment_source
@@ -227,9 +227,9 @@ CONTAINS
     shear = block(iblk)%shear(i,j)
 
     IF (shear > rec%eshear) THEN
-!!$       sediment_erosion = &
-!!$            &MIN((shear/rec%eshear - 1.0)*rec%erode,&
-!!$            &bed_max_erosion(rec%ifract, iblk, i, j, delta_t))
+       sediment_erosion = &
+            &MIN((shear/rec%eshear - 1.0)*rec%erode,&
+            &bed_max_erosion(rec%ifract, iblk, i, j, delta_t))
     END IF
   END FUNCTION sediment_erosion
 
@@ -264,11 +264,6 @@ CONTAINS
     TYPE(sediment_source_rec), INTENT(IN) :: rec
     INTEGER, INTENT(IN) :: iblk, i, j
     DOUBLE PRECISION :: sconc
-
-    rec%block(iblk)%deposition(i, j) = &
-         &sediment_deposition(rec, iblk, i, j, sconc)
-    rec%block(iblk)%erosion(i, j) = &
-         &sediment_erosion(rec, iblk, i, j)
 
     sediment_source_term = &
          &rec%block(iblk)%erosion(i, j) - &

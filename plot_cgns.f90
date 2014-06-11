@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2014-06-04 13:30:05 d3g096
+! Last Change: 2014-06-10 14:43:43 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -549,6 +549,7 @@ CONTAINS
 
     USE scalars
     USE scalars_source
+    USE bed_module
 
     IMPLICIT NONE
 
@@ -754,15 +755,22 @@ CONTAINS
 !!$                     &"tdgsat",  'Total Dissolved Gas Saturation', "percent") 
 !!$
 !!$
-!!$             CASE (GEN)
-!!$                                ! if we have a bed, report the amounts
-!!$                                ! of dissolved scalars in the bed pore
-!!$                                ! water
-!!$
-!!$                IF (source_doing_sed) THEN
-!!$
-!!$                   ! dissolved contaminant mass in bed pores
-!!$
+             CASE (GEN)
+                                ! if we have a bed, report the amounts
+                                ! of dissolved scalars in the bed pore
+                                ! water
+
+                IF (source_doing_sed) THEN
+
+                   ! dissolved contaminant mass in bed pores
+
+                   CALL bed_collect(block(iblock), bed(iblock)%bv_pore, ispecies)
+                   CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
+                        &block(iblock)%buffer, &
+                        &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                        &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                        &"mass")
+
 !!$                   CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
 !!$                        &accum_block(iblock)%bed%mass(ispecies)%sum, &
 !!$                        &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
@@ -777,7 +785,7 @@ CONTAINS
 !!$                        &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
 !!$                        &"mass/foot^2")
 !!$                   
-!!$                   ! dissolved contaminant mass per unit volume bed pore water
+                   ! dissolved contaminant mass per unit volume bed pore water
 !!$
 !!$                   CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
 !!$                        &accum_block(iblock)%bed%pore(ispecies)%sum, &
@@ -786,9 +794,9 @@ CONTAINS
 !!$                        &scalar_source(ispecies)%units, &
 !!$                        &scalar_source(ispecies)%conversion)
 !!$
-!!$
-!!$                END IF
-!!$                   
+
+                END IF
+                   
              CASE (SED)
                                 ! If we are doing sediment, output
                                 ! sediment erosion and deposition
@@ -817,6 +825,14 @@ CONTAINS
 
                                 ! bed total mass
 
+                CALL bed_collect(block(iblock), bed(iblock)%bv_sediment, ifract)
+                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                     &block(iblock)%buffer, &
+                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                     &"mass")
+
+
 !!$                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
 !!$                     &accum_block(iblock)%bed%mass(ispecies)%sum, &
 !!$                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
@@ -831,9 +847,30 @@ CONTAINS
 !!$                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
 !!$                     &"mass/foot^2")
 
-!!$             CASE (PART)
-!!$                                ! If we are doing particulate phases,
-!!$                                ! output erosion and deposition rates
+             CASE (PART)
+                                ! If we are doing particulate phases,
+                                ! output erosion and deposition rates
+
+                                ! particulate deposition rate
+
+                CALL block_collect(block(iblock), &
+                     &scalar_source(ispecies)%part_param%block(iblock)%bv_bedexch)
+                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                     &block(iblock)%buffer, &
+                     &TRIM(scalar_source(ispecies)%name) // '-depos', &
+                     &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description), &
+                     &"mass/foot^2/second") 
+
+                                ! particulate bed mass
+                
+                CALL bed_collect(block(iblock), bed(iblock)%bv_particulate, ispecies)
+                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+                     &block(iblock)%buffer, &
+                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                     &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
+                     &"mass")
+
+
 !!$
 !!$                                ! particulate deposition rate
 !!$
@@ -864,11 +901,12 @@ CONTAINS
        END IF
 
                                 ! bed depth if called for
-!!$       IF (source_doing_sed) THEN
-!!$          CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
-!!$               &accum_block(iblock)%bed%depth%sum, &
-!!$               &"beddepth", "Depth of Bed Sediments", "feet")
-!!$       END IF
+       IF (source_doing_sed) THEN
+          CALL bed_collect(block(iblock), bed(iblock)%bv_depth)
+          CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
+               &block(iblock)%buffer, &
+               &"beddepth", "Depth of Bed Sediments", "feet")
+       END IF
 
     END DO
 

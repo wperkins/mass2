@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: 2014-04-22 11:14:30 d3g096
+! Last Change: 2014-06-09 14:27:39 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -48,15 +48,17 @@ MODULE bed_module
      TYPE (bed_var), POINTER :: bv_sediment
      DOUBLE PRECISION, POINTER :: sediment(:,:,:)
      TYPE (bed_var), POINTER :: bv_porosity
-     DOUBLE PRECISION, POINTER :: porosity(:,:)
+     DOUBLE PRECISION, POINTER :: porosity(:,:,:)
      TYPE (bed_var), POINTER :: bv_depth
-     DOUBLE PRECISION, POINTER :: depth(:,:)  ! feet
+     DOUBLE PRECISION, POINTER :: depth(:,:,:)  ! feet
 
                                 ! diffusive and advective flux of
                                 ! scalar from the bed to the water
                                 ! column
      TYPE (bed_var), POINTER :: bv_poreflux
      DOUBLE PRECISION, POINTER :: poreflux(:,:,:)
+
+     DOUBLE PRECISION, POINTER :: local_buffer(:, :)
   END TYPE bed_block_rec
 
   TYPE (bed_block_rec), ALLOCATABLE :: bed(:)
@@ -65,59 +67,86 @@ MODULE bed_module
 CONTAINS
 
   ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_owned_window
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_owned_window(bed, imin, imax, jmin, jmax)
+
+    IMPLICIT NONE
+    TYPE (bed_block_rec), INTENT(IN) :: bed
+    INTEGER, INTENT(OUT) :: imin, imax, jmin, jmax
+
+    imin = bed%bv_pore%base%imin_owned
+    imax = bed%bv_pore%base%imax_owned
+    jmin = bed%bv_pore%base%jmin_owned
+    jmax = bed%bv_pore%base%jmax_owned
+
+  END SUBROUTINE bed_owned_window
+
+
+  ! ----------------------------------------------------------------
   ! SUBROUTINE bed_initialize
   ! ----------------------------------------------------------------
   SUBROUTINE bed_initialize()
 
     IMPLICIT NONE
 
-    INTEGER :: iblk, i, j, ifract
+    INTEGER :: iblk, i, j, ifract, ispecies
     INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: bdens
+    DOUBLE PRECISION :: dtmp, ptmp, stmp
 
     ALLOCATE(bed(max_blocks))
     DO iblk = 1, max_blocks
+
        bed(iblk)%bv_pore => &
             &bed_var_allocate("bed pore concentration", &
             &block(iblk)%xmax, block(iblk)%ymax, max_species)
        bed(iblk)%pore => bed(iblk)%bv_pore%current
+
        bed(iblk)%bv_particulate => &
             &bed_var_allocate("bed particulate concentration", &
             &block(iblk)%xmax, block(iblk)%ymax, max_species)
        bed(iblk)%particulate => bed(iblk)%bv_particulate%current
+
        bed(iblk)%bv_sediment => &
             &bed_var_allocate("bed sediment concentration", &
             &block(iblk)%xmax, block(iblk)%ymax, sediment_fractions)
        bed(iblk)%sediment => bed(iblk)%bv_sediment%current
+
        bed(iblk)%bv_depth => &
             &bed_var_allocate("bed depth", &
             &block(iblk)%xmax, block(iblk)%ymax, 1)
-       bed(iblk)%depth => bed(iblk)%bv_depth%current(:,:,1)
+       bed(iblk)%depth => bed(iblk)%bv_depth%current
+!!$       WRITE (*,*) SHAPE(bed(iblk)%bv_depth%current), ": ", &
+!!$            &SHAPE(bed(iblk)%depth)
+!!$       WRITE (*,*) LBOUND(bed(iblk)%bv_depth%current), ": ", &
+!!$            &LBOUND(bed(iblk)%bv_depth%current)
+!!$       WRITE (*,*) UBOUND(bed(iblk)%bv_depth%current), ": ", &
+!!$            &UBOUND(bed(iblk)%bv_depth%current)
+
        bed(iblk)%bv_porosity => &
             &bed_var_allocate("bed porosity", &
             &block(iblk)%xmax, block(iblk)%ymax, 1)
-       bed(iblk)%porosity => bed(iblk)%bv_porosity%current(:, :, 1)
+       bed(iblk)%porosity => bed(iblk)%bv_porosity%current
+
        bed(iblk)%bv_poreflux => &
             &bed_var_allocate("bed pore flux", &
             &block(iblk)%xmax, block(iblk)%ymax, max_species)
        bed(iblk)%poreflux => bed(iblk)%bv_poreflux%current
 
-!!$       ALLOCATE(bed(iblk)%pore(max_species, imin:imax, jmin:jmax))
-!!$       ALLOCATE(bed(iblk)%particulate(max_species, imin:imax, jmin:jmax))
-!!$       ALLOCATE(bed(iblk)%sediment(sediment_fractions, imin:imax, jmin:jmax))
-!!$       ALLOCATE(bed(iblk)%depth(imin:imax, jmin:jmax))
-!!$       ALLOCATE(bed(iblk)%porosity(imin:imax, jmin:jmax))
-!!$       ALLOCATE(bed(iblk)%poreflux(max_species, imin:imax, jmin:jmax))
+       CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+       ALLOCATE(bed(iblk)%local_buffer(imin:imax, jmin:jmax))
+
 
                                 ! initialize with default values (from
                                 ! the configuration file?)
 
        bed(iblk)%pore = 0.0
        bed(iblk)%particulate = 0.0
-       bed(iblk)%sediment = 0.0
        bed(iblk)%porosity = bed_default_porosity
        bed(iblk)%depth = bed_initial_depth
        bed(iblk)%poreflux = 0.0
+       bed(iblk)%sediment = 0.0
     END DO
 
     IF (read_bed_init) THEN
@@ -135,18 +164,23 @@ CONTAINS
        END DO
        
        DO iblk = 1, max_blocks
+          CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
           bed(iblk)%sediment = 0.0
-          DO i = 2, block(iblk)%xmax
-             DO j = 2, block(iblk)%ymax
-                DO ifract = 1, sediment_fractions
-                   bed(iblk)%sediment(i, j, ifract) = (1.0/sediment_fractions)* &
-                        &bed(iblk)%depth(i,j)/(bdens/(1 - bed(iblk)%porosity(i,j)))
+          DO ifract = 1, sediment_fractions
+             DO i = imin, imax
+                DO j = jmin, jmax
+                   ptmp = bed(iblk)%porosity(i,j,1)
+                   dtmp = bed(iblk)%depth(i,j,1)
+                   stmp = (1.0/sediment_fractions)*dtmp/(bdens/(1 - ptmp))
+                   bed(iblk)%sediment(i, j, ifract) = stmp
                 END DO
              END DO
+             CALL bed_var_put(bed(iblk)%bv_sediment, ifract)
           END DO
        END DO
-
     END IF
+
+    CALL bed_put()
 
   END SUBROUTINE bed_initialize
 
@@ -161,12 +195,14 @@ CONTAINS
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: deltat
     INTEGER :: iblk, ifract, i, j, sedidx
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: sconc, e, d
     CHARACTER (LEN=1024) :: buffer
 
     DO iblk = 1, max_blocks
-       DO i = 2, block(iblk)%xmax
-          DO j = 2, block(iblk)%ymax
+       CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+       DO i = imin, imax
+          DO j = jmin, jmax
              DO ifract = 1, sediment_fractions
                 sedidx = sediment_scalar_index(ifract)
                 sconc = species(sedidx)%scalar(iblk)%conc(i,j)
@@ -237,6 +273,7 @@ CONTAINS
 
     DOUBLE PRECISION, INTENT(IN) :: deltat
     INTEGER :: ispecies, ifract, iblk, i, j, sphase, dphase
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: dconc, bconc, pconc, sconc
     CHARACTER (LEN=1024) :: buffer
 
@@ -249,8 +286,9 @@ CONTAINS
           sphase = scalar_source(ispecies)%part_param%sedidx
           ifract = scalar_source(sphase)%sediment_param%ifract
           DO iblk = 1, max_blocks
-             DO i = 2, block(iblk)%xmax 
-                DO j = 2, block(iblk)%ymax
+             CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
+             DO i = imin, imax
+                DO j = jmin, jmax
                    bconc = bed_part_conc(ispecies, &
                         &scalar_source(sphase)%sediment_param%ifract, iblk, i, j)
                    dconc = species(dphase)%scalar(iblk)%conc(i,j)
@@ -276,7 +314,7 @@ CONTAINS
 
                                 ! check to make sure masses do not go negative
 
-                   IF (bed(iblk)%sediment(ifract, i, j) .LE. 0.0) THEN
+                   IF (bed(iblk)%sediment(i, j, ifract) .LE. 0.0) THEN
                       bed(iblk)%particulate(i, j, ispecies) = 0.0
                    END IF
                    IF (bed(iblk)%particulate(i, j, ispecies) .LT. 0.0) THEN
@@ -348,41 +386,6 @@ CONTAINS
   END FUNCTION bed_pore_exchange
 
 
-!!$  ! ----------------------------------------------------------------
-!!$  ! SUBROUTINE bed_pore_exchange
-!!$  ! ----------------------------------------------------------------
-!!$  SUBROUTINE bed_pore_exchange(deltat)
-!!$
-!!$    IMPLICIT NONE
-!!$
-!!$    DOUBLE PRECISION, INTENT(IN) :: deltat
-!!$    INTEGER :: ispecies, iblk, i, j
-!!$    DOUBLE PRECISION :: dconc, pconc, bdepth
-!!$
-!!$    INCLUDE 'bed_functions.inc'
-!!$
-!!$    DO ispecies = 1, max_species
-!!$       SELECT CASE (scalar_source(ispecies)%srctype)
-!!$       CASE (GEN)
-!!$          DO iblk = 1, max_blocks
-!!$             DO i = 2, block(iblk)%xmax 
-!!$                DO j = 2, block(iblk)%ymax
-!!$                   bdepth = bed(iblk)%depth(i, j)
-!!$                   pconc = bed_pore_conc(ispecies, iblk, i, j)
-!!$                   dconc = species(ispecies)%scalar(iblk)%conc(i,j)
-!!$                   bed(iblk)%pore(ispecies, i, j) = &
-!!$                        &bed(iblk)%pore(ispecies, i, j) - &
-!!$                        &generic_bedpore_exch(scalar_source(ispecies)%generic_param, &
-!!$                        &iblk, i, j, dconc, pconc)*deltat
-!!$                END DO
-!!$             END DO
-!!$          END DO
-!!$       END SELECT
-!!$
-!!$    END DO
-!!$
-!!$  END SUBROUTINE bed_pore_exchange
-
   ! ----------------------------------------------------------------
   ! SUBROUTINE bed_decay
   ! ----------------------------------------------------------------
@@ -393,11 +396,13 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN) :: deltat
     DOUBLE PRECISION :: lamda, halflife
     INTEGER :: iblk, i, j, ispecies, disidx
+    INTEGER :: imin, imax, jmin, jmax
     
-    DO iblk = 1, max_blocks
-       DO i = 2, block(iblk)%xmax 
-          DO j = 2, block(iblk)%ymax 
-             DO ispecies = 1, max_species
+    DO ispecies = 1, max_species
+       DO iblk = 1, max_blocks
+          CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+          DO i = imin, imax
+             DO j = jmin, jmax
                 SELECT CASE (scalar_source(ispecies)%srctype)
                 CASE (GEN)
                    halflife = scalar_source(ispecies)%generic_param%halflife
@@ -431,18 +436,20 @@ CONTAINS
     IMPLICIT NONE
     
     INTEGER :: iblk, i, j, ifract, ispec
+    INTEGER :: imin, imax, jmin, jmax
     DOUBLE PRECISION :: vs
 
     DO iblk = 1, max_blocks
-       DO i = 2, block(iblk)%xmax
-          DO j = 2, block(iblk)%ymax
+       CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+       DO i = imin, imax
+          DO j = jmin, jmax
              vs = 0.0
              DO ifract = 1, sediment_fractions
                 ispec = sediment_scalar_index(ifract)
                 vs = vs + bed(iblk)%sediment(i,j,ifract)/&
                      &scalar_source(ispec)%sediment_param%pdens
              END DO
-             bed(iblk)%depth(i,j) = vs/(1 - bed(iblk)%porosity(i,j))
+             bed(iblk)%depth(i,j,1) = vs/(1 - bed(iblk)%porosity(i,j,1))
           END DO
        END DO
 
@@ -452,6 +459,8 @@ CONTAINS
 !!$       bed(iblk)%depth(:,block(iblk)%ymax+1) = bed(iblk)%depth(:,block(iblk)%ymax)
 !!$       bed(iblk)%depth(1,:) = bed(iblk)%depth(2,:)
 !!$       bed(iblk)%depth(block(iblk)%xmax+1,:) = bed(iblk)%depth(block(iblk)%xmax,:)
+
+       CALL bed_var_put(bed(iblk)%bv_depth)
     END DO
   
   END SUBROUTINE bed_compute_depth
@@ -469,6 +478,7 @@ CONTAINS
 
     INTEGER :: iblk, i, j
     INTEGER :: ifract, ispecies, disidx, sedidx
+    INTEGER :: imin, imax, jmin, jmax
 
                                 ! cmass is the total contaminant mass
                                 ! in the bed (per unit area) indexed
@@ -481,8 +491,9 @@ CONTAINS
 
 
     DO iblk = 1, max_blocks
-       DO i = 2, block(iblk)%xmax 
-          DO j = 2, block(iblk)%ymax 
+       CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+       DO i = imin, imax
+          DO j = jmin, jmax
 
              bdens = 0.0
              sum = 0.0
@@ -493,7 +504,7 @@ CONTAINS
              END DO
 
              IF (bdens .GT. 0.0) THEN
-                bdens = sum/bdens*(1.0 - bed(iblk)%porosity(i, j))
+                bdens = sum/bdens*(1.0 - bed(iblk)%porosity(i, j, 1))
              ELSE 
                 bdens = 0.0
              END IF
@@ -530,7 +541,7 @@ CONTAINS
                       IF (scalar_source(ispecies)%generic_param%issorbed .AND. &
                            &kdsum(ispecies) .GT. 0.0) THEN
                          bed(iblk)%pore(i, j, ispecies) = cmass(ispecies)/&
-                              &(1 + bdens/bed(iblk)%porosity(i,j)*kdsum(ispecies))
+                              &(1 + bdens/bed(iblk)%porosity(i,j,1)*kdsum(ispecies))
                       END IF
                    END SELECT
                 END DO
@@ -546,7 +557,7 @@ CONTAINS
                       ifract =  scalar_source(sedidx)%sediment_param%ifract
                       bed(iblk)%particulate(i, j, ispecies) = bdens*&
                            &bed(iblk)%pore(i, j, disidx)/&
-                           &bed(iblk)%porosity(i,j)*&
+                           &bed(iblk)%porosity(i,j,1)*&
                            &scalar_source(ispecies)%part_param%bedkd*&
                            &(bed(iblk)%sediment(i, j, ifract)/sum)
                    END SELECT
@@ -627,7 +638,7 @@ CONTAINS
     CALL bed_sediment_exchange(delta_t)
     CALL bed_decay(delta_t)
     CALL bed_equilibrate()
-  
+    CALL bed_put()
 
   END SUBROUTINE bed_accounting
 
@@ -735,6 +746,7 @@ CONTAINS
     DOUBLE PRECISION, ALLOCATABLE :: fract(:)
     DOUBLE PRECISION :: depth, bdens, sum
     INTEGER :: istat, ijunk, jjunk
+    INTEGER :: imin, imax, jmin, jmax
     INTEGER :: iblk, i, j, ifract
 
     CHARACTER (LEN=1024) :: filename, buffer
@@ -760,8 +772,10 @@ CONTAINS
             &' from ', TRIM(bed_init_file)
        CALL status_message(buffer)
 
-       DO i = 2, block(iblk)%xmax
-          DO j = 2, block(iblk)%ymax
+       CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
+       DO i = imin, imax
+          DO j = jmin, jmax
+             
              IF (block_var_base_owns(block(iblk)%varbase, i, j)) CONTINUE 
              fract = 0.0
              READ(grid_iounit, *) ijunk, jjunk, depth, fract
@@ -771,7 +785,7 @@ CONTAINS
                 bed(iblk)%sediment(i, j, :) = 0.0
              ELSE
 
-                bed(iblk)%depth(i, j) = depth
+                bed(iblk)%depth(i, j, 1) = depth
 
                                 ! in the fraction do not sum to 1.0,
                                 ! we're going to have trouble, so
@@ -788,7 +802,7 @@ CONTAINS
                    bdens = bdens + fract(ifract)/&
                         &scalar_source(sediment_scalar_index(ifract))%sediment_param%pdens
                 END DO
-                bdens = bdens/(1.0 - bed(iblk)%porosity(i, j))
+                bdens = bdens/(1.0 - bed(iblk)%porosity(i, j, 1))
 
                                 ! compute sediment masses
 
@@ -809,6 +823,26 @@ CONTAINS
     CALL bed_compute_depth()
 
   END SUBROUTINE bed_read_init
+
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_collect
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_collect(blk, var, index)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    TYPE (bed_var), INTENT(IN) :: var
+    INTEGER, INTENT(IN), OPTIONAL :: index
+
+    INTEGER :: myindex
+    myindex = 1
+    IF (PRESENT(index)) myindex = index
+
+    CALL bed_var_get_all(var, blk%buffer, myindex)
+
+  END SUBROUTINE bed_collect
+
 
 !!$  ! ----------------------------------------------------------------
 !!$  ! SUBROUTINE bed_dist_bedsrc
@@ -947,6 +981,31 @@ CONTAINS
 !!$
 !!$  END SUBROUTINE bed_dist_bedsrc
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE bed_put
+  ! ----------------------------------------------------------------
+  SUBROUTINE bed_put()
+
+    IMPLICIT NONE
+
+    INTEGER :: iblk, ispecies, ifract
+
+    DO iblk = 1, max_blocks
+       DO ispecies = 1, max_species
+          CALL bed_var_put(bed(iblk)%bv_pore, ispecies)
+          CALL bed_var_put(bed(iblk)%bv_particulate, ispecies)
+       END DO
+       DO ifract = 1, sediment_fractions
+          CALL bed_var_put(bed(iblk)%bv_sediment, ifract)
+       END DO
+       CALL bed_var_put(bed(iblk)%bv_porosity)
+       CALL bed_var_put(bed(iblk)%bv_depth)
+       CALL bed_var_put(bed(iblk)%bv_poreflux)
+    END DO
+
+    CALL ga_sync()
+
+  END SUBROUTINE bed_put
 
 
 END MODULE bed_module

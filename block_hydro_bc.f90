@@ -1690,6 +1690,7 @@ CONTAINS
     CALL block_var_get(block(iblock)%bv_kx_diff)
     CALL block_var_get(block(iblock)%bv_ky_diff)
     CALL block_var_get(block(iblock)%bv_chezy)
+    CALL block_var_sync()
 
   END SUBROUTINE fillghost
 
