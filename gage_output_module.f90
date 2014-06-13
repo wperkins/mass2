@@ -309,7 +309,7 @@ CONTAINS
                 WRITE(gage_iounit, 102, ADVANCE='NO')&
                      &scalar_source(j)%part_param%block(iblock)%bedexch(icell, jcell)
                 WRITE(gage_iounit, 102, ADVANCE='NO')&
-                     &bed(iblock)%sediment(icell, jcell, j)* &
+                     &bed(iblock)%particulate(icell, jcell, j)* &
                      &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
                 WRITE(gage_iounit, 102, ADVANCE='NO')&
                      &bed(iblock)%particulate(icell, jcell, j)
