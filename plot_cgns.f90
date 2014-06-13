@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2014-06-10 14:43:43 d3g096
+! Last Change: 2014-06-11 14:57:39 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -762,14 +762,15 @@ CONTAINS
 
                 IF (source_doing_sed) THEN
 
-                   ! dissolved contaminant mass in bed pores
+                   ! dissolved contaminant concentration in bed pores
 
                    CALL bed_collect(block(iblock), bed(iblock)%bv_pore, ispecies)
                    CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
                         &block(iblock)%buffer, &
-                        &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
-                        &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
-                        &"mass")
+                        &TRIM(scalar_source(ispecies)%name) // '-pore', &
+                        &"Concentration of " // TRIM(scalar_source(ispecies)%description) // " in Bed Pores", &
+                        &scalar_source(ispecies)%units, &
+                        &scalar_source(ispecies)%conversion)
 
 !!$                   CALL plot_cgns_write_var(iblock, solidx, xmax,  ymax, &
 !!$                        &accum_block(iblock)%bed%mass(ispecies)%sum, &
@@ -823,15 +824,14 @@ CONTAINS
                      &"Rate of Erosion of " // TRIM(scalar_source(ispecies)%description),&
                      &"mass/foot^2/second")
 
-                                ! bed total mass
+                                ! bed mass per unit area
 
                 CALL bed_collect(block(iblock), bed(iblock)%bv_sediment, ifract)
                 CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                      &block(iblock)%buffer, &
-                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                     &TRIM(scalar_source(ispecies)%name) // '-bed', &
                      &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
-                     &"mass")
-
+                     &"mass/foot^2")
 
 !!$                CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
 !!$                     &accum_block(iblock)%bed%mass(ispecies)%sum, &
@@ -861,15 +861,14 @@ CONTAINS
                      &"Rate of Deposition of " // TRIM(scalar_source(ispecies)%description), &
                      &"mass/foot^2/second") 
 
-                                ! particulate bed mass
+                                ! particulate bed mass per unit area
                 
                 CALL bed_collect(block(iblock), bed(iblock)%bv_particulate, ispecies)
                 CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                      &block(iblock)%buffer, &
-                     &TRIM(scalar_source(ispecies)%name) // '-bedmass', &
+                     &TRIM(scalar_source(ispecies)%name) // '-bed', &
                      &"Mass of " // TRIM(scalar_source(ispecies)%description) // " in Bed", &
-                     &"mass")
-
+                     &"mass/foot^2")
 
 !!$
 !!$                                ! particulate deposition rate

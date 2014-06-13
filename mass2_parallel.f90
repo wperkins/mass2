@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-06-09 14:51:00 d3g096
+! Last Change: 2014-06-12 13:20:09 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -209,6 +209,7 @@ SUBROUTINE bc_init()
   USE bed_module
   USE met_data_module
   USE transport_only
+  USE scalar_mass
 
   IMPLICIT NONE
 
@@ -236,7 +237,7 @@ SUBROUTINE bc_init()
      CALL set_scalar_block_connections()
      CALL scalar_source_read()
      IF (source_doing_sed) CALL bed_initialize()
-  !    CALL scalar_mass_init()
+     CALL scalar_mass_init()
 
      ! transport only mode
      IF(.NOT. do_flow)THEN
@@ -314,6 +315,7 @@ SUBROUTINE update()
   USE block_module
   USE scalars
   USE bed_module
+  USE scalar_mass
 
   IMPLICIT NONE
 
@@ -339,7 +341,7 @@ SUBROUTINE update()
            CALL block_var_timestep(species(ispecies)%scalar(iblock)%concvar)
         END DO
      END DO
-!!$     CALL scalar_mass_balance(delta_t)
+     CALL scalar_mass_balance(delta_t)
      IF (source_doing_sed) CALL bed_accounting(delta_t)
   END IF
 !!$
@@ -357,6 +359,7 @@ SUBROUTINE output(mpi_rank)
   USE gage_output
   USE mass_source_output
   USE plot_output
+  USE scalar_mass
 
 
   IMPLICIT NONE
@@ -418,6 +421,7 @@ SUBROUTINE output(mpi_rank)
              &DBLE((current_time%time - start_time%time)*24), &
              &do_transport, salinity, baro_press)
         CALL mass_print(mpi_rank, current_time%date_string, current_time%time_string)
+        CALL scalar_mass_print(current_time)
 !!$        IF (debug) &
 !!$             &CALL block_flux_print(current_time%date_string, current_time%time_string)
 !!$

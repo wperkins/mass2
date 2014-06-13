@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-06-11 10:36:29 d3g096
+# Last Change: 2014-06-12 13:27:48 d3g096
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -56,6 +56,7 @@ mass2_SOURCES = \
 	scalar_bc.f90 \
 	scalar_solve.f90 \
 	scalars_module.f90 \
+	scalar_mass_balance.f90 \
 	scalars_source.f90 \
 	sediment_source.f90 \
 	solver_common.f90 \
@@ -159,6 +160,11 @@ scalars_module.$(OBJEXT): scalars_module.f90 \
 	globals.$(OBJEXT) \
 	block_var.$(OBJEXT) \
 	$(TSLIB)
+scalar_mass_balance.$(OBJEXT): scalar_mass_balance.f90 \
+	globals.$(OBJEXT) \
+	scalars_source.$(OBJEXT) \
+	bed.$(OBJEXT) \
+	$(TSLIB)
 scalars_source.$(OBJEXT): scalars_source.f90 \
 	generic_source.$(OBJEXT) \
 	temperature_source.$(OBJEXT) \
@@ -193,6 +199,7 @@ mass2_parallel.$(OBJEXT): mass2_parallel.f90 \
 	plot_output.$(OBJEXT) \
 	hotstart.$(OBJEXT) \
 	scalar_bc.$(OBJEXT) \
+	scalar_mass_balance.$(OBJEXT) \
 	scalars_module.$(OBJEXT) \
 	scalar_solve.$(OBJEXT) \
 	solver_petsc.$(OBJEXT) \
