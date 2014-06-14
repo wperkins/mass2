@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 17, 2010 by William A. Perkins
-! Last Change: 2014-04-22 07:50:05 d3g096
+! Last Change: 2014-06-13 15:04:30 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -248,7 +248,6 @@ CONTAINS
     lo = var%base%lo_owned
     hi = var%base%hi_owned
     ld = var%base%ld_owned
-
     lo(3) = myindex
     hi(3) = myindex
 

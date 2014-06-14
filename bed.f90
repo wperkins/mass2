@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: 2014-06-11 13:23:58 d3g096
+! Last Change: 2014-06-13 14:18:35 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -906,13 +906,13 @@ CONTAINS
        DO ispecies = 1, max_species
           CALL bed_var_put(bed(iblk)%bv_pore, ispecies)
           CALL bed_var_put(bed(iblk)%bv_particulate, ispecies)
+          CALL bed_var_put(bed(iblk)%bv_poreflux, ispecies)
        END DO
        DO ifract = 1, sediment_fractions
           CALL bed_var_put(bed(iblk)%bv_sediment, ifract)
        END DO
        CALL bed_var_put(bed(iblk)%bv_porosity)
        CALL bed_var_put(bed(iblk)%bv_depth)
-       CALL bed_var_put(bed(iblk)%bv_poreflux)
     END DO
 
     CALL ga_sync()

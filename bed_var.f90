@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 27, 2014 by William A. Perkins
-! Last Change: 2014-06-10 13:51:27 d3g096
+! Last Change: 2014-06-13 13:37:28 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE bed_variable
@@ -65,6 +65,7 @@ CONTAINS
 
     v%base => block_var_base_allocate(xmax, ymax, nslices);
     v%ga_handle = v%base%ga_handle;
+    v%slices = nslices
 
     imin = v%base%imin_owned
     imax = v%base%imax_owned

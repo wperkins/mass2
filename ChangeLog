@@ -1,5 +1,14 @@
 2014-06-13  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* plot_cgns.f90 (plot_cgns_write): used wrong index for collecting
+	particulate 
+
+	* bed_var.f90 (bed_var_allocate): initialize %slices
+
+	* bed_functions.f90 (bed_post_timestep): use bed_put()
+
+	* bed.f90 (bed_put): put pore flux for all species
+
 	* gage_output_module.f90 (gage_print_text): particulate bed mass
 	was incorrect
 

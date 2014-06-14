@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created April 17, 2003 by William A. Perkins
-! Last Change: 2014-06-13 08:26:06 d3g096
+! Last Change: 2014-06-13 14:27:56 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -574,11 +574,11 @@ CONTAINS
                    END IF
                 END SELECT
              END DO
+             IF (phases .GT. 1) THEN
+                WRITE(iounit, 130, ADVANCE='NO') tmass, tbedmass, tflux, terr
+             END IF
           END SELECT
           
-          IF (phases .GT. 1) THEN
-             WRITE(iounit, 130, ADVANCE='NO') tmass, tbedmass, tflux, terr
-          END IF
           WRITE(iounit, *)
           CLOSE(iounit)
        END IF

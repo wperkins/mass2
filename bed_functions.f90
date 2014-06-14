@@ -13,7 +13,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created September  6, 2000 by William A. Perkins
-! Last Change: 2014-06-09 08:34:16 d3g096
+! Last Change: 2014-06-13 14:14:20 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -202,17 +202,8 @@ SUBROUTINE bed_post_timestep()
   USE bed_module
   
   IMPLICIT NONE
-  
-  INTEGER :: iblock
-  
-  DO iblock = 1, max_blocks
-     CALL bed_var_put(bed(iblock)%bv_pore)
-     CALL bed_var_put(bed(iblock)%bv_particulate)
-     CALL bed_var_put(bed(iblock)%bv_sediment)
-     CALL bed_var_put(bed(iblock)%bv_porosity)
-     CALL bed_var_put(bed(iblock)%bv_depth)
-     CALL bed_var_put(bed(iblock)%bv_poreflux)
-  END DO
+
+  CALL bed_put()
   
 END SUBROUTINE bed_post_timestep
 

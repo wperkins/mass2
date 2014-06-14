@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2014-06-11 14:57:39 d3g096
+! Last Change: 2014-06-13 14:59:45 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -826,7 +826,7 @@ CONTAINS
 
                                 ! bed mass per unit area
 
-                CALL bed_collect(block(iblock), bed(iblock)%bv_sediment, ifract)
+                CALL bed_collect(block(iblock), bed(iblock)%bv_particulate, ispecies)
                 CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                      &block(iblock)%buffer, &
                      &TRIM(scalar_source(ispecies)%name) // '-bed', &
@@ -944,6 +944,8 @@ CONTAINS
 
     myconv = 1.0
     IF (PRESENT(conv)) myconv = conv
+
+    ! WRITE (*,*) name
     
     tmp_real = 0.0
     IF (plot_cgns_docell) THEN
