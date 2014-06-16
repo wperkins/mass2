@@ -1,3 +1,17 @@
+2014-06-16  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* scalar_solve.f90 (transport_precalc): call to bedshear() no
+	longer necessary 
+
+	* bed.f90 (bed_initialize): remove extraneous put
+
+	* hydro_solve.f90 (hydro): call block_hydro_update_bc() which
+	contains all the stuff that used to be here
+
+	* block_hydro_bc.f90 (block_hydro_update_bc): add routine that
+	collects necessary tasks to prepare for a hydro iteration (BC,
+	dead cells, etc.)
+
 2014-06-13  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* plot_cgns.f90 (plot_cgns_write): used wrong index for collecting

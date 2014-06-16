@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created October 23, 2002 by William A. Perkins
-! Last Change: 2014-06-08 13:39:27 d3g096
+! Last Change: 2014-06-16 12:36:00 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -43,13 +43,12 @@ CONTAINS
 #include "mafdecls.fh"
 #include "global.fh"
 
-    INTEGER :: x_beg, y_beg, x_end, y_end, num_bc, i, j
+    INTEGER :: num_bc
     LOGICAL :: alldry
     DOUBLE PRECISION :: maxx_mass
     LOGICAL :: ds_flux_given
     INTEGER :: iblock
     INTEGER :: iteration
-    INTEGER :: imin, imax, jmin, jmax
 
     ! Assign U,V,D BCs for this time
     ! set U boundary conditions for this time
@@ -64,67 +63,8 @@ CONTAINS
 
           ds_flux_given = .FALSE. ! ignore special velocity/flux processing if not needed
 
-          ! loop over the total number of bc specifications
-
-          CALL default_hydro_bc(block(iblock))
-          CALL block_compute_bc_flux(block(iblock), block_bc(iblock))
-          DO num_bc = 1, block_bc(iblock)%num_bc
-             CALL apply_hydro_bc(block(iblock), block_bc(iblock)%bc_spec(num_bc), &
-                  &.FALSE., ds_flux_given)
-          END DO
-
-          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
-          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
-          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
-          CALL block_var_put_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
-          CALL block_var_sync()
-          CALL block_var_get(block(iblock)%bv_uvel, BLK_VAR_CURRENT)
-          CALL block_var_get(block(iblock)%bv_vvel, BLK_VAR_CURRENT)
-          CALL block_var_get(block(iblock)%bv_depth, BLK_VAR_CURRENT)
-          CALL block_var_put(block(iblock)%bv_uvel, BLK_VAR_STAR)
-          CALL block_var_put(block(iblock)%bv_vvel, BLK_VAR_STAR)
-          CALL block_var_put(block(iblock)%bv_depth, BLK_VAR_STAR)
-          CALL block_var_get_logical(block(iblock)%bv_isdry, block(iblock)%isdry)
-          CALL block_var_sync()
-          
-          !-------------------------------------------------------------------------
-
-          x_beg = 2
-          y_beg = 2
-          x_end = block(iblock)%xmax
-          y_end = block(iblock)%ymax
-
-          ! Turn off cells that are dry, and
-          ! check to see if the entire block is
-          ! dry.  If it is, there is really no
-          ! point in doing these calculations.
-
-          alldry = .FALSE.
-          IF (do_wetdry) THEN
-             CALL block_used_window(block(iblock), imin, imax, jmin, jmax)
-             imin = MAX(imin, x_beg-1)
-             imax = MIN(imax, x_end+1)
-             jmin = MAX(jmin, y_beg-1)
-             jmax = MIN(jmax, y_end+1)
-
-             alldry = .TRUE.
-             DO i=imin,imax
-                DO j=jmin,jmax
-                   IF (block(iblock)%isdry(i,j)) THEN
-                      block(iblock)%isdead(i  , j  )%p = .TRUE.
-                      IF (i .GT. imin) block(iblock)%isdead(i-1, j  )%u = .TRUE.
-                      block(iblock)%isdead(i  , j  )%u = .TRUE.
-                      IF (j .GT. jmin) block(iblock)%isdead(i  , j-1)%v = .TRUE.
-                      block(iblock)%isdead(i  , j  )%v = .TRUE.
-                   ELSE 
-                      alldry = .FALSE.
-                   END IF
-                END DO
-             END DO
-          END IF
+          CALL block_hydro_update_bc(block(iblock), block_bc(iblock), &
+               &ds_flux_given, alldry)
 
           CALL uvel_solve(block(iblock), delta_t)
 

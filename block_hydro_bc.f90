@@ -1985,5 +1985,85 @@ CONTAINS
 
   END SUBROUTINE fillghost_hydro
 
+  ! ----------------------------------------------------------------
+  ! SUBROUTINE block_hydro_update_bc
+  ! ----------------------------------------------------------------
+  SUBROUTINE block_hydro_update_bc(blk, blkbc, ds_flux_given, alldry)
+
+    IMPLICIT NONE
+
+    TYPE (block_struct), INTENT(INOUT) :: blk
+    TYPE (block_bc_struct), INTENT(INOUT) :: blkbc
+    LOGICAL, INTENT(INOUT) :: ds_flux_given
+    LOGICAL, INTENT(OUT) :: alldry
+
+    INTEGER :: num_bc, i, j
+    INTEGER :: x_beg, y_beg, x_end, y_end
+    INTEGER :: imin, imax, jmin, jmax
+
+
+    CALL default_hydro_bc(blk)
+    CALL block_compute_bc_flux(blk, blkbc)
+    DO num_bc = 1, blkbc%num_bc
+       CALL apply_hydro_bc(blk, blkbc%bc_spec(num_bc), &
+            &.FALSE., ds_flux_given)
+    END DO
+
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_depth, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_depth, BLK_VAR_STAR)
+    CALL block_var_put_logical(blk%bv_isdry, blk%isdry)
+    CALL block_var_sync()
+    CALL block_var_get(blk%bv_uvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_vvel, BLK_VAR_CURRENT)
+    CALL block_var_get(blk%bv_depth, BLK_VAR_CURRENT)
+    CALL block_var_put(blk%bv_uvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_vvel, BLK_VAR_STAR)
+    CALL block_var_put(blk%bv_depth, BLK_VAR_STAR)
+    CALL block_var_get_logical(blk%bv_isdry, blk%isdry)
+    CALL block_var_sync()
+
+    
+    x_beg = 2
+    y_beg = 2
+    x_end = blk%xmax
+    y_end = blk%ymax
+
+    ! Turn off cells that are dry, and
+    ! check to see if the entire block is
+    ! dry.  If it is, there is really no
+    ! point in doing these calculations.
+
+    alldry = .FALSE.
+    IF (do_wetdry) THEN
+       CALL block_used_window(blk, imin, imax, jmin, jmax)
+       imin = MAX(imin, x_beg-1)
+       imax = MIN(imax, x_end+1)
+       jmin = MAX(jmin, y_beg-1)
+       jmax = MIN(jmax, y_end+1)
+
+       alldry = .TRUE.
+       DO i=imin,imax
+          DO j=jmin,jmax
+             IF (blk%isdry(i,j)) THEN
+                blk%isdead(i  , j  )%p = .TRUE.
+                IF (i .GT. imin) blk%isdead(i-1, j  )%u = .TRUE.
+                blk%isdead(i  , j  )%u = .TRUE.
+                IF (j .GT. jmin) blk%isdead(i  , j-1)%v = .TRUE.
+                blk%isdead(i  , j  )%v = .TRUE.
+             ELSE 
+                alldry = .FALSE.
+             END IF
+          END DO
+       END DO
+    END IF
+    
+  END SUBROUTINE block_hydro_update_bc
+
+
+
 
 END MODULE block_hydro_bc

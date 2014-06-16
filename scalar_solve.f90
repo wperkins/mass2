@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-06-09 15:31:48 d3g096
+! Last Change: 2014-06-16 14:16:06 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -137,12 +137,9 @@ CONTAINS
           blk%diffu_w(i,j) = blk%k_w(i,j)*blk%depth_w(i,j)*hw2/hw1
           blk%diffu_n(i,j) = blk%k_n(i,j)*blk%depth_n(i,j)*hn1/hn2
           blk%diffu_s(i,j) = blk%k_s(i,j)*blk%depth_s(i,j)*hs1/hs2
-
           blk%apo(i, j) = blk%hp1(i,j)*blk%hp2(i,j)*blk%depthold(i,j)/delta_t
        END DO
     END DO
-
-    CALL bedshear(blk)
 
   END SUBROUTINE transport_precalc
 

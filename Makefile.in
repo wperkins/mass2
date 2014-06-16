@@ -23,7 +23,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2014-06-12 13:27:48 d3g096
+# Last Change: 2014-06-16 08:01:26 d3g096
 # -------------------------------------------------------------
 
 VPATH = @srcdir@
@@ -1095,7 +1095,9 @@ tdg_source.$(OBJEXT): tdg_source.f90 \
 temperature_source.$(OBJEXT): temperature_source.f90 \
 	met_data_module.$(OBJEXT) \
 	energy_flux_module.$(OBJEXT) 
-transport_only_module.$(OBJEXT): transport_only_module.f90 hotstart.$(OBJEXT)
+transport_only_module.$(OBJEXT): transport_only_module.f90 \
+	block_hydro.$(OBJEXT) \
+	hotstart.$(OBJEXT)
 
 mass2_parallel.$(OBJEXT): mass2_parallel.f90 \
 	bed.$(OBJEXT) \
