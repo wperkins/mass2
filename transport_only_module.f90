@@ -363,7 +363,7 @@ CONTAINS
 
     DOUBLE PRECISION, INTENT(IN) :: time
     INTEGER :: iblk
-    LOGICAL :: junk
+    LOGICAL :: dsflag, alldry
 
     DOUBLE PRECISION :: factor
     
@@ -406,7 +406,7 @@ CONTAINS
        CALL block_var_get(block(iblk)%bv_eddy, BLK_VAR_CURRENT)
        CALL bedshear(block(iblk))
        CALL check_wetdry(block(iblk))
-       CALL block_hydro_update_bc(block(iblk), block_bc(iblk), junk)
+       CALL block_hydro_update_bc(block(iblk), block_bc(iblk), dsflag, alldry)
     END DO
     CALL block_var_sync()
     
