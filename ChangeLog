@@ -1,3 +1,8 @@
+2014-06-17  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2_parallel.f90 (output): only print the scalar mass balance
+	if there is one
+
 2014-06-16  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* scalar_solve.f90 (transport_precalc): call to bedshear() no

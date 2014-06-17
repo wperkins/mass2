@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-06-12 13:20:09 d3g096
+! Last Change: 2014-06-17 10:04:43 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -421,7 +421,7 @@ SUBROUTINE output(mpi_rank)
              &DBLE((current_time%time - start_time%time)*24), &
              &do_transport, salinity, baro_press)
         CALL mass_print(mpi_rank, current_time%date_string, current_time%time_string)
-        CALL scalar_mass_print(current_time)
+        IF (do_transport) CALL scalar_mass_print(current_time)
 !!$        IF (debug) &
 !!$             &CALL block_flux_print(current_time%date_string, current_time%time_string)
 !!$
