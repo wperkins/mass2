@@ -1,4 +1,4 @@
- # -------------------------------------------------------------
+# -------------------------------------------------------------
 # file: plot-conc.gp
 # -------------------------------------------------------------
 # -------------------------------------------------------------
@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Tue Aug  1 10:18:58 2000 by William A. Perkins <perk@dora.pnl.gov>
+# Last Change: 2014-06-24 09:05:01 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -30,8 +30,8 @@ set auto y
 set xlabel 'Longitudinal Distance, feet'
 set grid y
 set grid x
-set pointsize 0.5
+set pointsize 1.0
 set key below
 
-plot '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc stuff 1 5' using 3:4 title 'Simulated' with points 3, \
-     C(x) title 'Analytic Solution' with lines 1
+plot "<awk 'NR > 20 {print $1, $17}' probe.dat" using 1:2 title 'Simulated' with points ls 3, \
+     C(x) title 'Analytic Solution' with lines ls 1

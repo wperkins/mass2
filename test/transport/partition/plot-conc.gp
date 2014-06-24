@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August 31, 2000 by William A. Perkins
-# Last Change: Thu Feb  1 19:04:34 2007 by William A. Perkins <perk@mcperktop.local>
+# Last Change: 2014-06-24 09:09:35 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -25,5 +25,5 @@ set mytics
 set pointsize 0.5
 set key
 
-plot '<perl ../../../scripts/mass2slice.pl -l -i plot.nc stuff 1 5' using ($3*0.3048):4 title 'Dissolved' with linespoints 1, \
-     '<perl ../../../scripts/mass2slice.pl -l -i plot.nc particulate 1 5' using ($3*0.3048):4 title 'Particulate' with linespoints 2
+plot "<awk 'NR > 20 {print $1, $21}' @probe@" using ($1*0.3048):2 title 'Dissolved' with linespoints ls 1, \
+     "<awk 'NR > 20 {print $1, $23}' @probe@" using ($1*0.3048):2 title 'Particulate' with linespoints ls 3

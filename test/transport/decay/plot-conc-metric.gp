@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created June 27, 2000 by William A. Perkins
-# Last Change: Mon Jan 19 14:41:28 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-06-24 08:45:29 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -32,5 +32,5 @@ set xrange [0:3100]
 set pointsize 0.5
 set key
 
-plot '<perl ../../../scripts/mass2slice.pl -t 2 -i plot.nc stuff 1 5' using ($3*0.3048):4 title 'Simulated' with points 3, \
-     C(x/0.3048) title 'Analytic Solution' with lines 1
+plot "<awk 'NR > 20 {print $1, $17}' probe.dat" using ($1*0.3048):2 title 'Simulated' with points ls 3, \
+     C(x/0.3048) title 'Analytic Solution' with lines ls 1

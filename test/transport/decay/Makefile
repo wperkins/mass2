@@ -7,9 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: Mon Jan 19 14:39:38 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-06-24 08:49:32 d3g096
 # -------------------------------------------------------------
 
+MPIRUN = mpirun
+NPROC = 4
 MODEL = ../../../mass2
 TECPLOT = tecplot
 
@@ -23,26 +25,33 @@ MODELFILES = \
 	flow.dat \
 	gage_control.dat \
 	grid.dat \
-	mass2_v027.cfg \
+	mass2.cfg \
 	scalar_bcspecs.dat \
 	scalar_source.dat \
 	stage.dat
 
+.PHONY: all 
+
 all: $(EPSFILES)
 
-plot.nc: $(MODELFILES) $(MODEL)
+plot000.cgns: $(MODELFILES) $(MODEL)
 	$(MODEL)
 
-plot-conc.eps: plot-conc.gp plot.nc
+probe.dat: plot000.cgns plot.lay probe.mcr
+	$(TECPLOT) -b -p probe.mcr plot.lay
 
-plot-conc-metric.eps: plot-conc-metric.gp plot.nc
+plot-conc.eps: plot-conc.gp probe.dat
+
+plot-conc-metric.eps: plot-conc-metric.gp probe.dat
 
 %.eps: %.gp
 	gnuplot $< > $@
 
 clean:: 
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat
-	rm -f plot.nc gage.nc 
+	rm -f error-warning*.out mass_source_monitor.out output*.out status*.out gage*.out
+	rm -f gridplot1.dat 
+	rm -f plot.nc gage.nc grid.cgns plot*.cgns
+	rm -f stuff_balance.out probe.dat 
+	rm -f tecplot.phy batch.log
 	rm -f $(EPSFILES)
