@@ -277,10 +277,12 @@ CONTAINS
                         &bed(iblock)%pore(icell, jcell, j)*&
                         &block(iblock)%hp1(icell, jcell)*block(iblock)%hp2(icell, jcell)
                 ELSE
-                   value = 0.0
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
-                   WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   IF (source_doing_sed) THEN 
+                      value = 0.0
+                      WRITE(gage_iounit, 102, ADVANCE='NO') value
+                      WRITE(gage_iounit, 102, ADVANCE='NO') value
+                      WRITE(gage_iounit, 102, ADVANCE='NO') value
+                   END IF
                 END IF
                 
              CASE (TDG)                             

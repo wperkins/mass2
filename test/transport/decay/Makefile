@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: 2014-06-24 08:49:32 d3g096
+# Last Change: 2014-06-25 13:00:50 d3g096
 # -------------------------------------------------------------
 
 MPIRUN = mpirun
@@ -35,7 +35,7 @@ MODELFILES = \
 all: $(EPSFILES)
 
 plot000.cgns: $(MODELFILES) $(MODEL)
-	$(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 
 probe.dat: plot000.cgns plot.lay probe.mcr
 	$(TECPLOT) -b -p probe.mcr plot.lay

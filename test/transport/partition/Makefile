@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 14, 2002 by William A. Perkins
-# Last Change: 2014-06-24 09:08:11 d3g096
+# Last Change: 2014-06-25 12:58:51 d3g096
 # -------------------------------------------------------------
 
 MPIRUN = mpirun
@@ -30,7 +30,8 @@ MODELFILES = \
 	sediment-bc.dat \
 	stage.dat \
 	stuff-bc.dat \
-	zero.dat
+	zero.dat \
+	gage_control.dat
 
 .PHONY: all
 
