@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: 2014-06-14 10:45:41 d3g096
+! Last Change: 2014-06-30 14:52:14 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -64,6 +64,11 @@ MODULE bed_module
   TYPE (bed_block_rec), ALLOCATABLE :: bed(:)
 
   INTEGER, PUBLIC :: bed_iterations = 1
+
+  ! When bed mass values go negative, they are typically only negative
+  ! by a very small amount.  If the negative value is below this
+  ! value, an error message generated.
+  DOUBLE PRECISION :: bad_negative = -1.0E-01
 CONTAINS
 
   ! ----------------------------------------------------------------
@@ -217,10 +222,12 @@ CONTAINS
                    bed(iblk)%sediment(i,j,ifract) = &
                         &bed(iblk)%sediment(i,j,ifract) - e*deltat
                    IF (bed(iblk)%sediment(i,j,ifract) .LT. 0.0) THEN
-                      WRITE(buffer,*) 'negative bed sediment mass ',&
-                           &bed(iblk)%sediment(i,j,ifract), ' set to zero: fract=',&
-                           &ifract, ', block=', iblk, ', i=', i, ', j=', j
-                      CALL error_message(buffer)
+                      IF (bed(iblk)%sediment(i,j,ifract) .LT. bad_negative) THEN
+                         WRITE(buffer,*) 'negative bed sediment mass ',&
+                              &bed(iblk)%sediment(i,j,ifract), ' set to zero: fract=',&
+                              &ifract, ', block=', iblk, ', i=', i, ', j=', j
+                         CALL error_message(buffer)
+                      END IF
                       bed(iblk)%sediment(i,j,ifract) = 0.0
                    END IF
                 END IF
@@ -317,10 +324,12 @@ CONTAINS
                       bed(iblk)%particulate(i, j, ispecies) = 0.0
                    END IF
                    IF (bed(iblk)%particulate(i, j, ispecies) .LT. 0.0) THEN
-                      WRITE(buffer,*) 'negative particulate mass ',&
-                           &bed(iblk)%particulate(i, j, ispecies), ' set to zero: species=',&
-                           &ispecies, ', block=', iblk, ', i=', i, ', j=', j
-                      CALL error_message(buffer)
+                      IF (bed(iblk)%particulate(i, j, ispecies) .LT. bad_negative) THEN
+                         WRITE(buffer,*) 'negative particulate mass ',&
+                              &bed(iblk)%particulate(i, j, ispecies), ' set to zero: species=',&
+                              &ispecies, ', block=', iblk, ', i=', i, ', j=', j
+                         CALL error_message(buffer)
+                      END IF
                       bed(iblk)%particulate(i, j, ispecies) = 0.0
                    END IF
                 END DO
