@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  6, 2000 by William A. Perkins
-# Last Change: Thu Feb  1 19:03:46 2007 by William A. Perkins <perk@mcperktop.local>
+# Last Change: 2014-08-13 15:28:07 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -18,7 +18,7 @@ set xlabel 'Longitudinal Distance, m'
 set xrange [0:1250]
 set ylabel 'Concentration'
 set key
-plot '<perl solution.pl -y 22.5' using ($1*0.3048):3 title 'Analytic (y = 6.9)' with lines 1, \
-     '<perl ../../../scripts/mass2slice.pl -i -t 2 plot.nc stuff 1 6' using ($3*0.3048):4 title "Numerical (y = 6.9)" with points 1, \
-     '<perl solution.pl -y 77.5' using ($1*0.3048):3 title 'Analytic (y = 23.6)' with lines 3, \
-     '<perl ../../../scripts/mass2slice.pl -i -t 2 plot.nc stuff 1 17' using ($3*0.3048):4 title "Numerical (y = 23.6)" with points 3
+plot '<perl solution.pl -y 22.5' using ($1*0.3048):3 title 'Analytic (y = 6.9)' with lines ls 1, \
+     'probe1y.dat' every ::20 using ($1*0.3048):17 title "Numerical (y = 6.9)" with points ls 1, \
+     '<perl solution.pl -y 77.5' using ($1*0.3048):3 title 'Analytic (y = 23.6)' with lines ls 3, \
+     'probe2y.dat' every ::20 using ($1*0.3048):17 title "Numerical (y = 23.6)" with points ls 3

@@ -13,7 +13,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created August  7, 2000 by William A. Perkins
-# Last Change: Wed Apr 23 12:32:07 2003 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2014-08-13 14:53:01 d3g096
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -36,7 +36,7 @@ my $sigma_t = 0.2;              # transverse dispersivity, feet2/second
 my $mdot = 1.0;                 # mass influx, units/sec
 
 my $yo = 125.0;
-my $xo = 25.0;
+my $xo = 75.0;
 
 my $infinity = 8;
 

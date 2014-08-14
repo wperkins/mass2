@@ -26,7 +26,7 @@ T F			given_initial_wsel	! if TRUE then wsel_or_depth_initial is the initial wat
 1.49			mann_con	! constant in the bed shear stress  =1.0 if metric units, 1.49*1.49 for english
 0.40			relax_dp	! relaxation factor for depth corrections
 0.7			relax_uv	! u/v underrelaxation
-UPWIND 0.0 @TS@		diff_uv, blend_uv, blend_time	! u/v spatial differencing scheme and blending and temporal differencing blending
+UPWIND 1.0 @TS@		diff_uv, blend_uv, blend_time	! u/v spatial differencing scheme and blending and temporal differencing blending
 0.2			uvel_initial	! initial uniform value of u velocity
 0.0			vvel_initial	! initial uniform value of v velocity
 0.0			conc_initial	! initial uniform value of concentration						
