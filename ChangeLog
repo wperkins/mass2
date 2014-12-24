@@ -1,3 +1,11 @@
+2014-12-19  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/transport/partition: update configuration
+
+	* test/sediment/test1: update configuration
+
+	* test/sediment/deposition: update configuration
+
 2013-11-21  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* mass2_main_025.f90 (default_hydro_bc): oops, evaporation should
