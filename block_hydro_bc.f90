@@ -917,52 +917,53 @@ CONTAINS
           SELECT CASE(bc%bc_kind)
 
           CASE("FLUX")
-
              DO k=1,bc%num_cell_pairs
                 i_beg = bc%start_cell(k)+1
                 i_end = bc%end_cell(k)+1
-                CALL extrapolate_vdepth(blk, i_beg, i_end, j, level=.FALSE.)
-                CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, input_total)
+                input_total = SUM(bc%flux_area(i_beg:i_end))
                 DO ii = i_beg, i_end
-                   IF (inlet_area(ii) .GT. 0.0) THEN
-                      blk%vvel(ii,j) = table_input(k)/input_total
-                      IF (blk%vvel(ii,j) .LT. 0.0) THEN
-                         blk%uvel(ii,j) = 0.0
+                   IF (block_owns(blk, ii, j)) THEN
+                      IF (bc%flux_area(ii) .GT. 0.0) THEN
+                         blk%vvel(ii,j) = table_input(k)/input_total
+                         IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                            blk%uvel(ii,j) = 0.0
+                         ELSE
+                            blk%uvel(ii,j) =  blk%uvel(ii,j+1)
+                         END IF
                       ELSE 
-                         blk%uvel(ii,j) = blk%uvel(ii,j-1)
+                         blk%vvel(ii,j) = 0.0
+                         blk%uvel(ii,j) = blk%uvel(ii,j+1)
                       END IF
-                   ELSE 
-                      blk%vvel(ii,j) = 0.0
+                      blk%uvelstar(ii,j) = blk%uvel(ii,j)
+                      blk%uvelold(ii,j) =  blk%uvel(ii,j)
+                      blk%vvelstar(ii,j) = blk%vvel(ii,j)
+                      blk%vvelold(ii,j)  = blk%vvel(ii,j)
+                      blk%cell(ii,j-1)%ytype = CELL_BOUNDARY_TYPE
+                      blk%cell(ii,j-1)%ybctype = FLOWBC_FLOW
                    END IF
                 END DO
-                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
-                blk%uvelold(i_beg:i_end,j) =  blk%uvel(i_beg:i_end,j)
-                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
-                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
-                blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
-                blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_FLOW
              END DO
 
           CASE("VELO")
-
              DO k=1,bc%num_cell_pairs
                 i_beg = bc%start_cell(k)+1
-                i_end	 = bc%end_cell(k)+1
-                CALL extrapolate_vdepth(blk, i_beg, j_end, j, level = .FALSE.)
+                i_end = bc%end_cell(k)+1
                 DO ii = i_beg, i_end
-                   blk%vvel(ii, j) = table_input(k)
-                   IF (blk%vvel(ii, j) .LT. 0.0) THEN
-                      blk%uvel(ii, j) = 0.0
-                   ELSE 
-                      blk%uvel(ii, j) = blk%uvel(ii, j-1)
+                   IF (block_owns(blk, ii, j)) THEN
+                      blk%vvel(ii,j) = table_input(k)
+                      IF (blk%vvel(ii,j) .GT. 0.0) THEN
+                         blk%uvel(ii,j) = 0.0
+                      ELSE 
+                         blk%uvel(ii,j) = blk%uvel(ii,j+1)
+                      END IF
+                      blk%uvelstar(ii,j) = blk%uvel(ii,j)
+                      blk%uvelold(ii,j) =  blk%uvel(ii,j)
+                      blk%vvelstar(ii,j) = blk%vvel(ii,j)
+                      blk%vvelold(ii,j)  = blk%vvel(ii,j)
+                      blk%cell(ii,j-1)%ytype = CELL_BOUNDARY_TYPE
+                      blk%cell(ii,j-1)%ybctype = FLOWBC_VEL
                    END IF
                 END DO
-                blk%uvelstar(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
-                blk%uvelold(i_beg:i_end,j) = blk%uvel(i_beg:i_end,j)
-                blk%vvelstar(i_beg:i_end,j) = blk%vvel(i_beg:i_end,j)
-                blk%vvelold(i_beg:i_end,j)  = blk%vvel(i_beg:i_end,j)
-                blk%cell(i_beg:i_end,j-1)%ytype = CELL_BOUNDARY_TYPE
-                blk%cell(i_beg:i_end,j-1)%ybctype = FLOWBC_VEL
              END DO
 
           CASE("ELEV")
