@@ -1,3 +1,14 @@
+2015-01-06  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* test/transport/mixing/Makefile: make parallel
+
+	* plot_cgns.f90 (plot_cgns_write): incorrect output of sediment
+	bed mass per unit area; incorrect direction for particulate bed
+	exchange 
+
+	* scalars_source.f90 (scalar_source_post_timestep): particulate
+	bed exchange variable needed putting
+
 2014-08-14  William A. Perkins  <william.perkins@pnnl.gov>
 
 	* test/transport/1d-analytic-1blk: make parallel and change

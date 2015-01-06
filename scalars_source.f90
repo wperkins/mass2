@@ -455,6 +455,8 @@ CONTAINS
           CASE (SED)
              CALL block_var_put(scalar_source(i)%sediment_param%block(iblock)%bv_deposition)
              CALL block_var_put(scalar_source(i)%sediment_param%block(iblock)%bv_erosion)
+          CASE (PART)
+             CALL block_var_put(scalar_source(i)%part_param%block(iblock)%bv_bedexch)
           CASE DEFAULT
           END SELECT
        END DO

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2014-06-13 14:59:45 d3g096
+! Last Change: 2015-01-06 12:50:36 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -826,7 +826,7 @@ CONTAINS
 
                                 ! bed mass per unit area
 
-                CALL bed_collect(block(iblock), bed(iblock)%bv_particulate, ispecies)
+                CALL bed_collect(block(iblock), bed(iblock)%bv_sediment, ifract)
                 CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                      &block(iblock)%buffer, &
                      &TRIM(scalar_source(ispecies)%name) // '-bed', &
@@ -855,6 +855,7 @@ CONTAINS
 
                 CALL block_collect(block(iblock), &
                      &scalar_source(ispecies)%part_param%block(iblock)%bv_bedexch)
+                block(iblock)%buffer = -1.0*block(iblock)%buffer
                 CALL plot_cgns_write_var(iblock, solidx, xmax, ymax, &
                      &block(iblock)%buffer, &
                      &TRIM(scalar_source(ispecies)%name) // '-depos', &

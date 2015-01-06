@@ -7,11 +7,11 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: 2014-08-13 15:33:38 d3g096
+# Last Change: 2014-08-14 07:27:32 d3g096
 # -------------------------------------------------------------
 # $Id$
 
-MPIRUN = mpirun
+MPIRUN = mpiexec
 NPROC = 4
 MODEL = ../../../mass2
 TECPLOT = tecplot
@@ -47,7 +47,7 @@ all: $(EPSFILES)
 plot.mix.cgns: $(MODELFILES) $(MODEL) bcspecs.base
 	cp mass2_v027.base mass2.cfg
 	cp bcspecs.base bcspecs.dat
-	$(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 	mv plot000.cgns plot.mix.cgns
 
 clean:: 
