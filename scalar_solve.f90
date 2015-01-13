@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2014-06-16 14:16:06 d3g096
+! Last Change: 2015-01-12 14:52:00 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -259,6 +259,10 @@ CONTAINS
                    bp(i,j) = bp(i,j) + 2.0*as(i,j)*scalar%conc(i,j-1)
                    ap(i,j) = ap(i,j) + as(i,j)
                    as(i,j) = 0.0
+                ELSE IF (j .EQ. yend) THEN
+                   bp(i,j) = bp(i,j) + 2.0*an(i,j)*scalar%conc(i,j+1)
+                   ap(i,j) = ap(i,j) + an(i,j)
+                   an(i,j) = 0.0
                 END IF
              CASE DEFAULT
                 IF (j .EQ. ystart) THEN
@@ -496,7 +500,7 @@ CONTAINS
 
     CASE ("RB")
        j = 1
-       ystart = j + 1
+
        SELECT CASE(spec%bc_type)
 
        CASE ("ZEROG")
@@ -521,12 +525,12 @@ CONTAINS
                 i_beg = spec%start_cell(k)+1
                 i_end = spec%end_cell(k)+1
                 DO ii = i_beg, i_end
-                   IF (block_owns(blk, ii, ystart)) THEN 
+                   IF (block_owns(blk, ii, j)) THEN 
                       sclr%conc(i_beg:i_end, j) = &
                            &table_input(k)*scalar_source(spec%species)%conversion
                       sclr%concold(ii, j) = sclr%conc(ii, j)
-                      sclr%cell(ii,ystart)%ytype = SCALAR_BOUNDARY_TYPE
-                      sclr%cell(ii,ystart)%ybctype = SCALBC_CONC
+                      sclr%cell(ii,j+1)%ytype = SCALAR_BOUNDARY_TYPE
+                      sclr%cell(ii,j+1)%ybctype = SCALBC_CONC
                    END IF
                 END DO
              END DO
@@ -570,12 +574,55 @@ CONTAINS
              DO ii = i_beg, i_end
                 IF (block_owns(blk, ii, j)) THEN 
                    sclr%conc(ii,j) = sclr%conc(ii,j-1)
-                   sclr%concold(ii,j) = sclr%conc(ii,j)
+                   sclr%concold(ii,j) = sclr%conc(ii,j-1)
                    sclr%cell(ii,j-1)%ytype = SCALAR_BOUNDARY_TYPE
                    sclr%cell(ii,j-1)%ybctype = SCALBC_ZG
                 END IF
              END DO
           END DO
+
+       CASE("TABLE")
+
+          SELECT CASE(spec%bc_kind)
+
+          CASE("CONC")
+             DO k = 1, spec%num_cell_pairs
+                i_beg = spec%start_cell(k)+1
+                i_end = spec%end_cell(k)+1
+                DO ii = i_beg, i_end
+                   IF (block_owns(blk, ii, j)) THEN 
+                      sclr%conc(ii, j) = &
+                           &table_input(k)*scalar_source(spec%species)%conversion
+                      sclr%concold(ii, j) = sclr%conc(ii, j)
+                      sclr%cell(ii,j-1)%ytype = SCALAR_BOUNDARY_TYPE
+                      sclr%cell(ii,j-1)%ybctype = SCALBC_CONC
+                   END IF
+                END DO
+             END DO
+
+          CASE("FLUX")
+             GOTO 100
+!!$             DO k = 1, spec%num_cell_pairs
+!!$                i_beg = spec%start_cell(k)+1
+!!$                i_end = spec%end_cell(k)+1
+!!$                CALL compute_vflow_area(blk, i_beg, i_end, j, inlet_area, tmp)
+!!$                WHERE (blk%vvel(i_beg:i_end, j) .GT. 0.0)
+!!$                   inlet_area(i_beg:i_end) = &
+!!$                        &inlet_area(i_beg:i_end)*blk%vvel(i_beg:i_end,j)
+!!$                ELSEWHERE
+!!$                   inlet_area(i_beg:i_end) = 0.0
+!!$                END WHERE
+!!$                tmp = SUM(inlet_area(i_beg:i_end))
+!!$                DO ii = i_beg, i_end
+!!$                   sclr%conc(ii,j) =  table_input(k)/tmp
+!!$                END DO
+!!$                sclr%concold(i_beg:i_end, j) = sclr%conc(i_beg:i_end, j)
+!!$                sclr%cell(i_beg:i_end, j+1)%ytype = SCALAR_BOUNDARY_TYPE
+!!$                sclr%cell(i_beg:i_end, j+1)%ybctype = SCALBC_CONC
+!!$             END DO
+          CASE DEFAULT
+             GOTO 100
+          END SELECT
 
        CASE DEFAULT
           GOTO 100
