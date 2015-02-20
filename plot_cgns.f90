@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2015-01-06 12:50:36 d3g096
+! Last Change: 2015-02-19 15:36:31 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -78,6 +78,8 @@ CONTAINS
     ALLOCATE(tmp_times(plot_cgns_maxtime))
     plot_cgns_start_time = -1.0
     tmp_times = 0.0
+
+    pbaseidx = 1
     
 
                                 ! make a grid file with coordinates in it
@@ -97,6 +99,9 @@ CONTAINS
 
 #ifndef NOOUTPUT
     CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
+    CALL cg_close_f(pfileidx, ierr)
+    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+         &"cannot close plot file", fatal=.TRUE.)
 #endif
 
   END SUBROUTINE plot_cgns_setup
@@ -563,6 +568,12 @@ CONTAINS
 
     TYPE (block_struct), POINTER :: blk
 
+#ifndef NOOUTPUT
+    CALL cg_open_f(plot_file_name, MODE_MODIFY, pfileidx, ierr)
+    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+         &"cannot reopen " // TRIM(plot_file_name), fatal=.TRUE.)
+#endif
+
     timestamp = TRIM(date_string) // " " // &
          &TRIM(time_string)
 
@@ -916,11 +927,17 @@ CONTAINS
 
     plot_cgns_outstep = plot_cgns_outstep + 1
 #ifndef NOOUTPUT
+    CALL cg_close_f(pfileidx, ierr)
+    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+         &"cannot close grid file", fatal=.TRUE.)
     IF (MOD(plot_cgns_outstep, plot_cgns_maxtime) .EQ. 0) THEN
-       CALL plot_cgns_file_close(pfileidx, pbaseidx)
+       CALL plot_cgns_file_close()
        CALL plot_cgns_make_name(plot_file_name)
        CALL plot_cgns_file_setup(plot_file_name, .FALSE., pfileidx, pbaseidx)
        CALL plot_cgns_link_coord(pfileidx, grid_cgns_name, max_blocks)
+       CALL cg_close_f(pfileidx, ierr)
+       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+            &"cannot close grid file", fatal=.TRUE.)
     END IF
 #endif
 
@@ -1081,13 +1098,17 @@ CONTAINS
   ! SUBROUTINE plot_cgns_file_close
   ! This closes the plot file and adds links to the grid
   ! ----------------------------------------------------------------
-  SUBROUTINE plot_cgns_file_close(fileidx, baseidx)
+  SUBROUTINE plot_cgns_file_close()
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: fileidx, baseidx
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_file_close"
     INTEGER :: ierr, times(2)
+
+    CALL cg_open_f(plot_file_name, MODE_MODIFY, pfileidx, ierr)
+    IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+         &"cannot reopen " // TRIM(plot_file_name), fatal=.TRUE.)
+
 
                                 ! figure out how many time planes are
                                 ! stored in this file
@@ -1099,10 +1120,10 @@ CONTAINS
        IF (times(1) .EQ. 0) THEN
           times = plot_cgns_maxtime
        END IF
-       CALL cg_simulation_type_write_f(fileidx, baseidx, TimeAccurate, ierr)
+       CALL cg_simulation_type_write_f(pfileidx, pbaseidx, TimeAccurate, ierr)
        IF (ierr .EQ. CG_ERROR) &
             &CALL plot_cgns_error(func, "cannot write simulation type", fatal=.FALSE.)
-       CALL cg_biter_write_f(fileidx, baseidx, "TransientBase", times, ierr)
+       CALL cg_biter_write_f(pfileidx, pbaseidx, "TransientBase", times, ierr)
        IF (ierr .EQ. CG_ERROR) &
             &CALL plot_cgns_error(func, "cannot write base iterative data", fatal=.FALSE.)
        CALL cg_goto_f(pfileidx, pbaseidx, ierr, &
@@ -1115,7 +1136,7 @@ CONTAINS
 
                                 ! close the file that is now open
 
-    CALL cg_close_f(fileidx, ierr)
+    CALL cg_close_f(pfileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, "cannot close file", fatal=.TRUE.)
 
   END SUBROUTINE plot_cgns_file_close
@@ -1130,7 +1151,7 @@ CONTAINS
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_close"
 
 #ifndef NOOUTPUT
-    CALL plot_cgns_file_close(pfileidx, pbaseidx)
+    CALL plot_cgns_file_close()
 #endif
 
     DEALLOCATE(tmp_real, tmp_double, tmp_times)
