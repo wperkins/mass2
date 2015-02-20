@@ -1,5 +1,14 @@
 2015-02-20  William A. Perkins  <william.perkins@pnnl.gov>
 
+	* block_initialization.f90 (initialize): initialize scalars with
+	species-specific initial value
+
+	* scalar_solve.f90 (scalar_solve): force scalar solution in dead
+	cells 
+
+	* scalars_source.f90 (scalar_source_read): add "INITIAL" keyword
+	to specify initial concentration
+
 	* plot_cgns.f90 (plot_cgns_setup, plot_cgns_write)
 	(plot_cgns_file_close): close and reopen CGNS output between
 	output time steps to preserve HDF-based integrity

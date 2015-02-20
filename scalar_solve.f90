@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 19, 2003 by William A. Perkins
-! Last Change: 2015-01-12 14:52:00 d3g096
+! Last Change: 2015-02-20 10:59:52 d3g096
 ! ----------------------------------------------------------------
 ! $Id$
 
@@ -221,73 +221,76 @@ CONTAINS
 
           bp(i,j) = bp(i,j) + scalar%srcterm(i,j) 
 
-
-
-          SELECT CASE (scalar%cell(i,j)%xtype)
-          CASE (SCALAR_BOUNDARY_TYPE)
-             SELECT CASE (scalar%cell(i,j)%xbctype)
-             CASE (SCALBC_CONC)
-                IF (i .EQ. xstart) THEN
-                   bp(i,j) = bp(i,j) + 2.0*aw(i,j)* scalar%conc(i-1,j)
-                   ap(i,j) = ap(i,j) + aw(i,j)
-                   aw(i,j) = 0.0
-                END IF
+          
+          IF (blk%isdead(i,j)%p) THEN
+             ap(i,j) = ap(i,j) + bigfactor
+             bp(i,j) = bp(i,j) + bigfactor*scalar%conc(i,j)
+          ELSE
+             SELECT CASE (scalar%cell(i,j)%xtype)
+             CASE (SCALAR_BOUNDARY_TYPE)
+                SELECT CASE (scalar%cell(i,j)%xbctype)
+                CASE (SCALBC_CONC)
+                   IF (i .EQ. xstart) THEN
+                      bp(i,j) = bp(i,j) + 2.0*aw(i,j)* scalar%conc(i-1,j)
+                      ap(i,j) = ap(i,j) + aw(i,j)
+                      aw(i,j) = 0.0
+                   END IF
+                CASE DEFAULT
+                   IF (i .EQ. xstart) THEN
+                      ap(i,j) = ap(i,j) - aw(i,j)
+                      aw(i,j) = 0.0
+                   ELSE IF (i .EQ. xend) THEN
+                      ap(i,j) = ap(i,j) - ae(i,j)
+                      ae(i,j) = 0.0
+                   END IF
+                END SELECT
              CASE DEFAULT
                 IF (i .EQ. xstart) THEN
-                   ap(i,j) = ap(i,j) - aw(i,j)
+                   bp(i,j) = bp(i,j) + aw(i,j)*scalar%conc(i-1,j)
                    aw(i,j) = 0.0
                 ELSE IF (i .EQ. xend) THEN
-                   ap(i,j) = ap(i,j) - ae(i,j)
+                   bp(i,j) = bp(i,j) + ae(i,j)*scalar%conc(i+1,j)
                    ae(i,j) = 0.0
                 END IF
              END SELECT
-          CASE DEFAULT
-             IF (i .EQ. xstart) THEN
-                bp(i,j) = bp(i,j) + aw(i,j)*scalar%conc(i-1,j)
-                aw(i,j) = 0.0
-             ELSE IF (i .EQ. xend) THEN
-                bp(i,j) = bp(i,j) + ae(i,j)*scalar%conc(i+1,j)
-                ae(i,j) = 0.0
-             END IF
-          END SELECT
 
-          SELECT CASE (scalar%cell(i,j)%ytype)
-          CASE (SCALAR_BOUNDARY_TYPE)
-             SELECT CASE (scalar%cell(i,j)%ybctype)
-             CASE (SCALBC_CONC)
-                IF (j .EQ. ystart) THEN
-                   bp(i,j) = bp(i,j) + 2.0*as(i,j)*scalar%conc(i,j-1)
-                   ap(i,j) = ap(i,j) + as(i,j)
-                   as(i,j) = 0.0
-                ELSE IF (j .EQ. yend) THEN
-                   bp(i,j) = bp(i,j) + 2.0*an(i,j)*scalar%conc(i,j+1)
-                   ap(i,j) = ap(i,j) + an(i,j)
-                   an(i,j) = 0.0
-                END IF
+             SELECT CASE (scalar%cell(i,j)%ytype)
+             CASE (SCALAR_BOUNDARY_TYPE)
+                SELECT CASE (scalar%cell(i,j)%ybctype)
+                CASE (SCALBC_CONC)
+                   IF (j .EQ. ystart) THEN
+                      bp(i,j) = bp(i,j) + 2.0*as(i,j)*scalar%conc(i,j-1)
+                      ap(i,j) = ap(i,j) + as(i,j)
+                      as(i,j) = 0.0
+                   ELSE IF (j .EQ. yend) THEN
+                      bp(i,j) = bp(i,j) + 2.0*an(i,j)*scalar%conc(i,j+1)
+                      ap(i,j) = ap(i,j) + an(i,j)
+                      an(i,j) = 0.0
+                   END IF
+                CASE DEFAULT
+                   IF (j .EQ. ystart) THEN
+                      ap(i,j) = ap(i,j) - as(i,j)
+                      as(i,j) = 0.0
+                   ELSE IF (j .EQ. yend) THEN
+                      ap(i,j) = ap(i,j) - an(i,j)
+                      an(i,j) = 0.0
+                   END IF
+                END SELECT
              CASE DEFAULT
                 IF (j .EQ. ystart) THEN
-                   ap(i,j) = ap(i,j) - as(i,j)
+                   bp(i,j) = bp(i,j) + as(i,j)*scalar%conc(i,j-1)
                    as(i,j) = 0.0
                 ELSE IF (j .EQ. yend) THEN
-                   ap(i,j) = ap(i,j) - an(i,j)
+                   bp(i,j) = bp(i,j) + an(i,j)*scalar%conc(i,j+1)
                    an(i,j) = 0.0
                 END IF
              END SELECT
-          CASE DEFAULT
-             IF (j .EQ. ystart) THEN
-                bp(i,j) = bp(i,j) + as(i,j)*scalar%conc(i,j-1)
-                as(i,j) = 0.0
-             ELSE IF (j .EQ. yend) THEN
-                bp(i,j) = bp(i,j) + an(i,j)*scalar%conc(i,j+1)
-                an(i,j) = 0.0
-             END IF
-          END SELECT
 
-          ! implicit underrelaxation
+             ! implicit underrelaxation
 
-          bp(i, j) = bp(i, j) + (1 - relax)/relax*ap(i,j)*scalar%conc(i,j)
-          ap(i, j) = ap(i, j)/relax 
-
+             bp(i, j) = bp(i, j) + (1 - relax)/relax*ap(i,j)*scalar%conc(i,j)
+             ap(i, j) = ap(i, j)/relax 
+          END IF
        END DO
     END DO
 

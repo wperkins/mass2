@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created August 29, 2000 by William A. Perkins
-! Last Change: 2014-06-30 14:52:14 d3g096
+! Last Change: 2015-02-20 08:20:56 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -207,33 +207,35 @@ CONTAINS
        CALL bed_owned_window(bed(iblk), imin, imax, jmin, jmax)
        DO i = imin, imax
           DO j = jmin, jmax
-             DO ifract = 1, sediment_fractions
-                sedidx = sediment_scalar_index(ifract)
-                sconc = species(sedidx)%scalar(iblk)%conc(i,j)
-                e = sediment_erosion(scalar_source(sedidx)%sediment_param,&
-                     &iblk, i, j)
-                d = sediment_deposition(scalar_source(sedidx)%sediment_param,&
-                     &iblk, i, j, sconc)
-                IF (d .GT. 0.0) THEN
-                   bed(iblk)%sediment(i,j,ifract) = &
-                        &bed(iblk)%sediment(i,j,ifract) + d*deltat
-                END IF
-                IF (e .GT. 0.0) THEN
-                   bed(iblk)%sediment(i,j,ifract) = &
-                        &bed(iblk)%sediment(i,j,ifract) - e*deltat
-                   IF (bed(iblk)%sediment(i,j,ifract) .LT. 0.0) THEN
-                      IF (bed(iblk)%sediment(i,j,ifract) .LT. bad_negative) THEN
-                         WRITE(buffer,*) 'negative bed sediment mass ',&
-                              &bed(iblk)%sediment(i,j,ifract), ' set to zero: fract=',&
-                              &ifract, ', block=', iblk, ', i=', i, ', j=', j
-                         CALL error_message(buffer)
-                      END IF
-                      bed(iblk)%sediment(i,j,ifract) = 0.0
+             IF (.NOT. block(iblk)%isdead(i, j)%p) THEN
+                DO ifract = 1, sediment_fractions
+                   sedidx = sediment_scalar_index(ifract)
+                   sconc = species(sedidx)%scalar(iblk)%conc(i,j)
+                   e = sediment_erosion(scalar_source(sedidx)%sediment_param,&
+                        &iblk, i, j)
+                   d = sediment_deposition(scalar_source(sedidx)%sediment_param,&
+                        &iblk, i, j, sconc)
+                   IF (d .GT. 0.0) THEN
+                      bed(iblk)%sediment(i,j,ifract) = &
+                           &bed(iblk)%sediment(i,j,ifract) + d*deltat
                    END IF
-                END IF
-                scalar_source(sedidx)%sediment_param%block(iblk)%deposition(i, j) = d
-                scalar_source(sedidx)%sediment_param%block(iblk)%erosion(i, j) = e
-             END DO
+                   IF (e .GT. 0.0) THEN
+                      bed(iblk)%sediment(i,j,ifract) = &
+                           &bed(iblk)%sediment(i,j,ifract) - e*deltat
+                      IF (bed(iblk)%sediment(i,j,ifract) .LT. 0.0) THEN
+                         IF (bed(iblk)%sediment(i,j,ifract) .LT. bad_negative) THEN
+                            WRITE(buffer,*) 'negative bed sediment mass ',&
+                                 &bed(iblk)%sediment(i,j,ifract), ' set to zero: fract=',&
+                                 &ifract, ', block=', iblk, ', i=', i, ', j=', j
+                            CALL error_message(buffer)
+                         END IF
+                         bed(iblk)%sediment(i,j,ifract) = 0.0
+                      END IF
+                   END IF
+                   scalar_source(sedidx)%sediment_param%block(iblk)%deposition(i, j) = d
+                   scalar_source(sedidx)%sediment_param%block(iblk)%erosion(i, j) = e
+                END DO
+             END IF
           END DO
        END DO
 
@@ -295,42 +297,44 @@ CONTAINS
              CALL block_owned_window(block(iblk), imin, imax, jmin, jmax)
              DO i = imin, imax
                 DO j = jmin, jmax
-                   bconc = bed_part_conc(ispecies, &
-                        &scalar_source(sphase)%sediment_param%ifract, iblk, i, j)
-                   dconc = species(dphase)%scalar(iblk)%conc(i,j)
-                   sconc = species(sphase)%scalar(iblk)%conc(i,j)
-                   pconc = species(ispecies)%scalar(iblk)%conc(i,j)
+                   IF (.NOT. block(iblk)%isdead(i,j)%p) THEN
+                      bconc = bed_part_conc(ispecies, &
+                           &scalar_source(sphase)%sediment_param%ifract, iblk, i, j)
+                      dconc = species(dphase)%scalar(iblk)%conc(i,j)
+                      sconc = species(sphase)%scalar(iblk)%conc(i,j)
+                      pconc = species(ispecies)%scalar(iblk)%conc(i,j)
 
-                                ! save the particulate interaction w/
-                                ! bed for output later
+                      ! save the particulate interaction w/
+                      ! bed for output later
 
-                   scalar_source(ispecies)%part_param%block(iblk)%bedexch(i, j) = &
-                        &part_bed_exch(scalar_source(ispecies)%part_param, ispecies, &
-                        &   scalar_source(sphase)%sediment_param, iblk, i, j, &
-                        &   pconc, sconc, bconc)
+                      scalar_source(ispecies)%part_param%block(iblk)%bedexch(i, j) = &
+                           &part_bed_exch(scalar_source(ispecies)%part_param, ispecies, &
+                           &   scalar_source(sphase)%sediment_param, iblk, i, j, &
+                           &   pconc, sconc, bconc)
 
-                                ! adjust the parctulate mass according
-                                ! to exchange rates
+                      ! adjust the parctulate mass according
+                      ! to exchange rates
 
-                   bed(iblk)%particulate(i, j, ispecies) = &
-                        &bed(iblk)%particulate(i, j, ispecies) - &
-                        &deltat*scalar_source(ispecies)%part_param%block(iblk)%bedexch(i, j) + &
-                        &deltat*part_dissolve_bed_exch(scalar_source(ispecies)%part_param, &
-                        &    scalar_source(sphase)%sediment_param, iblk, i, j, dconc, bconc)
+                      bed(iblk)%particulate(i, j, ispecies) = &
+                           &bed(iblk)%particulate(i, j, ispecies) - &
+                           &deltat*scalar_source(ispecies)%part_param%block(iblk)%bedexch(i, j) + &
+                           &deltat*part_dissolve_bed_exch(scalar_source(ispecies)%part_param, &
+                           &    scalar_source(sphase)%sediment_param, iblk, i, j, dconc, bconc)
 
-                                ! check to make sure masses do not go negative
+                      ! check to make sure masses do not go negative
 
-                   IF (bed(iblk)%sediment(i, j, ifract) .LE. 0.0) THEN
-                      bed(iblk)%particulate(i, j, ispecies) = 0.0
-                   END IF
-                   IF (bed(iblk)%particulate(i, j, ispecies) .LT. 0.0) THEN
-                      IF (bed(iblk)%particulate(i, j, ispecies) .LT. bad_negative) THEN
-                         WRITE(buffer,*) 'negative particulate mass ',&
-                              &bed(iblk)%particulate(i, j, ispecies), ' set to zero: species=',&
-                              &ispecies, ', block=', iblk, ', i=', i, ', j=', j
-                         CALL error_message(buffer)
+                      IF (bed(iblk)%sediment(i, j, ifract) .LE. 0.0) THEN
+                         bed(iblk)%particulate(i, j, ispecies) = 0.0
                       END IF
-                      bed(iblk)%particulate(i, j, ispecies) = 0.0
+                      IF (bed(iblk)%particulate(i, j, ispecies) .LT. 0.0) THEN
+                         IF (bed(iblk)%particulate(i, j, ispecies) .LT. bad_negative) THEN
+                            WRITE(buffer,*) 'negative particulate mass ',&
+                                 &bed(iblk)%particulate(i, j, ispecies), ' set to zero: species=',&
+                                 &ispecies, ', block=', iblk, ', i=', i, ', j=', j
+                            CALL error_message(buffer)
+                         END IF
+                         bed(iblk)%particulate(i, j, ispecies) = 0.0
+                      END IF
                    END IF
                 END DO
              END DO

@@ -58,6 +58,8 @@ MODULE scalars_source
      CHARACTER (LEN=80) :: description
      CHARACTER (LEN=25) :: units
 
+     DOUBLE PRECISION :: initial
+
                                 ! conversion from supplied volume
                                 ! units to cubic feet:
                                 ! e.g. kg/l*(28.317 l/ft^3) = kg/ft^3
@@ -142,6 +144,7 @@ CONTAINS
        scalar_source(id)%description = long_name
        scalar_source(id)%units = units
        scalar_source(id)%conversion = 1.0
+       scalar_source(id)%initial = conc_initial
        scalar_source(id)%scheme = diff_upwind
        scalar_source(id)%cds_blend = 0.0
        scalar_source(id)%relax = 1.0
@@ -208,6 +211,13 @@ CONTAINS
                 CALL error_message(buffer, fatal=.TRUE.)
              END IF
              READ(alloptions(iopt+1),*) scalar_source(id)%conversion
+             iopt = iopt + 1
+          CASE ('INITIAL') 
+             IF ((iopt + 1 .GT. source_max_option) .OR. (LEN_TRIM(alloptions(iopt+1)) .LE. 0)) THEN
+                WRITE(buffer, *) 'additional argument missing for INITIAL keyword'
+                CALL error_message(buffer, fatal=.TRUE.)
+             END IF
+             READ(alloptions(iopt+1),*) scalar_source(id)%initial
              iopt = iopt + 1
           CASE DEFAULT
              options(jopt) = alloptions(iopt)

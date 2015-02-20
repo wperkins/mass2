@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created December 31, 2010 by William A. Perkins
-! Last Change: 2014-06-09 14:48:25 d3g096
+! Last Change: 2015-02-20 10:46:38 d3g096
 ! ----------------------------------------------------------------
 
 
@@ -95,7 +95,8 @@ CONTAINS
     IF (do_transport) THEN
        DO i = 1, max_species
           DO iblock =1, max_blocks
-             CALL block_var_initialize(species(i)%scalar(iblock)%concvar, conc_initial)
+             CALL block_var_initialize(species(i)%scalar(iblock)%concvar, &
+                  &scalar_source(i)%initial)
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_CURRENT)
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLD)
              CALL block_var_put(species(i)%scalar(iblock)%concvar, BLK_VAR_OLDOLD)
