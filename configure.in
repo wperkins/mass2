@@ -8,7 +8,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 25, 2003 by William A. Perkins
-# Last Change: 2014-04-25 10:51:24 d3g096
+# Last Change: 2015-03-19 08:35:28 d3g096
 # -------------------------------------------------------------
 
 # -------------------------------------------------------------
@@ -98,6 +98,43 @@ ACX_PETSC([petsc_ok=1], [petsc_ok=0])
 if test x$petsc_ok != x1; then
     AC_MSG_ERROR([A working PETSc version 3.x library is required])
 fi
+
+# -------------------------------------------------------------
+# Some version substitutions
+# -------------------------------------------------------------
+
+AC_PATH_PROG(svnversioncommand, svnversion)
+if test "X$svnversioncommand" = "X" || test `$svnversioncommand -n '.'` = "exported"; then
+   svnver=`cat saved_svn_version.txt`     
+else
+   svnver=`$svnversioncommand -n '.' `
+   echo "$svnver" > saved_svn_version.txt
+fi
+AC_DEFINE_UNQUOTED(MASS2_SVN_REVISION, "$svnver", [svn repository reversion])
+
+AC_PATH_PROG(svncommand, svn)
+if test "X$svncommand" = "X"; then
+    svnver=`cat saved_svn_version_date.txt`
+    svnpath=`cat saved_svn_path.txt`
+else 
+    $svncommand info '.' > /dev/null
+    if test $? = 0; then
+        $svncommand info '.' | \
+            $AWK '/Last Changed Date:/ {sub(/Last Changed Date: */, ""); print $0}' \
+            > saved_svn_version_date.txt
+        $svncommand info '.' | \
+            $AWK '/Relative URL:/ {sub(/Relative URL: *../, ""); print $0}' \
+            > saved_svn_path.txt
+
+    fi  
+    svnver=`cat saved_svn_version_date.txt`   
+    svnpath=`cat saved_svn_path.txt`
+fi
+AC_DEFINE_UNQUOTED(MASS2_SVN_REVISION_DATE, "$svnver", [svn repository date])
+AC_DEFINE_UNQUOTED(MASS2_SVN_PATH, "$svnpath", [svn repository relative path])
+unset svnver
+
+
 
 # -------------------------------------------------------------
 # Output

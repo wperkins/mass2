@@ -10,7 +10,7 @@
 # Last Change: 2014-06-04 13:48:28 d3g096
 # -------------------------------------------------------------
 
-MPIRUN = mpirun
+MPIRUN = mpiexec
 NPROC = 4
 MODEL = ../../../mass2
 

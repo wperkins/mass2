@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2014-06-17 10:04:43 d3g096
+! Last Change: 2015-03-19 08:56:36 d3g096
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -487,8 +487,9 @@ SUBROUTINE banner()
   WRITE(*,*)' / /  / / ___ |___/ /__/ /         '
   WRITE(*,*)'/_/  /_/_/  |_/____/____/          '
   WRITE(*,*)
-  WRITE(*,*) code_version
-  WRITE(*,*) code_date
+  WRITE(*,*)PACKAGE_STRING, ' (Parallel)'
+  WRITE(*,*)'Revision: ', MASS2_SVN_REVISION, ' (', MASS2_SVN_PATH, ')'
+  WRITE(*,*)'Revision Date: ', MASS2_SVN_REVISION_DATE
   WRITE(*,*)
   WRITE(*,*)'Developed and Maintained by'
   WRITE(*,*)'Pacific Northwest National Laboratory'
@@ -497,7 +498,8 @@ SUBROUTINE banner()
   WRITE(*,*)'    Dr. Marshall C. Richmond <marshall.richmond@pnl.gov>'
   WRITE(*,*)'    William A. Perkins <william.perkins@pnl.gov>'
   WRITE(*,*)
-  WRITE(*,'(" Running on ", I3, " processors")') ga_nnodes()
+  WRITE(*,'(" Running ", I4, " processes on ", I3, " compute nodes")') &
+       &ga_nnodes(), ga_cluster_nnodes()
   WRITE(*,'(" Using Global Arrays ", I1, ".", I1)') GA_VERSION_MAJOR, GA_VERSION_MINOR
   WRITE(*,'(" Using PETSc ",I1,".",I1,".",I1,"-p",I1," (", A, ")")') &
        &PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR, PETSC_VERSION_PATCH,&

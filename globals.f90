@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created January  3, 2011 by William A. Perkins
-! Last Change: Tue Jan 18 12:09:40 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+! Last Change: 2015-03-19 08:38:49 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -20,9 +20,6 @@ MODULE globals
   IMPLICIT NONE
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
-  CHARACTER (LEN=80), SAVE :: code_version = "MASS2 0.27 (Parallel)"
-  CHARACTER (LEN=80), SAVE :: code_date = "Release: $Date$"
 
   ! ----------------------------------------------------------------
   ! Some physical, and other, constants that need to be known globally 

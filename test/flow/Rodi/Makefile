@@ -7,12 +7,12 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created February 23, 2004 by William A. Perkins
-# Last Change: Thu Oct 30 10:54:50 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+# Last Change: 2015-01-06 08:51:52 d3g096
 # -------------------------------------------------------------
 # $Id$
 
 
-MPIRUN = mpirun
+MPIRUN = mpiexec
 NPROC = 4
 MODEL = ../../../mass2
 TECPLOT = tecplot
