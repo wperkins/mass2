@@ -7,17 +7,22 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: 2014-04-22 07:56:37 d3g096
+# Last Change: 2015-04-30 10:54:49 d3g096
 # -------------------------------------------------------------
 # $Id$
 
 MPIRUN = mpirun
 NPROC = 4
 MODEL = ../../../mass2
+PYTHON = python
+GNUPLOT = gnuplot
+EPSTOPDF = epstopdf
 
 EPSFILES = \
 	plot-depth.eps \
 	plot-elev.eps
+
+PDFFILES = $(EPSFILES:%.eps=%.pdf)
 
 MODELFILES = \
 	mass2.cfg \
@@ -28,20 +33,18 @@ MODELFILES = \
 	stage.dat \
 	gage_control.dat
 
-all: $(EPSFILES)
+all: $(PDFFILES)
 
 $(EPSFILES): plot000.cgns
 
-.PHONY: run
-
-plot000.cgns: run
-grid.cgns: run
-
-run: $(MODELFILES) $(MODEL)
+plot000.cgns: $(MODELFILES) $(MODEL)
 	$(MPIRUN) -np $(NPROC) $(MODEL)
 
-%.eps: %.gp
-	gnuplot $< > $@
+%.eps: %.gp 
+	PYTHON=$(PYTHON) $(GNUPLOT) $< > $@
+
+%.pdf: %.eps
+	$(EPSTOPDF) --filter < $< > $@
 
 clean:: 
 	rm -f *~
