@@ -7,37 +7,49 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 30, 2002 by William A. Perkins
-# Last Change: Tue Jan  6 09:01:41 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2015-04-30 11:06:59 d3g096
 # -------------------------------------------------------------
 # $Id$
 
+MPIRUN = mpirun
+NPROC = 4
 MODEL = ../../../mass2
+PYTHON = python
+GNUPLOT = gnuplot
+EPSTOPDF = epstopdf
 
 EPSFILES = \
 	plot-depth.eps \
 	plot-elev.eps
 
+PDFFILES = $(EPSFILES:%.eps=%.pdf)
+
 MODELFILES = \
-	mass2_v027.cfg \
+	mass2.cfg \
+	mass2.petscrc \
 	bcspecs.dat \
 	flow.dat \
 	grid.dat \
-	stage.dat
+	stage.dat \
+	gage_control.dat
 
-all: $(EPSFILES)
+all: $(PDFFILES)
 
-$(EPSFILES): plot.nc
+$(EPSFILES): plot000.cgns
 
+plot000.cgns: $(MODELFILES) $(MODEL)
+	$(MPIRUN) -np $(NPROC) $(MODEL)
 
-plot.nc: $(MODELFILES) $(MODEL)
-	$(MODEL)
+%.eps: %.gp 
+	PYTHON=$(PYTHON) $(GNUPLOT) $< > $@
 
-%.eps: %.gp
-	gnuplot $< > $@
+%.pdf: %.eps
+	$(EPSTOPDF) --filter < $< > $@
 
 clean:: 
 	rm -f *~
-	rm -f error-warning.out mass_source_monitor.out output.out status.out
-	rm -f gridplot1.dat
-	rm -f plot.nc 
+	rm -f error-warning*.out mass_source_monitor.out output*.out status*.out
+	rm -f gridplot1.dat 
+	rm -f plot000.cgns grid.cgns
 	rm -f $(EPSFILES)
+

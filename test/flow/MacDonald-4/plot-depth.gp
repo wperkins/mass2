@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January  2, 2004 by William A. Perkins
-# Last Change: Wed Jan  7 09:35:25 2004 by William A. Perkins <perk@leechong.pnl.gov>
+# Last Change: 2015-04-30 10:11:29 d3g096
 # -------------------------------------------------------------
 # $Id$
 
@@ -22,6 +22,6 @@ set pointsize 0.5
 
 set key bottom
 
-plot "<perl ../../../scripts/mass2slice.pl -i -l plot.nc depth 1 26" using ($3*0.3048):($4*0.3048) title "Simulated" with points 3, \
-     '<perl mkgrid.pl -s' using ($1*0.3048):($2*0.3048) title "Analytic" with lines 7
+plot "<python ../../../scripts/profile.py -J 36 plot000.cgns depth" every 15 using ($5*0.3048):($6*0.3048) title "Simulated" with points ls 3, \
+     '<perl mkgrid.pl -s' using ($1*0.3048):($2*0.3048) title "Analytic" with lines ls 7
      
