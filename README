@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2014-06-08 10:57:36 d3g096
+Last Change: 2015-04-30 11:51:03 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -87,15 +87,15 @@ configure \
     --with-global-arrays=/usr/local/openmpi-intel
 
 set prefix = /net/flophouse/files0/perksoft/linux64
-set path = ($prefix/openmpi44/bin $path)
+set path = ($prefix/openmpi48/bin $path)
 configure \
     FC=mpif90 \
     MPIFC=mpif90 \
-    FC_CPPFLAG=-fpp \
     FCFLAGS="-g -fbounds-check -ffpe-trap=invalid,zero,overflow" \
-    PETSC_DIR="/usr/local/openmpi-intel" \
+    PETSC_DIR="$prefix/../petsc-3.5.2" \
+    PETSC_ARCH="linux-gnu48-real-opt" \
     --with-cgns="$prefix/cgns2" \
-    --with-global-arrays=/usr/local/openmpi-intel
+    --with-global-arrays="$prefix/openmpi48"
     
 
 

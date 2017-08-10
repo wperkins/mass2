@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2015-02-19 15:36:31 d3g096
+! Last Change: 2015-04-30 12:07:56 d3g096
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -21,6 +21,8 @@ MODULE plot_cgns
        &max_blocks, plot_cgns_docell, plot_cgns_dodesc, plot_cgns_maxtime
   USE block_grid
   USE block_hydro
+  USE block_hydro_bc
+
 
   IMPLICIT NONE
 
@@ -430,18 +432,19 @@ CONTAINS
 !!$       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
 !!$            &"cannot link to grid metrics path: " // buffer, fatal=.TRUE.)
 
-       WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneBC")') zoneidx
-       CALL cg_link_write_f('ZoneBC', grid_cgns_name, buffer, ierr)
-       IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
-            &"cannot link to zone bc: " // buffer, fatal=.TRUE.)
-
+       IF (block_bc(zoneidx)%num_bc .GT. 0) THEN
+          WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneBC")') zoneidx
+          CALL cg_link_write_f('ZoneBC', grid_cgns_name, buffer, ierr)
+          IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
+               &"cannot link to zone bc: " // buffer, fatal=.TRUE.)
+       END IF
        IF (nzones .GT. 1) THEN
           WRITE(buffer, '("MASS2/Block", I2.2, "/ZoneGridConnectivity")') zoneidx
           CALL cg_link_write_f('ZoneGridConnectivity', grid_cgns_name, buffer, ierr)
           IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
                &"cannot link to zone connection path: " // buffer, fatal=.TRUE.)
        END IF
-
+          
        
     END DO
   END SUBROUTINE plot_cgns_link_coord
@@ -451,8 +454,6 @@ CONTAINS
   ! SUBROUTINE plot_cgns_write_all_bc
   ! ----------------------------------------------------------------
   SUBROUTINE plot_cgns_write_bc(fileidx, baseidx, zoneidx, blk, iblock)
-
-    USE block_hydro_bc
 
     IMPLICIT NONE
 

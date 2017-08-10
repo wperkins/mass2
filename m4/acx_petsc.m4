@@ -48,12 +48,12 @@ elif test ! -d "$PETSC_DIR"; then
 elif test ! -d "$PETSC_DIR/include"; then
     AC_MSG_RESULT(broken)
     m4_default([$2], [AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include not found; check PETSC_DIR])])
-elif test ! -d "$PETSC_DIR/include/finclude"; then
+elif test ! -d "$PETSC_DIR/include/petsc/finclude"; then
     AC_MSG_RESULT(broken)
-    m4_default([$2], [AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include/finclude not found; check PETSC_DIR])])
-elif test ! -f "$PETSC_DIR/include/finclude/petsc.h"; then
+    m4_default([$2], [AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include/petsc/finclude not found; check PETSC_DIR])])
+elif test ! -f "$PETSC_DIR/include/petsc/finclude/petsc.h"; then
     AC_MSG_RESULT(broken)
-    m4_default([$2], [AC_MSG_ERROR([PETSc header file $PETSC_DIR/include/finclude/petsc.h not found; check PETSC_DIR])])
+    m4_default([$2], [AC_MSG_ERROR([PETSc header file $PETSC_DIR/include/petsc/finclude/petsc.h not found; check PETSC_DIR])])
 fi
 AC_MSG_RESULT([$PETSC_DIR])
 
@@ -67,7 +67,7 @@ AC_MSG_RESULT([$PETSC_DIR])
 #  V. 3.x: $PETSC_DIR/$PETSC_ARCH/conf/petscvariables
 
 acx_petsc_pkg_file=" \
-    $PETSC_DIR/$PETSC_ARCH/conf/petscvariables \
+    $PETSC_DIR/$PETSC_ARCH/lib/petsc/conf/petscvariables \
 "
 PETSC_PKG=""
 for i in $acx_petsc_pkg_file; do
@@ -89,7 +89,7 @@ fi
 
 # and the header file
 if test $acx_petsc_ok = yes; then
-AC_CHECK_FILE($PETSC_DIR/include/finclude/petsc.h, , [acx_petsc_ok=disable])
+AC_CHECK_FILE($PETSC_DIR/include/petsc/finclude/petsc.h, , [acx_petsc_ok=disable])
 fi
 
 if test $acx_petsc_ok = yes; then
@@ -115,7 +115,7 @@ fi
 
 AC_SUBST([PETSC_FCFLAGS])
 AC_SUBST([PETSC_FLIBS])
-PETSC_FCFLAGS="-I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include"
+PETSC_FCFLAGS="-I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include -I$PETSC_DIR/include/petsc"
 PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS $PETSC_EXTERNAL_LIB_BASIC"
 
 # Ensure the comiler finds the library...

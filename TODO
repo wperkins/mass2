@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: Tue Nov  1 11:41:20 2011 by William A. Perkins <d3g096@PE10900.pnl.gov>
+Last Change: 2017-08-10 09:47:14 d3g096
 -------------------------------------------------------------
 
 $Id$
@@ -51,20 +51,7 @@ High Priority:
         * dump plot output  (if enabled)
         * combinations of the above
 
-    * Transient CGNS that Visit understands
-
-        * needs to be 2D
-        * no CoordinateZ?
-        * Need a BaseIterativeData node (but does not require time?)
-
 Low Priority:
-
-    * get parallel version working again; use Global Arrays 
-
-    * utility to plot gage.nc directly -- perhaps some combination of
-      perl script and gnuplot, maybe even with a GUI like pTk.
-
-    * just do away with NetCDF gage output
 
     * add the capability to specify a non-point contaminant source
       that avoids the bed; this could be implemented by just using a
@@ -75,35 +62,9 @@ Low Priority:
     * Ability to identify when things aren't going well, e.g. really
       big negative depths, and just crash
 
-Wetting/Drying Issues:
-
-    * Check for "dry" cells when applying a scalar boundary condition.
-
-    * Test scalars and wetting and drying, particularly TDG and
-      temperature. 
-
-    * check to see how dead zones affect mass source
-
 Code Clean Up:
 
-    * put the configuration files in CVS
-
     * configuration should use the CGNS macros from TE2THYS/PT6 
-
-    * get rid of NetCDF; put gage output in text files?
-
-    * check time series input to make sure it covers the entire
-      simulation period
-
-    * put the transient CGNS stuff back in (for visit)
-
-    * change CGNS output variables to standard names (for visit)
-
-    * start using doxygen for code documentation
-
-    * find and apply an "indent"-like program for Fortran 90/95 --
-      needs to do formatting and make sure variable names are all the
-      same case
 
 Wish List:
 

@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: 2014-04-03 10:34:27 d3g096
+! Last Change: 2017-08-10 08:54:28 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -362,8 +362,13 @@ CONTAINS
           CHKERRQ(ierr)
           CALL KSPSetTolerances(pinfo(iblock)%eq(ieq)%ksp, rtol, atol, dtol, its, ierr)
           CHKERRQ(ierr)
+#if PETSC_VERSION_LT(3,5,0)
           CALL KSPDefaultConvergedSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
           CHKERRQ(ierr)
+#else
+          CALL KSPConvergedDefaultSetUIRNorm(pinfo(iblock)%eq(ieq)%ksp, ierr) 
+          CHKERRQ(ierr)
+#endif
 
           ! need to change the preconditioner, since the default
           ! (ILU) does not work with MATMPIAIJ matrixes
@@ -396,8 +401,8 @@ CONTAINS
 
        END IF
     END DO
-    CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
-    CHKERRQ(ierr)
+    ! CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
+    ! CHKERRQ(ierr)
     solver_initialize_block =  ierr
   END FUNCTION solver_initialize_block
 
@@ -507,7 +512,7 @@ CONTAINS
 
     call KSPSetOperators(pinfo(iblock)%eq(ieq)%ksp,&
          &pinfo(iblock)%eq(ieq)%A,pinfo(iblock)%eq(ieq)%A,&
-         &SAME_NONZERO_PATTERN, ierr)
+         &ierr)
     CHKERRQ(ierr)
     call KSPSolve(pinfo(iblock)%eq(ieq)%ksp, &
          &pinfo(iblock)%eq(ieq)%b, pinfo(iblock)%eq(ieq)%x, ierr)
