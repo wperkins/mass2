@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: 2017-08-10 08:54:28 d3g096
+! Last Change: 2017-08-25 10:14:24 d3g096
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -401,8 +401,11 @@ CONTAINS
 
        END IF
     END DO
-    ! CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
-    ! CHKERRQ(ierr)
+    ! after 3.5.0, PetscSynchronizedFlush causes a SEGV
+#if PETSC_VERSION_LT(3,5,0)
+    CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
+    CHKERRQ(ierr)
+#endif
     solver_initialize_block =  ierr
   END FUNCTION solver_initialize_block
 
@@ -587,8 +590,11 @@ CONTAINS
          &depth_time, depth_time/total_time*100.0
     CALL PetscSynchronizedPrintf(MPI_COMM_WORLD, msg, ierr)
     CHKERRQ(ierr)
+    
+#if PETSC_VERSION_LT(3,5,0)
     CALL PetscSynchronizedFlush(MPI_COMM_WORLD, ierr)
     CHKERRQ(ierr)
+#endif
     
     DEALLOCATE(pinfo)
     CALL PetscFinalize(ierr)

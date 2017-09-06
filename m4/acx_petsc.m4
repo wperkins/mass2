@@ -27,6 +27,7 @@
 AC_DEFUN([ACX_PETSC], [
 
 acx_petsc_ok=yes
+acx_petsc_finclude=unknown
 
 AC_PREREQ(2.60)
 AC_REQUIRE([AC_CANONICAL_HOST])
@@ -41,20 +42,28 @@ AC_ARG_VAR(PETSC_ARCH, [PETSc configuration])
 AC_MSG_CHECKING([for PETSc dir])
 if test -z "$PETSC_DIR"; then
     AC_MSG_RESULT(no)
-    m4_default([$2], [AC_MSG_ERROR([PETSc not found; set PETSC_DIR])])
+    AC_MSG_ERROR([PETSc not found; set PETSC_DIR])
+    acx_petsc_ok=no
 elif test ! -d "$PETSC_DIR"; then
-    AC_MSG_RESULT(no)
-    m4_default([$2], [AC_MSG_ERROR([PETSc not found; PETSC_DIR=$PETSC_DIR is invalid])])
+    AC_MSG_ERROR([PETSc not found; PETSC_DIR=$PETSC_DIR is invalid])
+    acx_petsc_ok=no
 elif test ! -d "$PETSC_DIR/include"; then
-    AC_MSG_RESULT(broken)
-    m4_default([$2], [AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include not found; check PETSC_DIR])])
-elif test ! -d "$PETSC_DIR/include/petsc/finclude"; then
-    AC_MSG_RESULT(broken)
-    m4_default([$2], [AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include/petsc/finclude not found; check PETSC_DIR])])
-elif test ! -f "$PETSC_DIR/include/petsc/finclude/petsc.h"; then
-    AC_MSG_RESULT(broken)
-    m4_default([$2], [AC_MSG_ERROR([PETSc header file $PETSC_DIR/include/petsc/finclude/petsc.h not found; check PETSC_DIR])])
+    AC_MSG_ERROR([PETSc include dir $PETSC_DIR/include not found; check PETSC_DIR])
+    acx_petsc_ok=broken
 fi
+
+if test x"$acx_petsc_ok" = xyes; then
+    # find the fortran include directory
+    if test -d "$PETSC_DIR/include/finclude"; then # 3.0 < PETSc < 3.6
+        acx_petsc_finclude="$PETSC_DIR/include"
+    elif test -d  "$PETSC_DIR/include/petsc/finclude"; then #  PETSc >= 3.6
+        acx_petsc_finclude="$PETSC_DIR/include/petsc"
+    else
+       AC_MSG_ERROR([PETSc Fortran include directory not found; check installation])
+       acx_petsc_ok=broken
+    fi
+fi
+
 AC_MSG_RESULT([$PETSC_DIR])
 
 # 
@@ -65,9 +74,16 @@ AC_MSG_RESULT([$PETSC_DIR])
 # just included in the Makefiles.  These files are:
 # 
 #  V. 3.x: $PETSC_DIR/$PETSC_ARCH/conf/petscvariables
+#  V. 3.7: $PETSC_DIR/$PETSC_ARCH/lib/petsc/conf/petscvariables
+#          $PETSC_DIR/lib/petsc/conf/petscvariables (in MacPorts)
+
+acx_petsc_pkg_file=unknown
+
 
 acx_petsc_pkg_file=" \
     $PETSC_DIR/$PETSC_ARCH/lib/petsc/conf/petscvariables \
+    $PETSC_DIR/$PETSC_ARCH/lib/petsc/conf/petscvariables \
+    $PETSC_DIR/lib/petsc/conf/petscvariables
 "
 PETSC_PKG=""
 for i in $acx_petsc_pkg_file; do
@@ -89,7 +105,8 @@ fi
 
 # and the header file
 if test $acx_petsc_ok = yes; then
-AC_CHECK_FILE($PETSC_DIR/include/petsc/finclude/petsc.h, , [acx_petsc_ok=disable])
+    AC_CHECK_FILE(${acx_petsc_finclude}/finclude/petsc.h, , [acx_petsc_ok=disable])
+    AC_CHECK_FILE(${acx_petsc_finclude}/finclude/petscsys.h, , [acx_petsc_ok=disable])
 fi
 
 if test $acx_petsc_ok = yes; then
@@ -115,7 +132,7 @@ fi
 
 AC_SUBST([PETSC_FCFLAGS])
 AC_SUBST([PETSC_FLIBS])
-PETSC_FCFLAGS="-I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include -I$PETSC_DIR/include/petsc"
+PETSC_FCFLAGS="-I$acx_petsc_finclude -I$PETSC_DIR/$PETSC_ARCH/include -I$PETSC_DIR/include"
 PETSC_FLIBS="-L$PETSC_DIR/$PETSC_ARCH/lib -L$PETSC_DIR/lib -lpetsc $PACKAGES_LIBS $PETSC_EXTERNAL_LIB_BASIC"
 
 # Ensure the comiler finds the library...

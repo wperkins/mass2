@@ -8,7 +8,7 @@ Pacific Northwest Laboratory
 -------------------------------------------------------------
 -------------------------------------------------------------
 Created November 17, 1999 by William A. Perkins
-Last Change: 2015-04-30 11:51:03 d3g096
+Last Change: 2017-08-25 10:45:44 d3g096
 $Id$
 -------------------------------------------------------------
 
@@ -59,6 +59,42 @@ configure \
     --with-cgns="$prefix/cgns2" \
     --with-global-arrays=$prefix/mass2 \
     --prefix="$prefix/mass2"
+
+configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
+    FC_CPPFLAG="-x f95-cpp-input" \
+    PETSC_DIR="$prefix/../petsc-3.4.4" \
+    PETSC_ARCH="arch-macosx-fortran-opt" \
+    --enable-maintainer-mode \
+    --with-cgns="$prefix/cgns2" \
+    --with-global-arrays=$prefix/mass2 \
+    --prefix="$prefix/mass2"
+
+configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FCFLAGS="-O2 -g -ffpe-trap=invalid,zero,overflow" \
+    FC_CPPFLAG="-x f95-cpp-input" \
+    LDFLAGS="-L/opt/local/lib" LIBS="-lhdf5" \
+    PETSC_DIR="/opt/local/lib/petsc" \
+    PETSC_ARCH="" \
+    --enable-maintainer-mode \
+    --with-cgns="/opt/local" \
+    --with-global-arrays="/opt/local"
+
+configure \
+    FC=mpif90 \
+    MPIFC=mpif90 \
+    FCFLAGS="-g -ffpe-trap=invalid,zero,overflow" \
+    FC_CPPFLAG="-x f95-cpp-input" \
+    LDFLAGS="-L/opt/local/lib" LIBS="-lhdf5" \
+    PETSC_DIR="/opt/local/lib/petsc" \
+    PETSC_ARCH="" \
+    --enable-maintainer-mode \
+    --with-cgns="/opt/local" \
+    --with-global-arrays="/opt/local"
 
 Flophouse, with Intel compiler:
 

@@ -7,7 +7,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created March 26, 2003 by William A. Perkins
-# Last Change: 2015-03-19 08:21:38 d3g096
+# Last Change: 2017-08-25 07:50:01 d3g096
 # -------------------------------------------------------------
 
 AM_FCFLAGS = \
@@ -222,7 +222,6 @@ clean-local:
 
 EXTRA_DIST = \
 	README \
-	Makefile.mpi \
 	bed_functions.inc \
 	saved_svn_version.txt \
 	saved_svn_version_date.txt
