@@ -13,7 +13,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created January 17, 2012 by William A. Perkins
-# Last Change: Tue Jan 17 14:50:15 2012 by William A. Perkins <d3g096@PE10900.pnl.gov>
+# Last Change: 2018-06-12 07:52:41 d3g096
 # -------------------------------------------------------------
 
 # RCS ID: $Id$
@@ -28,7 +28,7 @@ import getopt, sys, os
 
 att = View2DAttributes()
 att.viewportCoords = (0.0, 1.0, 0.0, 1.0)
-att.fullFrameActivationMode = att.On
+att.fullFrameActivationMode = att.Auto
 fullFrameAutoThreshold = 100
 SetView2D(att)
 
@@ -51,7 +51,22 @@ OpenDatabase("plot000.cgns")
 
 # depth
 AddPlot("Pseudocolor", "depth", 1, 1)
+pc = PseudocolorAttributes()
+pc.scaling = pc.Log
 SetActivePlots(0)
+SetPlotOptions(pc)
+
+# velocity vectors
+AddPlot("Vector", "Velocity", 1, 1)
+vp = VectorAttributes()
+vp.colorByMag = 0
+vp.scale = 0.025
+vp.useLegend = 0
+vp.useStride = 1
+SetActivePlots(1)
+SetPlotOptions(vp)
+
+SetActivePlots((0,1))
 
 # blank out dry cells
 AddOperator("Threshold", 1)
