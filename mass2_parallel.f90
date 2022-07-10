@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2015-03-19 08:56:36 d3g096
+! Last Change: 2022-07-10 12:20:43 perk
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -473,11 +473,12 @@ END SUBROUTINE solver_setup
 SUBROUTINE banner()
   
   USE globals
+  USE petscsys
 
   IMPLICIT NONE
 
 #include "global.fh"
-#include "finclude/petscsys.h"
+#include <petsc/finclude/petscsys.h>
 
   WRITE(*,*)'                             ___   '
   WRITE(*,*)'                            /__ \  '
@@ -487,15 +488,14 @@ SUBROUTINE banner()
   WRITE(*,*)' / /  / / ___ |___/ /__/ /         '
   WRITE(*,*)'/_/  /_/_/  |_/____/____/          '
   WRITE(*,*)
-  WRITE(*,*)PACKAGE_STRING, ' (Parallel)'
-  WRITE(*,*)'Revision: ', MASS2_SVN_REVISION, ' (', MASS2_SVN_PATH, ')'
-  WRITE(*,*)'Revision Date: ', MASS2_SVN_REVISION_DATE
+  WRITE(*,*) 'MASS2 (Parallel)'
+  WRITE(*,*)'Revision: '
+  WRITE(*,*)'Revision Date: '
   WRITE(*,*)
   WRITE(*,*)'Developed and Maintained by'
   WRITE(*,*)'Pacific Northwest National Laboratory'
   WRITE(*,*)
   WRITE(*,*)'Contact: '
-  WRITE(*,*)'    Dr. Marshall C. Richmond <marshall.richmond@pnl.gov>'
   WRITE(*,*)'    William A. Perkins <william.perkins@pnl.gov>'
   WRITE(*,*)
   WRITE(*,'(" Running ", I4, " processes on ", I3, " compute nodes")') &
