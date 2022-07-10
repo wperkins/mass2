@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  9, 2022 by Bill Perkins
-# Last Change: 2022-07-10 07:47:56 perk
+# Last Change: 2022-07-10 08:02:18 perk
 # -------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.16)
@@ -37,7 +37,7 @@ message(STATUS "Using PETSc version ${PETSc_VERSION}")
 message(STATUS "PETSc_INCLUDES: ${PETSc_INCLUDE_DIRS}")
 message(STATUS "PETSc_LIBRARIES: ${PETSc_LIBRARIES}")
 
-include_directories (AFTER ${PETSc_INCLUDES})
+include_directories (BEFORE ${PETSc_INCLUDE_DIRS})
 
 # -------------------------------------------------------------
 # Subdirectories
@@ -50,3 +50,17 @@ include_directories(BEFORE
   ${CMAKE_CURRENT_BINARY_DIR}/time_series
   )
 
+# -------------------------------------------------------------
+# solver_test
+# -------------------------------------------------------------
+add_executable(solver_test
+  solver_test.f90 
+  solver_common.f90 
+  solver_backup.f90 
+  solver_petsc.F90
+  )
+target_link_libraries(solver_test
+  ts
+  ${PETSc_LIBRARIES}
+  ${MPI_Fortran_LIBRARIES}
+  )

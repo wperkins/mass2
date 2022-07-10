@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 10, 2003 by William A. Perkins
-! Last Change: 2017-08-25 10:14:24 d3g096
+! Last Change: 2022-07-10 08:01:16 perk
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! MODULE solver
@@ -15,25 +15,13 @@
 MODULE solver_module
 
   USE solver_common
+#include <petsc/finclude/petscksp.h>
+  USE petscksp
 
   IMPLICIT NONE
 
 
   CHARACTER (LEN=80), PRIVATE, SAVE :: rcsid = "$Id$"
-
-#include "finclude/petscsys.h"
-#include "finclude/petsclog.h"
-#include "finclude/petscdef.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
-#include "finclude/petscmat.h"
-#include "finclude/petscmat.h90"
-#include "finclude/petscpc.h"
-#include "finclude/petscpc.h90"
-#include "finclude/petscksp.h"
-#include "finclude/petscksp.h90"
-#include "finclude/petscis.h"
-#include "finclude/petscis.h90"
 
                                 ! individual blocks need to have save
                                 ! matrices, vectors, and solver
