@@ -32,14 +32,14 @@ MODULE energy_flux
        &0.00 /)           ! light extinction coefficient
 
   CHARACTER (len=20), PARAMETER, PUBLIC :: energy_coeff_name(ENERGY_COEFF_MAX) = (/&
-       &'WINDA', &
-       &'WINDB', &
+       &'WINDA     ', &
+       &'WINDB     ', &
        &'CONDUCTION', &
-       &'BRUNT', &
-       &'EMISS', &
-       &'REFLECT', &
-       &'ALBEDO', &
-       &'EXTINCT' /)
+       &'BRUNT     ', &
+       &'EMISS     ', &
+       &'REFLECT   ', &
+       &'ALBEDO    ', &
+       &'EXTINCT   ' /)
 
 CONTAINS
   !######################################################################
