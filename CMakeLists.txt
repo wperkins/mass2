@@ -9,7 +9,7 @@
 # -------------------------------------------------------------
 # -------------------------------------------------------------
 # Created July  9, 2022 by Bill Perkins
-# Last Change: 2022-07-10 13:25:11 perk
+# Last Change: 2022-07-10 13:53:58 perk
 # -------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.16)
@@ -73,6 +73,39 @@ message(STATUS "CGNS_LIBRARIES: ${CGNS_LIBRARIES}")
 include_directories (BEFORE ${CGNS_INCLUDE_DIRS})
 
 # -------------------------------------------------------------
+# GIT - for banner revision
+# -------------------------------------------------------------
+find_package(Git)
+
+if (GIT_EXECUTABLE) 
+
+  execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE MASS2_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --always --abbrev=6 --dirty
+    WORKING_DIRECTORY "${MASS2_SOURCE_DIR}"
+    OUTPUT_VARIABLE MASS2_REVISION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} log -1 --format=%cd --date=local
+    WORKING_DIRECTORY "${MASS2_SOURCE_DIR}"
+    OUTPUT_VARIABLE MASS2_REVISION_DATE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else(GIT_EXECUTABLE)
+  set(MASS2_BRANCH "Unknown")
+  set(MASS2_REVISION "Unknown")
+  set(MASS2_REVISION_DATE "Unknown")
+endif(GIT_EXECUTABLE)
+configure_file(banner.f90.in banner.f90 @ONLY)
+
+# -------------------------------------------------------------
 # Subdirectories
 # -------------------------------------------------------------
 
@@ -85,6 +118,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/time_series )
 # mass2
 # -------------------------------------------------------------
 set(mass2_src
+  "${CMAKE_CURRENT_BINARY_DIR}/banner.f90"
   bed.f90 
   bed_functions.f90 
   bed_var.f90 

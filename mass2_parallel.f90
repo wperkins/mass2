@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created February 14, 2003 by William A. Perkins
-! Last Change: 2022-07-10 12:20:43 perk
+! Last Change: 2022-07-10 13:48:27 perk
 ! ----------------------------------------------------------------
 
 ! RCS ID: $Id$ Battelle PNL
@@ -466,47 +466,6 @@ SUBROUTINE solver_setup()
   END DO
 END SUBROUTINE solver_setup
 
-
-! ----------------------------------------------------------------
-! SUBROUTINE banner
-! ----------------------------------------------------------------
-SUBROUTINE banner()
-  
-  USE globals
-  USE petscsys
-
-  IMPLICIT NONE
-
-#include "global.fh"
-#include <petsc/finclude/petscsys.h>
-
-  WRITE(*,*)'                             ___   '
-  WRITE(*,*)'                            /__ \  '
-  WRITE(*,*)'    __  ______   __________ __/ /  '
-  WRITE(*,*)'   /  |/  /   | / ___/ ___// __/   '
-  WRITE(*,*)'  / /|_/ / /| | \__ \\__ \/____/   '
-  WRITE(*,*)' / /  / / ___ |___/ /__/ /         '
-  WRITE(*,*)'/_/  /_/_/  |_/____/____/          '
-  WRITE(*,*)
-  WRITE(*,*) 'MASS2 (Parallel)'
-  WRITE(*,*)'Revision: '
-  WRITE(*,*)'Revision Date: '
-  WRITE(*,*)
-  WRITE(*,*)'Developed and Maintained by'
-  WRITE(*,*)'Pacific Northwest National Laboratory'
-  WRITE(*,*)
-  WRITE(*,*)'Contact: '
-  WRITE(*,*)'    William A. Perkins <william.perkins@pnl.gov>'
-  WRITE(*,*)
-  WRITE(*,'(" Running ", I4, " processes on ", I3, " compute nodes")') &
-       &ga_nnodes(), ga_cluster_nnodes()
-  WRITE(*,'(" Using Global Arrays ", I1, ".", I1)') GA_VERSION_MAJOR, GA_VERSION_MINOR
-  WRITE(*,'(" Using PETSc ",I1,".",I1,".",I1,"-p",I1," (", A, ")")') &
-       &PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR, PETSC_VERSION_PATCH,&
-       &PETSC_VERSION_DATE
-  WRITE(*,*)
-  
-END SUBROUTINE banner
 
 
 
