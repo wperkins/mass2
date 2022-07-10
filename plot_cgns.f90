@@ -7,7 +7,7 @@
 ! ----------------------------------------------------------------
 ! ----------------------------------------------------------------
 ! Created March 11, 2003 by William A. Perkins
-! Last Change: 2015-04-30 12:07:56 d3g096
+! Last Change: 2022-07-10 13:23:56 perk
 ! ----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
@@ -22,20 +22,9 @@ MODULE plot_cgns
   USE block_grid
   USE block_hydro
   USE block_hydro_bc
-
+  USE cgns
 
   IMPLICIT NONE
-
-  ! Some crap to make the Visual Fortran compiler for Windoze happy.
-  ! It has trouble with the variable argument lists these two CGNS
-  ! routines have. 
-
-  EXTERNAL cg_goto_f
-  !DEC!$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
-  EXTERNAL cg_array_write_f
-  !DEC!$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
-
-  INCLUDE 'cgnslib_f.h'
 
   CHARACTER (LEN=80), PRIVATE, PARAMETER :: grid_cgns_name = "grid.cgns"
   INTEGER, PRIVATE :: pfileidx
@@ -337,7 +326,7 @@ CONTAINS
     CHARACTER (LEN=*) :: name
     DOUBLE PRECISION, INTENT(IN) :: coord(1:size(1), 1:size(2))
     
-    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_coord"
+    CHARACTER (LEN=30), PARAMETER :: func = "plot_cgns_write_coord"
     CHARACTER (LEN=80) :: buffer
     INTEGER :: i, j, pos, coordidx, ierr
 
@@ -370,7 +359,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: fileidx, baseidx, zoneidx, ddataidx, size(:)
     CHARACTER (LEN=*) :: name
     DOUBLE PRECISION, INTENT(IN) :: metric(1:size(1), 1:size(2))
-    CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_write_metric"
+    CHARACTER (LEN=30), PARAMETER :: func = "plot_cgns_write_metric"
     CHARACTER (LEN=1024) :: buffer
     INTEGER :: i, j, pos, ierr
 
@@ -529,8 +518,8 @@ CONTAINS
              WRITE(bcname, '("CONN", I2.2, ".", I2.2)') b, p
              WRITE(dname, '("Block", I2.2)') &
                   &block_bc(iblock)%bc_spec(b)%con_block
-             CALL cg_conn_write_short_f(fileidx, baseidx, zoneidx, bcname, &
-                  &Vertex, Abutting1to1, PointRange, 2, pts, dname, bcidx, ierr)
+             ! CALL cg_conn_write_short_f(fileidx, baseidx, zoneidx, bcname, &
+             !      &Vertex, Abutting1to1, PointRange, 2, pts, dname, bcidx, ierr)
              ! CALL cg_conn_write_f(fileidx, baseidx, zoneidx, bcname, &
              !      &Vertex, Abutting1to1, PointRange, 2, pts, &
              !      &dname, Structured, PointRangeDonor, Integer, 2, pts, bcidx, ierr)
@@ -587,7 +576,7 @@ CONTAINS
     
     elapsed = elapsed - plot_cgns_start_time
     timeidx = MOD(plot_cgns_outstep, plot_cgns_maxtime) + 1
-    tmp_times(timeidx) = elapsed;
+    tmp_times(timeidx) = REAL(elapsed);
 
     DO iblock = 1, max_blocks
 
@@ -1104,7 +1093,7 @@ CONTAINS
     IMPLICIT NONE
 
     CHARACTER (LEN=20), PARAMETER :: func = "plot_cgns_file_close"
-    INTEGER :: ierr, times(2)
+    INTEGER :: ierr, times
 
     CALL cg_open_f(plot_file_name, MODE_MODIFY, pfileidx, ierr)
     IF (ierr .EQ. ERROR) CALL plot_cgns_error(func, &
@@ -1114,11 +1103,11 @@ CONTAINS
                                 ! figure out how many time planes are
                                 ! stored in this file
 
-    times(2) = 0
+    times = 0
 
     IF (plot_cgns_outstep .GT. 0) THEN
-       times(1) = MOD(plot_cgns_outstep, plot_cgns_maxtime) 
-       IF (times(1) .EQ. 0) THEN
+       times = MOD(plot_cgns_outstep, plot_cgns_maxtime) 
+       IF (times .EQ. 0) THEN
           times = plot_cgns_maxtime
        END IF
        CALL cg_simulation_type_write_f(pfileidx, pbaseidx, TimeAccurate, ierr)
