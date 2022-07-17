@@ -1,0 +1,711 @@
+2016-07-29  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (cgnsvtk_LDADD): Boost::System
+	library required for recent Boost versions
+
+2016-03-24  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* cgnszconv.cpp (main): optionally copy a solution to new file
+
+2015-12-23  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2stats.cpp, mass2solution.cpp, mass2flux.cpp: move to MASS2
+	code repository
+
+2015-02-12  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* mass2flux.cpp (main): skip processing adjacent identical
+	solution names; add --no-skip option to disable 
+
+2014-10-15  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* cgnsbc.cpp, cgnsextract.cpp, cgnssplit.cpp, starbnd.cpp,
+	starvrt.cpp: update boost::spirit includes to avoid warnings  
+
+2014-08-07  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* transient.cpp (main): with --te2thys, a nonconforming solution
+	name generates a warning instead of error
+
+2012-09-12  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* doc/Doxyfile.in (EXCLUDE_SYMBOLS): exclude boost symbols
+
+2012-07-24  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* configure.in: make sure LDFLAGS has correct order
+
+2012-07-09  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (EXTRA_DIST): add generated svn revision files
+
+	* configure.in: generate SVN revision and revision date defines
+
+2012-06-29  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* cgnsfile.cpp (bcinfo): handle "FamilySpecified" boundary
+	condition types
+
+	* cgnsfile.h (CGNSFile::Section): add cell_size()
+
+2012-06-28  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* transient.cpp (mybasename): upgrade to boost::filesystem version
+	3 
+
+	* configure.in: do not set BOOST_FILESYSTEM_VERSION in CPP_FLAGS
+
+	* Makefile.am (AM_CPPFLAGS): set BOOST_FILESYSTEM_VERSION to 3
+
+	* cgnsaverage.cpp (main): upgrade to boost::filesystem version 3
+
+	* cgnscopyfield.cpp (main): upgrade to boost::filesystem version 3
+
+	* cgnssplit.cpp (mybasename): upgrade to boost::filesystem version
+	3
+
+	* cgnssplitindex.cpp (main): upgrade to boost::filesystem version
+	3
+
+	* cgnszonegraph.cpp (main): upgrade to boost::filesystem version 3
+
+	* copydiscrete.cpp (mybasename): upgrade to boost::filesystem
+	version 3
+
+2012-04-04  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* autotools generated file updated due to version change
+
+2012-02-16  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* configure.in: make sure the default CPPFLAGS are last 
+
+2012-02-15  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* configure.in: check multiple include paths for CGNS
+
+2012-02-14  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* configure.in: add additional paths to look for installed CGNS
+	headers 
+
+	* transient.cpp (main): identify and report when te2thys_time()
+	fails to extract a time from the solution name
+
+2012-02-01  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): add
+
+2011-12-02  William A. Perkins  <william.perkins@pnnl.gov>
+
+	* cgnsfile.cpp, cgnsfile.h: update CGNS calls to version 3
+	(untested) 
+
+	* transient.cpp:  add CG_ prefix to CGNS defines
+
+	* starvrt.cpp:  add CG_ prefix to CGNS defines
+
+	* starbnd.cpp:  add CG_ prefix to CGNS defines
+
+	* multimixed.cpp:  add CG_ prefix to CGNS defines
+
+	* cylinder.cpp:  add CG_ prefix to CGNS defines
+
+	* copydiscrete.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnszonegraph.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnszconv.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnsvtk.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnstest.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnssplitindex.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnssplit.cpp: add CG_ prefix to CGNS defines 
+
+	* cgnsscale.cpp:  add CG_ prefix to CGNS defines
+
+	* cgnsopen.c: add CG_ prefix to CGNS defines
+
+	* cgnsextract.cpp: add CG_ prefix to CGNS defines
+
+	* cgnscopyfield.cpp: add CG_ prefix to CGNS defines
+
+	* cgnsbc.cpp: add CG_ prefix to CGNS defines
+
+	* cgnsaverage.cpp: add CG_ prefix to CGNS defines
+
+2011-04-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* configure.in: set BOOST_FILESYSTEM_VERSION
+
+2011-04-08  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsbc.cpp (validate): deal with different boost versions and
+	validate_error 
+
+	* Makefile.am: set BOOST_FILESYSTEM_VERSION
+
+2010-12-30  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnszconv.cpp: make it work with boundaries and connections
+	specified as PointRange's
+
+2010-10-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsopen.c (main): tell when done
+
+2010-08-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (bin_PROGRAMS): add cgnsopen and cgnsbc
+
+	* cgnsfile.h, cgnsfile.cpp: add static iscgns() method
+
+2010-07-30  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h: make errormsg() public
+
+2010-07-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (bin_PROGRAMS): add cgnszonegraph
+
+	* cgnszonegraph.cpp: added
+
+2010-07-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h, cgnsfile.cpp: add attributes and methods to catch
+	and possibly ignore connection read errors
+
+2010-03-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsextract.cpp (main): add --discrete and --discrete-variable
+	so fields from DiscreteData nodes can be extracted
+
+2009-12-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnscopyfield.cpp: use older headers for boost filesystem so boost
+	version 1.33 works
+
+	* cgnsaverage.cpp: use older headers for boost filesystem so boost
+	version 1.33 works
+
+2009-12-19  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (bin_PROGRAMS): add cgnscopyfield
+
+	* cgnscopyfield.cpp: added 
+
+2009-12-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am: add cgnsaverage
+
+	* cgnsaverage.cpp: added
+
+2009-11-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsscale.cpp (main): better check of coordinate option
+	selection 
+
+2009-11-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsscale.cpp (main): scale the translation on periodic
+	connections too
+
+	* cgnsfile.cpp (connperiodicwrite): add so periodic connection
+	info can be (over)written
+	(connwrite): use connperiodicwrite
+
+	* cgnsfile.h (class CGNSFile): add method connperiodicwrite()
+
+2009-10-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* starvrt.cpp: add options to specify cyclic boundary translation
+
+2009-09-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsscale.cpp: add -X, -Y, -Z options to scale/translate
+	individual coordinates
+
+2009-08-07  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (transient_LDADD): add boost libraries
+
+	* transient.cpp: completely reworked to build base iterative data
+	using solutions and time step or solution name
+
+	* cgnsfile.cpp (biterread): need to goto the iterative data node
+	before checking arrays
+
+2009-06-30  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp: need <cstring> 
+
+2009-03-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (cgnssplitindex_SOURCES): add new program
+
+	* cgnssplitindex.cpp: new command to do index lookup
+
+	* cgnssplit.cpp (main): string command line arguments need
+	defaults 
+
+2009-03-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition): fix error message format
+
+2009-03-09  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (read_scotch_split, main): add option to read
+	partition field from a Scotch-format file
+	(extract_partition): only warn when a connection is incomplete
+
+2009-03-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* starvrt.cpp (main): correct vertex file error message
+
+2009-02-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsextract.cpp (main): add --all and --te2thys-coord options;
+	change default solution behavior
+
+2008-09-24  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (BOOSTLIBSUFFIX): old macros no longer needed
+
+2008-09-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp: define minimum_boundary_vertexes
+	(extract_partition, build_block_connections): use minimum_boundary_vertexes
+	(main): define --vertex-minimum to set minimum_boundary_vertexes
+
+2008-08-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp, cgnsfile.h: start to do a Base node cache as with Zone nodes 
+
+2008-08-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h: add methods for reading/writing links
+
+2008-07-24  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (biterwrite): correct dimensions on zone pointers
+	array 
+
+2008-07-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (main): reconnect existing connections that end up
+	on different zones
+
+	* cgnsfile.cpp (connwrite): correct loop limits
+
+2008-07-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition): split connections too.
+
+	* starvrt.cpp (main): add --type option and write boundaries with
+	the specified type
+
+2008-06-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition): write out old vertex indexes
+	too 
+	(get_split): get the decomposition data from a discrete data node
+
+2008-06-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition, build_block_connections): any
+	boundary or connection should have more than 3 points.
+
+2008-06-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h: get data type from discretefieldinfo()
+
+	* Makefile.am: add copydiscrete
+
+	* cgnssplit.cpp: make const vars for some constant strings
+
+	* cgnsfile.cpp (discretefieldwrite): needed a cgns::goto to
+	write a field
+
+2008-06-02  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp, cgnsfile.h (discretefieldread, discretefieldwrite): allow
+	reading and writing of integer fields
+
+	* cgnssplit.cpp (extract_partition): write old cell indexes to
+	output
+	(main): change second "solution" option to "split-solution"
+
+2008-05-30  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (gravitywrite): check to make sure the base is
+	available before doing anything
+
+2008-05-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am: use new Boost configuration
+
+	* aclocal.m4: use new Boost configuration
+
+	* configure.in: use new Boost configuration 
+
+2008-05-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (main): use transform and boost::lambda to
+	eliminate type conversion warnings
+
+2008-05-22  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnszconv.cpp: convert Zone Connectivity as well as boundaries
+
+2008-05-09  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (connwrite): use cg_conn_write_short() when donor
+	information is not available
+
+	
+2008-02-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (solindex): fix infinite loop
+
+2008-02-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (solindex): added
+
+	* cgnsfile.h: add solindex()
+
+2008-01-28  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (connwrite): initialize all parts of the periodic
+	transform vectors
+
+	* cylinder.cpp (main): resize and add cyclic boundaries
+
+2008-01-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cylinder.cpp (main): various changes so the result can be used
+	in the PT6 dispersion-pipe example 
+
+	* cgnsfile.cpp (conninfo): make sure conn->periodic is set 
+
+2007-12-28  d3g096  <D3G096@wd54758.pnl.gov>
+
+	* bootstrap.sh: aclocal should look in /usr/local too
+
+	* Makefile.am (BOOSTLIBSUFFIX): give Boost libraries an optional
+	suffix
+
+2007-12-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition): split solution fields too
+	(main): add --solution option
+
+2007-08-22  William A. Perkins  <william.perkins@pnl.gov>
+
+	* starvrt.cpp (main): make the boundary type user defined
+
+2007-08-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am, Makefile.in: add starvrt
+
+	* starvrt.cpp: new program to create boundaries from StarCD vertex
+	export files
+
+2007-06-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (build_block_connections): make block connections
+	too 
+
+2007-06-04  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp (extract_partition): no need to use a std::map
+	here 
+
+2007-05-25  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnssplit.cpp: split boundaries too
+
+2007-05-21  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am, Makefile.in (bin_PROGRAMS): add cgnssplit
+
+	* cgnssplit.cpp: added (not complete)
+
+	* cgnsvtk.cpp (avtk_unstructured): use std::vector instead of heap
+	allocated arrays. 
+
+	* cgnszconv.cpp (main): correct boost positional option indexes 
+
+2007-05-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsscale.cpp (main): use the offset argument
+
+2007-04-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (conninfo, connwrite): Read/write periodic attributes
+	from connection if called for
+
+	* cgnsfile.h (CGNSFile::Conn): add periodic attributes
+
+2007-04-06  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsextract.cpp (main): add --noindex option
+
+2007-04-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsextract.cpp: added
+
+	* Makefile.am (bin_PROGRAMS): add cgnsextract
+
+	* configure.in: needed to use MY_CXX_FLAGS()
+
+	* starbnd.cpp (read_star3_bound): add support for "PRES" boundary
+	type 
+
+2007-02-15  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (zone): use the zone cache when the file is open in
+	MODE_WRITE 
+
+2007-02-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* doc/Makefile.am (todo.dox): add
+
+2007-01-29  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsvtk.cpp (main): error messages should go to std::cerr
+
+2007-01-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* multimixed.cpp: fixed connection donor indexing problem caught
+	by cgnscheck 
+
+2007-01-10  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am, Makefile.in: add cgnszconv
+
+	* cgnszconv.cpp: new
+
+	* cgnsfile.cpp (coordread): implement
+
+2006-10-27  William A. Perkins  <william.perkins@pnl.gov>
+
+	* multimixed.cpp (build_structured_cube, build_unstructured_cube):
+	use std::vector instead of having arrays on the stack
+
+2006-05-05  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (zonewrite): when open MODE_WRITE cache written
+	zone information
+	(zone): when open MODE_WRITE use zone cache info
+
+	* cgnsfile.h (CGNSFile): add places to cache written zone
+	information so zoneread is not needed when in MODE_WRITE
+
+2006-05-04  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h (CGNSFile): g++-4 did not like extra CGNSFile:: on
+	methods
+
+2006-04-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.in, aclocal.m4, configure, configure.in, doc/Makefile.in:
+	Fixed problem with configuration: AC_OUTPUT should only be called once
+	in configure.in.
+
+2006-04-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.in, doc/Makefile.in: Merged gsl branch
+
+2006-04-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* starbnd.cpp, Makefile.am, Makefile.in, TODO, aclocal.m4,
+	bootstrap.sh, configure, configure.in, doc/Doxyfile,
+	doc/Doxyfile.in, doc/Makefile.am, doc/Makefile.in: 
+	Merged gsl branch
+
+2006-04-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* doc/Makefile.am: Use C++ casts instead of C style; documentation
+
+2006-04-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.in: Configuration files now in CVS.
+
+	* Makefile.in: New file.
+
+	* aclocal.m4, configure, doc/Makefile.in:
+	Configuration files now in CVS.
+
+	* aclocal.m4, configure, doc/Makefile.in: New file.
+
+	* Makefile.am, configure.in, doc/Doxyfile, doc/Doxyfile.in, doc/Makefile.am:
+	Document generation added as 'doxygen' target.
+
+	* doc/Doxyfile.in, doc/Makefile.am: New file.
+
+2006-02-18  William A. Perkins  <william.perkins@pnl.gov>
+
+	* TODO: More stuff to do.
+
+2006-01-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* ChangeLog, Makefile.am, TODO, bootstrap.sh, cgnsfile.cpp, cgnsvtk.cpp, configure.in:
+	Merged changes from main branch into gsl branch
+
+2006-01-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* ChangeLog, configure.in:
+	Changes to configuration to make sure Boost libraries are found.
+
+2006-01-12  William A. Perkins  <william.perkins@pnl.gov>
+
+	* configure.in: use BOOST_LDFLAGS
+
+2006-01-03  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsvtk.cpp (avtk_solution_scalar, avtk_solution_vector)
+	(avtk_solution): program now writes the solution and has command
+	line options to pick zone and solution
+
+	* configure.in: was not using preset CXXFLAGS
+
+2005-09-26  William A. Perkins  <william.perkins@pnl.gov>
+
+	* configure.in: needed check for libgen.h (basename)
+
+2005-09-09  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (bin_PROGRAMS): add new program
+
+	* cgnsscale.cpp (main): New program for scaling coordinates and
+	solution fields
+
+2005-05-23  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (cells, vertices): implement
+
+	* cgnsfile.h: add cells() and vertices() methods
+
+2005-05-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (discretefieldwrite): implement
+
+	* cgnsfile.h (CGNSFile): add CGNSFile::discretefieldwrite()
+
+2005-05-19  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (ndiscrete, discreteread, discreteread, etc.):
+	routines for DiscreteData nodes	(untested)
+
+	* cgnsfile.h (CGNSFile): add routines for DiscreteData nodes
+	(untested) 
+
+2005-03-14  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (fieldbyname): report the name of the requested
+	field when not found
+
+2005-01-20  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h (CGNSFile): name() method not implemented
+
+2004-11-19  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (zone): implement
+
+	* cgnsfile.h (CGNSFile): add additional zone() method to select by
+	name
+
+2004-11-11  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (conninfo, connwrite): use new descriptor methods
+
+	* cgnsfile.h (CGNSFile): add ndescriptors(), descriptorwrite(),
+	and descriptorread() methods
+
+	* multimixed.cpp (connect_blocks): set donorconnname in connection
+
+	* cgnsfile.h (CGNSFile::Conn): add name for donor connection
+
+	* cgnsfile.cpp (conninfo): read donor connection descriptor if
+	available 
+
+	* cgnstest.cpp (main): identify the name of the corresponding
+	donor zone grid connectivity node
+
+	* cgnsfile.cpp (conninfo): look for a descriptor that contains the
+	name of the connection in the connecting zone
+
+2004-11-10  William A. Perkins  <william.perkins@pnl.gov>
+
+	* Makefile.am (check_PROGRAMS): add multimixed application
+
+	* multimixed.cpp: test multiple block connections
+
+	* cgnstest.cpp (main): read and report grid connections
+
+	* cgnsfile.cpp (conninfo, connread, connwrite): new methods
+	implemented 
+
+	* cgnsfile.h (CGNSFile): grid connection (general) methods
+
+2004-10-29  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h: comment edits
+
+2004-09-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsvtk.cpp (main): string to std::string and ostream to
+	std::ostream 
+
+2004-09-09  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp (biterwrite): implement
+
+2004-09-01  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.cpp: add methods for iterative data and arbitrary grid
+	movement
+
+	* cgnsfile.h (CGNSFile): add methods for iterative data and
+	arbitrary grid movement
+
+2004-08-17  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnstest.cpp (main): read flow solution and report
+
+	* cgnsfile.cpp (zone): allow access to the current Zone structure 
+	(nsols, solinfo, nfields, fieldinfo, fieldbyname, fieldread):
+	routines for reading flow solutions
+
+	* cgnsfile.h (CGNSFile): add some routines for reading
+	flow solutions 
+
+2004-08-16  William A. Perkins  <william.perkins@pnl.gov>
+
+	* configure.in: provide option to set CGNS library name and set
+	the name based on architecture
+
+	* cgnsfile.cpp:  string (and others) to std::string
+
+	* cgnsfile.h: string to std::string
+
+2004-08-04  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cylinder.cpp: program to build a unstructured, cylindrical grid
+
+	* cgnsfile.cpp: avoid situations where both read and write modes
+	are required
+
+	* cgnsfile.h (CGNSFile): add boundary condition methods
+
+	* cgnstest.cpp (main): look at any boundary conditions
+
+2004-07-13  William A. Perkins  <william.perkins@pnl.gov>
+
+	* cgnsfile.h, cgnsfile.cpp (nsections): Routines for
+	reading/writing element connectivity
+

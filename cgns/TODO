@@ -1,0 +1,134 @@
+-*- mode: text -*--------------------------------------------
+file: TODO
+-------------------------------------------------------------
+-------------------------------------------------------------
+Battelle Memorial Institute
+Pacific Northwest Laboratory
+-------------------------------------------------------------
+-------------------------------------------------------------
+Created September 14, 2005 by William A. Perkins
+Last Change: Mon Jul  7 12:20:37 2008 by William A. Perkins <d3g096@bearflag.pnl.gov>
+-------------------------------------------------------------
+$Id$
+
+* cgnssplit needs to make grid connections!
+
+* Units and unit conversion? 
+
+* Templatize the data array reading/writing members of CGNSFile so
+  different data types, especially integer types, can be used.  This
+  may require partial instantiation in order to get the right type
+  passed to the CGNS library.  For example,
+
+  int 
+  CGNSFile::fieldwrite(const int& sol, const char* fname, const double* data)
+
+  could be
+
+  template <class T> int
+  CGNSFile::fieldwrite(const int& sol, const char* fname, const T* data)
+
+  There might be a way to use metaprogramming to make a allowable type
+  list for T and a correspondence to the CGNS DataType 
+
+* make the CGNSFile class (optionally) aware of DataConversion_t
+  nodes, and automatically convert data values when they are
+  encountered (make it part of reading/writing an array).  This may or
+  may not be tied to the existence of DataClass_t nodes.
+
+* Utility to extract a (contiguous) subset of an unstructured mesh
+  based on a coordinate range or a set of coordinate ranges.
+  Basically, one would just select the vertexes in the coordinate
+  range and identify the cells with all their nodes included in that
+  set.  Output would have to renumber the cells.  It would be nice to
+  include the old cell/vertex number as discrete data or in a flow
+  solution.  
+
+* A utility to deal with StarCD, actually ProStar, output:
+
+    * Look at using the StarCD boundary output (from BWRITE) to assign
+      boundary information to StarCD CGNS output.  It appears that
+      vertex numbering is the same.
+
+    * Ought to be able to build a CGNS mesh file from the ProStar cell,
+      vertex, and boundary output.
+
+    * Change solution variable names to SIDS compliant names.
+
+* Consider writing a VTK "importer" class using CGNSFile.
+
+* cgnsvtk has problems with hex meshes. At least paraview cannot read
+  the output.  It seems to have trouble with the solution part. Mayavi
+  reads them fine though.
+
+* cgnsvtk needs to automatically convert multiple solutions into
+  something paraview or mayavi or visit can animate
+
+* Write a NetGen importer modeled after te2thys/scripts/ngcgns.py.
+  Boundary handling in pyCGNS is weak.  It would be better handled in
+  C++.  ngcgns.py does not deal with anything but tets.  It might also
+  be good to have a utility to convert meshes to netgen.  
+
+* Write a converter for OpenDX or write an imported module. (How much
+  do I really want to know about OpenDX.)
+
+* CGNS Converters:
+
+    Standard TimeAccurate to Tecplot 
+
+    Tecplot Cell-centered Solution
+
+* Transient files:
+
+    * Perhaps a subclass with methods to manipulate the time dependent
+      information: 
+
+        * There should be a "current" time step. Solutions (and
+          meshes) written during the time step are noted.  
+
+        * Get the number of time steps.
+
+        * Get a list of the simulation times.
+
+        * A method to make a new time step.
+
+        * Facilities to read/write other time dependent information
+          (iterations, mass source, e.g.) 
+
+        * All transient information should be written upon closure. Or,
+          maybe on request then overwritten later. Or, overwritten at
+          the end of each time step.
+
+        * Zone manipulation (nzones, zone, solution, ...) should only
+          include the zones included in the current time step.  
+
+    * Moving grids can be handled it two ways:
+    
+        * several grid coordinates in the zone nodes, and a 
+
+        * several zones with single grid coordinates
+
+    * Transient information:
+
+        * Base node has transient simulation type
+
+        * The Base node has a BaseIterativeData_t with (at least) the
+          following 
+
+            * Simulation time
+            * Zone pointers
+
+        * Zone nodes have a ZoneSolutionPointers node
+
+* Dealing with multiple bases
+
+  The current design has a real hard time with multiple bases,
+  especially in write mode.          
+
+* Having Descriptors in General
+ 
+  Could there be a way, especially with nodes represented by a
+  structure (zone, connection, bc, etc.), to have all descriptors read
+  from the node and placed in some kind of dictionary?  
+
+  The dictionary could be created and written with the node too.  

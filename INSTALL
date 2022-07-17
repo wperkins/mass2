@@ -1,0 +1,64 @@
+-*- mode: text -*--------------------------------------------
+file: INSTALL
+-------------------------------------------------------------
+-------------------------------------------------------------
+Battelle Memorial Institute
+Pacific Northwest Laboratory
+-------------------------------------------------------------
+-------------------------------------------------------------
+Created December 21, 2015 by William A. Perkins
+Last Change: 2018-11-28 12:31:27 d3g096
+-------------------------------------------------------------
+
+
+flophouse
+
+set prefix = "/net/flophouse/files0/perksoft/linux64"
+configure \
+    --enable-maintainer-mode \
+    --with-blitz \
+    --with-cgns-lib=cgns \
+    --prefix="$prefix/mass2" \
+    CC=gcc \
+    CXX=g++ \
+    CPPFLAGS="-I$prefix/include" \
+    LDFLAGS="-L$prefix/lib" \
+    LIBS="-lhdf5 -lz -lm -lpthread" \
+    CXXFLAGS="-DNDEBUG -O3 -funroll-loops -fstrict-aliasing -fomit-frame-pointer -ffast-math" 
+    CXXFLAGS="-g"
+
+pe10900
+
+set prefix = "/net/flophouse/files0/perksoft/macosx"
+set path = ("$prefix/cgns3/bin" "$prefix/bin" $path)
+configure \
+    --enable-maintainer-mode \
+    --with-blitz="/opt/local" \
+    --with-boost="/opt/local" \
+    --with-cgns="$prefix/cgns3" \
+    --with-cgns-lib=cgns \
+    --prefix="$prefix/mass2" \
+    CC=gcc \
+    CXX=g++ \
+    CPPFLAGS="-I$prefix/include" \
+    LDFLAGS="-L/opt/local/lib" \
+    LIBS="-lhdf5 -lz" \
+    CXXFLAGS="-DNDEBUG -O3 -funroll-loops -fstrict-aliasing -fomit-frame-pointer -ffast-math" 
+    CXXFLAGS="-g"
+
+briareus
+
+set prefix = /files0/te2thys
+sh ./configure \
+    --with-blitz=$prefix \
+    --with-boost=$prefix \
+    --with-cgns=$prefix \
+    --with-cgns-lib=cgns \
+    --prefix=$prefix \
+    CC=gcc \
+    CXX=g++ \
+    CPPFLAGS="-I$prefix/include" \
+    LDFLAGS="-L$prefix/lib" \
+    LIBS="-lhdf5 -lm -ldl -pthread" \
+    CXXFLAGS="-g -O3 -funroll-loops -fstrict-aliasing -fomit-frame-pointer -ffast-math" 
+    CXXFLAGS="-g"

@@ -1,0 +1,18 @@
+ FVREG 1
+ 
+ DATASET_COORD_TYPE CARTESIAN
+    ORIGIN   0.000000  0.000000  0.000000
+    Z_AXIS 0.0 0.0 1.0
+    THETA_AXIS 1.0 0.0 0.0
+ 
+ VELOCITIES 1
+    velocity
+ 
+ REGION
+ Fluid-1 [Default_Fluid]
+    NUM_GRIDS 1
+   1
+ REGION
+ Fluid-2
+    NUM_GRIDS 1
+   2
